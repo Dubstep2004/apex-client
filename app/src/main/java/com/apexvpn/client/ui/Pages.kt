@@ -90,10 +90,10 @@ import java.util.Locale
 import kotlinx.coroutines.launch
 
 /** Дополнительные страницы, открываются поверх вкладок. */
-enum class Page { Apps, SpeedTest, SiteCheck, Wifi, Share, Dns, Profile, Appearance, Changelog, Advanced, HideApps, AppTraffic, Help, KeepAlive, SelfCheck, About, Ping, ConnLog, LeakTest, AppIssue, ServiceCheck, Report, Rollback }
+enum class Page { Apps, SpeedTest, SiteCheck, Wifi, Share, Dns, Profile, Appearance, Changelog, Advanced, HideApps, AppTraffic, Help, KeepAlive, SelfCheck, About, Ping, ConnLog, LeakTest, AppIssue, ServiceCheck, Report, Rollback, Helper }
 
 @Composable
-fun PageHost(page: Page, viewModel: MainViewModel, onBack: () -> Unit) {
+fun PageHost(page: Page, viewModel: MainViewModel, onOpen: (Page) -> Unit = {}, onBack: () -> Unit) {
     when (page) {
         Page.Apps -> AppsPage(viewModel, onBack)
         Page.SpeedTest -> SpeedTestPage(viewModel, onBack)
@@ -118,6 +118,7 @@ fun PageHost(page: Page, viewModel: MainViewModel, onBack: () -> Unit) {
         Page.ServiceCheck -> ServiceCheckPage(viewModel, onBack)
         Page.Report -> ReportPage(onBack)
         Page.Rollback -> RollbackPage(viewModel, onBack)
+        Page.Helper -> HelperPage(viewModel, onBack, onOpen)
     }
 }
 
@@ -352,9 +353,24 @@ private fun HideAppsPage(viewModel: MainViewModel, onBack: () -> Unit) {
                         if (all) "Добавлены все: ${tpl.size} · нажмите, чтобы убрать"
                         else "Найдено у вас: ${tpl.size}" + (if (added > 0) " · уже скрыто $added" else "") + " · нажмите, чтобы добавить все",
                         onClick = {
-                            viewModel.change { copy(hiddenApps = if (all) hiddenApps - tpl.toSet() else hiddenApps + tpl) }
+                            viewModel.change {
+                                if (all) copy(hiddenApps = hiddenApps - tpl.toSet(), hideTemplateAuto = false)
+                                else copy(hiddenApps = hiddenApps + tpl, hideTemplateSkip = hideTemplateSkip - tpl.toSet())
+                            }
                         },
                     ) { Tag(if (all) "Убрать" else "Добавить") }
+                    GroupDivider()
+                    // 3.10. Шаблон обновляется сам
+                    ListRow(
+                        "Обновлять шаблон автоматически",
+                        (if (s.hideTemplateAuto) "Новые приложения из шаблона добавляются сами · " else "Список пополняется из интернета · ") +
+                            (com.apexvpn.client.data.HideTemplates.remoteInfo() ?: "встроенный список"),
+                        onClick = { viewModel.change { copy(hideTemplateAuto = !hideTemplateAuto, hiddenApps = if (!hideTemplateAuto) hiddenApps + tpl.filter { it !in hideTemplateSkip } else hiddenApps) } },
+                    ) {
+                        ApexSwitch(s.hideTemplateAuto, { v ->
+                            viewModel.change { copy(hideTemplateAuto = v, hiddenApps = if (v) hiddenApps + tpl.filter { it !in hideTemplateSkip } else hiddenApps) }
+                        })
+                    }
                 }
                 Spacer(Modifier.height(10.dp))
             }
@@ -376,9 +392,9 @@ private fun HideAppsPage(viewModel: MainViewModel, onBack: () -> Unit) {
                         leading = {
                             if (icon != null) Image(icon, null, Modifier.size(40.dp)) else GlyphTile(app.label.take(1), Apex.Accent)
                         },
-                        onClick = { viewModel.change { copy(hiddenApps = if (on) hiddenApps - app.packageName else hiddenApps + app.packageName) } },
+                        onClick = { viewModel.change { copy(hiddenApps = if (on) hiddenApps - app.packageName else hiddenApps + app.packageName, hideTemplateSkip = if (on) hideTemplateSkip + app.packageName else hideTemplateSkip - app.packageName) } },
                     ) {
-                        ApexSwitch(on, { v -> viewModel.change { copy(hiddenApps = if (v) hiddenApps + app.packageName else hiddenApps - app.packageName) } })
+                        ApexSwitch(on, { v -> viewModel.change { copy(hiddenApps = if (v) hiddenApps + app.packageName else hiddenApps - app.packageName, hideTemplateSkip = if (v) hideTemplateSkip - app.packageName else hideTemplateSkip + app.packageName) } })
                     }
                 }
             }
@@ -750,7 +766,7 @@ private fun SiteCheckPage(viewModel: MainViewModel, onBack: () -> Unit) {
 }
 
 @Composable
-private fun InputWithButton(
+internal fun InputWithButton(
     value: String,
     hint: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,

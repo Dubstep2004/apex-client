@@ -36,6 +36,9 @@ class BackgroundWork(context: Context, params: WorkerParameters) : CoroutineWork
             }
         }
         ExpiryAlerts.check(ctx)
+        // 3.10. Шаблон «Скрыть VPN»: свежий список из интернета и новые приложения — сразу в список
+        runCatching { HideTemplates.refresh() }
+        if (runCatching { HideTemplates.autoApply(ctx) }.getOrDefault(0) > 0) com.apexvpn.client.vpn.ApexVpnService.reload(ctx)
         // 3.6. 1-го числа — итоги прошлого месяца
         MonthStats.reportDue()?.let { notifyReport(ctx, it) }
         if (RulesUpdater.update(ctx) is RulesUpdater.Result.Updated) ApexVpnService.reload(ctx)

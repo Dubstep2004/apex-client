@@ -40,6 +40,12 @@ class ApexApp : Application() {
         com.apexvpn.client.update.UpdateManager.init(this)
         com.apexvpn.client.update.UpdateInstaller.init(this)
         com.apexvpn.client.data.MonthStats.init(this)
+        // 3.10. Шаблон «Скрыть VPN»: свежий список и новые приложения — при запуске
+        appScope.launch {
+            runCatching { com.apexvpn.client.data.HideTemplates.refresh() }
+            if (runCatching { com.apexvpn.client.data.HideTemplates.autoApply(this@ApexApp) }.getOrDefault(0) > 0)
+                com.apexvpn.client.vpn.ApexVpnService.reload(this@ApexApp)
+        }
 
         val workingDir = File(filesDir, "work").apply { mkdirs() }
         val tempDir = File(cacheDir, "box").apply { mkdirs() }

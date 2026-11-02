@@ -119,6 +119,10 @@ data class Settings(
     val task: String = "",
     // 349. Приложения, от которых VPN скрыт (идут мимо туннеля, как банки)
     val hiddenApps: Set<String> = emptySet(),
+    /** 3.10: шаблон «Скрыть VPN» обновляется сам — новые приложения из него добавляются автоматически */
+    val hideTemplateAuto: Boolean = false,
+    /** …кроме тех, что пользователь сам убрал из списка */
+    val hideTemplateSkip: Set<String> = emptySet(),
     // 387. Секретная тема открыта
     val secretUnlocked: Boolean = false,
     // 429. Щит поворачивается при наклоне телефона
@@ -361,7 +365,7 @@ object AppSettings {
         put("domainStrategy", s.domainStrategy); put("fakeDns", s.fakeDns)
         put("remoteDns", s.remoteDns.json()); put("directDns", s.directDns.json()); put("rulesSource", s.rulesSource)
         put("warp", s.warp); put("warpConfig", s.warpConfig); put("shieldBackdrop", s.shieldBackdrop); put("backdropStamp", s.backdropStamp)
-        put("iconStatus", s.iconStatus); put("animatedFlags", s.animatedFlags); put("task", s.task); put("hiddenApps", list(s.hiddenApps)); put("secret", s.secretUnlocked); put("shield3d", s.shield3d); put("automation", s.automation); put("appTraffic", s.appTraffic); put("autoSkipSpecial", s.autoSkipSpecial); put("autoFavoritesOnly", s.autoFavoritesOnly); put("seasonal", s.seasonal); put("autoWhitelist", s.autoWhitelist)
+        put("iconStatus", s.iconStatus); put("animatedFlags", s.animatedFlags); put("task", s.task); put("hiddenApps", list(s.hiddenApps)); put("hideTemplateAuto", s.hideTemplateAuto); put("hideTemplateSkip", list(s.hideTemplateSkip)); put("secret", s.secretUnlocked); put("shield3d", s.shield3d); put("automation", s.automation); put("appTraffic", s.appTraffic); put("autoSkipSpecial", s.autoSkipSpecial); put("autoFavoritesOnly", s.autoFavoritesOnly); put("seasonal", s.seasonal); put("autoWhitelist", s.autoWhitelist)
         put("customAccent2", s.customAccent2); put("photoBlur", s.photoBlur); put("photoDim", s.photoDim); put("photoParallax", s.photoParallax); put("rulesAuto", s.rulesAuto); put("rulesHours", s.rulesHours); put("speedUnit", s.speedUnit); put("speedScale", s.speedScale); put("speedMulti", s.speedMulti); put("quicMode", s.quicMode); put("connectOnOpen", s.connectOnOpen)
         put("pingType", s.pingType); put("pingMode", s.pingMode); put("pingTimeout", s.pingTimeout); put("pingUrl", s.pingUrl); put("pingView", s.pingView); put("autoMode", s.autoMode); put("modeColors", s.modeColors); put("directCountries", list(s.directCountries)); put("connLog", s.connLog); put("greeting", s.greeting)
     }
@@ -458,6 +462,8 @@ object AppSettings {
             iconStatus = o.optBoolean("iconStatus", d.iconStatus),
             animatedFlags = o.optBoolean("animatedFlags", d.animatedFlags),
             task = "", // задачи стали режимами автопилота (3.0)
+            hideTemplateAuto = o.optBoolean("hideTemplateAuto", d.hideTemplateAuto),
+            hideTemplateSkip = arr("hideTemplateSkip", d.hideTemplateSkip).toSet(),
             hiddenApps = arr("hiddenApps", d.hiddenApps).toSet() +
                 (if (o.optString("appsMode") == AppsMode.Exclude.id) arr("apps", d.apps) else emptyList()),
             secretUnlocked = o.optBoolean("secret", d.secretUnlocked),

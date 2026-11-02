@@ -32,7 +32,7 @@ object HideTemplates {
     )
 
     /** Название целиком (без учёта регистра). */
-    private val exactLabels = setOf("max", "dns", "t2", "т2", "дзен", "vk", "ок", "wink", "cudy", "tether", "циан")
+    private val exactLabels = setOf("max", "dns", "t2", "т2", "дзен", "vk", "ок", "wink", "cudy", "tether", "циан", "ivi", "mir pay", "max мессенджер")
 
     /** Название начинается с… */
     private val labelPrefixes = listOf(
@@ -44,17 +44,72 @@ object HideTemplates {
         "всеинструменты", "ржд", "aviasales", "headhunter", "hh.ru", "иви", "лемана", "аэрофлот",
         "aliexpress", "kate mobile", "гдепосылка", "wikkeo", "sova v re", "почта mail", "mail.ru",
         "купер", "мегамаркет", "золотое яблоко", "спортмастер", "м.видео", "эльдорадо", "ситилинк",
+        // 3.10: по спискам СМИ (апрель–июль 2026)
+        "парковки", "магнит", "дзен", "мтс банк", "почта банк", "совкомбанк", "росбанк", "райффайзен",
+        "домклик", "госключ", "мос.ру", "моя москва", "емиас", "налоги фл", "кинопоиск", "иви", "wink",
+        "яндекс go", "яндекс пэй", "yandex pay", "мегафон", "билайн", "мой билайн", "литрес",
     )
 
     const val TITLE = "Российские приложения"
     const val SUBTITLE = "Яндекс, VK, Госуслуги, банки, маркетплейсы, операторы — те, что проверяют VPN"
 
-    /** Подходит ли установленное приложение под шаблон. */
+    // ─── 3.10. Шаблон обновляется из интернета ──────────────────────────
+    // Файл docs/templates/hide-vpn.json в репозитории: новые приложения, которые начали проверять VPN,
+    // добавляются туда — и приходят всем без новой версии приложения.
+    private const val REMOTE = "https://raw.githubusercontent.com/${com.apexvpn.client.BuildConfig.GITHUB_REPO}/main/docs/templates/hide-vpn.json"
+    private const val MIRROR = "https://cdn.jsdelivr.net/gh/${com.apexvpn.client.BuildConfig.GITHUB_REPO}@main/docs/templates/hide-vpn.json"
+
+    private data class Remote(val version: Int, val updated: String, val packages: Set<String>, val exact: Set<String>, val prefixes: List<String>)
+
+    @Volatile private var remote: Remote? = null
+
+    private fun parse(text: String): Remote? = runCatching {
+        val o = org.json.JSONObject(text)
+        fun arr(k: String) = o.optJSONArray(k)?.let { a -> (0 until a.length()).map { a.optString(it).trim() }.filter { it.isNotEmpty() } }.orEmpty()
+        Remote(o.optInt("version"), o.optString("updated"), arr("packages").toSet(), arr("exactLabels").map { it.lowercase() }.toSet(), arr("labelPrefixes").map { it.lowercase() })
+    }.getOrNull()
+
+    private fun cached(): Remote? = remote ?: Prefs.hideTemplateJson.takeIf { it.isNotBlank() }?.let(::parse)?.also { remote = it }
+
+    /** Версия и дата загруженного из интернета списка (для подписи), null — только встроенный. */
+    fun remoteInfo(): String? = cached()?.let { "список №${it.version}" + (if (it.updated.isNotBlank()) " от ${it.updated}" else "") }
+
+    /** Скачать свежий список (раз в сутки из фоновой проверки). true — список изменился. */
+    suspend fun refresh(): Boolean = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        val text = listOf(REMOTE, MIRROR).firstNotNullOfOrNull { url ->
+            runCatching {
+                val c = java.net.URL(url).openConnection() as java.net.HttpURLConnection
+                c.connectTimeout = 10_000; c.readTimeout = 15_000
+                try { if (c.responseCode == 200) c.inputStream.bufferedReader().readText() else null } finally { c.disconnect() }
+            }.getOrNull()?.takeIf { parse(it) != null }
+        } ?: return@withContext false
+        val r = parse(text)!!
+        val old = cached()
+        Prefs.hideTemplateJson = text
+        remote = r
+        old == null || old.version != r.version
+    }
+
+    /** Подходит ли установленное приложение под шаблон (встроенный список + из интернета). */
     fun matches(packageName: String, label: String): Boolean {
-        if (packageName in packages) return true
+        val r = cached()
+        if (packageName in packages || r?.packages?.contains(packageName) == true) return true
         val l = label.trim().lowercase()
-        if (l in exactLabels) return true
-        return labelPrefixes.any { l.startsWith(it) }
+        if (l in exactLabels || r?.exact?.contains(l) == true) return true
+        return labelPrefixes.any { l.startsWith(it) } || r?.prefixes?.any { l.startsWith(it) } == true
+    }
+
+    /**
+     * «Обновлять автоматически»: приложения из шаблона, которых ещё нет в «Скрыть VPN»
+     * (и которые пользователь сам не убирал), добавляются сами. Ответ — сколько добавили.
+     */
+    suspend fun autoApply(context: android.content.Context): Int {
+        val s = AppSettings.value
+        if (!s.hideTemplateAuto) return 0
+        val apps = InstalledApps.load(context)
+        val add = installed(apps, context.packageName).filter { it !in s.hiddenApps && it !in s.hideTemplateSkip }
+        if (add.isNotEmpty()) AppSettings.update { copy(hiddenApps = hiddenApps + add) }
+        return add.size
     }
 
     /** Пакеты установленных приложений из шаблона (без самого APEX VPN). */

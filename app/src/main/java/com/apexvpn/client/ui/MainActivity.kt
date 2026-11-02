@@ -278,7 +278,7 @@ class MainActivity : ComponentActivity() {
                                 val current = page
                                 if (current != null) {
                                     BackHandler { page = null }
-                                    PageHost(current, viewModel) { page = null }
+                                    PageHost(current, viewModel, onOpen = { page = it }) { page = null }
                                 }
                             }
                             if (serversOpen) {

@@ -56,6 +56,11 @@ object Prefs {
         get() = sp.getInt("dismissed_update", 0)
         set(v) = sp.edit { putInt("dismissed_update", v) }
 
+    /** 3.10: список шаблона «Скрыть VPN», скачанный из интернета (JSON) */
+    var hideTemplateJson: String
+        get() = sp.getString("hide_template", "") ?: ""
+        set(v) = sp.edit { putString("hide_template", v) }
+
     /** 3.9.1: обновление запускали из открытого приложения — после установки открыть снова */
     var reopenAfterUpdate: Boolean
         get() = sp.getBoolean("reopen_after_update", false)
