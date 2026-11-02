@@ -162,43 +162,6 @@ private fun DrawScope.pin(p: Offset, color: Color, rings: Boolean, phase: Float)
     drawCircle(Color.White, 1.6.dp.toPx(), p)
 }
 
-private fun DrawScope.project(c: Pair<Float, Float>): Offset {
-    val (lat, lon) = c
-    return Offset(
-        ((lon + 180f) / 360f) * size.width,
-        ((WorldMap.N - lat) / (WorldMap.N - WorldMap.S)) * size.height,
-    )
-}
-
-private fun bezier(a: Offset, c: Offset, b: Offset, t: Float): Offset {
-    val u = 1 - t
-    return Offset(u * u * a.x + 2 * u * t * c.x + t * t * b.x, u * u * a.y + 2 * u * t * c.y + t * t * b.y)
-}
-
-private fun DrawScope.drawDots(color: Color) {
-    val cw = size.width / WorldMap.W
-    val ch = size.height / WorldMap.H
-    val r = minOf(cw, ch) * 0.32f
-    WorldMap.rows.forEachIndexed { j, row ->
-        row.forEachIndexed { i, c ->
-            if (c == '#') drawCircle(color, r, Offset((i + 0.5f) * cw, (j + 0.5f) * ch))
-        }
-    }
-}
-
-private fun DrawScope.pin(p: Offset, color: Color, rings: Boolean, phase: Float) {
-    if (rings) {
-        // Дышащие кольца
-        for (k in 0..1) {
-            val f = (phase + k * 0.5f) % 1f
-            drawCircle(color.copy(alpha = (1f - f) * 0.55f), 4.dp.toPx() + f * 16.dp.toPx(), p, style = Stroke(1.5.dp.toPx()))
-        }
-    }
-    drawCircle(color.copy(alpha = 0.25f), 7.dp.toPx(), p)
-    drawCircle(color, 4.dp.toPx(), p)
-    drawCircle(Color.White, 1.6.dp.toPx(), p)
-}
-
 /** Страна пользователя: по языку и региону Windows. */
 fun userCountry(): String = Locale.getDefault().country.lowercase(Locale.ROOT).takeIf { it in WorldMap.coords } ?: "ru"
 
