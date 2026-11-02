@@ -2,6 +2,12 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.7.1 · 2 ноября 2026
+
+<img src="img/tags/changed.svg" alt="Изменено" height="22">
+
+- «Пробовать новое раньше» теперь называется «Бета-версии» (Настройки → Обновления)
+
 ## 3.7.0 · 2 ноября 2026
 
 <img src="img/tags/new.svg" alt="Новое" height="22">

@@ -25,6 +25,12 @@ private fun d(text: String) = Change(ChangeKind.Removed, text)  // Удален�
 object Changelog {
     val releases = listOf(
         Release(
+            "3.7.1", 69, "2 ноября 2026",
+            listOf(
+                c("«Пробовать новое раньше» теперь называется «Бета-версии» (Настройки → Обновления)"),
+            ),
+        ),
+        Release(
             "3.7.0", 68, "2 ноября 2026",
             listOf(
                 n("«Пробовать новое раньше» — тестовый канал: приходят и тестовые версии (на GitHub — Pre-release), обновляются в один клик"),

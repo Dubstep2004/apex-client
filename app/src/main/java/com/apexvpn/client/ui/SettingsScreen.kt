@@ -425,8 +425,8 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
             ) { ApexSwitch(s.updateMode == "auto", { v -> viewModel.change(reload = false) { copy(updateMode = if (v) "auto" else "ask") } }) }
             GroupDivider()
             ListRow(
-                "Пробовать новое раньше",
-                if (s.betaChannel) "Тестовый канал: приходят и тестовые версии — они могут быть сырыми" else "Только обычные проверенные версии",
+                "Бета-версии",
+                if (s.betaChannel) "Включено: новые версии приходят раньше всех — они могут быть сырыми" else "Только обычные проверенные версии",
                 leading = { tile(Icons.Rounded.Update) },
                 onClick = { viewModel.change(reload = false) { copy(betaChannel = !betaChannel) }; viewModel.checkUpdate() },
             ) { ApexSwitch(s.betaChannel, { v -> viewModel.change(reload = false) { copy(betaChannel = v) }; viewModel.checkUpdate() }) }
