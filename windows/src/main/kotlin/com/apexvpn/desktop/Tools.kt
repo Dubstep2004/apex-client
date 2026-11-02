@@ -255,7 +255,8 @@ object ConnLog {
         for (i in 0 until arr.length()) {
             val c = arr.optJSONObject(i) ?: continue
             val id = c.optString("id"); ids += id
-            synchronized(seen) { if (!seen.add(id)) continue }
+            val isNew = synchronized(seen) { seen.add(id) }
+            if (!isNew) continue
             val m = c.optJSONObject("metadata") ?: continue
             val type = m.optString("type")
             if ("probe-in" in type || "apex-dial" in type) continue
