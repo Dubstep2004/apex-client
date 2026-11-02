@@ -112,7 +112,7 @@ object Subscription {
             if (code !in 200..299) error("Сервер подписки ответил $code")
             val body = conn.inputStream.bufferedReader().readText()
             val parsed = JSONObject(CoreCli.parse(body))
-            val nodes = parsed.optJSONArray("nodes") ?: JSONArray()
+            val nodes = withoutShadowsocks(parsed.optJSONArray("nodes") ?: JSONArray())
             if (nodes.length() == 0) error("В подписке нет серверов")
             val meta = parsed.optJSONObject("meta")
             fun header(n: String): String? = conn.getHeaderField(n)?.takeIf { it.isNotBlank() } ?: meta?.optString(n)?.takeIf { it.isNotBlank() }
@@ -154,6 +154,20 @@ object Subscription {
             if (kv.size == 2) kv[0].trim() to (kv[1].trim().toDoubleOrNull()?.toLong() ?: return@mapNotNull null) else null
         }.toMap()
 
+    /** В версии для Windows серверы Shadowsocks не показываются и не подключаются. */
+    private fun withoutShadowsocks(a: JSONArray): JSONArray {
+        val out = JSONArray()
+        for (i in 0 until a.length()) {
+            val o = a.optJSONObject(i) ?: continue
+            val type = o.optString("type").lowercase()
+            val xr = o.optJSONObject("xray")?.optString("protocol").orEmpty().lowercase()
+            val ob = o.optJSONObject("outbound")?.optString("type").orEmpty().lowercase()
+            if (type == "shadowsocks" || type == "ss" || xr == "shadowsocks" || ob == "shadowsocks") continue
+            out.put(o)
+        }
+        return out
+    }
+
     private fun toNodes(a: JSONArray): List<Node> = (0 until a.length()).mapNotNull { i ->
         val o = a.optJSONObject(i) ?: return@mapNotNull null
         Node(
@@ -171,7 +185,7 @@ object Subscription {
 
     private fun load(): SubState = runCatching {
         val o = JSONObject(File(Paths.data, "subscription.json").readText())
-        val raw = o.getString("raw")
+        val raw = withoutShadowsocks(JSONArray(o.getString("raw"))).toString()
         SubState(
             nodes = toNodes(JSONArray(raw)), raw = raw, title = o.optString("title"), used = o.optLong("used"),
             total = o.optLong("total"), expireAt = o.optLong("expireAt"), updatedAt = o.optLong("updatedAt"),
