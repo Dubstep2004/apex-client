@@ -51,6 +51,10 @@ data class Settings(
     val speedInNotification: Boolean = true,
     val expiryAlerts: Boolean = true,
     val autoCheckUpdates: Boolean = true,
+    /** 3.4: «ask» — уведомление и кнопка «Обновить», «auto» — скачать заранее и поставить, когда VPN выключен или экран погас */
+    val updateMode: String = "ask",
+    /** 3.4: скачивать обновление только по Wi-Fi (без мобильного трафика) */
+    val updateWifiOnly: Boolean = true,
     val crashReports: Boolean = true,
     val refreshHours: Int = 12,
     // Внешний вид
@@ -332,7 +336,7 @@ object AppSettings {
         put("share", s.share); put("sharePort", s.sharePort); put("shareUser", s.shareUser); put("sharePass", s.sharePass)
         put("favorites", list(s.favorites)); put("protocol", s.protocol); put("core", s.core.id); put("excludeAds", s.excludeAds)
         put("speedNotif", s.speedInNotification); put("expiryAlerts", s.expiryAlerts)
-        put("autoUpdates", s.autoCheckUpdates); put("crashReports", s.crashReports); put("refreshHours", s.refreshHours)
+        put("autoUpdates", s.autoCheckUpdates); put("updateMode", s.updateMode); put("updateWifiOnly", s.updateWifiOnly); put("crashReports", s.crashReports); put("refreshHours", s.refreshHours)
         put("theme", s.theme.id); put("design", s.design.id); put("accent", s.accent.id); put("customAccent", s.customAccent)
         put("homeStyle", s.homeStyle); put("connectSound", s.connectSound); put("sound", s.sound); put("disconnectSound", s.disconnectSound); put("vibration", s.vibration)
         put("smooth", s.smoothMode); put("glassBlur", s.glassBlur); put("liveMap", s.liveMap)
@@ -398,6 +402,8 @@ object AppSettings {
             speedInNotification = o.optBoolean("speedNotif", d.speedInNotification),
             expiryAlerts = o.optBoolean("expiryAlerts", d.expiryAlerts),
             autoCheckUpdates = o.optBoolean("autoUpdates", d.autoCheckUpdates),
+            updateMode = o.optString("updateMode", d.updateMode).takeIf { it == "ask" || it == "auto" } ?: d.updateMode,
+            updateWifiOnly = o.optBoolean("updateWifiOnly", d.updateWifiOnly),
             crashReports = o.optBoolean("crashReports", d.crashReports),
             refreshHours = snapRefresh(o.optInt("refreshHours", d.refreshHours)),
             theme = ThemeMode.of(o.optString("theme", d.theme.id)),

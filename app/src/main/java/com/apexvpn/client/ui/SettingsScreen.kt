@@ -406,21 +406,39 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
         Group {
             ListRow(
                 "Проверять автоматически",
-                "При запуске и раз в 3 часа — с GitHub Releases",
+                "При запуске и раз в час — с GitHub Releases",
                 leading = { tile(Icons.Rounded.Update) },
                 onClick = { viewModel.change(reload = false) { copy(autoCheckUpdates = !autoCheckUpdates) } },
             ) { ApexSwitch(s.autoCheckUpdates, { v -> viewModel.change(reload = false) { copy(autoCheckUpdates = v) } }) }
             GroupDivider()
+            ListRow(
+                "Ставить само",
+                if (s.updateMode == "auto") "Скачает заранее и поставит, когда VPN выключен или экран погас" else "Выключено — уведомление и кнопка «Обновить»",
+                leading = { tile(Icons.Rounded.Update) },
+                onClick = { viewModel.change(reload = false) { copy(updateMode = if (updateMode == "auto") "ask" else "auto") } },
+            ) { ApexSwitch(s.updateMode == "auto", { v -> viewModel.change(reload = false) { copy(updateMode = if (v) "auto" else "ask") } }) }
+            GroupDivider()
+            ListRow(
+                "Скачивать только по Wi-Fi",
+                "Для «Ставить само»: без мобильного трафика",
+                leading = { tile(Icons.Rounded.Update) },
+                onClick = { viewModel.change(reload = false) { copy(updateWifiOnly = !updateWifiOnly) } },
+            ) { ApexSwitch(s.updateWifiOnly, { v -> viewModel.change(reload = false) { copy(updateWifiOnly = v) } }) }
+            GroupDivider()
             val (subtitle, busy) = when (val u = update) {
                 UpdateState.Checking -> "Проверяем…" to true
                 UpdateState.UpToDate -> "У вас последняя версия" to false
-                is UpdateState.Available -> "Доступна версия ${u.info.versionName} — нажмите, откроется GitHub" to false
+                is UpdateState.Available -> "Доступна версия ${u.info.versionName} — нажмите, чтобы обновить" to false
                 is UpdateState.Failed -> u.message to false
                 UpdateState.Idle -> "Версия ${BuildConfig.VERSION_NAME}" to false
             }
             ListRow("Проверить сейчас", subtitle, leading = { tile(Icons.Rounded.SystemUpdate) }, onClick = {
                 val u = update
-                if (u is UpdateState.Available) com.apexvpn.client.update.UpdateManager.openPage(context, u.info)
+                if (u is UpdateState.Available) {
+                    com.apexvpn.client.data.Prefs.dismissedUpdateCode = 0
+                    if (u.info.apkUrl != null && u.info.shaUrl != null) viewModel.installUpdate(u.info)
+                    else com.apexvpn.client.update.UpdateManager.openPage(context, u.info)
+                }
                 else if (!busy) viewModel.checkUpdate()
             }) {
                 if (busy) Spinner()

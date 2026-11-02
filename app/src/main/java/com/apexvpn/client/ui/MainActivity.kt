@@ -415,14 +415,17 @@ class MainActivity : ComponentActivity() {
         intent ?: return
         if (intent.getBooleanExtra(EXTRA_INSTALL_UPDATE, false)) {
             intent.removeExtra(EXTRA_INSTALL_UPDATE)
+            // 3.4: из уведомления «Доступна версия» — сразу скачиваем и ставим (диалог покажет ход)
             lifecycleScope.launch {
                 com.apexvpn.client.update.UpdateManager.check(silent = true)
-                val s = com.apexvpn.client.update.UpdateManager.state.value
-                runCatching {
-                    com.apexvpn.client.update.UpdateManager.openPage(
-                        this@MainActivity,
-                        (s as? com.apexvpn.client.update.UpdateState.Available)?.info,
-                    )
+                val info = (com.apexvpn.client.update.UpdateManager.state.value as? com.apexvpn.client.update.UpdateState.Available)?.info
+                when {
+                    info == null -> runCatching { com.apexvpn.client.update.UpdateManager.openPage(this@MainActivity, null) }
+                    info.apkUrl != null && info.shaUrl != null -> {
+                        com.apexvpn.client.data.Prefs.dismissedUpdateCode = 0
+                        com.apexvpn.client.update.UpdateInstaller.updateNow(this@MainActivity, info)
+                    }
+                    else -> runCatching { com.apexvpn.client.update.UpdateManager.openPage(this@MainActivity, info) }
                 }
             }
         }

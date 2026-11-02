@@ -38,6 +38,7 @@ class ApexApp : Application() {
         Prefs.init(this)
         AppSettings.init(this)
         com.apexvpn.client.update.UpdateManager.init(this)
+        com.apexvpn.client.update.UpdateInstaller.init(this)
 
         val workingDir = File(filesDir, "work").apply { mkdirs() }
         val tempDir = File(cacheDir, "box").apply { mkdirs() }

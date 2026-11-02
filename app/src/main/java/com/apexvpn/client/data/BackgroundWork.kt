@@ -38,11 +38,15 @@ class BackgroundWork(context: Context, params: WorkerParameters) : CoroutineWork
         ExpiryAlerts.check(ctx)
         if (RulesUpdater.update(ctx) is RulesUpdater.Result.Updated) ApexVpnService.reload(ctx)
         CrashReporter.cleanup(ctx)
-        // Новая версия на GitHub — уведомление; нажатие открывает страницу версии
+        // Новая версия на GitHub. «Ставить само» — скачиваем заранее и ставим, когда VPN выключен или экран погас;
+        // иначе (или пока не вышло) — уведомление, нажатие сразу обновляет
         if (AppSettings.value.autoCheckUpdates) {
             runCatching { com.apexvpn.client.update.UpdateManager.check(silent = true) }
-            (com.apexvpn.client.update.UpdateManager.state.value as? com.apexvpn.client.update.UpdateState.Available)
-                ?.let { notifyUpdate(ctx, it.info) }
+            (com.apexvpn.client.update.UpdateManager.state.value as? com.apexvpn.client.update.UpdateState.Available)?.let {
+                val auto = AppSettings.value.updateMode == "auto" &&
+                    runCatching { com.apexvpn.client.update.UpdateInstaller.autoUpdate(ctx, it.info) }.getOrDefault(false)
+                if (!auto) notifyUpdate(ctx, it.info)
+            }
         }
         return Result.success()
     }
@@ -55,7 +59,11 @@ class BackgroundWork(context: Context, params: WorkerParameters) : CoroutineWork
         val nm = context.getSystemService<NotificationManager>() ?: return
         val pi = PendingIntent.getActivity(
             context, 12,
-            Intent(Intent.ACTION_VIEW, android.net.Uri.parse(info.pageUrl)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            if (info.apkUrl != null && info.shaUrl != null)
+                Intent(context, com.apexvpn.client.ui.MainActivity::class.java)
+                    .putExtra(com.apexvpn.client.ui.MainActivity.EXTRA_INSTALL_UPDATE, true)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            else Intent(Intent.ACTION_VIEW, android.net.Uri.parse(info.pageUrl)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         nm.notify(
@@ -63,7 +71,7 @@ class BackgroundWork(context: Context, params: WorkerParameters) : CoroutineWork
             NotificationCompat.Builder(context, ApexApp.CHANNEL_ALERTS)
                 .setSmallIcon(R.drawable.ic_stat_apex)
                 .setContentTitle("Доступна версия APEX VPN $version")
-                .setContentText("Нажмите — откроется страница версии на GitHub")
+                .setContentText(if (info.apkUrl != null) "Нажмите — обновится в один клик" else "Нажмите — откроется страница версии на GitHub")
                 .setContentIntent(pi)
                 .setAutoCancel(true)
                 .build(),

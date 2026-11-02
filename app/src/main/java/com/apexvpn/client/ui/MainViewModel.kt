@@ -462,6 +462,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { UpdateManager.check(silent = false) }
     }
 
+    /** 3.4. Обновление в один клик: скачать, проверить SHA-256 и подпись, установить. */
+    fun installUpdate(info: com.apexvpn.client.update.UpdateInfo) {
+        viewModelScope.launch {
+            com.apexvpn.client.update.UpdateInstaller.updateNow(getApplication(), info)
+        }
+    }
+
 
 
     fun consumeMessage() {

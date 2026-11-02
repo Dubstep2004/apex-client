@@ -14,15 +14,19 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * Новая версия на GitHub Releases. Приложение ничего не скачивает само —
- * только сообщает о версии и открывает её страницу:
- * https://github.com/<репозиторий>/releases/tag/v<версия>
+ * Новая версия на GitHub Releases (последний релиз v<версия>, «Latest»).
+ * С 3.4 приложение само скачивает apex-vpn-<версия>.apk, сверяет SHA-256 и подпись
+ * и ставит через системный установщик (UpdateInstaller). Страница версии — запасной путь.
  */
 data class UpdateInfo(
     val versionName: String,
     val changelog: String,
     val pageUrl: String,
     val mandatory: Boolean = false,
+    /** Прямая ссылка на apex-vpn-<версия>.apk из релиза (3.4: обновление в один клик) */
+    val apkUrl: String? = null,
+    /** Ссылка на контрольную сумму apex-vpn-<версия>.apk.sha256 */
+    val shaUrl: String? = null,
 ) {
     /** Число для сравнения и «Позже» (1.7.2 → 1007002). */
     val versionCode: Int get() = UpdateManager.versionNumber(versionName)
@@ -108,7 +112,17 @@ object UpdateManager {
             val tag = json.optString("tag_name").ifBlank { return@withContext null }
             val name = tag.removePrefix("v")
             val body = json.optString("body")
+            // Только файлы из релизов этого репозитория; часы (apex-watch-…) не трогаем
+            val prefix = "https://github.com/$repo/releases/download/"
+            val assets = json.optJSONArray("assets")
+            fun asset(fileName: String): String? = assets?.let { a ->
+                (0 until a.length()).mapNotNull { a.optJSONObject(it) }
+                    .firstOrNull { it.optString("name") == fileName }
+                    ?.optString("browser_download_url")?.takeIf { it.startsWith(prefix) }
+            }
             UpdateInfo(
+                apkUrl = asset("apex-vpn-$name.apk"),
+                shaUrl = asset("apex-vpn-$name.apk.sha256"),
                 versionName = name,
                 changelog = body.trim(),
                 pageUrl = json.optString("html_url").takeIf { it.startsWith("https://github.com/") }

@@ -56,6 +56,11 @@ object Prefs {
         get() = sp.getInt("dismissed_update", 0)
         set(v) = sp.edit { putInt("dismissed_update", v) }
 
+    /** 3.4: VPN был включён перед установкой обновления — включить снова после замены приложения */
+    var reconnectAfterUpdate: Boolean
+        get() = sp.getBoolean("reconnect_after_update", false)
+        set(v) = sp.edit { putBoolean("reconnect_after_update", v) }
+
     /** Версия, для которой пользователь уже видел «Что нового» */
     var lastSeenVersionCode: Int
         get() = sp.getInt("seen_version", 0)

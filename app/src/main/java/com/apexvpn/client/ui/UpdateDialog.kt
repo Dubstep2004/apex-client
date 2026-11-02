@@ -2,6 +2,7 @@ package com.apexvpn.client.ui
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
@@ -9,6 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -21,15 +23,18 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.apexvpn.client.BuildConfig
 import com.apexvpn.client.data.Prefs
+import com.apexvpn.client.update.InstallState
 import com.apexvpn.client.update.UpdateInfo
+import com.apexvpn.client.update.UpdateInstaller
 import com.apexvpn.client.update.UpdateManager
 import com.apexvpn.client.update.UpdateState
 import com.apexvpn.client.ui.theme.Apex
 
-/** Диалог обновления: новая версия → страница на GitHub (без загрузки в приложении). */
+/** 3.4. Диалог обновления: одна кнопка «Обновить» — скачать, проверить и установить. */
 @Composable
 fun UpdateDialog(viewModel: MainViewModel) {
     val state by viewModel.update.collectAsStateWithLifecycle()
+    val install by UpdateInstaller.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     val info: UpdateInfo = when (val s = state) {
@@ -40,15 +45,18 @@ fun UpdateDialog(viewModel: MainViewModel) {
     // «Позже» запоминаем для этой версии, кроме обязательных обновлений
     if (state is UpdateState.Available && !info.mandatory && Prefs.dismissedUpdateCode == info.versionCode) return
 
-    val canDismiss = !info.mandatory
+    val busy = install is InstallState.Downloading || install is InstallState.Verifying
+    val canDismiss = !info.mandatory && !busy
+    val oneClick = info.apkUrl != null && info.shaUrl != null
+
+    fun later() {
+        Prefs.dismissedUpdateCode = info.versionCode
+        UpdateInstaller.reset()
+        UpdateManager.dismiss()
+    }
 
     AlertDialog(
-        onDismissRequest = {
-            if (canDismiss) {
-                Prefs.dismissedUpdateCode = info.versionCode
-                UpdateManager.dismiss()
-            }
-        },
+        onDismissRequest = { if (canDismiss) later() },
         properties = DialogProperties(dismissOnBackPress = canDismiss, dismissOnClickOutside = canDismiss),
         containerColor = Apex.Dialog,
         title = { Text("Доступна версия ${info.versionName}", color = Apex.Text) },
@@ -70,32 +78,49 @@ fun UpdateDialog(viewModel: MainViewModel) {
                     )
                 }
                 Spacer(Modifier.height(10.dp))
-                Text(
-                    "Откроется страница версии на GitHub — скачайте там файл apex-vpn-${info.versionName}.apk и установите.",
-                    color = Apex.TextDim,
-                    fontSize = 13.sp,
-                )
+                when (val i = install) {
+                    is InstallState.Downloading -> {
+                        Text("Загрузка обновления ${i.percent}%", color = Apex.Text, fontSize = 13.sp)
+                        Spacer(Modifier.height(6.dp))
+                        LinearProgressIndicator(progress = { i.percent / 100f }, modifier = Modifier.fillMaxWidth(), color = Apex.Accent)
+                    }
+                    InstallState.Verifying -> Text("Проверяем файл (SHA-256 и подпись)…", color = Apex.Text, fontSize = 13.sp)
+                    InstallState.Installing -> Text("Нажмите «Установить» в окне Android. VPN включится снова сам.", color = Apex.Text, fontSize = 13.sp)
+                    InstallState.NeedPermission -> Text(
+                        "Разрешите установку обновлений из APEX VPN (откроются настройки Android), вернитесь и нажмите «Обновить» ещё раз.",
+                        color = Apex.Accent, fontSize = 13.sp,
+                    )
+                    is InstallState.Failed -> Text(i.message, color = Apex.Bad, fontSize = 13.sp)
+                    InstallState.Idle -> Text(
+                        if (oneClick) "Приложение скачает новую версию с GitHub, проверит её и установит — настройки и подписка сохранятся."
+                        else "Откроется страница версии на GitHub — скачайте там файл apex-vpn-${info.versionName}.apk и установите.",
+                        color = Apex.TextDim,
+                        fontSize = 13.sp,
+                    )
+                }
             }
         },
         confirmButton = {
             Button(
+                enabled = !busy,
                 onClick = {
-                    runCatching { UpdateManager.openPage(context, info) }
-                        .onFailure { viewModel.showMessage("Не удалось открыть браузер") }
-                    if (canDismiss) {
-                        Prefs.dismissedUpdateCode = info.versionCode
-                        UpdateManager.dismiss()
+                    if (oneClick) viewModel.installUpdate(info)
+                    else {
+                        runCatching { UpdateManager.openPage(context, info) }
+                            .onFailure { viewModel.showMessage("Не удалось открыть браузер") }
+                        if (!info.mandatory) later()
                     }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Apex.Accent, contentColor = Apex.OnAccent),
-            ) { Text("Открыть на GitHub") }
+            ) { Text(if (busy) "Загрузка…" else if (oneClick) "Обновить" else "Открыть на GitHub") }
         },
         dismissButton = {
             if (canDismiss) {
                 TextButton(onClick = {
-                    Prefs.dismissedUpdateCode = info.versionCode
-                    UpdateManager.dismiss()
-                }) { Text("Позже", color = Apex.TextDim) }
+                    if (install is InstallState.Failed && oneClick) {
+                        runCatching { UpdateManager.openPage(context, info) }
+                    } else later()
+                }) { Text(if (install is InstallState.Failed && oneClick) "GitHub" else "Позже", color = Apex.TextDim) }
             }
         },
     )
