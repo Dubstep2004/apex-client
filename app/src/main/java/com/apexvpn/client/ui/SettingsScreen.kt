@@ -473,22 +473,58 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
 
         // ── Резервная копия настроек: после переустановки всё вернуть одним файлом ──
         SectionLabel("Резервная копия")
+        // 3.8. Копия с паролем: пароль спрашиваем до выбора файла, при восстановлении — если файл зашифрован
+        var exportPassword by remember { mutableStateOf("") }
+        var askExportPassword by remember { mutableStateOf(false) }
+        var lockedBackup by remember { mutableStateOf<org.json.JSONObject?>(null) }
         val exportLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
             androidx.activity.result.contract.ActivityResultContracts.CreateDocument(com.apexvpn.client.data.SettingsBackup.MIME),
         ) { uri ->
             if (uri != null) {
+                val withPass = exportPassword.isNotEmpty()
                 viewModel.showMessage(
-                    if (com.apexvpn.client.data.SettingsBackup.export(context, uri)) "Настройки сохранены в файл" else "Не удалось сохранить файл",
+                    if (com.apexvpn.client.data.SettingsBackup.export(context, uri, exportPassword))
+                        (if (withPass) "Настройки сохранены в файл с паролем" else "Настройки сохранены в файл") else "Не удалось сохранить файл",
                 )
             }
+            exportPassword = ""
         }
         val importLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
             androidx.activity.result.contract.ActivityResultContracts.OpenDocument(),
         ) { uri ->
             if (uri != null) {
-                val restored = com.apexvpn.client.data.SettingsBackup.import(context, uri)
-                if (restored == null) viewModel.showMessage("Это не файл настроек APEX VPN") else viewModel.applyRestored(restored)
+                val o = com.apexvpn.client.data.SettingsBackup.read(context, uri)
+                when {
+                    o == null -> viewModel.showMessage("Это не файл настроек APEX VPN")
+                    com.apexvpn.client.data.SettingsBackup.isEncrypted(o) -> lockedBackup = o
+                    else -> {
+                        val restored = com.apexvpn.client.data.SettingsBackup.restore(o)
+                        if (restored == null) viewModel.showMessage("Это не файл настроек APEX VPN") else viewModel.applyRestored(restored)
+                    }
+                }
             }
+        }
+        if (askExportPassword) BackupPasswordDialog(
+            title = "Пароль для копии",
+            text = "С паролем файл не прочитать без него — даже если он попадёт к кому-то. Пароль не восстановить, запомните его. Можно и без пароля.",
+            confirm = "С паролем",
+            dismiss = "Без пароля",
+            onConfirm = { p -> exportPassword = p; askExportPassword = false; exportLauncher.launch(com.apexvpn.client.data.SettingsBackup.fileName()) },
+            onDismiss = { exportPassword = ""; askExportPassword = false; exportLauncher.launch(com.apexvpn.client.data.SettingsBackup.fileName()) },
+        )
+        lockedBackup?.let { o ->
+            BackupPasswordDialog(
+                title = "Копия защищена паролем",
+                text = "Введите пароль, который задали при сохранении.",
+                confirm = "Восстановить",
+                dismiss = "Отмена",
+                onConfirm = { p ->
+                    val plain = com.apexvpn.client.data.SettingsBackup.decrypt(o, p)
+                    val restored = plain?.let { com.apexvpn.client.data.SettingsBackup.restore(it) }
+                    if (restored == null) viewModel.showMessage("Неверный пароль") else { lockedBackup = null; viewModel.applyRestored(restored) }
+                },
+                onDismiss = { lockedBackup = null },
+            )
         }
         var transferQr by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
         Group {
@@ -517,9 +553,9 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
             GroupDivider()
             ListRow(
                 "Сохранить настройки в файл",
-                "Всё, включая свои списки, правила, избранное и подписку",
+                "Всё, включая свои списки, правила, избранное и подписку — по желанию с паролем",
                 leading = { tile(Icons.Rounded.Download) },
-                onClick = { exportLauncher.launch(com.apexvpn.client.data.SettingsBackup.fileName()) },
+                onClick = { askExportPassword = true },
             ) { Chevron() }
             GroupDivider()
             ListRow(
@@ -942,4 +978,38 @@ private fun rulesPeriod(h: Int) = when (h) {
     12 -> "Каждые 12 часов"
     168 -> "Раз в неделю"
     else -> "Каждый день"
+}
+
+/** 3.8. Пароль для резервной копии (сохранение и восстановление). */
+@Composable
+private fun BackupPasswordDialog(
+    title: String, text: String, confirm: String, dismiss: String,
+    onConfirm: (String) -> Unit, onDismiss: () -> Unit,
+) {
+    var pass by remember { mutableStateOf("") }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = com.apexvpn.client.ui.theme.Apex.Dialog,
+        title = { androidx.compose.material3.Text(title, color = com.apexvpn.client.ui.theme.Apex.Text) },
+        text = {
+            androidx.compose.foundation.layout.Column {
+                androidx.compose.material3.Text(text, color = com.apexvpn.client.ui.theme.Apex.TextDim, fontSize = 13.sp)
+                androidx.compose.foundation.layout.Spacer(Modifier.height(10.dp))
+                androidx.compose.material3.OutlinedTextField(
+                    value = pass, onValueChange = { pass = it }, singleLine = true,
+                    label = { androidx.compose.material3.Text("Пароль") },
+                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Password),
+                )
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = { onConfirm(pass) }, enabled = pass.length >= 4) {
+                androidx.compose.material3.Text(confirm, color = com.apexvpn.client.ui.theme.Apex.Accent)
+            }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) { androidx.compose.material3.Text(dismiss, color = com.apexvpn.client.ui.theme.Apex.TextDim) }
+        },
+    )
 }

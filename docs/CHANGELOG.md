@@ -2,6 +2,14 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.8.0 · 2 ноября 2026
+
+<img src="img/tags/new.svg" alt="Новое" height="22">
+
+- Сезонное оформление: зимой снег, весной лепестки, летом светлячки, осенью листья — выключается в «Оформлении»
+- Резервная копия с паролем: файл шифруется (AES-256), без пароля его не прочитать; при восстановлении приложение само спросит пароль
+- «Автопилот только по избранным»: выбирать только среди серверов со звёздочкой (Режим → Автопилот)
+
 ## 3.7.1 · 2 ноября 2026
 
 <img src="img/tags/changed.svg" alt="Изменено" height="22">

@@ -129,6 +129,10 @@ data class Settings(
     val appTraffic: Boolean = true,
     // Стабильный автопилот: не выбирать серверы России и обхода LTE
     val autoSkipSpecial: Boolean = true,
+    /** 3.8: автопилот выбирает только среди избранных серверов (если они есть) */
+    val autoFavoritesOnly: Boolean = false,
+    /** 3.8: сезонное оформление — снег зимой, лепестки весной, листья осенью */
+    val seasonal: Boolean = true,
     // 491. На мобильной сети сам включать LTE-обход, если оператор пускает только по белым спискам
     val autoWhitelist: Boolean = true,
 ) {
@@ -295,6 +299,12 @@ object AppSettings {
                 put("autoExclude", JSONArray(nodes.filter { ServerInfo.isSpecial(it.name) }.map { it.tag }))
             }
             autoApplied = allowed
+            // 3.8. Только избранные: остальные — мимо автопилота (если хоть один избранный остаётся доступным)
+            if (s.autoFavoritesOnly) {
+                val fav = nodes.filter { it.isFavorite(s.favorites) }.map { it.tag }.toSet()
+                val excluded = optJSONArray("autoExclude")?.let { a -> (0 until a.length()).map { a.optString(it) } }.orEmpty().toSet()
+                if (fav.any { it !in excluded }) put("autoExclude", JSONArray((excluded + nodes.map { it.tag }.filter { it !in fav }).toList()))
+            }
         }
         // …и до первой проверки — сначала серверы, которые были быстрее при прошлом замере
         if (!has("autoOrder")) put("autoOrder", JSONArray(Prefs.lastPings().entries.filter { it.value > 0 }.sortedBy { it.value }.map { it.key }))
@@ -351,7 +361,7 @@ object AppSettings {
         put("domainStrategy", s.domainStrategy); put("fakeDns", s.fakeDns)
         put("remoteDns", s.remoteDns.json()); put("directDns", s.directDns.json()); put("rulesSource", s.rulesSource)
         put("warp", s.warp); put("warpConfig", s.warpConfig); put("shieldBackdrop", s.shieldBackdrop); put("backdropStamp", s.backdropStamp)
-        put("iconStatus", s.iconStatus); put("animatedFlags", s.animatedFlags); put("task", s.task); put("hiddenApps", list(s.hiddenApps)); put("secret", s.secretUnlocked); put("shield3d", s.shield3d); put("automation", s.automation); put("appTraffic", s.appTraffic); put("autoSkipSpecial", s.autoSkipSpecial); put("autoWhitelist", s.autoWhitelist)
+        put("iconStatus", s.iconStatus); put("animatedFlags", s.animatedFlags); put("task", s.task); put("hiddenApps", list(s.hiddenApps)); put("secret", s.secretUnlocked); put("shield3d", s.shield3d); put("automation", s.automation); put("appTraffic", s.appTraffic); put("autoSkipSpecial", s.autoSkipSpecial); put("autoFavoritesOnly", s.autoFavoritesOnly); put("seasonal", s.seasonal); put("autoWhitelist", s.autoWhitelist)
         put("customAccent2", s.customAccent2); put("photoBlur", s.photoBlur); put("photoDim", s.photoDim); put("photoParallax", s.photoParallax); put("rulesAuto", s.rulesAuto); put("rulesHours", s.rulesHours); put("speedUnit", s.speedUnit); put("speedScale", s.speedScale); put("speedMulti", s.speedMulti); put("quicMode", s.quicMode); put("connectOnOpen", s.connectOnOpen)
         put("pingType", s.pingType); put("pingMode", s.pingMode); put("pingTimeout", s.pingTimeout); put("pingUrl", s.pingUrl); put("pingView", s.pingView); put("autoMode", s.autoMode); put("modeColors", s.modeColors); put("directCountries", list(s.directCountries)); put("connLog", s.connLog); put("greeting", s.greeting)
     }
@@ -455,6 +465,8 @@ object AppSettings {
             automation = o.optBoolean("automation", d.automation),
             appTraffic = o.optBoolean("appTraffic", d.appTraffic),
             autoSkipSpecial = o.optBoolean("autoSkipSpecial", d.autoSkipSpecial),
+            autoFavoritesOnly = o.optBoolean("autoFavoritesOnly", d.autoFavoritesOnly),
+            seasonal = o.optBoolean("seasonal", d.seasonal),
             autoWhitelist = o.optBoolean("autoWhitelist", d.autoWhitelist),
             customAccent2 = o.optLong("customAccent2", d.customAccent2).let { if (it == 0L) 0L else it or 0xFF000000L },
             photoBlur = o.optInt("photoBlur", d.photoBlur).coerceIn(0, 24),

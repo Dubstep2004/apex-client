@@ -1066,6 +1066,14 @@ private fun ProfilePage(viewModel: MainViewModel, onBack: () -> Unit) {
                 ApexSwitch(s.autoSkipSpecial, { v -> viewModel.change { copy(autoSkipSpecial = v) } })
             }
             GroupDivider()
+            ListRow(
+                "Автопилот только по избранным",
+                if (s.favorites.isEmpty()) "Отметьте серверы звёздочкой в списке серверов" else "Выбирать только среди серверов со звёздочкой (${s.favorites.size})",
+                onClick = { viewModel.change { copy(autoFavoritesOnly = !autoFavoritesOnly) } },
+            ) {
+                ApexSwitch(s.autoFavoritesOnly, { v -> viewModel.change { copy(autoFavoritesOnly = v) } })
+            }
+            GroupDivider()
             // 491
             val wlActive by com.apexvpn.client.data.WhiteList.state.collectAsStateWithLifecycle()
             ListRow(
@@ -1404,6 +1412,10 @@ private fun AppearancePage(viewModel: MainViewModel, onBack: () -> Unit) {
             GroupDivider()
             ListRow("Живая карта", "Дышащие кольца и бегущий по дуге свет") {
                 ApexSwitch(s.liveMap, { v -> viewModel.change(reload = false) { copy(liveMap = v) } }, enabled = !s.smoothMode)
+            }
+            GroupDivider()
+            ListRow("Сезонное оформление", "Сейчас: ${com.apexvpn.client.ui.theme.Season.now().title.lowercase()} на фоне — зимой снег, весной лепестки, летом светлячки, осенью листья") {
+                ApexSwitch(s.seasonal, { v -> viewModel.change(reload = false) { copy(seasonal = v) } }, enabled = !s.smoothMode)
             }
             GroupDivider()
             ListRow("Анимированные флаги", "Флаги в списке серверов колышутся на ветру") {
