@@ -5,8 +5,7 @@ on:
     branches: [main]
     tags: ["v*"]
     # Правка README, картинок и скриптов VPS не пересобирает приложение
-    # Windows собирается отдельно (.github/workflows/windows.yml)
-    paths-ignore: ["**.md", "docs/**", "windows/**", ".github/workflows/windows.yml"]
+    paths-ignore: ["**.md", "docs/**"]
   pull_request:
   workflow_dispatch:
   # Раз в неделю «трогаем» ключ подписи в кэше, чтобы GitHub его не удалил
