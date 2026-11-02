@@ -30,7 +30,11 @@ object Paths {
 enum class RouteMode(val id: String, val title: String, val subtitle: String) {
     Smart("smart", "Умный", "Российские сайты напрямую, остальное через VPN"),
     All("all", "Весь трафик", "Всё через VPN"),
+    Selected("selected", "Только выбранные", "Через VPN только выбранные сервисы и свои списки"),
 }
+
+/** Свои правила для опытных: адрес → VPN / напрямую / блок. */
+data class UserRule(val value: String, val action: String)
 
 /** Как подключаться к Windows. */
 enum class ConnectType(val id: String, val title: String, val subtitle: String) {
@@ -81,6 +85,21 @@ data class Settings(
     val directDomains: List<String> = emptyList(),
     /** Сайты стран напрямую (kz, by…) */
     val directCountries: Set<String> = emptySet(),
+    // 1.5 — главный экран
+    val homeStyle: String = "shield",
+    val photoPath: String = "",
+    val photoDim: Int = 55,
+    val sound: String = "chime",
+    // 1.6 — маршрутизация
+    val services: Set<String> = ServiceCatalog.defaultEnabled,
+    val kids: Boolean = false,
+    val userRules: List<UserRule> = emptyList(),
+    val fakeDns: Boolean = false,
+    val domainStrategy: String = "as_is",
+    val warp: Boolean = false,
+    val warpConfig: String = "",
+    // 1.7 — удобство
+    val expiryAlerts: Boolean = true,
     val design: Design = Design.Apex,
     val accent: AccentChoice = AccentChoice.Design,
     val animations: Boolean = true,
@@ -155,6 +174,18 @@ object Store {
             customDomains = strings(o.optJSONArray("customDomains")),
             directDomains = strings(o.optJSONArray("directDomains")),
             directCountries = strings(o.optJSONArray("directCountries")).toSet(),
+            homeStyle = o.optString("homeStyle", d.homeStyle).takeIf { it in listOf("shield", "globe") } ?: d.homeStyle,
+            photoPath = o.optString("photoPath", d.photoPath),
+            photoDim = o.optInt("photoDim", d.photoDim).coerceIn(0, 90),
+            sound = o.optString("sound", d.sound),
+            services = o.optJSONArray("services")?.let { strings(it).toSet() } ?: d.services,
+            kids = o.optBoolean("kids", d.kids),
+            userRules = o.optJSONArray("userRules")?.let { a -> (0 until a.length()).mapNotNull { a.optJSONObject(it) }.map { UserRule(it.optString("value"), it.optString("action", "proxy")) }.filter { it.value.isNotBlank() } } ?: d.userRules,
+            fakeDns = o.optBoolean("fakeDns", d.fakeDns),
+            domainStrategy = o.optString("domainStrategy", d.domainStrategy),
+            warp = o.optBoolean("warp", d.warp),
+            warpConfig = o.optString("warpConfig", d.warpConfig),
+            expiryAlerts = o.optBoolean("expiryAlerts", d.expiryAlerts),
             design = Design.of(o.optString("design")),
             accent = AccentChoice.of(o.optString("accent")),
             animations = o.optBoolean("animations", d.animations),
@@ -176,6 +207,11 @@ object Store {
             .put("directCountries", JSONArray(s.directCountries.toList()))
             .put("rulesAuto", s.rulesAuto).put("rulesHours", s.rulesHours)
             .put("design", s.design.id).put("accent", s.accent.id).put("animations", s.animations)
+            .put("homeStyle", s.homeStyle).put("photoPath", s.photoPath).put("photoDim", s.photoDim).put("sound", s.sound)
+            .put("services", JSONArray(s.services.toList())).put("kids", s.kids)
+            .put("userRules", JSONArray(s.userRules.map { JSONObject().put("value", it.value).put("action", it.action) }))
+            .put("fakeDns", s.fakeDns).put("domainStrategy", s.domainStrategy).put("warp", s.warp).put("warpConfig", s.warpConfig)
+            .put("expiryAlerts", s.expiryAlerts)
         runCatching {
             val tmp = File(Paths.data, "settings.json.tmp")
             tmp.writeText(o.toString(2))

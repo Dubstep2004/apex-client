@@ -6,6 +6,7 @@
 //	{"cmd":"parse","content":"<тело подписки>"}
 //	{"cmd":"build","nodes":"<JSON из parse>","selected":"<tag>","options":"<JSON настроек>"}
 //	{"cmd":"udpping","nodes":"<JSON>","timeout":3000}
+//	{"cmd":"warpkey"} / {"cmd":"warpparse","content":"<ответ Cloudflare>","key":"<закрытый ключ>"}
 //	{"cmd":"version"}
 package main
 
@@ -25,6 +26,7 @@ type request struct {
 	Selected string `json:"selected"`
 	Options  string `json:"options"`
 	Timeout  int32  `json:"timeout"`
+	Key      string `json:"key"`
 }
 
 func reply(result string, err error) {
@@ -55,6 +57,10 @@ func main() {
 		reply(apexcore.BuildConfigs(req.Nodes, req.Selected, req.Options))
 	case "udpping":
 		reply(apexcore.UdpPing(req.Nodes, req.Timeout))
+	case "warpkey":
+		reply(apexcore.WarpKeypair())
+	case "warpparse":
+		reply(apexcore.WarpParse(req.Content, req.Key))
 	case "version":
 		reply("apexcli 1", nil)
 	default:

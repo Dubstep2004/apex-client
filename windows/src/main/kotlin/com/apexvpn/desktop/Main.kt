@@ -9,7 +9,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Notification
 import androidx.compose.ui.window.Tray
+import androidx.compose.ui.window.rememberTrayState
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
@@ -51,6 +53,26 @@ fun main(args: Array<String>) {
         }
 
         // Запуск: подписка, подключение, обновления
+        val trayState = rememberTrayState()
+        // Звуки подключения и уведомление, если VPN неожиданно отключился
+        LaunchedEffect(Unit) {
+            var prev = Engine.status.value
+            Engine.status.collect { st ->
+                if (st == VpnStatus.On && prev != VpnStatus.On) Sounds.play(true)
+                if (prev == VpnStatus.On && st != VpnStatus.On) {
+                    Sounds.play(false)
+                    if (st == VpnStatus.Error) trayState.sendNotification(Notification("APEX VPN отключился", Engine.error.value ?: "Ядро остановилось", Notification.Type.Warning))
+                }
+                prev = st
+            }
+        }
+        // Напоминания о конце подписки — раз в час
+        LaunchedEffect(Unit) {
+            while (true) {
+                ExpiryAlerts.due()?.let { trayState.sendNotification(Notification("APEX VPN", it, Notification.Type.Info)) }
+                delay(60 * 60_000L)
+            }
+        }
         LaunchedEffect(Unit) {
             if (Subscription.needsRefresh()) runCatching { Subscription.refresh() }
             if (Store.value.dns == DnsChoice.Auto) runCatching { DnsAuto.measure() }
@@ -71,6 +93,7 @@ fun main(args: Array<String>) {
         }
 
         Tray(
+            state = trayState,
             icon = painterResource(if (status == VpnStatus.On) "tray_on.png" else "tray_off.png"),
             tooltip = "APEX VPN — " + when (status) { VpnStatus.On -> "защищено"; VpnStatus.Connecting -> "подключение…"; else -> "не защищено" },
             onAction = { visible = true },

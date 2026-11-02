@@ -35,6 +35,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AltRoute
+import androidx.compose.material.icons.rounded.Cloud
+import androidx.compose.material.icons.rounded.Upload
+import androidx.compose.material.icons.rounded.Save
+import androidx.compose.material.icons.rounded.NotificationsActive
+import androidx.compose.material.icons.rounded.HealthAndSafety
+import androidx.compose.material.icons.rounded.Image
+import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.FamilyRestroom
+import androidx.compose.material.icons.rounded.Apps
+import androidx.compose.material.icons.rounded.Checklist
 import androidx.compose.material.icons.rounded.AutoMode
 import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.ChevronLeft
@@ -100,6 +110,7 @@ enum class Tab(val title: String, val icon: ImageVector) {
 enum class Page(val title: String) {
     Servers("Серверы"), Routes("Свои списки и сайты"), Speed("Тест скорости"), Leak("Проверка утечек"),
     Log("Журнал соединений"), Appearance("Оформление"), Dns("DNS"), Core("Ядро"),
+    Services("Сервисы через VPN"), Advanced("Для опытных"), SelfCheck("Не работает?"),
 }
 
 private val ColumnMax = 560.dp
@@ -114,6 +125,7 @@ fun AppUi() {
 
     Box(Modifier.fillMaxSize()) {
         Backdrop(status == VpnStatus.On)
+        PhotoBackdrop()
         Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
             Box(Modifier.weight(1f).widthIn(max = ColumnMax).fillMaxWidth()) {
                 val key = pages.lastOrNull()?.name ?: tab.name
@@ -151,6 +163,9 @@ private fun PageContent(page: Page, open: (Page) -> Unit) {
         Page.Appearance -> AppearancePage()
         Page.Dns -> DnsPage()
         Page.Core -> CorePage()
+        Page.Services -> ServicesPage()
+        Page.Advanced -> AdvancedPage()
+        Page.SelfCheck -> SelfCheckPage()
     }
 }
 
@@ -304,8 +319,13 @@ fun HomeTab(open: (Page) -> Unit) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Header()
         Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(Modifier.clip(CircleShape).clickable(enabled = !connecting) { Engine.toggle() }) {
-                Shield(on = on, connecting = connecting, size = 170)
+            val shownNode = sub.nodes.find { it.tag == s.selected } ?: sub.nodes.find { it.tag == autoNow }
+            if (s.homeStyle == "globe") {
+                HomeGlobe(shownNode, on, connecting)
+            } else {
+                Box(Modifier.clip(CircleShape).clickable(enabled = !connecting) { Engine.toggle() }) {
+                    Shield(on = on, connecting = connecting, size = 170)
+                }
             }
             Spacer(Modifier.height(8.dp))
             Text(
@@ -350,6 +370,7 @@ fun HomeTab(open: (Page) -> Unit) {
                 ) { Tag(if (s.connectType == ConnectType.Tun) "TUN" else "Прокси") }
             }
             Spacer(Modifier.height(12.dp))
+            AnnounceCard(sub.announce)
             SubscriptionCard(now)
             Spacer(Modifier.height(16.dp))
         }
@@ -389,7 +410,6 @@ private fun SubscriptionCard(now: Long) {
             }
             Spacer(Modifier.height(6.dp))
             Text("Автообновление — ${s.refreshHours} ч.", color = C.Dim, fontSize = 13.sp)
-            if (sub.announce.isNotBlank()) { Spacer(Modifier.height(8.dp)); Text(sub.announce, color = C.Text, fontSize = 14.sp) }
         }
     }
 }
@@ -405,7 +425,13 @@ fun ModeTab(open: (Page) -> Unit) {
         Group {
             RouteMode.entries.forEachIndexed { i, m ->
                 if (i > 0) GroupDivider()
-                ListRow(m.title, m.subtitle, leading = { IconTile(if (m == RouteMode.Smart) Icons.Rounded.AltRoute else Icons.Rounded.Public, if (m == RouteMode.Smart) C.Cyan else C.Accent) },
+                ListRow(m.title, m.subtitle, leading = {
+                    when (m) {
+                        RouteMode.Smart -> IconTile(Icons.Rounded.AltRoute, C.Cyan)
+                        RouteMode.All -> IconTile(Icons.Rounded.Public, C.Accent)
+                        RouteMode.Selected -> IconTile(Icons.Rounded.Checklist, Color(0xFFF59E0B))
+                    }
+                },
                     onClick = { Store.update { copy(routeMode = m) }; Engine.reload() }) { Check(s.routeMode == m) }
             }
         }
@@ -422,6 +448,10 @@ fun ModeTab(open: (Page) -> Unit) {
             Spacer(Modifier.height(6.dp))
             SecondaryButton("Перезапустить от администратора") { if (WinSys.relaunchAsAdmin()) { Engine.shutdown(); kotlin.system.exitProcess(0) } }
         }
+        Section("Сервисы")
+        Group {
+            ListRow("Сервисы через VPN", servicesSummary(s), leading = { IconTile(Icons.Rounded.Apps, Color(0xFFE53935)) }, onClick = { open(Page.Services) }) { Chevron() }
+        }
         Section("Свои правила")
         Group {
             val n = s.customLists.count { it.enabled }
@@ -433,6 +463,14 @@ fun ModeTab(open: (Page) -> Unit) {
             GroupDivider()
             ListRow("Блокировка рекламы", "Реклама и трекеры не загружаются", leading = { IconTile(Icons.Rounded.Block, Color(0xFFF43F5E)) },
                 onClick = { Store.update { copy(adBlock = !adBlock) }; Engine.reload() }) { ApexSwitch(s.adBlock) { v -> Store.update { copy(adBlock = v) }; Engine.reload() } }
+            GroupDivider()
+            ListRow("Семейный режим", "Закрывает сайты 18+, казино и букмекеров", leading = { IconTile(Icons.Rounded.FamilyRestroom, Color(0xFFF59E0B)) },
+                onClick = { Store.update { copy(kids = !kids) }; Engine.reload() }) { ApexSwitch(s.kids) { v -> Store.update { copy(kids = v) }; Engine.reload() } }
+            GroupDivider()
+            WarpRow()
+            GroupDivider()
+            ListRow("Для опытных", "Свои правила" + (if (s.userRules.isNotEmpty()) " · ${s.userRules.size}" else "") + ", FakeDNS, стратегия доменов",
+                leading = { IconTile(Icons.Rounded.Tune, Color(0xFF64748B)) }, onClick = { open(Page.Advanced) }) { Chevron() }
         }
         Spacer(Modifier.height(16.dp))
     }
@@ -447,6 +485,7 @@ fun SettingsTab(open: (Page) -> Unit) {
     val scope = rememberCoroutineScope()
     var update by remember { mutableStateOf<String?>(null) }
     var confirmRemove by remember { mutableStateOf(false) }
+    var backupMsg by remember { mutableStateOf<String?>(null) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
         Text("Настройки", color = C.Text, fontSize = 34.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 4.dp, top = 18.dp))
 
@@ -496,6 +535,47 @@ fun SettingsTab(open: (Page) -> Unit) {
         Section("Оформление")
         Group {
             ListRow("Дизайн и цвет", "${s.design.title} · ${s.accent.title}", leading = { IconTile(Icons.Rounded.Palette, Color(0xFFEC4899)) }, onClick = { open(Page.Appearance) }) { Chevron() }
+            GroupDivider()
+            Column(Modifier.padding(16.dp)) {
+                Text("Главный экран", color = C.Text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(8.dp))
+                Segmented(listOf("Щит", "3D-глобус"), if (s.homeStyle == "globe") 1 else 0) { i -> Store.update { copy(homeStyle = if (i == 1) "globe" else "shield") } }
+            }
+            GroupDivider()
+            ListRow("Своё фото на фон", if (s.photoPath.isBlank()) "Картинка с компьютера за всем окном" else "Выбрано — нажмите, чтобы сменить",
+                leading = { IconTile(Icons.Rounded.Image, Color(0xFF0EA5E9)) },
+                onClick = { Photo.pick()?.let { p -> Store.update { copy(photoPath = p) } } }) {
+                if (s.photoPath.isNotBlank()) SecondaryButton("Убрать", C.Bad) { Store.update { copy(photoPath = "") } } else Chevron()
+            }
+            if (s.photoPath.isNotBlank()) {
+                Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+                    Text("Затемнение · ${s.photoDim}%", color = C.Dim, fontSize = 14.sp)
+                    androidx.compose.material3.Slider(s.photoDim.toFloat(), { v -> Store.update { copy(photoDim = v.toInt()) } }, valueRange = 0f..90f,
+                        colors = androidx.compose.material3.SliderDefaults.colors(thumbColor = C.Accent, activeTrackColor = C.Accent, inactiveTrackColor = C.SurfaceHigh))
+                }
+            }
+            GroupDivider()
+            Column(Modifier.padding(16.dp)) {
+                Text("Звуки подключения", color = C.Text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(8.dp))
+                Segmented(Sounds.sets.map { it.second }, Sounds.sets.indexOfFirst { it.first == s.sound }.coerceAtLeast(0)) { i ->
+                    Store.update { copy(sound = Sounds.sets[i].first) }; Sounds.play(true)
+                }
+            }
+        }
+
+        Section("Помощь и данные")
+        Group {
+            ListRow("Не работает?", "Самопроверка по шагам и совет, что делать", leading = { IconTile(Icons.Rounded.HealthAndSafety, Color(0xFFEF4444)) }, onClick = { open(Page.SelfCheck) }) { Chevron() }
+            GroupDivider()
+            ListRow("Напоминать о конце подписки", "За 3 дня, за 1 день и в последний день", leading = { IconTile(Icons.Rounded.NotificationsActive, Color(0xFFF59E0B)) },
+                onClick = { Store.update { copy(expiryAlerts = !expiryAlerts) } }) { ApexSwitch(s.expiryAlerts) { v -> Store.update { copy(expiryAlerts = v) } } }
+            GroupDivider()
+            ListRow("Резервная копия в файл", backupMsg ?: "Подписка, свои списки и правила", leading = { IconTile(Icons.Rounded.Save, Color(0xFF10B981)) },
+                onClick = { backupMsg = runCatching { Backup.export()?.let { "Сохранено: $it" } }.getOrElse { "Не удалось: ${it.message}" } }) { Chevron() }
+            GroupDivider()
+            ListRow("Загрузить копию", "С этого компьютера или с телефона (Android → «Резервная копия в файл»)", leading = { IconTile(Icons.Rounded.Upload, Color(0xFF6366F1)) },
+                onClick = { scope.launch { backupMsg = runCatching { Backup.import()?.let { "Загружено: $it" } }.getOrElse { "Не удалось: ${it.message}" }; Engine.reload() } }) { Chevron() }
         }
 
         Section("Программа")
@@ -607,5 +687,31 @@ fun CorePage() {
                     onClick = { Store.update { copy(core = c) }; Engine.reload() }) { Check(s.core == c) }
             }
         }
+    }
+}
+
+
+/** WARP-цепочка: при первом включении регистрирует бесплатный аккаунт Cloudflare. */
+@Composable
+private fun WarpRow() {
+    val s by Store.settings.collectAsState()
+    val scope = rememberCoroutineScope()
+    var busy by remember { mutableStateOf(false) }
+    var err by remember { mutableStateOf<String?>(null) }
+    fun set(v: Boolean) {
+        if (!v) { Store.update { copy(warp = false) }; Engine.reload(); return }
+        if (s.warpConfig.isNotBlank()) { Store.update { copy(warp = true) }; Engine.reload(); return }
+        if (busy) return
+        scope.launch {
+            busy = true; err = null
+            runCatching { Warp.register() }
+                .onSuccess { cfg -> Store.update { copy(warp = true, warpConfig = cfg) }; Engine.reload() }
+                .onFailure { err = it.message ?: "Не удалось подключить WARP" }
+            busy = false
+        }
+    }
+    ListRow("WARP-цепочка", err ?: if (busy) "Регистрирую аккаунт Cloudflare…" else "Сайты увидят IP Cloudflare, а не сервера",
+        leading = { IconTile(Icons.Rounded.Cloud, Color(0xFFF38020)) }, onClick = { set(!s.warp) }) {
+        ApexSwitch(s.warp) { v -> set(v) }
     }
 }

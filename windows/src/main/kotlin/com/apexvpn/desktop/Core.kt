@@ -43,6 +43,10 @@ object CoreCli {
         return o.optString("singbox") to o.optString("xray")
     }
 
+    fun warpKeypair(): String = call(JSONObject().put("cmd", "warpkey"))
+
+    fun warpParse(response: String, key: String): String = call(JSONObject().put("cmd", "warpparse").put("content", response).put("key", key))
+
     fun udpPing(nodes: String, timeoutMs: Int): Map<String, Int> = runCatching {
         val o = JSONObject(call(JSONObject().put("cmd", "udpping").put("nodes", nodes).put("timeout", timeoutMs), 20))
         o.keys().asSequence().associateWith { o.getInt(it) }
@@ -142,7 +146,11 @@ object Engine {
         val nodes = sub.nodes
         val o = JSONObject()
             .put("mode", s.routeMode.id)
-            .put("services", JSONArray())
+            .put("services", JSONArray(s.services.toList()))
+            .put("kids", s.kids)
+            .put("userRules", JSONArray(s.userRules.map { JSONObject().put("value", it.value).put("action", it.action) }))
+            .put("fakeDns", s.fakeDns)
+            .put("domainStrategy", s.domainStrategy)
             .put("rulesDir", Rules.dirForCore().absolutePath)
             .put("dns", DnsAuto.effective(s).id)
             .put("customLists", JSONArray(s.customLists.filter { it.enabled && it.items.isNotEmpty() }.map {
@@ -162,6 +170,7 @@ object Engine {
             .put("logFile", Paths.log.absolutePath)
             .put("ipv6", false)
             .put("directProcesses", JSONArray(listOf("APEX VPN.exe", "apexcli.exe")))
+        if (s.warp && s.warpConfig.isNotBlank()) runCatching { o.put("warp", JSONObject(s.warpConfig)) }
         o.put("probePort", Store.probePort)
         // Режим автопилота по замерам: только подходящие серверы, лучшие — первыми
         val allowed = AutoModes.allowed(s.autoMode, nodes)
