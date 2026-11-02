@@ -37,6 +37,7 @@ import androidx.compose.material.icons.rounded.Dns
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Route
+import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Switch
@@ -85,7 +86,7 @@ object C {
 }
 
 enum class Tab(val title: String, val icon: ImageVector) {
-    Home("Главная", Icons.Rounded.Home), Servers("Серверы", Icons.Rounded.Dns), Routes("Маршруты", Icons.Rounded.Route), Settings("Настройки", Icons.Rounded.Settings)
+    Home("Главная", Icons.Rounded.Home), Servers("Серверы", Icons.Rounded.Dns), Routes("Маршруты", Icons.Rounded.Route), Tools("Инструменты", Icons.Rounded.Speed), Settings("Настройки", Icons.Rounded.Settings)
 }
 
 @Composable
@@ -121,6 +122,7 @@ fun AppUi() {
                 Tab.Home -> HomeScreen { tab = Tab.Servers }
                 Tab.Servers -> ServersScreen()
                 Tab.Routes -> RoutesScreen()
+                Tab.Tools -> ToolsScreen()
                 Tab.Settings -> SettingsScreen()
             }
         }
@@ -275,6 +277,7 @@ fun HomeScreen(openServers: () -> Unit) {
 
 // ─── Серверы ─────────────────────────────────────────────────────────
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun ServersScreen() {
     val sub by Subscription.state.collectAsState()
@@ -304,15 +307,28 @@ fun ServersScreen() {
                 if (s.selected == "auto") Tag("Выбран")
             }
             Spacer(Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 AutoMode.entries.forEach { m ->
                     Chip("${m.emoji} ${m.title}", m == s.autoMode) {
-                        Store.update { copy(autoMode = m, selected = "auto") }; Engine.reload()
+                        Store.update { copy(autoMode = m, selected = "auto") }
+                        // Режим по замерам: сначала подбираем серверы, потом переподключаемся
+                        if (m.measured) scope.launch { AutoModes.measure(m); Engine.reload() } else Engine.reload()
                     }
                 }
             }
             Spacer(Modifier.height(6.dp))
-            Text(s.autoMode.subtitle, color = C.Dim, fontSize = 12.sp)
+            val modeStatus by AutoModes.status.collectAsState()
+            val quality by AutoModes.quality.collectAsState()
+            val fit = remember(quality, s.autoMode, sub) { AutoModes.allowed(s.autoMode, sub.nodes).size }
+            Text(
+                modeStatus ?: (s.autoMode.subtitle + when {
+                    !s.autoMode.measured -> ""
+                    fit > 0 -> " · подходящих серверов: $fit"
+                    s.autoMode == AutoMode.Speed && Engine.status.value != VpnStatus.On -> " · подключитесь, чтобы замерить скорость"
+                    else -> " · нажмите ещё раз, чтобы подобрать"
+                }),
+                color = if (modeStatus != null) C.Accent else C.Dim, fontSize = 12.sp,
+            )
         }
         Spacer(Modifier.height(12.dp))
         val sorted = sub.nodes.sortedWith(compareBy({ (pings[it.tag] ?: Int.MAX_VALUE).let { p -> if (p <= 0) Int.MAX_VALUE else p } }, { it.title }))

@@ -41,9 +41,15 @@ enum class ConnectType(val id: String, val title: String, val subtitle: String) 
 /** Режимы автопилота — как на Android. */
 enum class AutoMode(val id: String, val emoji: String, val title: String, val subtitle: String, val profile: String) {
     Balance("balance", "⚖️", "Обычный", "Баланс скорости и стабильности", "normal"),
-    Games("games", "🎮", "Игры", "Самый низкий пинг, без обрывов при смене", "gaming"),
-    Calls("calls", "📞", "Звонки", "Сервер не меняется в разговоре", "calls"),
+    Games("games", "🎮", "Игры", "Низкий и ровный пинг без потерь", "gaming"),
+    Speed("speed", "🚀", "Скорость", "Самая высокая скорость по замеру", "normal"),
+    Stable("stable", "🛡", "Надёжный", "Серверы, которые ни разу не пропадали", "calls"),
+    Calls("calls", "📞", "Звонки", "Ровная связь, сервер не меняется в разговоре", "calls"),
     Battery("battery", "🔋", "Экономный", "Редкие проверки серверов", "battery"),
+    ;
+
+    /** Нужны замеры качества серверов */
+    val measured get() = this == Games || this == Speed || this == Stable || this == Calls
 }
 
 enum class CoreChoice(val id: String, val title: String, val subtitle: String) {
@@ -116,6 +122,7 @@ object Store {
     val clashPort get() = portBase
     val proxyPort get() = portBase + 1
     val xrayPort get() = portBase + 10
+    val probePort get() = portBase + 7
     val xrayAuth: String get() = prefs.getString("xrayAuth")
 
     private fun load(): Settings = runCatching {

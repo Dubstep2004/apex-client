@@ -89,6 +89,14 @@ object Engine {
                 _status.value = VpnStatus.On
                 _connectedAt.value = System.currentTimeMillis()
                 startWatch()
+                // Режим по замерам без данных: подбираем серверы уже через VPN и применяем
+                val mode = Store.value.autoMode
+                if (mode.measured && Store.value.selected == "auto" && AutoModes.allowed(mode, Subscription.state.value.nodes).isEmpty()) {
+                    scope.launch {
+                        AutoModes.measure(mode)
+                        if (AutoModes.allowed(mode, Subscription.state.value.nodes).isNotEmpty()) reload()
+                    }
+                }
             } catch (e: Exception) {
                 stopLocked()
                 _error.value = e.message ?: "Не удалось подключиться"
@@ -154,8 +162,16 @@ object Engine {
             .put("logFile", Paths.log.absolutePath)
             .put("ipv6", false)
             .put("directProcesses", JSONArray(listOf("APEX VPN.exe", "apexcli.exe")))
-        if (s.skipSpecial) o.put("autoExclude", JSONArray(nodes.filter { ServerInfo.isSpecial(it.name) }.map { it.tag }))
-        o.put("autoOrder", JSONArray(Store.lastPings().entries.filter { it.value > 0 }.sortedBy { it.value }.map { it.key }))
+        o.put("probePort", Store.probePort)
+        // Режим автопилота по замерам: только подходящие серверы, лучшие — первыми
+        val allowed = AutoModes.allowed(s.autoMode, nodes)
+        if (allowed.isNotEmpty()) {
+            o.put("autoExclude", JSONArray(nodes.map { it.tag }.filter { it !in allowed }))
+            o.put("autoOrder", JSONArray(allowed))
+        } else {
+            if (s.skipSpecial) o.put("autoExclude", JSONArray(nodes.filter { ServerInfo.isSpecial(it.name) }.map { it.tag }))
+            o.put("autoOrder", JSONArray(Store.lastPings().entries.filter { it.value > 0 }.sortedBy { it.value }.map { it.key }))
+        }
         return o.toString()
     }
 
@@ -239,6 +255,7 @@ object Engine {
                     lastUp = up; lastDown = down
                 }
                 if (tick % 5 == 1) _autoNow.value = Clash.autoNow()
+                if (tick % 2 == 0) ConnLog.poll()
                 // Автообновление подписки и баз сайтов, пока подключено
                 if (tick % 300 == 0 && Subscription.needsRefresh()) {
                     runCatching { Subscription.refresh() }.onSuccess { reload() }
@@ -283,6 +300,8 @@ object Clash {
     fun autoNow(): String? = runCatching {
         JSONObject(req("GET", "/proxies/auto").second).optString("now").ifBlank { null }
     }.getOrNull()
+
+    fun connections(): JSONObject? = runCatching { JSONObject(req("GET", "/connections").second) }.getOrNull()
 
     /** Суммарно отдано/получено, байт. */
     fun traffic(): Pair<Long, Long>? = runCatching {

@@ -610,6 +610,10 @@ func buildAll(nodesJSON string, selectedTag string, optionsJSON string) (string,
 			port = 2081
 		}
 		inbounds = []any{map[string]any{"type": "mixed", "tag": "proxy-in", "listen": "127.0.0.1", "listen_port": port}}
+	} else if opts.ProxyPort > 1024 && opts.ProxyPort <= 65535 {
+		// Windows в режиме TUN: тот же локальный прокси — через него приложение проверяет
+		// скорость и утечки «через VPN» (само приложение идёт мимо туннеля)
+		inbounds = append(inbounds, map[string]any{"type": "mixed", "tag": "proxy-in", "listen": "127.0.0.1", "listen_port": opts.ProxyPort})
 	}
 	if in := xray.dialInbound(); in != nil {
 		inbounds = append(inbounds, in)
