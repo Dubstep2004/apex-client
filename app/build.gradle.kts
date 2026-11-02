@@ -35,8 +35,8 @@ android {
         applicationId = "com.apexvpn.client"
         minSdk = 24
         targetSdk = 35
-        versionCode = 74
-        versionName = "3.11.0"
+        versionCode = 75
+        versionName = "3.11.1"
 
         buildConfigField("String", "SUBSCRIPTION_HOST", "\"$subscriptionHost\"")
         buildConfigField("String", "RULES_BASE_URL", "\"$rulesBaseUrl\"")

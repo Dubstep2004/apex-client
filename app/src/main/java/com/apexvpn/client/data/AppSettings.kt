@@ -120,7 +120,7 @@ data class Settings(
     // 349. Приложения, от которых VPN скрыт (идут мимо туннеля, как банки)
     val hiddenApps: Set<String> = emptySet(),
     /** 3.10: шаблон «Скрыть VPN» обновляется сам — новые приложения из него добавляются автоматически */
-    val hideTemplateAuto: Boolean = false,
+    val hideTemplateAuto: Boolean = true,
     /** …кроме тех, что пользователь сам убрал из списка */
     val hideTemplateSkip: Set<String> = emptySet(),
     // 387. Секретная тема открыта
@@ -175,6 +175,11 @@ object AppSettings {
         }
         val loaded = (parsed ?: Settings(refreshHours = Prefs.updateIntervalHours)).let { it.copy(refreshHours = snapRefresh(it.refreshHours)) }
         _state.value = if (loaded.sharePass.isEmpty()) loaded.copy(sharePass = randomPassword()) else loaded
+        // 3.11.1: «Обновлять шаблон автоматически» включено у всех (один раз; потом — как выберет пользователь)
+        if (!sp.getBoolean("hide_auto_on", false)) {
+            _state.value = _state.value.copy(hideTemplateAuto = true)
+            sp.edit { putBoolean("hide_auto_on", true) }
+        }
         save()
     }
 
