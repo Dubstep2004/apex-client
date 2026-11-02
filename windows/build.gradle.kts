@@ -29,7 +29,8 @@ compose.desktop {
             targetFormats(TargetFormat.Exe)
             packageName = "APEX VPN"
             packageVersion = winVersion
-            description = "APEX VPN для Windows"
+            // Только латиница: jpackage на Windows читает файл аргументов в кодировке системы
+            description = "APEX VPN for Windows"
             vendor = "APEX VPN"
             copyright = "APEX VPN"
             // Ядра sing-box, Xray, apexcli и базы сайтов кладутся в resources/windows при сборке (CI)
