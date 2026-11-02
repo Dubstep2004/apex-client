@@ -39,6 +39,7 @@ class ApexApp : Application() {
         AppSettings.init(this)
         com.apexvpn.client.update.UpdateManager.init(this)
         com.apexvpn.client.update.UpdateInstaller.init(this)
+        com.apexvpn.client.data.MonthStats.init(this)
 
         val workingDir = File(filesDir, "work").apply { mkdirs() }
         val tempDir = File(cacheDir, "box").apply { mkdirs() }
@@ -100,6 +101,7 @@ class ApexApp : Application() {
                     last != com.apexvpn.client.vpn.VpnStatus.Paused
                 ) {
                     com.apexvpn.client.data.ConnectFeedback.onConnected(this@ApexApp)
+                    com.apexvpn.client.data.MonthStats.connected()
                     // 382. Конфетти на первом и юбилейных подключениях
                     com.apexvpn.client.data.Celebrate.onConnected()
                     // Базы сайтов: если давно не проверяли (телефон был без фоновых задач) — проверяем сейчас
@@ -116,6 +118,7 @@ class ApexApp : Application() {
                 // тогда звука не было. Теперь — при любом переходе из подключённого состояния
                 if (st == com.apexvpn.client.vpn.VpnStatus.Stopped && last != com.apexvpn.client.vpn.VpnStatus.Stopped && last != com.apexvpn.client.vpn.VpnStatus.Starting) {
                     com.apexvpn.client.data.ConnectFeedback.onDisconnected(this@ApexApp)
+                    com.apexvpn.client.data.MonthStats.flush()
                 }
                 last = st
             }

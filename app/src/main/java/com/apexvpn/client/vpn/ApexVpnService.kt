@@ -318,6 +318,7 @@ class ApexVpnService : VpnService(), PlatformInterface, CommandServerHandler {
             var lastTx = TrafficStats.getUidTxBytes(uid)
             var tick = 0L
             var failures = 0
+            var kidsApplied: Boolean? = null
             while (isActive) {
                 delay(1000)
                 tick++
@@ -328,8 +329,25 @@ class ApexVpnService : VpnService(), PlatformInterface, CommandServerHandler {
                 val rx = TrafficStats.getUidRxBytes(uid)
                 val tx = TrafficStats.getUidTxBytes(uid)
                 if (rx >= 0 && tx >= 0) {
-                    VpnState.setSpeed((rx - lastRx).coerceAtLeast(0), (tx - lastTx).coerceAtLeast(0))
+                    val dRx = (rx - lastRx).coerceAtLeast(0); val dTx = (tx - lastTx).coerceAtLeast(0)
+                    VpnState.setSpeed(dRx, dTx)
                     lastRx = rx; lastTx = tx
+                    // 3.6. Отчёт за месяц
+                    if (status == VpnStatus.Started) {
+                        val sub = Subscription.state.value
+                        val server = if (sub.selectedTag == AUTO_TAG) "Автопилот"
+                            else sub.nodes.find { it.tag == sub.selectedTag }?.name?.let { ServerInfo.title(it) } ?: "Сервер"
+                        com.apexvpn.client.data.MonthStats.tick(dRx, dTx, server)
+                    }
+                }
+                if (status == VpnStatus.Started && tick % 60 == 30L) {
+                    scope.launch { com.apexvpn.client.data.MonthStats.ping(com.apexvpn.client.data.LivePing.measure()) }
+                }
+                // 3.6. Семейный режим по расписанию: окно началось или закончилось — применяем
+                if (tick % 30 == 0L && status == VpnStatus.Started) {
+                    val kidsNow = com.apexvpn.client.data.KidsSchedule.active(settings)
+                    if (kidsApplied != null && kidsApplied != kidsNow) scope.launch { reloadVpn() }
+                    kidsApplied = kidsNow
                 }
                 if (settings.speedInNotification && tick % 2 == 0L && status == VpnStatus.Started) showNotification()
 

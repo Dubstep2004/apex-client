@@ -83,6 +83,7 @@ object AdCounter {
         val n = (if (sp.getString("day", "") == d) sp.getInt("count", 0) else 0) + 1
         sp.edit().putString("day", d).putInt("count", n).apply()
         _today.value = n
+        MonthStats.ad()
     }
 
     /** Ответ «нет такого домена» на запрос; null — пакет не похож на DNS-запрос. */

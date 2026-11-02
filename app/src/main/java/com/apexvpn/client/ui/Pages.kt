@@ -90,7 +90,7 @@ import java.util.Locale
 import kotlinx.coroutines.launch
 
 /** Дополнительные страницы, открываются поверх вкладок. */
-enum class Page { Apps, SpeedTest, SiteCheck, Wifi, Share, Dns, Profile, Appearance, Changelog, Advanced, HideApps, AppTraffic, Help, KeepAlive, SelfCheck, About, Ping, ConnLog, LeakTest, AppIssue, ServiceCheck }
+enum class Page { Apps, SpeedTest, SiteCheck, Wifi, Share, Dns, Profile, Appearance, Changelog, Advanced, HideApps, AppTraffic, Help, KeepAlive, SelfCheck, About, Ping, ConnLog, LeakTest, AppIssue, ServiceCheck, Report }
 
 @Composable
 fun PageHost(page: Page, viewModel: MainViewModel, onBack: () -> Unit) {
@@ -116,6 +116,7 @@ fun PageHost(page: Page, viewModel: MainViewModel, onBack: () -> Unit) {
         Page.LeakTest -> LeakTestPage(onBack)
         Page.AppIssue -> AppIssuePage(viewModel, onBack)
         Page.ServiceCheck -> ServiceCheckPage(viewModel, onBack)
+        Page.Report -> ReportPage(onBack)
     }
 }
 
@@ -936,7 +937,17 @@ private fun DnsPage(viewModel: MainViewModel, onBack: () -> Unit) {
                 leading = { IconTile(Color(0xFFF59E0B)) { Icon(Icons.Rounded.FamilyRestroom, null, tint = Color.White) } },
                 onClick = { viewModel.change { copy(kids = !kids) } },
             ) { ApexSwitch(s.kids, { v -> viewModel.change { copy(kids = v) } }) }
+            GroupDivider()
+            ListRow(
+                "Семейный режим по расписанию",
+                if (s.kids) "Сейчас включён всегда — выключите переключатель выше, чтобы работало расписание"
+                else if (s.kidsSchedule) KidsDaysText(s.kidsDays) + " · " + com.apexvpn.client.data.KidsSchedule.hhmm(s.kidsFrom) + "–" + com.apexvpn.client.data.KidsSchedule.hhmm(s.kidsTo)
+                else "Например, для ребёнка: по будням с 8:00 до 21:00",
+                leading = { IconTile(Color(0xFFF97316)) { Icon(Icons.Rounded.FamilyRestroom, null, tint = Color.White) } },
+                onClick = { viewModel.change { copy(kidsSchedule = !kidsSchedule) } },
+            ) { ApexSwitch(s.kidsSchedule, { v -> viewModel.change { copy(kidsSchedule = v) } }) }
         }
+        if (s.kidsSchedule && !s.kids) KidsScheduleEditor(viewModel, s)
         SectionLabel("DNS для зарубежных сайтов")
         Group {
             DnsChoice.entries.forEachIndexed { i, d ->

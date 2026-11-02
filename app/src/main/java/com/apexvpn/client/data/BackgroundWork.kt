@@ -36,6 +36,8 @@ class BackgroundWork(context: Context, params: WorkerParameters) : CoroutineWork
             }
         }
         ExpiryAlerts.check(ctx)
+        // 3.6. 1-го числа — итоги прошлого месяца
+        MonthStats.reportDue()?.let { notifyReport(ctx, it) }
         if (RulesUpdater.update(ctx) is RulesUpdater.Result.Updated) ApexVpnService.reload(ctx)
         CrashReporter.cleanup(ctx)
         // Новая версия на GitHub. «Ставить само» — скачиваем заранее и ставим, когда VPN выключен или экран погас;
@@ -49,6 +51,28 @@ class BackgroundWork(context: Context, params: WorkerParameters) : CoroutineWork
             }
         }
         return Result.success()
+    }
+
+    private fun notifyReport(context: Context, key: String) {
+        val m = MonthStats.get(key)
+        val nm = context.getSystemService<NotificationManager>() ?: return
+        val pi = PendingIntent.getActivity(
+            context, 14,
+            Intent(context, com.apexvpn.client.ui.MainActivity::class.java)
+                .putExtra(com.apexvpn.client.ui.MainActivity.EXTRA_OPEN_PAGE, "Report")
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        nm.notify(
+            7,
+            NotificationCompat.Builder(context, ApexApp.CHANNEL_ALERTS)
+                .setSmallIcon(R.drawable.ic_stat_apex)
+                .setContentTitle("Ваш ${MonthStats.title(key).substringBefore(' ')} с APEX VPN")
+                .setContentText("${com.apexvpn.client.ui.formatBytes(m.down + m.up)} через VPN · ${m.seconds / 3600} ч · ${m.ads} рекламы заблокировано")
+                .setContentIntent(pi)
+                .setAutoCancel(true)
+                .build(),
+        )
     }
 
     private fun notifyUpdate(context: Context, info: com.apexvpn.client.update.UpdateInfo) {

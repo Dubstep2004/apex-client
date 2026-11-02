@@ -29,6 +29,11 @@ data class Settings(
     val dns: DnsChoice = DnsChoice.Auto,
     val customDns: String = "",
     val kids: Boolean = false,
+    /** 3.6: семейный режим по расписанию — дни (1 = пн … 7 = вс) и время, минуты от полуночи */
+    val kidsSchedule: Boolean = false,
+    val kidsFrom: Int = 8 * 60,
+    val kidsTo: Int = 21 * 60,
+    val kidsDays: Set<Int> = (1..7).toSet(),
     // Подключение
     val ipv6: Boolean = false,
     val profile: ConnProfile = ConnProfile.Normal,
@@ -247,7 +252,7 @@ object AppSettings {
             put("dns", s.dns.id)
         }
         put("customDns", s.customDns)
-        put("kids", s.kids)
+        put("kids", KidsSchedule.active(s))
         put("adBlock", s.adBlock)
         // 413. Ядро определяет приложение каждого соединения (Android 10+)
         put("blockQuic", quicBlocked(s).also { quicApplied = it })
@@ -330,7 +335,7 @@ object AppSettings {
         put("custom", list(s.customDomains)); put("direct", list(s.directDomains))
         put("banks", s.hideFromBanks); put("adBlock", s.adBlock)
         put("appsMode", s.appsMode.id); put("apps", list(s.apps))
-        put("dns", s.dns.id); put("customDns", s.customDns); put("kids", s.kids)
+        put("dns", s.dns.id); put("customDns", s.customDns); put("kids", s.kids); put("kidsSchedule", s.kidsSchedule); put("kidsFrom", s.kidsFrom); put("kidsTo", s.kidsTo); put("kidsDays", JSONArray(s.kidsDays.toList()))
         put("ipv6", s.ipv6); put("profile", s.profile.id); put("failover", s.failover); put("killSwitch", s.killSwitch); put("autoDl", s.autoDownloadUpdates); put("appIcon", s.appIcon)
         put("wifiRules", s.wifiRules); put("trustedWifi", list(s.trustedWifi))
         put("share", s.share); put("sharePort", s.sharePort); put("shareUser", s.shareUser); put("sharePass", s.sharePass)
@@ -383,6 +388,10 @@ object AppSettings {
             dns = DnsChoice.of(o.optString("dns", d.dns.id)),
             customDns = o.optString("customDns", d.customDns),
             kids = o.optBoolean("kids", d.kids),
+            kidsSchedule = o.optBoolean("kidsSchedule", d.kidsSchedule),
+            kidsFrom = o.optInt("kidsFrom", d.kidsFrom).coerceIn(0, 24 * 60 - 1),
+            kidsTo = o.optInt("kidsTo", d.kidsTo).coerceIn(0, 24 * 60 - 1),
+            kidsDays = o.optJSONArray("kidsDays")?.let { a -> (0 until a.length()).map { a.optInt(it) }.filter { it in 1..7 }.toSet() } ?: d.kidsDays,
             ipv6 = o.optBoolean("ipv6", d.ipv6),
             profile = ConnProfile.of(o.optString("profile", d.profile.id)),
             failover = o.optBoolean("failover", d.failover),
