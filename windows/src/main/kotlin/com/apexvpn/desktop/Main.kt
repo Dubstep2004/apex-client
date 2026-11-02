@@ -117,6 +117,11 @@ fun main(args: Array<String>) {
                         CheckboxItem(t.title, checked = s.connectType == t, onCheckedChange = { Store.update { copy(connectType = t) }; Engine.reload() })
                     }
                 }
+                Menu("Вид окна") {
+                    CheckboxItem("Windows 11", checked = s.layout == "windows", onCheckedChange = { Store.update { copy(layout = "windows") } })
+                    CheckboxItem("Как на телефоне", checked = s.layout == "phone", onCheckedChange = { Store.update { copy(layout = "phone") } })
+                }
+                CheckboxItem("Звук подключения", checked = s.soundOn, onCheckedChange = { v -> Store.update { copy(soundOn = v) } })
                 Separator()
                 Item("Выход", onClick = { quit() })
             },

@@ -92,6 +92,8 @@ data class Settings(
     val photoPath: String = "",
     val photoDim: Int = 55,
     val sound: String = "chime",
+    /** Звук включён (отдельно от выбора набора — чтобы выключить и снова включить тот же) */
+    val soundOn: Boolean = true,
     // 1.6 — маршрутизация
     val services: Set<String> = ServiceCatalog.defaultEnabled,
     val kids: Boolean = false,
@@ -180,7 +182,8 @@ object Store {
             homeStyle = o.optString("homeStyle", d.homeStyle).takeIf { it in listOf("shield", "globe") } ?: d.homeStyle,
             photoPath = o.optString("photoPath", d.photoPath),
             photoDim = o.optInt("photoDim", d.photoDim).coerceIn(0, 90),
-            sound = o.optString("sound", d.sound),
+            sound = o.optString("sound", d.sound).takeIf { it != "off" } ?: d.sound,
+            soundOn = o.optBoolean("soundOn", o.optString("sound") != "off"),
             services = o.optJSONArray("services")?.let { strings(it).toSet() } ?: d.services,
             kids = o.optBoolean("kids", d.kids),
             userRules = o.optJSONArray("userRules")?.let { a -> (0 until a.length()).mapNotNull { a.optJSONObject(it) }.map { UserRule(it.optString("value"), it.optString("action", "proxy")) }.filter { it.value.isNotBlank() } } ?: d.userRules,
@@ -210,7 +213,7 @@ object Store {
             .put("directCountries", JSONArray(s.directCountries.toList()))
             .put("rulesAuto", s.rulesAuto).put("rulesHours", s.rulesHours)
             .put("design", s.design.id).put("accent", s.accent.id).put("animations", s.animations)
-            .put("layout", s.layout).put("homeStyle", s.homeStyle).put("photoPath", s.photoPath).put("photoDim", s.photoDim).put("sound", s.sound)
+            .put("layout", s.layout).put("homeStyle", s.homeStyle).put("photoPath", s.photoPath).put("photoDim", s.photoDim).put("sound", s.sound).put("soundOn", s.soundOn)
             .put("services", JSONArray(s.services.toList())).put("kids", s.kids)
             .put("userRules", JSONArray(s.userRules.map { JSONObject().put("value", it.value).put("action", it.action) }))
             .put("fakeDns", s.fakeDns).put("domainStrategy", s.domainStrategy).put("warp", s.warp).put("warpConfig", s.warpConfig)

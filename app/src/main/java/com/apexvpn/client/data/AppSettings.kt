@@ -60,7 +60,7 @@ data class Settings(
     val customAccent: Long = 0xFF7B6CFF,              // 216. свой цвет (accent = Custom)
     val customAccent2: Long = 0,                      // 564. второй цвет палитры (0 — подбирается сам)
     val homeStyle: String = "button",                 // главный экран: button | map
-    val connectSound: Boolean = false,                // звук подключения
+    val connectSound: Boolean = true,                 // звук подключения (3.3.1: включён по умолчанию)
     val sound: String = "signal",                     // 271. набор звуков (ConnectFeedback.sounds)
     val disconnectSound: Boolean = true,              // 271. звук и при отключении
     val vibration: Boolean = true,

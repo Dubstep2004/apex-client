@@ -73,10 +73,14 @@ object ConnectFeedback {
         Thread {
             runCatching {
                 val pcm = synth(id, off)
+                val min = AudioTrack.getMinBufferSize(RATE, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT).coerceAtLeast(4096)
+                // Раньше: «системные звуки» (USAGE_ASSISTANCE_SONIFICATION) и статический буфер — на Xiaomi,
+                // Samsung и др. громкость системных звуков часто 0, а статический режим на части
+                // телефонов молчит. Теперь — громкость уведомлений и потоковый режим.
                 val track = AudioTrack.Builder()
                     .setAudioAttributes(
                         AudioAttributes.Builder()
-                            .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+                            .setUsage(AudioAttributes.USAGE_NOTIFICATION_EVENT)
                             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                             .build(),
                     )
@@ -87,13 +91,19 @@ object ConnectFeedback {
                             .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
                             .build(),
                     )
-                    .setTransferMode(AudioTrack.MODE_STATIC)
-                    .setBufferSizeInBytes(pcm.size * 2)
+                    .setTransferMode(AudioTrack.MODE_STREAM)
+                    .setBufferSizeInBytes(min)
                     .build()
-                track.write(pcm, 0, pcm.size)
-                track.play()
-                Thread.sleep(pcm.size * 1000L / RATE + 150)
-                track.release()
+                try {
+                    track.play()
+                    // Тишина в конце, чтобы последняя нота не обрывалась при остановке
+                    val padded = pcm + ShortArray(RATE / 10)
+                    track.write(padded, 0, padded.size)
+                    Thread.sleep(200)
+                    track.stop()
+                } finally {
+                    track.release()
+                }
             }
         }.apply { isDaemon = true }.start()
     }

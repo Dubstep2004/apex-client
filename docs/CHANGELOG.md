@@ -2,6 +2,17 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.3.1 · 2 ноября 2026
+
+<img src="img/tags/changed.svg" alt="Изменено" height="22">
+
+- Звук подключения включён по умолчанию у новых установок (Настройки → Оформление → «Звук подключения»)
+
+<img src="img/tags/fixed.svg" alt="Исправлено" height="22">
+
+- Не было звука подключения: звук шёл как «системный» (его громкость на многих телефонах — 0) и в статическом режиме, который на части телефонов молчит. Теперь — громкость уведомлений и потоковый режим
+- Звук отключения иногда пропадал, если VPN выключался быстро
+
 ## 3.3.0 · 2 ноября 2026
 
 <img src="img/tags/new.svg" alt="Новое" height="22">

@@ -63,11 +63,12 @@ object ServiceCatalog {
 
 /** Короткие звуки подключения и отключения: синтезируются на лету, без файлов. */
 object Sounds {
-    val sets = listOf("off" to "Без звука", "chime" to "Колокольчик", "soft" to "Мягкий", "space" to "Космос")
+    val sets = listOf("chime" to "Колокольчик", "soft" to "Мягкий", "space" to "Космос")
 
-    fun play(connected: Boolean) {
+    /** [force] — проба в настройках (играет, даже если звук выключен). */
+    fun play(connected: Boolean, force: Boolean = false) {
         val set = Store.value.sound
-        if (set == "off") return
+        if (!force && !Store.value.soundOn) return
         Thread {
             runCatching {
                 val notes: List<Pair<Double, Int>> = when (set) {

@@ -95,8 +95,8 @@ class ApexApp : Application() {
         appScope.launch {
             var last = VpnState.status.value
             VpnState.status.collect { st ->
-                if (st == com.apexvpn.client.vpn.VpnStatus.Started &&
-                    (last == com.apexvpn.client.vpn.VpnStatus.Starting || last == com.apexvpn.client.vpn.VpnStatus.Stopped)
+                if (st == com.apexvpn.client.vpn.VpnStatus.Started && last != com.apexvpn.client.vpn.VpnStatus.Started &&
+                    last != com.apexvpn.client.vpn.VpnStatus.Paused
                 ) {
                     com.apexvpn.client.data.ConnectFeedback.onConnected(this@ApexApp)
                     // 382. Конфетти на первом и юбилейных подключениях
@@ -111,7 +111,9 @@ class ApexApp : Application() {
                     // Задача «Видео» стала режимом автопилота «Скорость» (3.0) — сервер больше не закрепляется
                 }
                 // 271. Звук отключения
-                if (st == com.apexvpn.client.vpn.VpnStatus.Stopped && last == com.apexvpn.client.vpn.VpnStatus.Stopping) {
+                // Состояния приходят «пачкой», и «Отключение» могло пропасть (Started → Stopped сразу) —
+                // тогда звука не было. Теперь — при любом переходе из подключённого состояния
+                if (st == com.apexvpn.client.vpn.VpnStatus.Stopped && last != com.apexvpn.client.vpn.VpnStatus.Stopped && last != com.apexvpn.client.vpn.VpnStatus.Starting) {
                     com.apexvpn.client.data.ConnectFeedback.onDisconnected(this@ApexApp)
                 }
                 last = st

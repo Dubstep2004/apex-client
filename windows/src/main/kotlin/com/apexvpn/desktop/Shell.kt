@@ -35,6 +35,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AltRoute
+import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.Upload
 import androidx.compose.material.icons.rounded.Save
@@ -567,12 +568,22 @@ fun SettingsTab(open: (Page) -> Unit) {
                 }
             }
             GroupDivider()
-            Column(Modifier.padding(16.dp)) {
-                Text("Звуки подключения", color = C.Text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.height(8.dp))
-                Segmented(Sounds.sets.map { it.second }, Sounds.sets.indexOfFirst { it.first == s.sound }.coerceAtLeast(0)) { i ->
-                    Store.update { copy(sound = Sounds.sets[i].first) }; Sounds.play(true)
+            ListRow("Звук подключения", if (s.soundOn) "Звук при подключении и отключении VPN" else "Выключен",
+                leading = { IconTile(Icons.Rounded.VolumeUp, Color(0xFF8B5CF6)) },
+                onClick = { Store.update { copy(soundOn = !soundOn) } }) { ApexSwitch(s.soundOn) { v -> Store.update { copy(soundOn = v) } } }
+            if (s.soundOn) {
+                Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 14.dp)) {
+                    Segmented(Sounds.sets.map { it.second }, Sounds.sets.indexOfFirst { it.first == s.sound }.coerceAtLeast(0)) { i ->
+                        Store.update { copy(sound = Sounds.sets[i].first) }; Sounds.play(true, force = true)
+                    }
                 }
+            }
+            GroupDivider()
+            // Вид окна — как на Android можно менять облик, здесь же и весь вид программы
+            Column(Modifier.padding(16.dp)) {
+                Text("Вид окна", color = C.Text, fontSize = if (C.fluent) 14.sp else 17.sp, fontWeight = if (C.fluent) FontWeight.Normal else FontWeight.SemiBold)
+                Spacer(Modifier.height(8.dp))
+                Segmented(listOf("Windows 11", "Как на телефоне"), if (s.layout == "phone") 1 else 0) { i -> Store.update { copy(layout = if (i == 1) "phone" else "windows") } }
             }
         }
 
