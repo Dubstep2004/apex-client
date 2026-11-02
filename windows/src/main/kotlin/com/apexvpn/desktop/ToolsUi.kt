@@ -68,7 +68,7 @@ fun ToolsScreen() {
 }
 
 @Composable
-private fun SpeedTestCard() {
+fun SpeedTestCard() {
     val st by SpeedTest.state.collectAsState()
     val status by Engine.status.collectAsState()
     val scope = rememberCoroutineScope()
@@ -162,7 +162,7 @@ private fun Stat(title: String, value: String, modifier: Modifier) {
 }
 
 @Composable
-private fun LeakTestCard() {
+fun LeakTestCard() {
     val st by LeakTest.state.collectAsState()
     val scope = rememberCoroutineScope()
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
@@ -186,7 +186,7 @@ private fun LeakTestCard() {
 }
 
 @Composable
-private fun ConnLogCard() {
+fun ConnLogCard() {
     val on by ConnLog.enabled.collectAsState()
     val entries by ConnLog.entries.collectAsState()
     val fmt = remember { SimpleDateFormat("HH:mm:ss", Locale.getDefault()) }

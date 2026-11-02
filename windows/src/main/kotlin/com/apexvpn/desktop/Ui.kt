@@ -72,57 +72,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
-enum class Tab(val title: String, val icon: ImageVector) {
-    Home("Главная", Icons.Rounded.Home), Servers("Серверы", Icons.Rounded.Dns), Routes("Маршруты", Icons.Rounded.Route), Tools("Инструменты", Icons.Rounded.Speed), Settings("Настройки", Icons.Rounded.Settings)
-}
-
-@Composable
-fun AppUi() {
-    var tab by remember { mutableStateOf(Tab.Home) }
-    val sub by Subscription.state.collectAsState()
-    val status by Engine.status.collectAsState()
-    Box(Modifier.fillMaxSize()) {
-    Backdrop(status == VpnStatus.On)
-    Row(Modifier.fillMaxSize()) {
-        // Боковая панель
-        Column(
-            Modifier.width(92.dp).fillMaxHeight().background(C.Surface.copy(alpha = 0.85f)).padding(vertical = 18.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text("APEX", color = C.Text, fontWeight = FontWeight.Black, fontSize = 18.sp, letterSpacing = 2.sp)
-            Spacer(Modifier.height(26.dp))
-            Tab.entries.forEach { t ->
-                val on = t == tab
-                Column(
-                    Modifier.padding(vertical = 6.dp).clip(RoundedCornerShape(16.dp)).clickable { tab = t }.padding(horizontal = 10.dp, vertical = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Box(
-                        Modifier.size(52.dp, 32.dp).clip(RoundedCornerShape(16.dp)).background(if (on) C.Accent.copy(alpha = 0.25f) else Color.Transparent),
-                        contentAlignment = Alignment.Center,
-                    ) { Icon(t.icon, t.title, tint = if (on) C.Text else C.Dim) }
-                    Spacer(Modifier.height(4.dp))
-                    Text(t.title, color = if (on) C.Text else C.Dim, fontSize = 12.sp)
-                }
-            }
-        }
-        Box(Modifier.weight(1f).fillMaxHeight()) {
-            // Плавная смена вкладок (выключается вместе с анимациями)
-            androidx.compose.animation.Crossfade(tab, animationSpec = tween(if (C.animations) 220 else 0)) { cur ->
-                if (sub.nodes.isEmpty() && cur != Tab.Settings) AddSubscription()
-                else when (cur) {
-                    Tab.Home -> HomeScreen { tab = Tab.Servers }
-                    Tab.Servers -> ServersScreen()
-                    Tab.Routes -> RoutesScreen()
-                    Tab.Tools -> ToolsScreen()
-                    Tab.Settings -> SettingsScreen()
-                }
-            }
-        }
-    }
-    }
-}
-
 // ─── Подписка ─────────────────────────────────────────────────────────
 
 @Composable
@@ -152,123 +101,6 @@ fun AddSubscription() {
     }
 }
 
-// ─── Главная ─────────────────────────────────────────────────────────
-
-@Composable
-fun HomeScreen(openServers: () -> Unit) {
-    val status by Engine.status.collectAsState()
-    val error by Engine.error.collectAsState()
-    val connectedAt by Engine.connectedAt.collectAsState()
-    val speed by Engine.speed.collectAsState()
-    val autoNow by Engine.autoNow.collectAsState()
-    val s by Store.settings.collectAsState()
-    val sub by Subscription.state.collectAsState()
-    val pings by Pinger.pings.collectAsState()
-    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    LaunchedEffect(Unit) { while (true) { delay(1000); now = System.currentTimeMillis() } }
-
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        val on = status == VpnStatus.On
-        val connecting = status == VpnStatus.Connecting
-        Spacer(Modifier.height(8.dp))
-        Box(Modifier.clip(CircleShape).clickable(enabled = !connecting) { Engine.toggle() }) {
-            Shield(on = on, connecting = connecting, size = 190)
-        }
-        Spacer(Modifier.height(18.dp))
-        Text(
-            when (status) { VpnStatus.On -> "Защищено"; VpnStatus.Connecting -> "Подключение…"; VpnStatus.Error -> "Ошибка"; else -> "Не защищено" },
-            color = when (status) { VpnStatus.On -> C.Text; VpnStatus.Error -> C.Bad; else -> C.Dim }, fontSize = 30.sp, fontWeight = FontWeight.ExtraBold,
-        )
-        Spacer(Modifier.height(4.dp))
-        Text(
-            if (on && connectedAt > 0) "${duration(now - connectedAt)}  ·  ↓ ${rate(speed.second)}  ↑ ${rate(speed.first)}"
-            else "Нажмите на щит, чтобы подключиться",
-            color = C.Dim, fontSize = 14.sp,
-        )
-        error?.let {
-            Spacer(Modifier.height(12.dp))
-            Text(it, color = C.Bad, fontSize = 13.sp, modifier = Modifier.width(560.dp).clip(RoundedCornerShape(14.dp)).background(C.Bad.copy(alpha = 0.1f)).padding(12.dp))
-            if (s.connectType == ConnectType.Tun && !WinSys.isAdmin()) {
-                Spacer(Modifier.height(8.dp))
-                SecondaryButton("Перезапустить от администратора") { if (WinSys.relaunchAsAdmin()) { Engine.shutdown(); kotlin.system.exitProcess(0) } }
-            }
-        }
-        Spacer(Modifier.height(24.dp))
-
-        // Сервер
-        val sel = sub.nodes.find { it.tag == s.selected }
-        val autoNode = sub.nodes.find { it.tag == autoNow }
-        Card(Modifier.width(560.dp).clickable { openServers() }) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                CountryBadge((sel ?: autoNode)?.country)
-                Spacer(Modifier.width(14.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(if (sel == null) "Автопилот · ${s.autoMode.title}" else sel.title, color = C.Text, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(
-                        if (sel == null) autoNode?.let { "Сейчас: ${it.title}" } ?: "Самый быстрый из ${sub.nodes.size}" else sel.detail.ifBlank { sel.category },
-                        color = C.Dim, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                val p = pings[(sel ?: autoNode)?.tag]
-                if (p != null) Text(if (p > 0) "$p мс" else "—", color = pingColor(p), fontWeight = FontWeight.Bold)
-            }
-        }
-        Spacer(Modifier.height(12.dp))
-        Row(Modifier.width(560.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Card(Modifier.weight(1f)) {
-                Text("Маршрут", color = C.Dim, fontSize = 12.sp)
-                Spacer(Modifier.height(8.dp))
-                Segmented(RouteMode.entries.map { it.title }, s.routeMode.ordinal) { i ->
-                    Store.update { copy(routeMode = RouteMode.entries[i]) }; Engine.reload()
-                }
-            }
-            Card(Modifier.weight(1f)) {
-                Text("Подключение", color = C.Dim, fontSize = 12.sp)
-                Spacer(Modifier.height(8.dp))
-                Segmented(listOf("Прокси", "TUN"), s.connectType.ordinal) { i ->
-                    Store.update { copy(connectType = ConnectType.entries[i]) }; Engine.reload()
-                }
-            }
-        }
-        Spacer(Modifier.height(12.dp))
-        // Подписка
-        Card(Modifier.width(560.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(sub.title.ifBlank { "Подписка" }, color = C.Text, fontWeight = FontWeight.Bold)
-                    val left = if (sub.expireAt > 0) ((sub.expireAt * 1000 - now) / 86_400_000L).coerceAtLeast(0) else -1
-                    Text(
-                        listOfNotNull(
-                            if (sub.total > 0) "${bytes(sub.used)} из ${bytes(sub.total)}" else "${bytes(sub.used)} · без лимита",
-                            if (left >= 0) "осталось $left дн." else null,
-                            "автообновление ${s.refreshHours} ч",
-                        ).joinToString(" · "),
-                        color = C.Dim, fontSize = 13.sp,
-                    )
-                }
-                val scope = rememberCoroutineScope()
-                var busy by remember { mutableStateOf(false) }
-                Icon(
-                    Icons.Rounded.Refresh, "Обновить", tint = if (busy) C.Accent else C.Dim,
-                    modifier = Modifier.clip(CircleShape).clickable(enabled = !busy) {
-                        scope.launch { busy = true; runCatching { Subscription.refresh() }.onSuccess { Engine.reload() }; busy = false }
-                    }.padding(8.dp),
-                )
-            }
-            if (sub.total > 0) {
-                Spacer(Modifier.height(10.dp))
-                Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(C.SurfaceHigh)) {
-                    Box(Modifier.fillMaxWidth((sub.used.toFloat() / sub.total).coerceIn(0f, 1f)).fillMaxHeight().background(Brush.horizontalGradient(listOf(C.Accent, C.Cyan))))
-                }
-            }
-            if (sub.announce.isNotBlank()) {
-                Spacer(Modifier.height(10.dp))
-                Text(sub.announce, color = C.Text, fontSize = 13.sp)
-            }
-        }
-    }
-}
-
 // ─── Серверы ─────────────────────────────────────────────────────────
 
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
@@ -281,9 +113,9 @@ fun ServersScreen() {
     val autoNow by Engine.autoNow.collectAsState()
     val scope = rememberCoroutineScope()
     LaunchedEffect(Unit) { if (pings.isEmpty()) Pinger.pingAll() }
-    Column(Modifier.fillMaxSize().padding(28.dp)) {
+    Column(Modifier.fillMaxSize()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Серверы", color = C.Text, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f))
+            Text("Пинг до серверов", color = C.Dim, fontSize = 14.sp, modifier = Modifier.weight(1f))
             SecondaryButton(if (busy) "Проверяю…" else "Проверить пинг") { scope.launch { Pinger.pingAll() } }
         }
         Spacer(Modifier.height(14.dp))
@@ -356,151 +188,6 @@ fun ServersScreen() {
     }
 }
 
-// ─── Настройки ───────────────────────────────────────────────────────
-
-@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-@Composable
-fun SettingsScreen() {
-    val s by Store.settings.collectAsState()
-    val sub by Subscription.state.collectAsState()
-    val scope = rememberCoroutineScope()
-    var update by remember { mutableStateOf<String?>(null) }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(28.dp)) {
-        Text("Настройки", color = C.Text, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
-        Section("Оформление")
-        Card(Modifier.fillMaxWidth()) {
-            Text("Дизайн", color = C.Text, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(10.dp))
-            androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Design.entries.forEach { d -> DesignCard(d, s.design == d) { Store.update { copy(design = d) } } }
-            }
-            Spacer(Modifier.height(6.dp))
-            Text(s.design.subtitle, color = C.Dim, fontSize = 12.sp)
-            Spacer(Modifier.height(14.dp))
-            Text("Цвет", color = C.Text, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(8.dp))
-            androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                AccentChoice.entries.forEach { a ->
-                    val on = s.accent == a
-                    val c1 = a.c1 ?: s.design.palette.accent
-                    val c2 = a.c2 ?: s.design.palette.accent2
-                    Row(
-                        Modifier.clip(RoundedCornerShape(14.dp)).background(if (on) C.SurfaceHigh else Color.Transparent)
-                            .border(1.dp, if (on) C.Accent else C.Outline, RoundedCornerShape(14.dp))
-                            .clickable { Store.update { copy(accent = a) } }.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Box(Modifier.size(18.dp).clip(CircleShape).background(Brush.linearGradient(listOf(c1, c2))))
-                        Spacer(Modifier.width(8.dp))
-                        Text(a.title, color = C.Text, fontSize = 13.sp)
-                    }
-                }
-            }
-            Spacer(Modifier.height(10.dp))
-            Toggle("Анимации", "Живой фон, плавная смена вкладок. Выключите на слабом компьютере", s.animations) { Store.update { copy(animations = it) } }
-        }
-        Section("Подключение")
-        Card(Modifier.fillMaxWidth()) {
-            Text("Способ", color = C.Text, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(8.dp))
-            ConnectType.entries.forEach { t ->
-                Choice(t.title, t.subtitle, s.connectType == t) { Store.update { copy(connectType = t) }; Engine.reload() }
-            }
-            if (s.connectType == ConnectType.Tun && !WinSys.isAdmin()) {
-                Spacer(Modifier.height(8.dp))
-                Text("Сейчас программа запущена без прав администратора — TUN не включится.", color = C.Warn, fontSize = 13.sp)
-                Spacer(Modifier.height(6.dp))
-                SecondaryButton("Перезапустить от администратора") { if (WinSys.relaunchAsAdmin()) { Engine.shutdown(); kotlin.system.exitProcess(0) } }
-            }
-        }
-        Spacer(Modifier.height(10.dp))
-        Card(Modifier.fillMaxWidth()) {
-            Text("Маршрут", color = C.Text, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(8.dp))
-            RouteMode.entries.forEach { m -> Choice(m.title, m.subtitle, s.routeMode == m) { Store.update { copy(routeMode = m) }; Engine.reload() } }
-        }
-        Spacer(Modifier.height(10.dp))
-        Card(Modifier.fillMaxWidth()) {
-            Text("Ядро", color = C.Text, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(8.dp))
-            CoreChoice.entries.forEach { c -> Choice(c.title, c.subtitle, s.core == c) { Store.update { copy(core = c) }; Engine.reload() } }
-        }
-        Spacer(Modifier.height(10.dp))
-        Card(Modifier.fillMaxWidth()) {
-            Text("DNS для зарубежных сайтов", color = C.Text, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                DnsChoice.entries.forEach { d ->
-                    Chip(d.title, s.dns == d) {
-                        Store.update { copy(dns = d) }
-                        if (d == DnsChoice.Auto) scope.launch { DnsAuto.measure(); Engine.reload() } else Engine.reload()
-                    }
-                }
-            }
-            if (s.dns == DnsChoice.Auto) {
-                val results by DnsAuto.results.collectAsState()
-                Spacer(Modifier.height(10.dp))
-                Text("Сейчас: ${DnsAuto.best.title} · самый быстрый из ${maxOf(results.size, 4)} (DNS-over-HTTPS)", color = C.Text, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                results.forEach { r ->
-                    Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
-                        Text(r.choice.title, color = if (r.choice == DnsAuto.best) C.Accent else C.Dim, fontSize = 13.sp, modifier = Modifier.weight(1f))
-                        Text(if (r.ms > 0) "${r.ms} мс" else "нет ответа", color = pingColor(r.ms), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                    }
-                }
-                Spacer(Modifier.height(6.dp))
-                SecondaryButton("Проверить сейчас") {
-                    scope.launch { val b = DnsAuto.best; DnsAuto.measure(); if (DnsAuto.best != b) Engine.reload() }
-                }
-            }
-            Spacer(Modifier.height(10.dp))
-            Toggle("Блокировка рекламы", "Реклама и трекеры не загружаются", s.adBlock) { Store.update { copy(adBlock = it) }; Engine.reload() }
-            Toggle("Автопилот без России и LTE-обхода", "Особые серверы выбираются только вручную", s.skipSpecial) { Store.update { copy(skipSpecial = it) }; Engine.reload() }
-        }
-
-        Section("Программа")
-        Card(Modifier.fillMaxWidth()) {
-            Toggle("Запускать вместе с Windows", "В трее, без окна", s.autostart) { Store.update { copy(autostart = it) }; WinSys.setAutostart(it) }
-            Toggle("Подключаться при запуске", null, s.connectOnStart) { Store.update { copy(connectOnStart = it) } }
-            Toggle("Сворачивать в трей при закрытии", "Значок у часов: подключить, сервер, режим", s.minimizeToTray) { Store.update { copy(minimizeToTray = it) } }
-            Toggle("Проверять обновления", "Раз в день на GitHub", s.checkUpdates) { Store.update { copy(checkUpdates = it) } }
-        }
-
-        Section("Подписка")
-        Card(Modifier.fillMaxWidth()) {
-            Text(Store.value.subscriptionUrl.let { if (it.length > 34) it.take(34) + "…" else it }.ifBlank { "Не добавлена" }, color = C.Dim, fontSize = 13.sp)
-            Spacer(Modifier.height(10.dp))
-            Text("Автообновление", color = C.Text, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(8.dp))
-            val opts = listOf(1, 6, 12, 24)
-            Segmented(opts.map { "$it ч" }, opts.indexOf(s.refreshHours).coerceAtLeast(0)) { i -> Store.update { copy(refreshHours = opts[i]) } }
-            Spacer(Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                SecondaryButton("Обновить сейчас") { scope.launch { runCatching { Subscription.refresh() }.onSuccess { Engine.reload() } } }
-                if (sub.nodes.isNotEmpty()) SecondaryButton("Удалить подписку", C.Bad) { Engine.disconnect(); Subscription.remove() }
-            }
-        }
-
-        Section("О программе")
-        Card(Modifier.fillMaxWidth()) {
-            Text("APEX VPN для Windows ${AppInfo.VERSION}", color = C.Text, fontWeight = FontWeight.Bold)
-            Text("Ядра: sing-box 1.13 и Xray 26 · общий движок с Android", color = C.Dim, fontSize = 13.sp)
-            Spacer(Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                SecondaryButton("Проверить обновления") {
-                    scope.launch { update = Updates.check()?.let { "Доступна версия ${it.tag}" } ?: "У вас последняя версия" }
-                }
-                SecondaryButton("Поддержка @Apexx_support") { WinSys.open(AppInfo.SUPPORT) }
-                SecondaryButton("Папка журналов") { WinSys.openFolder(Paths.data) }
-            }
-            update?.let {
-                Spacer(Modifier.height(8.dp))
-                Text(it, color = C.Accent, fontSize = 13.sp, modifier = Modifier.clickable { WinSys.open("https://github.com/${AppInfo.REPO}/releases/latest") })
-            }
-        }
-        Spacer(Modifier.height(24.dp))
-    }
-}
-
 // ─── Элементы ────────────────────────────────────────────────────────
 
 @Composable
@@ -546,12 +233,13 @@ fun Shield(on: Boolean, connecting: Boolean, size: Int) {
 
 @Composable
 fun Card(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    Column(modifier.clip(RoundedCornerShape(20.dp)).background(C.Surface).border(1.dp, C.Outline, RoundedCornerShape(20.dp)).padding(16.dp), content = content)
+    Column(modifier.clip(RoundedCornerShape(C.Radius)).background(C.Surface).border(1.dp, C.Outline, RoundedCornerShape(C.Radius)).padding(16.dp), content = content)
 }
 
 @Composable
 fun Section(t: String) {
-    Text(t.uppercase(), color = C.Dim, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, modifier = Modifier.padding(start = 6.dp, top = 22.dp, bottom = 8.dp))
+    // Как на Android: подпись группы обычным текстом, без капса
+    Text(t, color = C.Dim, fontSize = 15.sp, fontWeight = FontWeight.Medium, modifier = Modifier.padding(start = 4.dp, top = 22.dp, bottom = 10.dp))
 }
 
 @Composable
@@ -563,7 +251,7 @@ fun CountryBadge(code: String?) {
 
 @Composable
 fun Tag(t: String) {
-    Text(t, color = C.Accent, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(C.Accent.copy(alpha = 0.15f)).padding(horizontal = 8.dp, vertical = 3.dp))
+    Text(t, color = C.AccentText, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.clip(RoundedCornerShape(50)).background(C.AccentSoft).padding(horizontal = 9.dp, vertical = 3.dp))
 }
 
 @Composable

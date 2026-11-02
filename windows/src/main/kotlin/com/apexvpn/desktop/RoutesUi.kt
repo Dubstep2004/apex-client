@@ -54,8 +54,7 @@ fun RoutesScreen() {
     // Индекс открытого на изменение списка: -1 — никакой, size — новый
     var editing by remember { mutableStateOf(-1) }
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(28.dp)) {
-        Text("Маршруты", color = C.Text, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Text(
             if (s.routeMode == RouteMode.Smart) "Умный режим: российские сайты напрямую, остальное через VPN. Ниже — свои исключения."
             else "Режим «Весь трафик»: всё через VPN, кроме сайтов, отмеченных «напрямую».",

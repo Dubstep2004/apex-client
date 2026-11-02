@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.unit.dp
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -98,6 +99,9 @@ object C {
     val Accent get() = palette.accent
     val Cyan get() = palette.accent2
     val Light get() = palette.light
+    val AccentSoft get() = palette.accent.copy(alpha = if (palette.light) 0.14f else 0.20f)
+    val AccentText get() = if (palette.light) palette.accent else palette.accent.copy(red = (palette.accent.red + 0.25f).coerceAtMost(1f), green = (palette.accent.green + 0.25f).coerceAtMost(1f), blue = (palette.accent.blue + 0.15f).coerceAtMost(1f))
+    val Radius get() = if (design == Design.Classic || design == Design.Terminal) 18.dp else 26.dp
     val Good = Color(0xFF22C55E)
     val Warn = Color(0xFFE5A23A)
     val Bad = Color(0xFFEF4444)

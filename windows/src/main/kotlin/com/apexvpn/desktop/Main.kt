@@ -43,7 +43,7 @@ fun main(args: Array<String>) {
         val status by Engine.status.collectAsState()
         val s by Store.settings.collectAsState()
         val sub by Subscription.state.collectAsState()
-        val state = rememberWindowState(size = DpSize(1020.dp, 720.dp), position = WindowPosition.PlatformDefault)
+        val state = rememberWindowState(size = DpSize(500.dp, 760.dp), position = WindowPosition.PlatformDefault)
 
         fun quit() {
             Engine.shutdown()
@@ -106,7 +106,7 @@ fun main(args: Array<String>) {
             title = "APEX VPN",
             icon = painterResource("icon.png"),
         ) {
-            window.minimumSize = java.awt.Dimension(860, 600)
+            window.minimumSize = java.awt.Dimension(420, 680)
             AppUi()
         }
     }
