@@ -143,6 +143,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // 3.9.1: открылись после обновления — уведомление «Обновлено, открыть» больше не нужно
+        runCatching { getSystemService(android.app.NotificationManager::class.java)?.cancel(6) }
         // Тема: палитра и цвет значков строки состояния меняются вместе с настройками
         lifecycleScope.launch {
             // 588. Пока VPN включён на автопилоте, щит в цветах режима (🎮 красный, 🚀 голубой…)

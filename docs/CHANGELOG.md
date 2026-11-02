@@ -2,6 +2,18 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.9.1 · 3 ноября 2026
+
+<img src="img/tags/improved.svg" alt="Улучшено" height="22">
+
+- Скачанный файл обновления удаляется сразу после установки
+
+<img src="img/tags/fixed.svg" alt="Исправлено" height="22">
+
+- В окне обновления были видны звёздочки разметки («**Новое**») — теперь обычный текст
+- После нажатия «Обновить» в окне Android кнопка снова становилась активной, будто ничего не происходит, — теперь «Установка…» с полосой
+- После обновления приложение просто закрывалось — теперь открывается снова само (или приходит уведомление «APEX VPN обновлён — открыть»)
+
 ## 3.9.0 · 2 ноября 2026
 
 <img src="img/tags/new.svg" alt="Новое" height="22">

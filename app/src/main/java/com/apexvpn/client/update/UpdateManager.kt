@@ -143,7 +143,7 @@ object UpdateManager {
             apkUrl = asset("apex-vpn-$name.apk"),
             shaUrl = asset("apex-vpn-$name.apk.sha256"),
             versionName = name,
-            changelog = body.trim(),
+            changelog = cleanNotes(body),
             pageUrl = json.optString("html_url").takeIf { it.startsWith("https://github.com/") }
                 ?: "https://github.com/$repo/releases/tag/$tag",
             // Обязательное обновление: в описании релиза есть слово [обязательно]
@@ -173,4 +173,12 @@ object UpdateManager {
         val mine = rank(BuildConfig.VERSION_NAME)
         releases().filter { !it.beta && rank(it.versionName) < mine && it.apkUrl != null }.take(5)
     }
+
+    /** Текст релиза без разметки GitHub (звёздочки, `код`) и без списка файлов после «---». */
+    fun cleanNotes(body: String): String = body.replace("\r", "")
+        .substringBefore("\n---")
+        .replace("**", "").replace("`", "")
+        .lines().joinToString("\n") { l -> if (l.startsWith("- ")) "• " + l.removePrefix("- ") else l }
+        .replace(Regex("\n{3,}"), "\n\n")
+        .trim()
 }

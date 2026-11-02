@@ -227,6 +227,8 @@ object UpdateInstaller {
     suspend fun install(ctx: Context, apk: File, silent: Boolean): Boolean = withContext(Dispatchers.IO) {
         runCatching {
             if (VpnState.status.value == VpnStatus.Started) Prefs.reconnectAfterUpdate = true
+            // Обновляли из открытого приложения — после замены откроем его снова
+            Prefs.reopenAfterUpdate = visible
             val installer = ctx.packageManager.packageInstaller
             val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
                 setAppPackageName(ctx.packageName)
@@ -290,6 +292,28 @@ object UpdateInstaller {
         }
     }
 
+    /** Новая версия встала — скачанные файлы обновления больше не нужны. */
+    fun cleanup(ctx: Context) {
+        runCatching { File(ctx.cacheDir, "updates").listFiles()?.forEach { it.delete() } }
+    }
+
+    internal fun notifyUpdated(ctx: Context, open: Intent) {
+        val nm = ctx.getSystemService<NotificationManager>() ?: return
+        val pi = PendingIntent.getActivity(ctx, 15, open, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        runCatching {
+            nm.notify(
+                NOTIFY_ID,
+                NotificationCompat.Builder(ctx, ApexApp.CHANNEL_ALERTS)
+                    .setSmallIcon(R.drawable.ic_stat_apex)
+                    .setContentTitle("APEX VPN обновлён до ${BuildConfig.VERSION_NAME}")
+                    .setContentText("Нажмите, чтобы открыть")
+                    .setContentIntent(pi)
+                    .setAutoCancel(true)
+                    .build(),
+            )
+        }
+    }
+
     internal fun cancelProgress(ctx: Context) {
         runCatching { ctx.getSystemService<NotificationManager>()?.cancel(NOTIFY_ID) }
     }
@@ -342,9 +366,19 @@ class UpdateReceiver : BroadcastReceiver() {
             // Новая версия встала: VPN был включён — включаем снова
             Intent.ACTION_MY_PACKAGE_REPLACED -> {
                 Prefs.init(context)
+                UpdateInstaller.cleanup(context)
                 if (Prefs.reconnectAfterUpdate) {
                     Prefs.reconnectAfterUpdate = false
                     if (android.net.VpnService.prepare(context) == null) runCatching { ApexVpnService.start(context) }
+                }
+                // Обновляли из открытого приложения: открываем снова. Если Android не даст открыть
+                // из фона — уведомление «Обновлено, открыть» (окно приложения само его уберёт)
+                if (Prefs.reopenAfterUpdate) {
+                    Prefs.reopenAfterUpdate = false
+                    val open = Intent(context, com.apexvpn.client.ui.MainActivity::class.java)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    runCatching { context.startActivity(open) }
+                    UpdateInstaller.notifyUpdated(context, open)
                 }
             }
         }

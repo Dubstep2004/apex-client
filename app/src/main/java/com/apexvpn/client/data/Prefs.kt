@@ -56,6 +56,11 @@ object Prefs {
         get() = sp.getInt("dismissed_update", 0)
         set(v) = sp.edit { putInt("dismissed_update", v) }
 
+    /** 3.9.1: обновление запускали из открытого приложения — после установки открыть снова */
+    var reopenAfterUpdate: Boolean
+        get() = sp.getBoolean("reopen_after_update", false)
+        set(v) = sp.edit { putBoolean("reopen_after_update", v) }
+
     /** 3.7: версия APEX Watch на часах (часы сообщают при запуске) */
     var watchVersionCode: Int
         get() = sp.getInt("watch_version", 0)

@@ -45,7 +45,7 @@ fun UpdateDialog(viewModel: MainViewModel) {
     // «Позже» запоминаем для этой версии, кроме обязательных обновлений
     if (state is UpdateState.Available && !info.mandatory && Prefs.dismissedUpdateCode == info.versionCode) return
 
-    val busy = install is InstallState.Downloading || install is InstallState.Verifying
+    val busy = install is InstallState.Downloading || install is InstallState.Verifying || install is InstallState.Installing
     val canDismiss = !info.mandatory && !busy
     val oneClick = info.apkUrl != null && info.shaUrl != null
 
@@ -85,7 +85,11 @@ fun UpdateDialog(viewModel: MainViewModel) {
                         LinearProgressIndicator(progress = { i.percent / 100f }, modifier = Modifier.fillMaxWidth(), color = Apex.Accent)
                     }
                     InstallState.Verifying -> Text("Проверяем файл (SHA-256 и подпись)…", color = Apex.Text, fontSize = 13.sp)
-                    InstallState.Installing -> Text("Нажмите «Установить» в окне Android. VPN включится снова сам.", color = Apex.Text, fontSize = 13.sp)
+                    InstallState.Installing -> {
+                        Text("Устанавливаем новую версию… Если Android спросит — нажмите «Обновить». APEX закроется на пару секунд и откроется снова, VPN включится сам.", color = Apex.Text, fontSize = 13.sp)
+                        Spacer(Modifier.height(6.dp))
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = Apex.Accent)
+                    }
                     InstallState.NeedPermission -> Text(
                         "Разрешите установку обновлений из APEX VPN (откроются настройки Android), вернитесь и нажмите «Обновить» ещё раз.",
                         color = Apex.Accent, fontSize = 13.sp,
@@ -112,7 +116,7 @@ fun UpdateDialog(viewModel: MainViewModel) {
                     }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Apex.Accent, contentColor = Apex.OnAccent),
-            ) { Text(if (busy) "Загрузка…" else if (oneClick) "Обновить" else "Открыть на GitHub") }
+            ) { Text(if (install is InstallState.Installing) "Установка…" else if (busy) "Загрузка…" else if (oneClick) "Обновить" else "Открыть на GitHub") }
         },
         dismissButton = {
             if (canDismiss) {
