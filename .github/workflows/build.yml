@@ -18,7 +18,8 @@ permissions:
 # Новый пуш отменяет незаконченную сборку: иначе старая версия, собравшаяся позже,
 # становилась «последней» вместо новой (так 3.1.0 перебила 3.1.1)
 concurrency:
-  group: build-${{ github.ref }}
+  # Еженедельный запуск (только ключ подписи) — в своей группе, чтобы не отменял настоящую сборку
+  group: build-${{ github.ref }}-${{ github.event_name == 'schedule' && 'schedule' || 'build' }}
   cancel-in-progress: true
 
 jobs:
