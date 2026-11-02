@@ -12,6 +12,7 @@ import androidx.compose.foundation.border
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -333,6 +334,7 @@ private fun HelpPage(onBack: () -> Unit) {
 @Composable
 private fun HideAppsPage(viewModel: MainViewModel, onBack: () -> Unit) {
     val s by viewModel.settings.collectAsStateWithLifecycle()
+    var hideCat by rememberSaveable { mutableStateOf<String?>(null) }
     val appList by viewModel.apps.collectAsStateWithLifecycle()
     var query by rememberSaveable { mutableStateOf("") }
     LaunchedEffect(Unit) { viewModel.loadApps() }
@@ -380,8 +382,32 @@ private fun HideAppsPage(viewModel: MainViewModel, onBack: () -> Unit) {
                 }
                 Spacer(Modifier.height(10.dp))
             }
-            val filtered = list.filter { query.isBlank() || it.label.contains(query, true) || it.packageName.contains(query, true) }
-                .sortedByDescending { it.packageName in s.hiddenApps }
+            // 3.12. Категории: банки, госуслуги, маркетплейсы, Яндекс, VK… — фильтр сверху и группы в списке
+            val cats = remember(list) { list.associate { it.packageName to com.apexvpn.client.data.AppCategories.of(it) } }
+            val searched = list.filter { query.isBlank() || it.label.contains(query, true) || it.packageName.contains(query, true) }
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(bottom = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                val chips = listOf<Pair<String?, String>>(null to "Все · ${searched.size}", "hidden" to "Скрыто · ${searched.count { it.packageName in s.hiddenApps }}") +
+                    com.apexvpn.client.data.AppCategories.Cat.entries.mapNotNull { c ->
+                        val n = searched.count { cats[it.packageName] == c }
+                        if (n > 0) c.name to "${c.emoji} ${c.title} · $n" else null
+                    }
+                chips.forEach { (id, title) ->
+                    val sel = hideCat == id
+                    Box(
+                        Modifier.height(38.dp).clip(RoundedCornerShape(50))
+                            .background(if (sel) Apex.Accent else Apex.Surface)
+                            .clickable { hideCat = id }.padding(horizontal = 14.dp),
+                        contentAlignment = Alignment.Center,
+                    ) { Text(title, color = if (sel) Apex.OnAccent else Apex.Text, fontSize = 14.sp) }
+                }
+            }
+            val filtered = searched.filter {
+                when (hideCat) { null -> true; "hidden" -> it.packageName in s.hiddenApps; else -> cats[it.packageName]?.name == hideCat }
+            }.sortedWith(compareBy<com.apexvpn.client.data.AppInfo> { cats[it.packageName]?.ordinal ?: 99 }.thenBy { it.label.lowercase() })
+            val groups = filtered.groupBy { cats[it.packageName] ?: com.apexvpn.client.data.AppCategories.Cat.Other }
             LazyColumn(
                 Modifier
                     .fillMaxWidth()
@@ -389,7 +415,24 @@ private fun HideAppsPage(viewModel: MainViewModel, onBack: () -> Unit) {
                     .clip(RoundedCornerShape(24.dp))
                     .background(Apex.Surface),
             ) {
-                items(filtered, key = { it.packageName }) { app ->
+              groups.forEach { (cat, apps) ->
+                item(key = "cat_" + cat.name) {
+                    val allHidden = apps.all { it.packageName in s.hiddenApps }
+                    Row(
+                        Modifier.fillMaxWidth().background(Apex.Accent.copy(alpha = 0.08f)).padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text("${cat.emoji} ${cat.title} · ${apps.size}", color = Apex.Text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                        Box(Modifier.clip(RoundedCornerShape(50)).clickable {
+                            val pk = apps.map { it.packageName }.toSet()
+                            viewModel.change {
+                                if (allHidden) copy(hiddenApps = hiddenApps - pk, hideTemplateSkip = hideTemplateSkip + pk)
+                                else copy(hiddenApps = hiddenApps + pk, hideTemplateSkip = hideTemplateSkip - pk)
+                            }
+                        }) { Tag(if (allHidden) "Вернуть все" else "Скрыть все", outlined = allHidden) }
+                    }
+                }
+                items(apps, key = { it.packageName }) { app ->
                     val on = app.packageName in s.hiddenApps
                     val icon = remember(app.packageName) { runCatching { app.icon?.toBitmap(96, 96)?.asImageBitmap() }.getOrNull() }
                     ListRow(
@@ -403,6 +446,7 @@ private fun HideAppsPage(viewModel: MainViewModel, onBack: () -> Unit) {
                         ApexSwitch(on, { v -> viewModel.change { copy(hiddenApps = if (v) hiddenApps + app.packageName else hiddenApps - app.packageName, hideTemplateSkip = if (v) hideTemplateSkip - app.packageName else hideTemplateSkip + app.packageName) } })
                     }
                 }
+              }
             }
         }
         Spacer(Modifier.height(12.dp))

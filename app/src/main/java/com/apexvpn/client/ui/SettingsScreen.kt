@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
 import androidx.compose.material.icons.rounded.Update
 import androidx.compose.material.icons.rounded.Policy
@@ -71,6 +72,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -111,6 +113,7 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
     var confirmRemove by remember { mutableStateOf(false) }
     var rulesDialog by remember { mutableStateOf(false) }
     var coreDialog by remember { mutableStateOf(false) }
+    var cat by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("all") }
     val context = LocalContext.current
 
     Column(
@@ -122,7 +125,24 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
     ) {
         Spacer(Modifier.height(18.dp))
         ScreenTitle("Настройки", Modifier.padding(start = 4.dp))
+        // 3.12. Категории: показать только нужный раздел настроек
+        Spacer(Modifier.height(10.dp))
+        Row(
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            settingsCategories.forEach { (id, title) ->
+                val on = cat == id
+                Box(
+                    Modifier.height(40.dp).clip(RoundedCornerShape(50))
+                        .background(if (on) Apex.Accent else Apex.Surface)
+                        .clickable { cat = id }.padding(horizontal = 16.dp),
+                    contentAlignment = Alignment.Center,
+                ) { Text(title, color = if (on) Apex.OnAccent else Apex.Text, fontSize = 15.sp, fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal) }
+            }
+        }
 
+        if (cat == "all" || cat == "sub") {
         // ── Подписка ──
         SectionLabel("Подписка")
         Group {
@@ -171,6 +191,8 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
             }
         }
 
+        }
+        if (cat == "all" || cat == "conn") {
         // ── Подключение ──
         SectionLabel("Подключение")
         Group {
@@ -279,6 +301,8 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
             ) { Chevron() }
         }
 
+        }
+        if (cat == "all" || cat == "tools") {
         // ── Инструменты ──
         SectionLabel("Инструменты")
         Group {
@@ -387,6 +411,8 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
             )
         }
 
+        }
+        if (cat == "all" || cat == "look") {
         // ── Уведомления ──
         SectionLabel("Уведомления")
         Group {
@@ -411,6 +437,8 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
             ListRow("Дизайн, тема и иконка", "${s.design.title} · ${s.theme.title}", leading = { tile(Icons.Rounded.Palette) }, onClick = { onOpenPage(Page.Appearance) }) { Chevron() }
         }
 
+        }
+        if (cat == "all" || cat == "updates") {
         // ── Обновления ──
         SectionLabel("Обновления приложения")
         Group {
@@ -475,6 +503,8 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
             }
         }
 
+        }
+        if (cat == "all" || cat == "data") {
         // ── Резервная копия настроек: после переустановки всё вернуть одним файлом ──
         SectionLabel("Резервная копия")
         // 3.8. Копия с паролем: пароль спрашиваем до выбора файла, при восстановлении — если файл зашифрован
@@ -610,6 +640,8 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
             )
         }
 
+        }
+        if (cat == "all" || cat == "about") {
         // ── О приложении ──
         SectionLabel("О приложении")
         Group {
@@ -693,6 +725,7 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
             ) { Chevron() }
         }
         Spacer(Modifier.height(24.dp))
+        }
     }
 
     // 24. Поддержка: чат из подписки (support-url), копия отчёта или файл
@@ -1017,3 +1050,9 @@ private fun BackupPasswordDialog(
         },
     )
 }
+
+/** 3.12. Категории настроек: id → подпись. */
+private val settingsCategories = listOf(
+    "all" to "Все", "conn" to "Подключение", "tools" to "Инструменты", "look" to "Вид и звук",
+    "sub" to "Подписка", "updates" to "Обновления", "data" to "Данные", "about" to "О приложении",
+)

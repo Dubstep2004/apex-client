@@ -2,6 +2,13 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.12.0 · 3 ноября 2026
+
+<img src="img/tags/new.svg" alt="Новое" height="22">
+
+- «Скрыть VPN»: приложения разложены по категориям — банки и платежи, госуслуги, маркетплейсы, Яндекс, VK и Mail.ru, операторы, такси и доставка, видео и музыка, карты и поездки, мессенджеры, игры. Фильтр сверху, «Скрыто», и кнопка «Скрыть все» у каждой категории
+- Категории в «Настройках»: Все · Подключение · Инструменты · Вид и звук · Подписка · Обновления · Данные · О приложении
+
 ## 3.11.3 · 3 ноября 2026
 
 <img src="img/tags/improved.svg" alt="Улучшено" height="22">

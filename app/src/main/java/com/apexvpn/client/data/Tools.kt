@@ -288,7 +288,7 @@ object LivePing {
 
 // ─── 6. Список приложений ───────────────────────────────────────────────
 
-data class AppInfo(val packageName: String, val label: String, val icon: Drawable?)
+data class AppInfo(val packageName: String, val label: String, val icon: Drawable?, val category: Int = -1)
 
 object InstalledApps {
     suspend fun load(context: Context): List<AppInfo> = withContext(Dispatchers.IO) {
@@ -300,7 +300,7 @@ object InstalledApps {
             .map { it.activityInfo.applicationInfo }
             .distinctBy { it.packageName }
             .filter { it.packageName != context.packageName }
-            .map { AppInfo(it.packageName, it.loadLabel(pm).toString(), runCatching { it.loadIcon(pm) }.getOrNull()) }
+            .map { AppInfo(it.packageName, it.loadLabel(pm).toString(), runCatching { it.loadIcon(pm) }.getOrNull(), if (android.os.Build.VERSION.SDK_INT >= 26) it.category else -1) }
             .sortedBy { it.label.lowercase() }
     }
 }
