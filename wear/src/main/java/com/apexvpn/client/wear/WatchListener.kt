@@ -17,6 +17,17 @@ import com.google.android.gms.wearable.WearableListenerService
  * и значок на циферблате (410), а при отключении VPN — коротко вибрируем (411).
  */
 class WatchListener : WearableListenerService() {
+    // 3.7. Обновление с телефона: телефон открывает канал /apex/watch-apk и передаёт файл
+    override fun onChannelOpened(channel: com.google.android.gms.wearable.ChannelClient.Channel) {
+        if (channel.path != WatchUpdate.PATH) return
+        WatchUpdate.receive(this, channel)
+    }
+
+    override fun onInputClosed(channel: com.google.android.gms.wearable.ChannelClient.Channel, closeReason: Int, appSpecificErrorCode: Int) {
+        if (channel.path != WatchUpdate.PATH) return
+        WatchUpdate.received(this, closeReason)
+    }
+
     override fun onDataChanged(events: DataEventBuffer) {
         events.forEach { e ->
             if (e.type != DataEvent.TYPE_CHANGED || e.dataItem.uri.path != "/apex/status") return@forEach

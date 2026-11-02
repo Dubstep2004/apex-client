@@ -2,6 +2,14 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.7.0 · 2 ноября 2026
+
+<img src="img/tags/new.svg" alt="Новое" height="22">
+
+- «Пробовать новое раньше» — тестовый канал: приходят и тестовые версии (на GitHub — Pre-release), обновляются в один клик
+- «Вернуть прошлую версию»: по шагам — копия настроек, файл прошлой версии с GitHub (с проверкой SHA-256), удаление и установка. Android не ставит старую версию поверх новой, поэтому иначе нельзя
+- Обновление часов APEX Watch с телефона: телефон скачивает версию для часов, сверяет SHA-256 и передаёт на часы, часы предлагают установить
+
 ## 3.6.0 · 2 ноября 2026
 
 <img src="img/tags/new.svg" alt="Новое" height="22">

@@ -120,7 +120,8 @@ class WearActivity : ComponentActivity(), DataClient.OnDataChangedListener {
     override fun onResume() {
         super.onResume()
         Wearable.getDataClient(this).addListener(this)
-        send("/apex/hello") // телефон пришлёт свежее состояние
+        // Телефон пришлёт свежее состояние; версия часов — чтобы телефон предложил их обновить (3.7)
+        send("/apex/hello", runCatching { packageManager.getPackageInfo(packageName, 0).longVersionCode.toString() }.getOrDefault("").toByteArray())
     }
 
     override fun onPause() {

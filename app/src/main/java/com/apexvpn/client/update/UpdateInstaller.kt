@@ -129,77 +129,82 @@ object UpdateInstaller {
         setRequestProperty("User-Agent", "APEX VPN/${BuildConfig.VERSION_NAME}")
     }
 
-    /** Скачать и проверить APK; null — не получилось (причина — в state). */
-    suspend fun download(ctx: Context, info: UpdateInfo, showProgress: Boolean): File? = lock.withLock {
-        withContext(Dispatchers.IO) {
-            fun fail(msg: String): File? { set(InstallState.Failed(msg)); cancelProgress(ctx); return null }
-            val apkUrl = info.apkUrl ?: return@withContext fail("В релизе нет файла apk")
-            val shaUrl = info.shaUrl ?: return@withContext fail("В релизе нет контрольной суммы")
-            set(InstallState.Downloading(0))
-            val expected = runCatching {
-                val c = open(shaUrl, 15_000)
-                try { c.inputStream.bufferedReader().readText().trim().split(Regex("\\s+")).first().lowercase() } finally { c.disconnect() }
-            }.getOrNull()?.takeIf { it.length == 64 } ?: return@withContext fail("Не удалось получить контрольную сумму — проверьте интернет")
-
-            val dir = updatesDir(ctx)
-            val name = "apex-vpn-${info.versionName}.apk"
-            val file = File(dir, name)
-            if (file.exists() && sha256(file) == expected && signedByUs(ctx, file)) {
-                cancelProgress(ctx)
-                return@withContext file
-            }
-            dir.listFiles()?.filter { it.name != "$name.part" && it.name.startsWith("apex-vpn-") }?.forEach { it.delete() }
-            val part = File(dir, "$name.part")
-            var done = false
-            for (attempt in 1..4) {
-                val ok = runCatching {
-                    val have = part.length()
-                    val c = open(apkUrl, 20_000)
-                    try {
-                        if (have > 0) c.setRequestProperty("Range", "bytes=$have-")
-                        val code = c.responseCode
-                        val append = code == 206 && have > 0
-                        check(code == 200 || append) { "HTTP $code" }
-                        val total = (if (append) have else 0L) + c.contentLengthLong.coerceAtLeast(0)
-                        var got = if (append) have else 0L
-                        var lastPct = -1
-                        FileOutputStream(part, append).use { out ->
-                            c.inputStream.use { inp ->
-                                val buf = ByteArray(64 * 1024)
-                                while (true) {
-                                    val n = inp.read(buf); if (n < 0) break
-                                    out.write(buf, 0, n); got += n
-                                    if (total > 0) {
-                                        val pct = (got * 100 / total).toInt().coerceIn(0, 99)
-                                        if (pct != lastPct) {
-                                            lastPct = pct
-                                            set(InstallState.Downloading(pct))
-                                            if (showProgress && pct % 5 == 0) notifyProgress(ctx, info.versionName, pct)
-                                        }
-                                    }
+    /**
+     * Скачать файл из релиза и сверить SHA-256 (с докачкой при обрыве).
+     * Ответ: файл или текст ошибки. Общий для телефона, отката и часов.
+     */
+    internal suspend fun fetchVerified(
+        ctx: Context, url: String, shaUrl: String, name: String, onProgress: (Int) -> Unit,
+    ): Pair<File?, String?> = withContext(Dispatchers.IO) {
+        val expected = runCatching {
+            val c = open(shaUrl, 15_000)
+            try { c.inputStream.bufferedReader().readText().trim().split(Regex("\\s+")).first().lowercase() } finally { c.disconnect() }
+        }.getOrNull()?.takeIf { it.length == 64 } ?: return@withContext null to "Не удалось получить контрольную сумму — проверьте интернет"
+        val dir = updatesDir(ctx)
+        val file = File(dir, name)
+        if (file.exists() && sha256(file) == expected) return@withContext file to null
+        val part = File(dir, "$name.part")
+        var done = false
+        for (attempt in 1..4) {
+            val ok = runCatching {
+                val have = part.length()
+                val c = open(url, 20_000)
+                try {
+                    if (have > 0) c.setRequestProperty("Range", "bytes=$have-")
+                    val code = c.responseCode
+                    val append = code == 206 && have > 0
+                    check(code == 200 || append) { "HTTP $code" }
+                    val total = (if (append) have else 0L) + c.contentLengthLong.coerceAtLeast(0)
+                    var got = if (append) have else 0L
+                    var lastPct = -1
+                    FileOutputStream(part, append).use { out ->
+                        c.inputStream.use { inp ->
+                            val buf = ByteArray(64 * 1024)
+                            while (true) {
+                                val n = inp.read(buf); if (n < 0) break
+                                out.write(buf, 0, n); got += n
+                                if (total > 0) {
+                                    val pct = (got * 100 / total).toInt().coerceIn(0, 99)
+                                    if (pct != lastPct) { lastPct = pct; onProgress(pct) }
                                 }
                             }
                         }
-                    } finally { c.disconnect() }
-                }.isSuccess
-                if (ok) { done = true; break }
-                delay(2000L * attempt) // докачаем с того же места
-            }
-            if (!done) return@withContext fail("Не удалось скачать обновление — проверьте интернет и нажмите ещё раз")
-            set(InstallState.Verifying)
-            if (sha256(part) != expected) {
-                part.delete()
-                return@withContext fail("Файл повреждён или подменён — не устанавливаем. Нажмите ещё раз")
-            }
-            file.delete()
-            if (!part.renameTo(file)) return@withContext fail("Не удалось сохранить обновление")
-            if (!signedByUs(ctx, file)) {
-                file.delete()
-                return@withContext fail("Файл подписан другим ключом — не устанавливаем")
-            }
-            cancelProgress(ctx)
-            file
+                    }
+                } finally { c.disconnect() }
+            }.isSuccess
+            if (ok) { done = true; break }
+            delay(2000L * attempt) // докачаем с того же места
         }
+        if (!done) return@withContext null to "Не удалось скачать — проверьте интернет и нажмите ещё раз"
+        if (sha256(part) != expected) {
+            part.delete()
+            return@withContext null to "Файл повреждён или подменён — не используем. Нажмите ещё раз"
+        }
+        file.delete()
+        if (!part.renameTo(file)) return@withContext null to "Не удалось сохранить файл"
+        file to null
+    }
+
+    /** Скачать и проверить APK; null — не получилось (причина — в state). */
+    suspend fun download(ctx: Context, info: UpdateInfo, showProgress: Boolean): File? = lock.withLock {
+        fun fail(msg: String): File? { set(InstallState.Failed(msg)); cancelProgress(ctx); return null }
+        val apkUrl = info.apkUrl ?: return@withLock fail("В релизе нет файла apk")
+        val shaUrl = info.shaUrl ?: return@withLock fail("В релизе нет контрольной суммы")
+        set(InstallState.Downloading(0))
+        val name = "apex-vpn-${info.versionName}.apk"
+        updatesDir(ctx).listFiles()?.filter { it.name.startsWith("apex-vpn-") && !it.name.startsWith(name) }?.forEach { it.delete() }
+        val (file, err) = fetchVerified(ctx, apkUrl, shaUrl, name) { pct ->
+            set(InstallState.Downloading(pct))
+            if (showProgress && pct % 5 == 0) notifyProgress(ctx, info.versionName, pct)
+        }
+        if (file == null) return@withLock fail(err ?: "Не удалось скачать обновление")
+        set(InstallState.Verifying)
+        if (!withContext(Dispatchers.IO) { signedByUs(ctx, file) }) {
+            file.delete()
+            return@withLock fail("Файл подписан другим ключом — не устанавливаем")
+        }
+        cancelProgress(ctx)
+        file
     }
 
     /** Тот же пакет, версия новее и та же подпись, что у установленного приложения. Не смогли прочитать подпись — решит сам Android. */

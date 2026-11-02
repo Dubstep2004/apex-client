@@ -160,6 +160,8 @@ jobs:
           "$APKSIGNER" verify --print-certs "$APK" > signer.txt; head -3 signer.txt
           # 3.4: контрольная сумма — приложение сверяет её перед обновлением в один клик
           (cd dist && sha256sum "apex-vpn-${VERSION_NAME}.apk" > "apex-vpn-${VERSION_NAME}.apk.sha256" && cat "apex-vpn-${VERSION_NAME}.apk.sha256")
+          # 3.7: и для часов — телефон сверяет её перед передачей на часы
+          if [ -f "$WEAR" ]; then (cd dist && sha256sum "apex-watch-${VERSION_NAME}.apk" > "apex-watch-${VERSION_NAME}.apk.sha256"); fi
           # Защита от подделок: релиз должен быть подписан ключом автора — тем же, что записан
           # в Integrity.kt. Иначе приложение назвало бы свою же сборку «неофициальной копией».
           GOT=$(grep -oP 'certificate SHA-256 digest: \K[0-9a-f]+' signer.txt | head -1 | tr 'a-f' 'A-F')
@@ -214,4 +216,7 @@ jobs:
             dist/apex-vpn-${{ steps.apk.outputs.name }}.json
             dist/apex-watch-${{ steps.apk.outputs.name }}.apk
             dist/apex-vpn-${{ steps.apk.outputs.name }}.apk.sha256
-          make_latest: true
+            dist/apex-watch-${{ steps.apk.outputs.name }}.apk.sha256
+          # 3.7: тестовые версии (…-beta1) — Pre-release, «последним» остаётся обычный релиз
+          prerelease: ${{ contains(steps.apk.outputs.name, 'beta') }}
+          make_latest: ${{ contains(steps.apk.outputs.name, 'beta') && 'false' || 'true' }}

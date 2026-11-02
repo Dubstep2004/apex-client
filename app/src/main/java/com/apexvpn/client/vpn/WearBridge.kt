@@ -85,7 +85,12 @@ class WearListener : WearableListenerService() {
         when (event.path) {
             "/apex/toggle" -> runCatching { VpnToggle.toggle(applicationContext) }
                 .onFailure { Log.w("ApexWear", "toggle failed", it) }
-            "/apex/hello" -> WearBridge.publishServers(applicationContext, force = true)
+            "/apex/hello" -> {
+                // 3.7: часы присылают свою версию — телефон предложит их обновить
+                String(event.data, Charsets.UTF_8).toIntOrNull()?.let { com.apexvpn.client.data.Prefs.watchVersionCode = it }
+                WearBridge.publishServers(applicationContext, force = true)
+            }
+            "/apex/watch-update" -> com.apexvpn.client.update.WatchUpdater.onWatchMessage(String(event.data, Charsets.UTF_8))
             // 408. Выбор сервера с часов
             "/apex/select" -> runCatching {
                 val tag = String(event.data, Charsets.UTF_8)

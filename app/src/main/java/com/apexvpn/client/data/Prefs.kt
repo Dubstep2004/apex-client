@@ -56,6 +56,11 @@ object Prefs {
         get() = sp.getInt("dismissed_update", 0)
         set(v) = sp.edit { putInt("dismissed_update", v) }
 
+    /** 3.7: версия APEX Watch на часах (часы сообщают при запуске) */
+    var watchVersionCode: Int
+        get() = sp.getInt("watch_version", 0)
+        set(v) = sp.edit { putInt("watch_version", v) }
+
     /** 3.5: результаты проверки сервисов по серверам (JSON tag → результат) */
     var serviceChecks: String
         get() = sp.getString("service_checks", "{}") ?: "{}"

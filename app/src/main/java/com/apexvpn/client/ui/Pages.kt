@@ -90,7 +90,7 @@ import java.util.Locale
 import kotlinx.coroutines.launch
 
 /** Дополнительные страницы, открываются поверх вкладок. */
-enum class Page { Apps, SpeedTest, SiteCheck, Wifi, Share, Dns, Profile, Appearance, Changelog, Advanced, HideApps, AppTraffic, Help, KeepAlive, SelfCheck, About, Ping, ConnLog, LeakTest, AppIssue, ServiceCheck, Report }
+enum class Page { Apps, SpeedTest, SiteCheck, Wifi, Share, Dns, Profile, Appearance, Changelog, Advanced, HideApps, AppTraffic, Help, KeepAlive, SelfCheck, About, Ping, ConnLog, LeakTest, AppIssue, ServiceCheck, Report, Rollback }
 
 @Composable
 fun PageHost(page: Page, viewModel: MainViewModel, onBack: () -> Unit) {
@@ -117,6 +117,7 @@ fun PageHost(page: Page, viewModel: MainViewModel, onBack: () -> Unit) {
         Page.AppIssue -> AppIssuePage(viewModel, onBack)
         Page.ServiceCheck -> ServiceCheckPage(viewModel, onBack)
         Page.Report -> ReportPage(onBack)
+        Page.Rollback -> RollbackPage(viewModel, onBack)
     }
 }
 

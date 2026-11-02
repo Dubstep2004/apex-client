@@ -27,9 +27,11 @@ data class UpdateInfo(
     val apkUrl: String? = null,
     /** Ссылка на контрольную сумму apex-vpn-<версия>.apk.sha256 */
     val shaUrl: String? = null,
+    /** Тестовая версия (Pre-release на GitHub) */
+    val beta: Boolean = false,
 ) {
     /** Число для сравнения и «Позже» (1.7.2 → 1007002). */
-    val versionCode: Int get() = UpdateManager.versionNumber(versionName)
+    val versionCode: Int get() = UpdateManager.rank(versionName).toInt()
 }
 
 sealed interface UpdateState {
@@ -71,7 +73,7 @@ object UpdateManager {
         if (!silent) _state.value = UpdateState.Checking
         try {
             val info = fetchLatest()
-            _state.value = if (info != null && versionNumber(info.versionName) > versionNumber(BuildConfig.VERSION_NAME)) {
+            _state.value = if (info != null && rank(info.versionName) > rank(BuildConfig.VERSION_NAME)) {
                 UpdateState.Available(info)
             } else {
                 UpdateState.UpToDate
@@ -93,9 +95,19 @@ object UpdateManager {
         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 
-    /** null — на GitHub ещё нет ни одной версии. */
-    private suspend fun fetchLatest(): UpdateInfo? = withContext(Dispatchers.IO) {
-        val conn = (URL(latestApi).openConnection() as HttpURLConnection).apply {
+    /**
+     * Порядок версий с учётом тестовых: 3.7.0-beta1 < 3.7.0-beta2 < 3.7.0 < 3.7.1.
+     * (Обычная версия — «бета 99».)
+     */
+    fun rank(name: String): Long {
+        val beta = Regex("""beta\.?(\d+)""", RegexOption.IGNORE_CASE).find(name)?.groupValues?.get(1)?.toIntOrNull()
+        return versionNumber(name).toLong() * 100 + (beta?.coerceIn(1, 98) ?: 99)
+    }
+
+    fun isBeta(name: String) = name.contains("beta", ignoreCase = true)
+
+    private fun api(url: String): String {
+        val conn = (URL(url).openConnection() as HttpURLConnection).apply {
             connectTimeout = 15_000
             readTimeout = 20_000
             setRequestProperty("Accept", "application/vnd.github+json")
@@ -104,34 +116,61 @@ object UpdateManager {
         try {
             when (conn.responseCode) {
                 HttpURLConnection.HTTP_OK -> Unit
-                HttpURLConnection.HTTP_NOT_FOUND -> return@withContext null
+                HttpURLConnection.HTTP_NOT_FOUND -> return ""
                 403, 429 -> error("GitHub временно ограничил проверки — попробуйте через час")
                 else -> error("GitHub ответил кодом ${conn.responseCode}")
             }
-            val json = JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
-            val tag = json.optString("tag_name").ifBlank { return@withContext null }
-            val name = tag.removePrefix("v")
-            val body = json.optString("body")
-            // Только файлы из релизов этого репозитория; часы (apex-watch-…) не трогаем
-            val prefix = "https://github.com/$repo/releases/download/"
-            val assets = json.optJSONArray("assets")
-            fun asset(fileName: String): String? = assets?.let { a ->
-                (0 until a.length()).mapNotNull { a.optJSONObject(it) }
-                    .firstOrNull { it.optString("name") == fileName }
-                    ?.optString("browser_download_url")?.takeIf { it.startsWith(prefix) }
-            }
-            UpdateInfo(
-                apkUrl = asset("apex-vpn-$name.apk"),
-                shaUrl = asset("apex-vpn-$name.apk.sha256"),
-                versionName = name,
-                changelog = body.trim(),
-                pageUrl = json.optString("html_url").takeIf { it.startsWith("https://github.com/") }
-                    ?: "https://github.com/$repo/releases/tag/$tag",
-                // Обязательное обновление: в описании релиза есть слово [обязательно]
-                mandatory = body.contains("[обязательно]", ignoreCase = true),
-            )
+            return conn.inputStream.bufferedReader().use { it.readText() }
         } finally {
             conn.disconnect()
         }
+    }
+
+    private fun toInfo(json: JSONObject): UpdateInfo? {
+        val tag = json.optString("tag_name").ifBlank { return null }
+        if (!tag.startsWith("v") || json.optBoolean("draft")) return null
+        val name = tag.removePrefix("v")
+        val body = json.optString("body")
+        // Только файлы из релизов этого репозитория; часы (apex-watch-…) не трогаем
+        val prefix = "https://github.com/$repo/releases/download/"
+        val assets = json.optJSONArray("assets")
+        fun asset(fileName: String): String? = assets?.let { a ->
+            (0 until a.length()).mapNotNull { a.optJSONObject(it) }
+                .firstOrNull { it.optString("name") == fileName }
+                ?.optString("browser_download_url")?.takeIf { it.startsWith(prefix) }
+        }
+        return UpdateInfo(
+            apkUrl = asset("apex-vpn-$name.apk"),
+            shaUrl = asset("apex-vpn-$name.apk.sha256"),
+            versionName = name,
+            changelog = body.trim(),
+            pageUrl = json.optString("html_url").takeIf { it.startsWith("https://github.com/") }
+                ?: "https://github.com/$repo/releases/tag/$tag",
+            // Обязательное обновление: в описании релиза есть слово [обязательно]
+            mandatory = body.contains("[обязательно]", ignoreCase = true),
+            beta = json.optBoolean("prerelease"),
+        )
+    }
+
+    /** Последние релизы телефона (с тестовыми), новые первыми. */
+    private fun releases(): List<UpdateInfo> {
+        val text = api("https://api.github.com/repos/$repo/releases?per_page=30").ifBlank { return emptyList() }
+        val a = org.json.JSONArray(text)
+        return (0 until a.length()).mapNotNull { a.optJSONObject(it)?.let(::toInfo) }.sortedByDescending { rank(it.versionName) }
+    }
+
+    /** null — на GitHub ещё нет ни одной версии. Тестовый канал — самая новая, включая тестовые. */
+    private suspend fun fetchLatest(): UpdateInfo? = withContext(Dispatchers.IO) {
+        if (com.apexvpn.client.data.AppSettings.value.betaChannel) {
+            releases().firstOrNull()
+        } else {
+            api(latestApi).ifBlank { return@withContext null }.let { toInfo(JSONObject(it)) }
+        }
+    }
+
+    /** 3.7. Прошлые обычные версии — для «Вернуть прошлую версию». */
+    suspend fun previousVersions(): List<UpdateInfo> = withContext(Dispatchers.IO) {
+        val mine = rank(BuildConfig.VERSION_NAME)
+        releases().filter { !it.beta && rank(it.versionName) < mine && it.apkUrl != null }.take(5)
     }
 }

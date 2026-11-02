@@ -4,6 +4,8 @@
     <uses-feature android:name="android.hardware.type.watch" />
     <!-- 411. Вибрация, когда VPN отключился -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- 3.7: обновление часов с телефона -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
         android:icon="@mipmap/ic_launcher"
@@ -33,7 +35,16 @@
                 <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
                 <data android:scheme="wear" android:host="*" android:pathPrefix="/apex" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.CHANNEL_EVENT" />
+                <data android:scheme="wear" android:host="*" android:pathPrefix="/apex/watch-apk" />
+            </intent-filter>
         </service>
+
+        <!-- 3.7: ответ установщика -->
+        <receiver
+            android:name=".WatchUpdateReceiver"
+            android:exported="false" />
 
         <!-- 409. Плитка APEX VPN -->
         <service

@@ -21,6 +21,8 @@
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <!-- 3.5: «Приложение не работает?» — недавно открытые приложения первыми (только по разрешению пользователя) -->
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
+    <!-- 3.7: «Вернуть прошлую версию» — системное окно удаления -->
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
 
     <!-- 47. Android TV: сенсорный экран, камера и GPS не обязательны -->
     <uses-feature android:name="android.software.leanback" android:required="false" />

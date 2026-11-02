@@ -462,6 +462,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { UpdateManager.check(silent = false) }
     }
 
+    /** 3.7. Передать обновление на часы */
+    fun updateWatch() {
+        viewModelScope.launch { com.apexvpn.client.update.WatchUpdater.send(getApplication()) }
+    }
+
     /** 3.4. Обновление в один клик: скачать, проверить SHA-256 и подпись, установить. */
     fun installUpdate(info: com.apexvpn.client.update.UpdateInfo) {
         viewModelScope.launch {

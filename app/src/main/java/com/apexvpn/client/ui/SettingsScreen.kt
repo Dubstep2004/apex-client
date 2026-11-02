@@ -425,6 +425,26 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
             ) { ApexSwitch(s.updateMode == "auto", { v -> viewModel.change(reload = false) { copy(updateMode = if (v) "auto" else "ask") } }) }
             GroupDivider()
             ListRow(
+                "Пробовать новое раньше",
+                if (s.betaChannel) "Тестовый канал: приходят и тестовые версии — они могут быть сырыми" else "Только обычные проверенные версии",
+                leading = { tile(Icons.Rounded.Update) },
+                onClick = { viewModel.change(reload = false) { copy(betaChannel = !betaChannel) }; viewModel.checkUpdate() },
+            ) { ApexSwitch(s.betaChannel, { v -> viewModel.change(reload = false) { copy(betaChannel = v) }; viewModel.checkUpdate() }) }
+            GroupDivider()
+            ListRow("Вернуть прошлую версию", "Если новая не понравилась — по шагам, с сохранением настроек", leading = { tile(Icons.Rounded.SystemUpdate) }, onClick = { onOpenPage(Page.Rollback) }) { Chevron() }
+            GroupDivider()
+            val watchStatus by com.apexvpn.client.update.WatchUpdater.status.collectAsStateWithLifecycle()
+            if (com.apexvpn.client.update.WatchUpdater.watchCode > 0) {
+                val outdated = com.apexvpn.client.update.WatchUpdater.outdated
+                ListRow(
+                    "Обновить часы APEX Watch",
+                    watchStatus ?: if (outdated) "Часы на старой версии — нажмите, телефон передаст обновление" else "Часы на той же версии, что и телефон",
+                    leading = { tile(Icons.Rounded.SystemUpdate) },
+                    onClick = { viewModel.updateWatch() },
+                ) { if (outdated) Tag("Обновить") }
+                GroupDivider()
+            }
+            ListRow(
                 "Скачивать только по Wi-Fi",
                 "Для «Ставить само»: без мобильного трафика",
                 leading = { tile(Icons.Rounded.Update) },
