@@ -2,6 +2,7 @@ package apexcore
 
 import (
 	"encoding/json"
+	"os"
 	"strings"
 	"testing"
 )
@@ -198,7 +199,6 @@ func TestDirectCountries(t *testing.T) {
 	}
 }
 
-
 func TestProxyInbound(t *testing.T) {
 	nodes := `[{"tag":"a","name":"A","type":"vless","server":"1.2.3.4","port":443,"outbound":{"type":"vless","server":"1.2.3.4","server_port":443,"uuid":"` + "bf000d23-0752-40b4-affe-68f7707a9661" + `"}}]`
 	cfg, err := BuildConfig(nodes, "a", `{"mode":"all","inbound":"proxy","proxyPort":30123}`)
@@ -211,5 +211,22 @@ func TestProxyInbound(t *testing.T) {
 	cfg, _ = BuildConfig(nodes, "a", `{"mode":"all","directProcesses":["APEX VPN.exe"]}`)
 	if !strings.Contains(cfg, `"process_name"`) || !strings.Contains(cfg, `"find_process": true`) {
 		t.Fatalf("proxy inbound expected:\n%s", cfg)
+	}
+}
+
+// Windows 2.3: раздача по дому и в режиме «Системный прокси» — вход share-in на 0.0.0.0
+func TestShareWithProxyInbound(t *testing.T) {
+	nodes := `[{"tag":"a","name":"A","type":"vless","server":"1.2.3.4","port":443,"outbound":{"type":"vless","server":"1.2.3.4","server_port":443,"uuid":"` + "bf000d23-0752-40b4-affe-68f7707a9661" + `"}}]`
+	cfg, err := BuildConfig(nodes, "a", `{"mode":"smart","inbound":"proxy","proxyPort":30123,"share":{"enabled":true,"port":2080,"username":"apex","password":"secret12"}}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`"tag": "proxy-in"`, `"tag": "share-in"`, `"listen": "0.0.0.0"`, `"listen_port": 2080`, `"password": "secret12"`} {
+		if !strings.Contains(cfg, want) {
+			t.Fatalf("missing %s:\n%s", want, cfg)
+		}
+	}
+	if os.Getenv("APEX_DUMP") != "" {
+		_ = os.WriteFile(os.Getenv("APEX_DUMP"), []byte(cfg), 0o644)
 	}
 }

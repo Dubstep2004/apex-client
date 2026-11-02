@@ -406,6 +406,9 @@ fun ClassicSettings(open: (Page) -> Unit) {
                 SecondaryButton("Справка") { open(Page.Help) }
                 SecondaryButton("Что нового") { open(Page.WhatsNew) }
                 SecondaryButton("Ссылка-приглашение") { Invite.copy() }
+                SecondaryButton("Kill Switch") { open(Page.KillSwitch) }
+                SecondaryButton("Раздача по дому") { open(Page.Share) }
+                SecondaryButton("Ограничение скорости") { open(Page.Limits) }
             }
         }
 
@@ -414,7 +417,7 @@ fun ClassicSettings(open: (Page) -> Unit) {
             Toggle("Запускать вместе с Windows", "В трее, без окна", s.autostart) { Store.update { copy(autostart = it) }; WinSys.setAutostart(it) }
             Toggle("Подключаться при запуске", null, s.connectOnStart) { Store.update { copy(connectOnStart = it) } }
             Toggle("Сворачивать в трей при закрытии", "Значок у часов: подключить, сервер, режим", s.minimizeToTray) { Store.update { copy(minimizeToTray = it) } }
-            Toggle("Проверять обновления", "Раз в день на GitHub", s.checkUpdates) { Store.update { copy(checkUpdates = it) } }
+            Toggle("Проверять обновления", if (s.updateMode == "auto") "Раз в 6 часов · ставить само" else "Раз в 6 часов · спросить меня", s.checkUpdates) { Store.update { copy(checkUpdates = it) } }
         }
 
         Section("Подписка")
@@ -438,9 +441,7 @@ fun ClassicSettings(open: (Page) -> Unit) {
             Text("Ядра: sing-box 1.13 и Xray 26 · общий движок с Android", color = C.Dim, fontSize = 13.sp)
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                SecondaryButton("Проверить обновления") {
-                    scope.launch { update = Updates.check()?.let { "Доступна версия ${it.tag}" } ?: "У вас последняя версия" }
-                }
+                SecondaryButton("Обновление") { open(Page.Update) }
                 SecondaryButton("Поддержка @Apexx_support") { WinSys.open(AppInfo.SUPPORT) }
                 SecondaryButton("Папка журналов") { WinSys.openFolder(Paths.data) }
             }
@@ -482,5 +483,9 @@ private fun ClassicPage(page: Page) {
         Page.Exclude -> ExcludeAppsPage()
         Page.Help -> HelpPage()
         Page.WhatsNew -> WhatsNewPage()
+        Page.Update -> UpdatePage()
+        Page.KillSwitch -> KillSwitchPage()
+        Page.Share -> SharePage()
+        Page.Limits -> LimitsPage()
     }
 }

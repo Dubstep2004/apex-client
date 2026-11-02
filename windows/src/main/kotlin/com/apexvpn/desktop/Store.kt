@@ -128,7 +128,23 @@ data class Settings(
     val refreshHours: Int = 6,
     val skipSpecial: Boolean = true,
     val checkUpdates: Boolean = true,
+    // 2.3
+    /** Обновления: «ask» — спросить (одна кнопка), «auto» — ставить само, когда VPN выключен */
+    val updateMode: String = "ask",
+    /** Последняя версия, для которой показали «Что нового» */
+    val seenVersion: String = "",
+    /** Kill Switch: VPN неожиданно упал — интернет закрыт до переподключения */
+    val killSwitch: Boolean = false,
+    /** Раздача VPN по дому: HTTP/SOCKS-прокси для телевизора, приставки, телефона */
+    val shareLan: Boolean = false,
+    val sharePort: Int = 2080,
+    val sharePassOn: Boolean = false,
+    val sharePass: String = "",
+    /** Ограничение скорости отдачи программ (QoS Windows), Мбит/с */
+    val appLimits: List<AppLimit> = emptyList(),
 )
+
+data class AppLimit(val exe: String, val mbps: Int)
 
 object Store {
     private val file get() = File(Paths.data, "settings.json")
@@ -182,6 +198,15 @@ object Store {
             refreshHours = o.optInt("refreshHours", d.refreshHours).takeIf { it in listOf(1, 6, 12, 24) } ?: d.refreshHours,
             skipSpecial = o.optBoolean("skipSpecial", d.skipSpecial),
             checkUpdates = o.optBoolean("checkUpdates", d.checkUpdates),
+            updateMode = o.optString("updateMode", d.updateMode).takeIf { it in listOf("ask", "auto") } ?: d.updateMode,
+            seenVersion = o.optString("seenVersion", d.seenVersion),
+            killSwitch = o.optBoolean("killSwitch", d.killSwitch),
+            shareLan = o.optBoolean("shareLan", d.shareLan),
+            sharePort = o.optInt("sharePort", d.sharePort).takeIf { it in 1025..65535 } ?: d.sharePort,
+            sharePassOn = o.optBoolean("sharePassOn", d.sharePassOn),
+            sharePass = o.optString("sharePass", d.sharePass),
+            appLimits = o.optJSONArray("appLimits")?.let { a -> (0 until a.length()).mapNotNull { a.optJSONObject(it) }
+                .map { AppLimit(it.optString("exe"), it.optInt("mbps", 10).coerceIn(1, 1000)) }.filter { it.exe.isNotBlank() } } ?: d.appLimits,
             customLists = o.optJSONArray("customLists")?.let { a ->
                 (0 until a.length()).mapNotNull { i -> a.optJSONObject(i) }.map { l ->
                     CustomList(l.optString("name"), strings(l.optJSONArray("items")), l.optBoolean("enabled", true))
@@ -241,6 +266,9 @@ object Store {
             .put("expiryAlerts", s.expiryAlerts)
             .put("pingType", s.pingType).put("pingTimeout", s.pingTimeout).put("pingUrl", s.pingUrl).put("customDns", s.customDns)
             .put("failover", s.failover).put("autoWhitelist", s.autoWhitelist).put("excludeApps", JSONArray(s.excludeApps)).put("liveBg", s.liveBg)
+            .put("updateMode", s.updateMode).put("seenVersion", s.seenVersion).put("killSwitch", s.killSwitch)
+            .put("shareLan", s.shareLan).put("sharePort", s.sharePort).put("sharePassOn", s.sharePassOn).put("sharePass", s.sharePass)
+            .put("appLimits", JSONArray(s.appLimits.map { JSONObject().put("exe", it.exe).put("mbps", it.mbps) }))
         runCatching {
             val tmp = File(Paths.data, "settings.json.tmp")
             tmp.writeText(o.toString(2))

@@ -154,6 +154,10 @@ private fun ColumnScope.FluentPage(page: Page, open: (Page) -> Unit) {
         Page.Exclude -> ExcludeAppsPage()
         Page.Help -> HelpPage()
         Page.WhatsNew -> WhatsNewPage()
+        Page.Update -> UpdatePage()
+        Page.KillSwitch -> KillSwitchPage()
+        Page.Share -> SharePage()
+        Page.Limits -> LimitsPage()
     }
 }
 

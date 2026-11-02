@@ -132,7 +132,7 @@ object WinSys {
 }
 
 object AppInfo {
-    const val VERSION = "2.2.1"
+    const val VERSION = "2.3.0"
     const val REPO = "Dubstep2004/apex-vpn"
     const val SUPPORT = "https://t.me/Apexx_support"
 }

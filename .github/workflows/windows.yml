@@ -101,6 +101,8 @@ jobs:
           (cd "windows/build/compose/binaries/main/app" && 7z a -tzip "$(cygpath -w "$W/dist/apex-vpn-windows-$WV.zip")" "APEX VPN" > /dev/null)
           EXE=$(ls windows/build/installer/*.exe 2>/dev/null | head -1 || true)
           [ -n "$EXE" ] && cp "$EXE" "dist/apex-vpn-windows-$WV.exe"
+          # Контрольная сумма: программа сверяет её перед тихим обновлением (2.3)
+          (cd dist && sha256sum "apex-vpn-windows-$WV.exe" > "apex-vpn-windows-$WV.exe.sha256" && cat "apex-vpn-windows-$WV.exe.sha256")
           ls -la dist
           # Что нового — раздел этой версии из windows/CHANGELOG.md
           awk -v v="## $WV " 'index($0, v) == 1 {on=1; next} /^## / {on=0} on' windows/CHANGELOG.md > dist/notes.md
@@ -129,6 +131,7 @@ jobs:
           files: |
             dist/apex-vpn-windows-*.exe
             dist/apex-vpn-windows-*.zip
+            dist/apex-vpn-windows-*.exe.sha256
 
       # Раньше файлы Windows клались в релиз Android — убираем их оттуда
       - name: Убрать Windows из релиза Android

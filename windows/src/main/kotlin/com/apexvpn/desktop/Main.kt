@@ -16,7 +16,10 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxSize
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.RandomAccessFile
 import java.nio.channels.FileLock
@@ -34,7 +37,14 @@ private fun singleInstance(): Boolean = runCatching {
 fun main(args: Array<String>) {
     if (!singleInstance()) exitProcess(0)
     WinSys.cleanupStaleProxy()
-    Runtime.getRuntime().addShutdownHook(Thread { Engine.shutdown() })
+    // Kill Switch остался от прошлого запуска (программу закрыли) — открываем интернет и переподключаемся
+    val killSwitchWas = KillSwitch.startupCleanup()
+    val reconnectAfterUpdate = Updater.consumeReconnect()
+    // «Что нового»: версия сменилась (у тех, кто обновился с 2.2 и раньше, seenVersion ещё нет)
+    val showNewsAtStart = Store.value.seenVersion != AppInfo.VERSION &&
+        (Store.value.seenVersion.isNotBlank() || Store.value.subscriptionUrl.isNotBlank())
+    if (Store.value.seenVersion != AppInfo.VERSION) Store.update { copy(seenVersion = AppInfo.VERSION) }
+    Runtime.getRuntime().addShutdownHook(Thread { KillSwitch.release(); Engine.shutdown() })
     val startHidden = "--tray" in args
     C.apply(Store.value)
     // Галочка «Запускать вместе с Windows» в установщике — показываем её и в настройках
@@ -47,7 +57,14 @@ fun main(args: Array<String>) {
         val sub by Subscription.state.collectAsState()
         val state = rememberWindowState(size = when (Store.value.layout) { "windows" -> DpSize(1120.dp, 740.dp); "phone" -> DpSize(500.dp, 760.dp); else -> DpSize(1020.dp, 720.dp) }, position = WindowPosition.PlatformDefault)
 
+        var showNews by remember { mutableStateOf(showNewsAtStart) }
+        val upd by Updater.state.collectAsState()
+        val speed by Engine.speed.collectAsState()
+        val ksOn by KillSwitch.engaged.collectAsState()
+        val scope = androidx.compose.runtime.rememberCoroutineScope()
+
         fun quit() {
+            KillSwitch.release()
             Engine.shutdown()
             exitApplication()
         }
@@ -61,8 +78,12 @@ fun main(args: Array<String>) {
                 if (st == VpnStatus.On && prev != VpnStatus.On) Sounds.play(true)
                 if (prev == VpnStatus.On && st != VpnStatus.On) {
                     Sounds.play(false)
-                    if (st == VpnStatus.Error) trayState.sendNotification(Notification("APEX VPN отключился", Engine.error.value ?: "Ядро остановилось", Notification.Type.Warning))
+                    if (st == VpnStatus.Error) trayState.sendNotification(Notification("APEX VPN отключился",
+                        if (KillSwitch.engaged.value) "Kill Switch: интернет закрыт, пока VPN не переподключится" else Engine.error.value ?: "Ядро остановилось",
+                        Notification.Type.Warning))
                 }
+                // «Ставить само»: обновление скачано — ставим, когда VPN выключили
+                if (st == VpnStatus.Off && Store.value.updateMode == "auto") Updater.state.value.ready?.let { Updater.install(it) }
                 prev = st
             }
         }
@@ -73,10 +94,31 @@ fun main(args: Array<String>) {
                 delay(60 * 60_000L)
             }
         }
+        // Обновления программы: через 30 с после запуска, потом раз в 6 часов
+        LaunchedEffect(Unit) {
+            delay(30_000)
+            var told = ""
+            while (true) {
+                if (Store.value.checkUpdates) {
+                    val info = runCatching { Updater.check() }.getOrNull()
+                    if (info != null) {
+                        if (Store.value.updateMode == "auto") {
+                            val f = runCatching { Updater.download(info) }.getOrNull()
+                            if (f != null && !Engine.running) Updater.install(f)
+                            if (f != null && told != info.tag) trayState.sendNotification(Notification("APEX VPN ${info.tag}", "Обновление скачано — установится, когда вы отключите VPN", Notification.Type.Info))
+                        } else if (told != info.tag) {
+                            trayState.sendNotification(Notification("Доступна APEX VPN ${info.tag}", "Меню значка у часов → «Обновить до ${info.tag}» — одна кнопка", Notification.Type.Info))
+                        }
+                        told = info.tag
+                    }
+                }
+                delay(6 * 60 * 60_000L)
+            }
+        }
         LaunchedEffect(Unit) {
             if (Subscription.needsRefresh()) runCatching { Subscription.refresh() }
             if (Store.value.dns == DnsChoice.Auto) runCatching { DnsAuto.measure() }
-            if (s.connectOnStart && sub.nodes.isNotEmpty()) Engine.connect()
+            if ((s.connectOnStart || reconnectAfterUpdate || (killSwitchWas && s.killSwitch)) && sub.nodes.isNotEmpty()) Engine.connect()
             runCatching { Pinger.pingAll() }
             if (Rules.due() && runCatching { Rules.update() }.getOrDefault(false)) Engine.reload()
             while (true) {
@@ -95,10 +137,21 @@ fun main(args: Array<String>) {
         Tray(
             state = trayState,
             icon = painterResource(if (status == VpnStatus.On) "tray_on.png" else "tray_off.png"),
-            tooltip = "APEX VPN — " + when (status) { VpnStatus.On -> "защищено"; VpnStatus.Connecting -> "подключение…"; else -> "не защищено" },
+            tooltip = "APEX VPN — " + when {
+                upd.progress >= 0 -> "загрузка обновления ${upd.progress}%"
+                ksOn -> "Kill Switch: интернет закрыт"
+                status == VpnStatus.On -> "защищено · ↓ ${rate(speed.second)}  ↑ ${rate(speed.first)}"
+                status == VpnStatus.Connecting -> "подключение…"
+                else -> "не защищено"
+            },
             onAction = { visible = true },
             menu = {
                 Item("Открыть APEX VPN", onClick = { visible = true })
+                if (ksOn) Item("Kill Switch: вернуть интернет без VPN", onClick = { KillSwitch.release() })
+                upd.available?.let { a ->
+                    Item(if (upd.progress >= 0) "Загрузка обновления ${upd.progress}%" else "Обновить до ${a.tag}",
+                        enabled = upd.progress < 0, onClick = { scope.launch { Updater.updateNow() } })
+                }
                 Separator()
                 Item(if (Engine.running) "Отключить" else "Подключить", onClick = { Engine.toggle() })
                 Menu("Сервер") {
@@ -139,6 +192,20 @@ fun main(args: Array<String>) {
             // Заголовок окна в цвет темы (тёмный у тёмных дизайнов) — Windows 10 20H1+ / 11
             LaunchedEffect(C.Light) { WinSys.darkTitleBar(window.windowHandle, !C.Light) }
             AppUi()
+        }
+
+        // После обновления — что изменилось в этой версии
+        if (showNews && visible) {
+            androidx.compose.ui.window.DialogWindow(
+                onCloseRequest = { showNews = false },
+                state = androidx.compose.ui.window.rememberDialogState(size = DpSize(520.dp, 560.dp)),
+                title = "Что нового в APEX VPN ${AppInfo.VERSION}",
+                icon = painterResource("icon.png"),
+            ) {
+                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(C.Base)) {
+                    WhatsNewLatest { showNews = false }
+                }
+            }
         }
     }
 }

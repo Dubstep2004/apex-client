@@ -115,6 +115,7 @@ enum class Page(val title: String) {
     Log("Журнал соединений"), Appearance("Оформление"), Dns("DNS"), Core("Ядро"),
     Services("Сервисы через VPN"), Advanced("Для опытных"), SelfCheck("Не работает?"),
     Ping("Настройки пинга"), Exclude("Программы мимо VPN"), Help("Справка"), WhatsNew("Что нового"),
+    Update("Обновление"), KillSwitch("Kill Switch"), Share("Раздача по дому"), Limits("Ограничение скорости"),
 }
 
 private val ColumnMax = 560.dp
@@ -184,6 +185,10 @@ private fun PageContent(page: Page, open: (Page) -> Unit) {
         Page.Exclude -> ExcludeAppsPage()
         Page.Help -> HelpPage()
         Page.WhatsNew -> WhatsNewPage()
+        Page.Update -> UpdatePage()
+        Page.KillSwitch -> KillSwitchPage()
+        Page.Share -> SharePage()
+        Page.Limits -> LimitsPage()
     }
 }
 
@@ -558,6 +563,15 @@ fun SettingsTab(open: (Page) -> Unit) {
             ListRow("Программы мимо VPN", if (s.excludeApps.isEmpty()) "Как «Скрыть VPN» на телефоне (режим TUN)" else s.excludeApps.joinToString(", "),
                 leading = { IconTile(Icons.Rounded.Apps, Color(0xFF8B5CF6)) }, onClick = { open(Page.Exclude) }) { Chevron() }
             GroupDivider()
+            ListRow("Kill Switch", if (s.killSwitch) "Включён — VPN упал, интернет закрыт до переподключения" else "Выключен",
+                leading = { IconTile(Icons.Rounded.Security, Color(0xFFEF4444)) }, onClick = { open(Page.KillSwitch) }) { Chevron() }
+            GroupDivider()
+            ListRow("Раздача VPN по дому", if (s.shareLan) "Включена · порт ${s.sharePort}" else "Телевизор, приставка, телефон через этот ПК",
+                leading = { IconTile(Icons.Rounded.Share, Color(0xFF14B8A6)) }, onClick = { open(Page.Share) }) { Chevron() }
+            GroupDivider()
+            ListRow("Ограничение скорости программ", if (s.appLimits.isEmpty()) "Чтобы торрент не забирал весь канал" else s.appLimits.joinToString(", ") { "${it.exe} ${it.mbps} Мбит/с" },
+                leading = { IconTile(Icons.Rounded.Speed, Color(0xFFF59E0B)) }, onClick = { open(Page.Limits) }) { Chevron() }
+            GroupDivider()
             ListRow("Автопилот без России и LTE-обхода", "Особые серверы — только вручную", leading = { IconTile(Icons.Rounded.Public, Color(0xFFF97316)) },
                 onClick = { Store.update { copy(skipSpecial = !skipSpecial) }; Engine.reload() }) { ApexSwitch(s.skipSpecial) { v -> Store.update { copy(skipSpecial = v) }; Engine.reload() } }
         }
@@ -638,7 +652,7 @@ fun SettingsTab(open: (Page) -> Unit) {
             GroupDivider()
             ListRow("Сворачивать в трей", "Значок у часов: подключить, сервер, режим", onClick = { Store.update { copy(minimizeToTray = !minimizeToTray) } }) { ApexSwitch(s.minimizeToTray) { v -> Store.update { copy(minimizeToTray = v) } } }
             GroupDivider()
-            ListRow("Проверять обновления", "На GitHub", onClick = { Store.update { copy(checkUpdates = !checkUpdates) } }) { ApexSwitch(s.checkUpdates) { v -> Store.update { copy(checkUpdates = v) } } }
+            ListRow("Обновления", if (!s.checkUpdates) "Не проверять" else if (s.updateMode == "auto") "Ставить само" else "Спросить меня", onClick = { open(Page.Update) }) { Chevron() }
         }
 
         Section("О программе")
@@ -647,7 +661,7 @@ fun SettingsTab(open: (Page) -> Unit) {
                 onClick = { WinSys.open(Updates.PAGE) })
             GroupDivider()
             ListRow("Проверить обновления", leading = { IconTile(Icons.Rounded.SystemUpdate, Color(0xFF22C55E)) },
-                onClick = { scope.launch { update = Updates.check()?.let { "Доступна версия ${it.tag} — нажмите, чтобы скачать" } ?: "У вас последняя версия" } }) { Chevron() }
+                onClick = { open(Page.Update) }) { Chevron() }
             GroupDivider()
             ListRow("Поддержка", "@Apexx_support в Telegram", leading = { IconTile(Icons.Rounded.SupportAgent, Color(0xFF0EA5E9)) }, onClick = { WinSys.open(AppInfo.SUPPORT) }) { Chevron() }
             GroupDivider()

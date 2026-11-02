@@ -94,6 +94,8 @@ object Engine {
                 _status.value = VpnStatus.On
                 _connectedAt.value = System.currentTimeMillis()
                 startWatch()
+                KillSwitch.onConnected()
+                KillSwitch.remember(Subscription.state.value.nodes)
                 // Режим по замерам без данных: подбираем серверы уже через VPN и применяем
                 val mode = Store.value.autoMode
                 if (mode.measured && Store.value.selected == "auto" && AutoModes.allowed(mode, Subscription.state.value.nodes).isEmpty()) {
@@ -112,6 +114,7 @@ object Engine {
 
     fun disconnect() = scope.launch {
         AutoOff.clear()
+        KillSwitch.release()
         lock.withLock {
             stopLocked()
             _status.value = VpnStatus.Off
@@ -131,10 +134,12 @@ object Engine {
                 _status.value = VpnStatus.On
                 _connectedAt.value = if (since > 0) since else System.currentTimeMillis()
                 startWatch()
+                KillSwitch.remember(Subscription.state.value.nodes)
             } catch (e: Exception) {
                 stopLocked()
                 _error.value = e.message
                 _status.value = VpnStatus.Error
+                KillSwitch.onDrop()
             }
         }
     }
@@ -176,6 +181,7 @@ object Engine {
             .put("ipv6", false)
             .put("directProcesses", JSONArray((listOf("APEX VPN.exe", "apexcli.exe") + s.excludeApps).distinct()))
             .put("customDns", s.customDns)
+            .put("share", LanShare.options(s))
         if (s.warp && s.warpConfig.isNotBlank()) runCatching { o.put("warp", JSONObject(s.warpConfig)) }
         o.put("probePort", Store.probePort)
         if (s.pingUrl.isNotBlank()) o.put("urlTest", s.pingUrl.trim())
@@ -199,7 +205,7 @@ object Engine {
         val sub = Subscription.state.value
         check(sub.nodes.isNotEmpty()) { "Сначала добавьте подписку" }
         if (s.connectType == ConnectType.Tun) check(WinSys.isAdmin()) { "Для TUN нужны права администратора — перезапустите APEX VPN от администратора или выберите «Системный прокси»" }
-        if (s.autoWhitelist) runCatching { WhiteList.check() }
+        if (s.autoWhitelist && !KillSwitch.engaged.value) runCatching { WhiteList.check() }
         val sb = Paths.exe("sing-box.exe")
         check(sb.exists()) { "Не найден sing-box.exe — переустановите APEX VPN" }
 
@@ -267,6 +273,7 @@ object Engine {
                     lock.withLock { stopLocked() }
                     _error.value = "Ядро остановилось: " + lastLog()
                     _status.value = VpnStatus.Error
+                    KillSwitch.onDrop()
                     break
                 }
                 // Скорость: общий счётчик трафика ядра
