@@ -21,6 +21,8 @@
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <!-- 3.5: «Приложение не работает?» — недавно открытые приложения первыми (только по разрешению пользователя) -->
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
+    <!-- 3.9: Android 16 — «живое» уведомление VPN в строке состояния -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
     <!-- 3.7: «Вернуть прошлую версию» — системное окно удаления -->
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
 

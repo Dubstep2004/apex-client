@@ -70,6 +70,14 @@ fun SetupScreen(viewModel: MainViewModel, onScanQr: () -> Unit) {
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(32.dp))
+        // 3.9. Телевизор: подписку удобнее прислать с телефона по QR-коду
+        val ctx = androidx.compose.ui.platform.LocalContext.current
+        if (androidx.compose.runtime.remember { isTv(ctx) }) {
+            TvPairingCard(viewModel)
+            Spacer(Modifier.height(20.dp))
+            Text("или введите ссылку пультом", color = Apex.TextDim, fontSize = 14.sp)
+            Spacer(Modifier.height(12.dp))
+        }
         SubscriptionInput(viewModel, buttonText = "Подключить подписку", onSuccess = {})
         Spacer(Modifier.height(12.dp))
         androidx.compose.material3.OutlinedButton(

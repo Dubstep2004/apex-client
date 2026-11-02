@@ -492,6 +492,13 @@ class ApexVpnService : VpnService(), PlatformInterface, CommandServerHandler {
             .setContentIntent(openApp)
             .addAction(0, getString(R.string.notification_disconnect), stopIntent)
             .apply { if (status == VpnStatus.Started) addAction(0, "Приложение не работает?", appIssue) }
+            // 3.9. Android 16: «живое» уведомление — капсула в строке состояния со скоростью
+            .apply {
+                if (Build.VERSION.SDK_INT >= 36 && status == VpnStatus.Started) addExtras(android.os.Bundle().apply {
+                    putBoolean("android.requestPromotedOngoing", true)
+                    putString("android.shortCriticalText", formatSpeed(VpnState.speed.value.first).substringBefore('/').take(9))
+                })
+            }
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setShowWhen(false)

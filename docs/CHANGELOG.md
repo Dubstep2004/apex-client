@@ -2,6 +2,17 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.9.0 · 2 ноября 2026
+
+<img src="img/tags/new.svg" alt="Новое" height="22">
+
+- Android TV: подписку можно прислать с телефона — телевизор показывает QR-код, телефон открывает страницу и вставляет ссылку. Пультом печатать не нужно
+- Android 16: «живое» уведомление VPN — капсула со скоростью в строке состояния (где оболочка это поддерживает)
+
+<img src="img/tags/improved.svg" alt="Улучшено" height="22">
+
+- Плитка APEX Watch в стиле Wear OS 6: кольцо состояния, крупный статус, плашка сервера (открывает приложение) и широкая кнопка «Включить / Выключить»
+
 ## 3.8.0 · 2 ноября 2026
 
 <img src="img/tags/new.svg" alt="Новое" height="22">

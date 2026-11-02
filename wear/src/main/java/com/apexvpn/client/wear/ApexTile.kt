@@ -39,44 +39,83 @@ class ApexTile : TileService() {
             )
             .build()
 
-        val button = LayoutElementBuilders.Box.Builder()
-            .setWidth(dp(76f))
-            .setHeight(dp(76f))
-            .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
-            .setVerticalAlignment(LayoutElementBuilders.VERTICAL_ALIGN_CENTER)
-            .setModifiers(
-                ModifiersBuilders.Modifiers.Builder()
-                    .setBackground(
-                        ModifiersBuilders.Background.Builder()
-                            .setColor(argb(if (on) 0xFF6D4AFF.toInt() else 0xFF2A2A33.toInt()))
-                            .setCorner(ModifiersBuilders.Corner.Builder().setRadius(dp(38f)).build())
-                            .build(),
-                    )
-                    .setClickable(
-                        ModifiersBuilders.Clickable.Builder()
-                            .setId("toggle")
-                            .setOnClick(ActionBuilders.LoadAction.Builder().build())
-                            .build(),
-                    )
+        // 3.9. Вид Wear OS 6 (Material 3 Expressive): кольцо состояния по краю экрана,
+        // крупный статус, плашка сервера (открывает APEX Watch) и широкая кнопка-«пилюля» снизу
+        fun clickable(id: String, action: ActionBuilders.Action) = ModifiersBuilders.Clickable.Builder().setId(id).setOnClick(action).build()
+        fun pill(content: LayoutElementBuilders.LayoutElement, color: Int, w: Float, h: Float, click: ModifiersBuilders.Clickable?) =
+            LayoutElementBuilders.Box.Builder()
+                .setWidth(dp(w)).setHeight(dp(h))
+                .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
+                .setVerticalAlignment(LayoutElementBuilders.VERTICAL_ALIGN_CENTER)
+                .setModifiers(
+                    ModifiersBuilders.Modifiers.Builder()
+                        .setBackground(
+                            ModifiersBuilders.Background.Builder()
+                                .setColor(argb(color))
+                                .setCorner(ModifiersBuilders.Corner.Builder().setRadius(dp(h / 2)).build())
+                                .build(),
+                        )
+                        .apply { if (click != null) setClickable(click) }
+                        .build(),
+                )
+                .addContent(content)
+                .build()
+
+        val openApp = ActionBuilders.LaunchAction.Builder()
+            .setAndroidActivity(
+                ActionBuilders.AndroidActivity.Builder()
+                    .setPackageName(packageName)
+                    .setClassName("com.apexvpn.client.wear.WearActivity")
                     .build(),
             )
-            .addContent(text("⏻", 30f, 0xFFFFFFFF.toInt(), bold = true))
+            .build()
+
+        val ring = LayoutElementBuilders.Arc.Builder()
+            .setAnchorAngle(androidx.wear.protolayout.DimensionBuilders.degrees(0f))
+            .addContent(
+                LayoutElementBuilders.ArcLine.Builder()
+                    .setLength(androidx.wear.protolayout.DimensionBuilders.degrees(if (on) 360f else 300f))
+                    .setThickness(dp(5f))
+                    .setColor(argb(if (on) 0xFF7C5CFF.toInt() else 0xFF2A2A33.toInt()))
+                    .build(),
+            )
             .build()
 
         val column = LayoutElementBuilders.Column.Builder()
             .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
             .addContent(text("APEX VPN", 12f, 0xFF8E8E9A.toInt()))
+            .addContent(LayoutElementBuilders.Spacer.Builder().setHeight(dp(4f)).build())
+            .addContent(text(if (on) "Защищено" else WatchState.label(st.status), 22f, if (on) 0xFFFFFFFF.toInt() else 0xFFC9C9DA.toInt(), bold = true))
             .addContent(LayoutElementBuilders.Spacer.Builder().setHeight(dp(6f)).build())
-            .addContent(button)
-            .addContent(LayoutElementBuilders.Spacer.Builder().setHeight(dp(6f)).build())
-            .addContent(text(WatchState.label(st.status), 15f, 0xFFFFFFFF.toInt(), bold = true))
-            .addContent(text(if (on && st.ping > 0) "${st.server} · ${st.ping} мс" else st.server.ifBlank { "Откройте APEX Watch" }, 12f, accent))
+            .addContent(
+                pill(
+                    text(if (on && st.ping > 0) "${st.server} · ${st.ping} мс" else st.server.ifBlank { "Открыть APEX Watch" }, 12f, accent),
+                    0xFF1C1C26.toInt(), 132f, 30f, clickable("open", openApp),
+                ),
+            )
+            .addContent(LayoutElementBuilders.Spacer.Builder().setHeight(dp(10f)).build())
+            .addContent(
+                pill(
+                    text(if (on) "⏻  Выключить" else "⏻  Включить", 15f, 0xFFFFFFFF.toInt(), bold = true),
+                    if (on) 0xFF6D4AFF.toInt() else 0xFF3A3A48.toInt(), 150f, 52f,
+                    clickable("toggle", ActionBuilders.LoadAction.Builder().build()),
+                ),
+            )
+            .build()
+
+        val root = LayoutElementBuilders.Box.Builder()
+            .setWidth(androidx.wear.protolayout.DimensionBuilders.expand())
+            .setHeight(androidx.wear.protolayout.DimensionBuilders.expand())
+            .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
+            .setVerticalAlignment(LayoutElementBuilders.VERTICAL_ALIGN_CENTER)
+            .addContent(ring)
+            .addContent(column)
             .build()
 
         val tile = TileBuilders.Tile.Builder()
             .setResourcesVersion(RES)
             .setFreshnessIntervalMillis(60_000)
-            .setTileTimeline(TimelineBuilders.Timeline.fromLayoutElement(column))
+            .setTileTimeline(TimelineBuilders.Timeline.fromLayoutElement(root))
             .build()
         return CallbackToFutureAdapter.getFuture { it.set(tile); "tile" }
     }
@@ -92,6 +131,6 @@ class ApexTile : TileService() {
     }
 
     private companion object {
-        const val RES = "1"
+        const val RES = "2"
     }
 }
