@@ -291,6 +291,8 @@ jobs:
 
       - name: Файлы для релиза
         id: win
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           V="${{ needs.build.outputs.version }}"
@@ -304,10 +306,10 @@ jobs:
           [ -n "$EXE" ] && cp "$EXE" "dist/apex-vpn-$V-windows.exe"
           ls -la dist
           echo "::notice title=Windows $WV::$(ls dist | tr '\n' ' ')"
-          {
-            echo
-            echo "💻 **Windows $WV** — apex-vpn-$V-windows.exe (установщик) или apex-vpn-$V-windows.zip (без установки)"
-          } > dist/win.md
+          # Описание релиза: прежняя строка про Windows заменяется новой (версия Windows — для проверки обновлений)
+          gh release view "v$V" --json body -q .body 2>/dev/null | grep -v "💻 \*\*Windows" > dist/win.md || true
+          test -s dist/win.md || { echo "::error title=Windows::не прочитано описание релиза v$V"; exit 1; }
+          echo "💻 **Windows $WV** — apex-vpn-$V-windows.exe (установщик) или apex-vpn-$V-windows.zip (без установки)" >> dist/win.md
           echo "version=$V" >> "$GITHUB_OUTPUT"
 
       - name: Добавить в релиз
@@ -316,7 +318,6 @@ jobs:
         with:
           tag_name: v${{ steps.win.outputs.version }}
           body_path: dist/win.md
-          append_body: true
           files: |
             dist/apex-vpn-*-windows.exe
             dist/apex-vpn-*-windows.zip

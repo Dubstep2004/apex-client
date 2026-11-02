@@ -109,7 +109,7 @@ object WinSys {
 }
 
 object AppInfo {
-    const val VERSION = "1.0.0"
+    const val VERSION = "1.1.0"
     const val REPO = "Dubstep2004/apex-vpn"
     const val SUPPORT = "https://t.me/Apexx_support"
 }
@@ -129,7 +129,7 @@ object Updates {
             val exe = (0 until assets.length()).map { assets.getJSONObject(it) }
                 .firstOrNull { it.getString("name").endsWith("-windows.exe") } ?: return@runCatching null
             // Версия программы для Windows записана в имени: apex-vpn-<android>-windows.exe и в описании «Windows x.y.z»
-            val win = Regex("Windows (\\d+\\.\\d+\\.\\d+)").find(o.optString("body"))?.groupValues?.get(1) ?: return@runCatching null
+            val win = Regex("Windows (\\d+\\.\\d+\\.\\d+)").findAll(o.optString("body")).lastOrNull()?.groupValues?.get(1) ?: return@runCatching null
             if (newer(win, AppInfo.VERSION)) Info(win, exe.getString("browser_download_url"), o.getString("html_url")) else null
         }.getOrNull()
     }

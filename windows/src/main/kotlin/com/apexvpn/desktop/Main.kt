@@ -50,11 +50,20 @@ fun main(args: Array<String>) {
         // Запуск: подписка, подключение, обновления
         LaunchedEffect(Unit) {
             if (Subscription.needsRefresh()) runCatching { Subscription.refresh() }
+            if (Store.value.dns == DnsChoice.Auto) runCatching { DnsAuto.measure() }
             if (s.connectOnStart && sub.nodes.isNotEmpty()) Engine.connect()
             runCatching { Pinger.pingAll() }
+            if (Rules.due() && runCatching { Rules.update() }.getOrDefault(false)) Engine.reload()
             while (true) {
                 delay(5 * 60_000L)
                 if (!Engine.running && Subscription.needsRefresh()) runCatching { Subscription.refresh() }
+                if (!Engine.running && Rules.due()) runCatching { Rules.update() }
+                // DNS «Авто»: новый замер раз в 30 минут; сменился лучший — переподключаемся
+                if (Store.value.dns == DnsChoice.Auto && DnsAuto.stale()) {
+                    val before = DnsAuto.best
+                    runCatching { DnsAuto.measure() }
+                    if (DnsAuto.best != before) Engine.reload()
+                }
             }
         }
 

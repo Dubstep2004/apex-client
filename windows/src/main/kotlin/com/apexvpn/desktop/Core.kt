@@ -135,8 +135,14 @@ object Engine {
         val o = JSONObject()
             .put("mode", s.routeMode.id)
             .put("services", JSONArray())
-            .put("rulesDir", Paths.rules.absolutePath)
-            .put("dns", s.dns.id)
+            .put("rulesDir", Rules.dirForCore().absolutePath)
+            .put("dns", DnsAuto.effective(s).id)
+            .put("customLists", JSONArray(s.customLists.filter { it.enabled && it.items.isNotEmpty() }.map {
+                JSONObject().put("name", it.name).put("items", JSONArray(it.items))
+            }))
+            .put("customDomains", JSONArray(s.customDomains))
+            .put("directDomains", JSONArray(s.directDomains))
+            .put("directSuffixes", JSONArray(DirectCountries.suffixes(s.directCountries)))
             .put("adBlock", s.adBlock)
             .put("profile", s.autoMode.profile)
             .put("core", s.core.id)
@@ -233,10 +239,11 @@ object Engine {
                     lastUp = up; lastDown = down
                 }
                 if (tick % 5 == 1) _autoNow.value = Clash.autoNow()
-                // Автообновление подписки, пока подключено
+                // Автообновление подписки и баз сайтов, пока подключено
                 if (tick % 300 == 0 && Subscription.needsRefresh()) {
                     runCatching { Subscription.refresh() }.onSuccess { reload() }
                 }
+                if (tick % 600 == 0 && Rules.due() && Rules.update()) reload()
             }
         }
     }

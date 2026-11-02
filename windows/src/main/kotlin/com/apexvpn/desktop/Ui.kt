@@ -36,6 +36,7 @@ import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Dns
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Route
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Switch
@@ -84,7 +85,7 @@ object C {
 }
 
 enum class Tab(val title: String, val icon: ImageVector) {
-    Home("Главная", Icons.Rounded.Home), Servers("Серверы", Icons.Rounded.Dns), Settings("Настройки", Icons.Rounded.Settings)
+    Home("Главная", Icons.Rounded.Home), Servers("Серверы", Icons.Rounded.Dns), Routes("Маршруты", Icons.Rounded.Route), Settings("Настройки", Icons.Rounded.Settings)
 }
 
 @Composable
@@ -119,6 +120,7 @@ fun AppUi() {
             else when (tab) {
                 Tab.Home -> HomeScreen { tab = Tab.Servers }
                 Tab.Servers -> ServersScreen()
+                Tab.Routes -> RoutesScreen()
                 Tab.Settings -> SettingsScreen()
             }
         }
@@ -385,7 +387,27 @@ fun SettingsScreen() {
             Text("DNS для зарубежных сайтов", color = C.Text, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                DnsChoice.entries.forEach { d -> Chip(d.title, s.dns == d) { Store.update { copy(dns = d) }; Engine.reload() } }
+                DnsChoice.entries.forEach { d ->
+                    Chip(d.title, s.dns == d) {
+                        Store.update { copy(dns = d) }
+                        if (d == DnsChoice.Auto) scope.launch { DnsAuto.measure(); Engine.reload() } else Engine.reload()
+                    }
+                }
+            }
+            if (s.dns == DnsChoice.Auto) {
+                val results by DnsAuto.results.collectAsState()
+                Spacer(Modifier.height(10.dp))
+                Text("Сейчас: ${DnsAuto.best.title} · самый быстрый из ${maxOf(results.size, 4)} (DNS-over-HTTPS)", color = C.Text, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                results.forEach { r ->
+                    Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+                        Text(r.choice.title, color = if (r.choice == DnsAuto.best) C.Accent else C.Dim, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                        Text(if (r.ms > 0) "${r.ms} мс" else "нет ответа", color = pingColor(r.ms), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+                Spacer(Modifier.height(6.dp))
+                SecondaryButton("Проверить сейчас") {
+                    scope.launch { val b = DnsAuto.best; DnsAuto.measure(); if (DnsAuto.best != b) Engine.reload() }
+                }
             }
             Spacer(Modifier.height(10.dp))
             Toggle("Блокировка рекламы", "Реклама и трекеры не загружаются", s.adBlock) { Store.update { copy(adBlock = it) }; Engine.reload() }

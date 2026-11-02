@@ -53,9 +53,13 @@ enum class CoreChoice(val id: String, val title: String, val subtitle: String) {
 }
 
 enum class DnsChoice(val id: String, val title: String) {
+    Auto("auto", "Авто"),
     Cloudflare("cloudflare", "Cloudflare"), Google("google", "Google"), Quad9("quad9", "Quad9"),
     AdGuard("adguard", "AdGuard (без рекламы)"), Mullvad("mullvad", "Mullvad"),
 }
+
+/** Свой список «Через VPN»: сайты по одному на строку (example.com, full:, keyword:, IP, udp:порты). */
+data class CustomList(val name: String, val items: List<String>, val enabled: Boolean = true)
 
 data class Settings(
     val subscriptionUrl: String = "",
@@ -64,7 +68,15 @@ data class Settings(
     val connectType: ConnectType = ConnectType.Proxy,
     val autoMode: AutoMode = AutoMode.Balance,
     val core: CoreChoice = CoreChoice.Auto,
-    val dns: DnsChoice = DnsChoice.Cloudflare,
+    val dns: DnsChoice = DnsChoice.Auto,
+    val customLists: List<CustomList> = emptyList(),
+    /** Свои сайты: всегда через VPN / всегда напрямую */
+    val customDomains: List<String> = emptyList(),
+    val directDomains: List<String> = emptyList(),
+    /** Сайты стран напрямую (kz, by…) */
+    val directCountries: Set<String> = emptySet(),
+    val rulesAuto: Boolean = true,
+    val rulesHours: Int = 24,
     val adBlock: Boolean = false,
     val autostart: Boolean = false,
     val connectOnStart: Boolean = false,
@@ -124,6 +136,16 @@ object Store {
             refreshHours = o.optInt("refreshHours", d.refreshHours).takeIf { it in listOf(1, 6, 12, 24) } ?: d.refreshHours,
             skipSpecial = o.optBoolean("skipSpecial", d.skipSpecial),
             checkUpdates = o.optBoolean("checkUpdates", d.checkUpdates),
+            customLists = o.optJSONArray("customLists")?.let { a ->
+                (0 until a.length()).mapNotNull { i -> a.optJSONObject(i) }.map { l ->
+                    CustomList(l.optString("name"), strings(l.optJSONArray("items")), l.optBoolean("enabled", true))
+                }
+            } ?: d.customLists,
+            customDomains = strings(o.optJSONArray("customDomains")),
+            directDomains = strings(o.optJSONArray("directDomains")),
+            directCountries = strings(o.optJSONArray("directCountries")).toSet(),
+            rulesAuto = o.optBoolean("rulesAuto", d.rulesAuto),
+            rulesHours = o.optInt("rulesHours", d.rulesHours).takeIf { it in listOf(6, 12, 24, 168) } ?: d.rulesHours,
         )
     }.getOrDefault(Settings())
 
@@ -135,6 +157,10 @@ object Store {
             .put("core", s.core.id).put("dns", s.dns.id).put("adBlock", s.adBlock)
             .put("autostart", s.autostart).put("connectOnStart", s.connectOnStart).put("minimizeToTray", s.minimizeToTray)
             .put("refreshHours", s.refreshHours).put("skipSpecial", s.skipSpecial).put("checkUpdates", s.checkUpdates)
+            .put("customLists", JSONArray(s.customLists.map { JSONObject().put("name", it.name).put("items", JSONArray(it.items)).put("enabled", it.enabled) }))
+            .put("customDomains", JSONArray(s.customDomains)).put("directDomains", JSONArray(s.directDomains))
+            .put("directCountries", JSONArray(s.directCountries.toList()))
+            .put("rulesAuto", s.rulesAuto).put("rulesHours", s.rulesHours)
         runCatching {
             val tmp = File(Paths.data, "settings.json.tmp")
             tmp.writeText(o.toString(2))
@@ -154,4 +180,6 @@ object Store {
     }.getOrDefault(emptyMap())
 
     fun jsonArray(items: Collection<String>) = JSONArray(items.toList())
+
+    private fun strings(a: JSONArray?): List<String> = if (a == null) emptyList() else (0 until a.length()).map { a.optString(it) }.filter { it.isNotBlank() }
 }
