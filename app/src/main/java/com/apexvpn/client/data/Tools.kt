@@ -30,21 +30,60 @@ data class SpeedMeta(val provider: String, val ip: String, val city: String, val
 object SpeedTest {
     private const val BASE = "https://speed.cloudflare.com"
 
-    /** Провайдер (asOrganization), IP, город и узел Cloudflare (colo). */
+    /**
+     * Провайдер, IP, город и узел Cloudflare (colo). Сначала /meta Cloudflare; если он не ответил
+     * или не назвал провайдера — запасные сервисы (ipwho.is, ipinfo.io, ip.sb), а узел — из /cdn-cgi/trace.
+     */
     suspend fun meta(): SpeedMeta? = withContext(Dispatchers.IO) {
-        runCatching {
-            val c = open("$BASE/meta")
-            try {
-                if (c.responseCode != 200) return@runCatching null
-                val o = org.json.JSONObject(c.inputStream.bufferedReader().readText())
-                SpeedMeta(
-                    o.optString("asOrganization"), o.optString("clientIp"),
-                    o.optString("city"), o.optString("country"), o.optString("colo"),
-                )
-            } finally {
-                c.disconnect()
+        val cf = runCatching {
+            json("$BASE/meta")?.let { o ->
+                SpeedMeta(o.optString("asOrganization"), o.optString("clientIp"), o.optString("city"), o.optString("country"), o.optString("colo"))
             }
         }.getOrNull()
+        if (cf != null && cf.provider.isNotBlank() && cf.colo.isNotBlank()) return@withContext cf
+        // Узел и IP из trace — он отвечает почти всегда
+        val trace = runCatching {
+            val c = open("$BASE/cdn-cgi/trace")
+            try {
+                if (c.responseCode != 200) null
+                else c.inputStream.bufferedReader().readLines().mapNotNull { l -> l.split('=', limit = 2).takeIf { it.size == 2 }?.let { it[0] to it[1] } }.toMap()
+            } finally { c.disconnect() }
+        }.getOrNull().orEmpty()
+        val geo = cf?.takeIf { it.provider.isNotBlank() }
+            ?: runCatching {
+                json("https://ipwho.is/")?.takeIf { it.optBoolean("success", true) }?.let { o ->
+                    val conn = o.optJSONObject("connection")
+                    SpeedMeta(conn?.optString("isp").orEmpty().ifBlank { conn?.optString("org").orEmpty() }, o.optString("ip"), o.optString("city"), o.optString("country_code"), "")
+                }
+            }.getOrNull()?.takeIf { it.provider.isNotBlank() }
+            ?: runCatching {
+                json("https://ipinfo.io/json")?.let { o ->
+                    // org: «AS12389 Rostelecom» — номер AS убираем
+                    SpeedMeta(o.optString("org").replace(Regex("^AS\\d+\\s*"), ""), o.optString("ip"), o.optString("city"), o.optString("country"), "")
+                }
+            }.getOrNull()?.takeIf { it.provider.isNotBlank() }
+            ?: runCatching {
+                json("https://api.ip.sb/geoip")?.let { o ->
+                    SpeedMeta(o.optString("isp").ifBlank { o.optString("organization") }, o.optString("ip"), o.optString("city"), o.optString("country_code"), "")
+                }
+            }.getOrNull()?.takeIf { it.provider.isNotBlank() }
+        if (geo == null && trace.isEmpty()) return@withContext cf
+        SpeedMeta(
+            provider = geo?.provider.orEmpty(),
+            ip = geo?.ip?.ifBlank { null } ?: trace["ip"].orEmpty(),
+            city = geo?.city.orEmpty(),
+            country = geo?.country?.ifBlank { null } ?: trace["loc"].orEmpty(),
+            colo = cf?.colo?.ifBlank { null } ?: trace["colo"].orEmpty(),
+        )
+    }
+
+    private fun json(url: String): org.json.JSONObject? {
+        val c = open(url)
+        return try {
+            if (c.responseCode != 200) null else org.json.JSONObject(c.inputStream.bufferedReader().readText())
+        } finally {
+            c.disconnect()
+        }
     }
 
     /** Пинг и джиттер: 8 коротких запросов, первый (с установкой соединения) не считаем. */
@@ -166,6 +205,10 @@ object SpeedTest {
         readTimeout = 15000
         useCaches = false
         setRequestProperty("Cache-Control", "no-cache")
+        // Cloudflare и сервисы IP отвечают 403 «ботам» без браузерного User-Agent
+        setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36")
+        setRequestProperty("Accept", "application/json, text/plain, */*")
+        setRequestProperty("Referer", "https://speed.cloudflare.com/")
     }
 
     /** Скорость в выбранных единицах: Мбит/с, МБ/с или КБ/с. */

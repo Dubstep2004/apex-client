@@ -430,7 +430,13 @@ type xrayPlan struct {
 	pass      string
 	basePort  int
 	resolved  map[string][]string // один домен — одно разрешение на сборку конфига
+	// dialPort — SOCKS sing-box «xray-dial» на 127.0.0.1: через него Xray выходит в сеть
+	// (защищёнными сокетами sing-box, мимо туннеля). Без него соединения Xray шли в сам
+	// туннель и второй раз через sing-box — лишняя работа и заметно ниже скорость. 0 — выкл.
+	dialPort int
 }
+
+const xrayDialTag = "apex-dial"
 
 func newXrayPlan(auth string) *xrayPlan {
 	if auth == "" {
@@ -452,6 +458,23 @@ func (x *xrayPlan) add(n *Node) map[string]any {
 
 	ob := deepCopy(n.Xray).(map[string]any)
 	ob["tag"] = out
+	if x.dialPort > 0 {
+		stream, _ := ob["streamSettings"].(map[string]any)
+		if stream == nil {
+			stream = map[string]any{}
+			ob["streamSettings"] = stream
+		}
+		so, _ := stream["sockopt"].(map[string]any)
+		if so == nil {
+			so = map[string]any{}
+			stream["sockopt"] = so
+		}
+		if _, ok := so["dialerProxy"]; !ok {
+			if _, chained := ob["proxySettings"]; !chained {
+				so["dialerProxy"] = xrayDialTag
+			}
+		}
+	}
 	if net.ParseIP(n.Server) != nil {
 		x.directIPs = append(x.directIPs, n.Server)
 	} else if ips := x.lookup(n.Server); len(ips) > 0 {
@@ -517,11 +540,36 @@ func (x *xrayPlan) config() string {
 		"log":       map[string]any{"loglevel": "warning"},
 		"dns":       map[string]any{"servers": []string{"1.1.1.1", "8.8.8.8"}},
 		"inbounds":  x.inbounds,
-		"outbounds": append(append([]any{}, x.outbounds...), map[string]any{"protocol": "freedom", "tag": "direct"}),
+		"outbounds": x.allOutbounds(),
 		"routing":   map[string]any{"domainStrategy": "AsIs", "rules": x.rules},
 	}
 	out, _ := json.MarshalIndent(cfg, "", "  ")
 	return string(out)
+}
+
+func (x *xrayPlan) allOutbounds() []any {
+	all := append(append([]any{}, x.outbounds...), map[string]any{"protocol": "freedom", "tag": "direct"})
+	if x.dialPort > 0 {
+		all = append(all, map[string]any{
+			"protocol": "socks", "tag": xrayDialTag,
+			"settings": map[string]any{"servers": []any{map[string]any{
+				"address": "127.0.0.1", "port": x.dialPort,
+				"users": []any{map[string]any{"user": x.user, "pass": x.pass}},
+			}}},
+		})
+	}
+	return all
+}
+
+// dialInbound — вход sing-box для исходящих соединений Xray (nil, если Xray не нужен).
+func (x *xrayPlan) dialInbound() map[string]any {
+	if x.dialPort <= 0 || len(x.inbounds) == 0 {
+		return nil
+	}
+	return map[string]any{
+		"type": "socks", "tag": xrayDialTag, "listen": "127.0.0.1", "listen_port": x.dialPort,
+		"users": []any{map[string]any{"username": x.user, "password": x.pass}},
+	}
 }
 
 func deepCopy(v any) any {

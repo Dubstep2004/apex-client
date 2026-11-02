@@ -96,7 +96,7 @@ import com.apexvpn.client.data.DnsChoice
 import com.apexvpn.client.ui.theme.Apex
 import com.apexvpn.client.update.UpdateState
 
-private val refreshOptions = listOf(6, 12, 24)
+private val refreshOptions = listOf(1, 6, 12, 24)
 
 @Composable
 fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQr: () -> Unit) {
@@ -182,17 +182,6 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
                 leading = { tile(Icons.Rounded.AutoMode) },
                 onClick = { viewModel.change(reload = false) { copy(failover = !failover) } },
             ) { ApexSwitch(s.failover, { v -> viewModel.change(reload = false) { copy(failover = v) } }) }
-            GroupDivider()
-            ListRow(
-                "Приложения",
-                when (s.appsMode) {
-                    AppsMode.AllApps -> "Все приложения через VPN"
-                    AppsMode.Exclude -> "Кроме выбранных: ${s.apps.size}"
-                    AppsMode.Include -> "Только выбранные: ${s.apps.size}"
-                },
-                leading = { tile(Icons.Rounded.Apps) },
-                onClick = { onOpenPage(Page.Apps) },
-            ) { Chevron() }
             GroupDivider()
             ListRow(
                 "DNS",

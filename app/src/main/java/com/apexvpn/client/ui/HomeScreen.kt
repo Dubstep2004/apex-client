@@ -114,6 +114,8 @@ fun HomeScreen(
     }
 
     // 157. Своё фото за щитом (из галереи)
+    // Живое видео на фоне: шаблон или своё
+    if (LiveVideos.isVideo(settings.shieldBackdrop)) VideoBackdrop(settings.shieldBackdrop, settings.backdropStamp, settings.photoDim)
     if (settings.shieldBackdrop == "photo") PhotoBackdrop(settings.backdropStamp, settings.photoBlur, settings.photoDim, settings.photoParallax)
     // 354. Фото дня страны сервера (автопилот — ваша страна)
     if (settings.shieldBackdrop == "country") {

@@ -45,6 +45,9 @@ object ConnLog {
         val id = o.optString("id")
         if (id.isEmpty() || !known.add(id)) return
         val m = o.optJSONObject("metadata") ?: return
+        // Служебные соединения самого ядра: замеры (probe-in) и выход Xray в сеть (apex-dial)
+        val inbound = m.optString("type")
+        if ("probe-in" in inbound || "apex-dial" in inbound) return
         val host = m.optString("host").ifEmpty { m.optString("destinationIP") }
         if (host.isEmpty() || host == "127.0.0.1") return
         val chains = o.optJSONArray("chains")

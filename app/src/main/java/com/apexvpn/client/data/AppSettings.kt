@@ -373,7 +373,8 @@ object AppSettings {
             directDomains = arr("direct", d.directDomains),
             hideFromBanks = o.optBoolean("banks", d.hideFromBanks),
             adBlock = o.optBoolean("adBlock", d.adBlock),
-            appsMode = AppsMode.of(o.optString("appsMode", d.appsMode.id)),
+            // 3.3: пункт «Приложения» убран — «Кроме выбранных» перешло в «Скрыть VPN»
+            appsMode = AppsMode.AllApps,
             apps = arr("apps", d.apps).toSet(),
             dns = DnsChoice.of(o.optString("dns", d.dns.id)),
             customDns = o.optString("customDns", d.customDns),
@@ -429,7 +430,8 @@ object AppSettings {
             iconStatus = o.optBoolean("iconStatus", d.iconStatus),
             animatedFlags = o.optBoolean("animatedFlags", d.animatedFlags),
             task = "", // задачи стали режимами автопилота (3.0)
-            hiddenApps = arr("hiddenApps", d.hiddenApps).toSet(),
+            hiddenApps = arr("hiddenApps", d.hiddenApps).toSet() +
+                (if (o.optString("appsMode") == AppsMode.Exclude.id) arr("apps", d.apps) else emptyList()),
             secretUnlocked = o.optBoolean("secret", d.secretUnlocked),
             shield3d = o.optBoolean("shield3d", d.shield3d),
             automation = o.optBoolean("automation", d.automation),

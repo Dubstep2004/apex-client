@@ -308,6 +308,8 @@ class ApexVpnService : VpnService(), PlatformInterface, CommandServerHandler {
 
     // ─── Фоновые проверки: скорость, таймер, сбои, Wi-Fi ─────────────────
 
+    @Volatile private var subRefreshing = false
+
     private fun startMonitor() {
         monitor?.cancel()
         monitor = scope.launch {
@@ -357,6 +359,19 @@ class ApexVpnService : VpnService(), PlatformInterface, CommandServerHandler {
                     alert("VPN выключен по таймеру")
                     stopVpn()
                     return@launch
+                }
+
+                // Автообновление подписки, пока VPN включён: фоновую задачу оболочки (Xiaomi, Honor…)
+                // часто откладывают на часы, поэтому проверяем срок и здесь — раз в 5 минут
+                if (tick % 300 == 0L && status == VpnStatus.Started && Subscription.needsRefresh() && !subRefreshing) {
+                    subRefreshing = true
+                    scope.launch {
+                        try {
+                            runCatching { Subscription.refresh() }.onSuccess { reloadVpn() }
+                        } finally {
+                            subRefreshing = false
+                        }
+                    }
                 }
 
                 // Доверенные сети Wi-Fi

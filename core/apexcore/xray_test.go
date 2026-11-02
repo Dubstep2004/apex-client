@@ -74,7 +74,7 @@ func TestXrayNodes(t *testing.T) {
 
 	// Обычный режим: через Xray только 5 «особых» серверов
 	c := buildBoth(t, nodes, `{"xrayAuth":"k"}`)
-	if strings.Count(c.Xray, `"protocol": "socks"`) != 5 {
+	if strings.Count(c.Xray, `"protocol": "socks"`) != 6 {
 		t.Fatalf("want 5 xray inbounds:\n%s", c.Xray)
 	}
 	for _, want := range []string{`"203.0.113.7/32"`, `"5.5.5.5/32"`, `"6.6.6.6/32"`} {
@@ -84,6 +84,10 @@ func TestXrayNodes(t *testing.T) {
 	}
 	if !strings.Contains(c.Xray, `"serverName": "xh.example.com"`) || !strings.Contains(c.Xray, `"xPaddingBytes"`) || !strings.Contains(c.Xray, `"mode": "stream-one"`) {
 		t.Fatalf("xhttp settings lost:\n%s", c.Xray)
+	}
+	// Xray выходит в сеть через sing-box (вход apex-dial → direct), а не через туннель
+	if strings.Count(c.Xray, `"dialerProxy": "apex-dial"`) != 5 || !strings.Contains(c.Singbox, `"tag": "apex-dial"`) {
+		t.Fatalf("xray must dial via sing-box:\n%s", c.Xray)
 	}
 	if !strings.Contains(c.Xray, `"address": "203.0.113.7"`) {
 		t.Fatal("domain must be pinned to IP")
@@ -101,7 +105,7 @@ func TestXrayNodes(t *testing.T) {
 
 	// Как в Happ: Xray для всех, кто его умеет (7 из 8)
 	c = buildBoth(t, nodes, `{"xrayAll":true,"xrayAuth":"k"}`)
-	if strings.Count(c.Xray, `"protocol": "socks"`) != 7 {
+	if strings.Count(c.Xray, `"protocol": "socks"`) != 8 {
 		t.Fatalf("want 7 xray inbounds")
 	}
 	if !strings.Contains(c.Singbox, `"type": "hysteria2"`) {

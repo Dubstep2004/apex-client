@@ -256,9 +256,9 @@ object Subscription {
                 conn.getHeaderField(name)?.takeIf { it.isNotBlank() } ?: meta?.optString(name)?.takeIf { it.isNotBlank() }
 
             Prefs.profileTitle = decodeTitle(header("profile-title")) ?: ""
-            header("profile-update-interval")?.trim()?.toIntOrNull()?.let {
-                if (it in 1..168) Prefs.updateIntervalHours = it
-            }
+            // Интервал из панели больше не перезаписывает выбор в настройках (раньше из-за этого
+            // «1/6 ч» в настройках молча превращались в 12 ч панели) — интервал задаёт пользователь
+            Prefs.updateIntervalHours = AppSettings.value.refreshHours
             parseUserInfo(header("subscription-userinfo"))
             // Объявление из Remnawave (заголовок announce, как у Happ); «0» — убрать
             // 434. Картинка и кнопка: заголовки announce-image / announce-button / announce-url

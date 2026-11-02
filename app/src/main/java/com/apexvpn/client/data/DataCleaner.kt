@@ -17,6 +17,7 @@ object DataCleaner {
         AdCounter.reset()
         FastestServer.reset()
         Backdrop.clear(context)
+        com.apexvpn.client.ui.LiveVideos.clearOwn(context)
         CountryPhoto.clear(context)
         context.getSharedPreferences("alerts", Context.MODE_PRIVATE).edit().clear().apply()
         runCatching { Diagnostics.coreLog(context).delete() }

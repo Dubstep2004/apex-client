@@ -205,6 +205,7 @@ func buildAll(nodesJSON string, selectedTag string, optionsJSON string) (string,
 	if opts.XrayPort > 1024 && opts.XrayPort < 65000 {
 		xray.basePort = opts.XrayPort
 	}
+	xray.dialPort = xray.basePort - 1
 	prof := profiles[opts.Profile]
 
 	tags := make([]string, 0, len(nodes))
@@ -347,6 +348,10 @@ func buildAll(nodesJSON string, selectedTag string, optionsJSON string) (string,
 			rules = append(rules, map[string]any{"inbound": []string{"probe-in"}, "auth_user": []string{"n:" + t}, "outbound": t})
 		}
 		rules = append(rules, map[string]any{"inbound": []string{"probe-in"}, "outbound": "proxy"})
+	}
+	// Исходящие соединения Xray — сразу напрямую (до sniff и всех правил)
+	if xray.dialInbound() != nil {
+		rules = append(rules, map[string]any{"inbound": []string{xrayDialTag}, "outbound": "direct"})
 	}
 	rules = append(rules,
 		map[string]any{"action": "sniff"},
@@ -589,6 +594,9 @@ func buildAll(nodesJSON string, selectedTag string, optionsJSON string) (string,
 		"strict_route": true,
 		"stack":        "mixed",
 	}}
+	if in := xray.dialInbound(); in != nil {
+		inbounds = append(inbounds, in)
+	}
 	if opts.ProbePort > 1024 && opts.ProbePort < 65536 && opts.XrayAuth != "" {
 		inbounds = append(inbounds, map[string]any{
 			"type": "socks", "tag": "probe-in", "listen": "127.0.0.1", "listen_port": opts.ProbePort,
@@ -774,3 +782,4 @@ func urlTestOrDefault(u string) string {
 	}
 	return "https://www.gstatic.com/generate_204"
 }
+

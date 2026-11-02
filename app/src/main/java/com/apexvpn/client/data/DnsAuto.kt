@@ -12,6 +12,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.HttpURLConnection
@@ -47,6 +48,9 @@ object DnsAuto {
         Variant(DnsChoice.ControlD, "tls", ip = "76.76.2.0", sni = "p0.freedns.controld.com"),
         Variant(DnsChoice.ControlD, "quic", ip = "76.76.2.0", sni = "p0.freedns.controld.com"),
     )
+
+    /** Последний замер шёл через сервер VPN (время включает путь до сервера). */
+    @Volatile var lastViaVpn: Boolean = false
 
     private val _results = MutableStateFlow<List<Result>>(emptyList())
     val results = _results.asStateFlow()
@@ -95,9 +99,13 @@ object DnsAuto {
         val key = networkKey()
         // На мобильной сети без DoQ: UDP через VPN на LTE теряется, DNS по TCP надёжнее
         val pool = if (key == "mobile") variants.filter { it.proto != "quic" } else variants
+        // Не больше двух замеров одновременно: раньше все 12 шли разом через один сервер,
+        // мешали друг другу, и время ответа выходило в разы больше настоящего
+        val gate = kotlinx.coroutines.sync.Semaphore(2)
         val res = coroutineScope {
-            pool.map { v -> async { Result(v, probe(v)) } }.awaitAll()
+            pool.map { v -> async { gate.withPermit { Result(v, probe(v)) } } }.awaitAll()
         }.sortedBy { if (it.ms < 0) Int.MAX_VALUE else it.ms }
+        lastViaVpn = viaVpn()
         _results.value = res
         val win = res.firstOrNull { it.ms >= 0 } ?: return@withContext false
         val cur = bestVariant(key)
@@ -118,7 +126,7 @@ object DnsAuto {
      * все DNS показывали «нет ответа», хотя через VPN работали.
      */
     private fun probe(v: Variant): Int = runCatching {
-        if (v.proto == "https") Apexcore.dnsProbeHTTPS(v.doh, 3000) else Apexcore.dnsProbe(v.proto, v.ip, v.sni, 3000)
+        if (v.proto == "https") Apexcore.dnsProbeHTTPS(v.doh, 4000) else Apexcore.dnsProbe(v.proto, v.ip, v.sni, 4000)
     }.getOrDefault(-1).let { if (it < 0 && v.proto == "https" && !viaVpn()) probeDoh(v.doh) else it }
 
     private fun viaVpn() = com.apexvpn.client.vpn.VpnState.status.value == com.apexvpn.client.vpn.VpnStatus.Started

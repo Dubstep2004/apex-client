@@ -21,7 +21,7 @@ import com.apexvpn.client.vpn.ApexVpnService
 import java.util.concurrent.TimeUnit
 
 /**
- * Фоновая задача раз в 3 часа (только при наличии интернета):
+ * Фоновая задача раз в час (только при наличии интернета):
  * обновление подписки, предупреждение о конце подписки, новости,
  * обновление баз и отправка отчётов о сбоях.
  */
@@ -72,11 +72,11 @@ class BackgroundWork(context: Context, params: WorkerParameters) : CoroutineWork
 
     companion object {
         fun schedule(context: Context) {
-            val request = PeriodicWorkRequestBuilder<BackgroundWork>(3, TimeUnit.HOURS)
+            val request = PeriodicWorkRequestBuilder<BackgroundWork>(1, TimeUnit.HOURS)
                 .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
                 .build()
             WorkManager.getInstance(context)
-                .enqueueUniquePeriodicWork("apex-background", ExistingPeriodicWorkPolicy.KEEP, request)
+                .enqueueUniquePeriodicWork("apex-background", ExistingPeriodicWorkPolicy.UPDATE, request)
         }
     }
 }

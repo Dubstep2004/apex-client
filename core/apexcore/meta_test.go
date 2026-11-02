@@ -59,7 +59,7 @@ func TestDescriptionAdsMetaCore(t *testing.T) {
 		t.Fatalf("singbox mode must drop xray-only: %v", a)
 	}
 	_, xr, _ := buildAll(string(data), AutoTag, `{"core":"xray","xrayAuth":"k"}`)
-	if strings.Count(xr, `"protocol": "socks"`) != 3 {
+	if strings.Count(xr, `"protocol": "socks"`) != 4 {
 		t.Fatal("xray mode must route all through Xray")
 	}
 	sb, _, _ := buildAll(string(data), AutoTag, `{"clashApi":9095,"xrayAuth":"sec"}`)

@@ -336,6 +336,24 @@ private fun HideAppsPage(viewModel: MainViewModel, onBack: () -> Unit) {
                 CircularProgressIndicator(color = Apex.Accent)
             }
         } else {
+            // Готовый шаблон: российские приложения, которые проверяют VPN
+            val ctx = androidx.compose.ui.platform.LocalContext.current
+            val tpl = remember(list) { com.apexvpn.client.data.HideTemplates.installed(list, ctx.packageName) }
+            if (tpl.isNotEmpty() && query.isBlank()) {
+                val added = tpl.count { it in s.hiddenApps }
+                val all = added == tpl.size
+                Group {
+                    ListRow(
+                        "📋 Шаблон: ${com.apexvpn.client.data.HideTemplates.TITLE}",
+                        if (all) "Добавлены все: ${tpl.size} · нажмите, чтобы убрать"
+                        else "Найдено у вас: ${tpl.size}" + (if (added > 0) " · уже скрыто $added" else "") + " · нажмите, чтобы добавить все",
+                        onClick = {
+                            viewModel.change { copy(hiddenApps = if (all) hiddenApps - tpl.toSet() else hiddenApps + tpl) }
+                        },
+                    ) { Tag(if (all) "Убрать" else "Добавить") }
+                }
+                Spacer(Modifier.height(10.dp))
+            }
             val filtered = list.filter { query.isBlank() || it.label.contains(query, true) || it.packageName.contains(query, true) }
                 .sortedByDescending { it.packageName in s.hiddenApps }
             LazyColumn(
@@ -949,6 +967,11 @@ private fun DnsPage(viewModel: MainViewModel, onBack: () -> Unit) {
                 Text("Сейчас: ${bestV.choice.title} · ${bestV.protoTitle}", color = Apex.Text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 // 499. Свой лучший DNS для каждой сети
                 Text("Для сети: " + com.apexvpn.client.data.DnsAuto.networkTitle(), color = Apex.TextDim, fontSize = 13.sp)
+                if (results.isNotEmpty()) Text(
+                    if (com.apexvpn.client.data.DnsAuto.lastViaVpn) "Время ответа через сервер VPN — так DNS и работает под VPN (вместе с путём до сервера)"
+                    else "Время ответа напрямую, без VPN",
+                    color = Apex.TextDim, fontSize = 12.sp, lineHeight = 16.sp,
+                )
                 Spacer(Modifier.height(6.dp))
                 results.forEach { r ->
                     Row(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
@@ -1150,6 +1173,79 @@ private fun AppearancePage(viewModel: MainViewModel, onBack: () -> Unit) {
                 }
             }
         }
+        // Живые видео: готовые шаблоны и своё видео
+        SectionLabel("Живое видео на фоне")
+        val scopeV = androidx.compose.runtime.rememberCoroutineScope()
+        val pickVideo = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            if (uri != null) scopeV.launch {
+                if (LiveVideos.saveOwn(context, uri)) {
+                    viewModel.change(reload = false) { copy(shieldBackdrop = "video", backdropStamp = System.currentTimeMillis()) }
+                    viewModel.showMessage("Видео установлено на главный экран")
+                } else {
+                    viewModel.showMessage("Не удалось открыть видео (до 150 МБ)")
+                }
+            }
+        }
+        androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            items(LiveVideos.templates.size) { i ->
+                val tpl = LiveVideos.templates[i]
+                val id = "video:" + tpl.id
+                val on = s.shieldBackdrop == id
+                val thumb = remember(tpl.id) {
+                    runCatching { context.assets.open("videos/${tpl.id}.jpg").use { android.graphics.BitmapFactory.decodeStream(it) }?.asImageBitmap() }.getOrNull()
+                }
+                Column(
+                    Modifier
+                        .width(88.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable { viewModel.change(reload = false) { copy(shieldBackdrop = if (on) "none" else id) } },
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Box(
+                        Modifier
+                            .size(88.dp, 132.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Apex.Surface)
+                            .border(2.dp, if (on) Apex.Accent else Apex.Outline, RoundedCornerShape(16.dp)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (thumb != null) Image(thumb, null, Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop)
+                        if (on) Icon(Icons.Rounded.Check, null, tint = Color.White)
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Text(tpl.title, color = if (on) Apex.Text else Apex.TextDim, fontSize = 12.sp, maxLines = 1)
+                }
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        Group {
+            ListRow(
+                "Своё видео",
+                if (s.shieldBackdrop == "video") "Выбрано — нажмите, чтобы сменить" else "Видео из галереи: без звука, по кругу",
+                onClick = { pickVideo.launch(androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)) },
+            ) {
+                if (s.shieldBackdrop == "video") {
+                    androidx.compose.material3.TextButton(onClick = {
+                        LiveVideos.clearOwn(context)
+                        viewModel.change(reload = false) { copy(shieldBackdrop = "none") }
+                    }) { Text("Убрать", color = Apex.Bad) }
+                } else {
+                    Chevron()
+                }
+            }
+        }
+        if (LiveVideos.isVideo(s.shieldBackdrop)) {
+            Spacer(Modifier.height(10.dp))
+            Column(Modifier.fillMaxWidth().apexCard().padding(16.dp)) {
+                Text("Затемнение · ${s.photoDim}%", color = Apex.Text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                androidx.compose.material3.Slider(
+                    value = s.photoDim.toFloat(), onValueChange = { v -> viewModel.change(reload = false) { copy(photoDim = v.toInt()) } },
+                    valueRange = 0f..90f,
+                )
+            }
+            Caption("Видео идёт без звука и останавливается, когда приложение свёрнуто. На слабых телефонах может немного расходовать батарею.")
+        }
+
         // 563. Эффекты своего фото
         if (s.shieldBackdrop == "photo") {
             Spacer(Modifier.height(10.dp))
