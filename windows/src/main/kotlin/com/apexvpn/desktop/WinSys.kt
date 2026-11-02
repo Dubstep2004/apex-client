@@ -3,7 +3,6 @@ package com.apexvpn.desktop
 import com.sun.jna.Native
 import com.sun.jna.Pointer
 import com.sun.jna.platform.win32.Advapi32Util
-import com.sun.jna.platform.win32.Shell32
 import com.sun.jna.platform.win32.WinReg
 import com.sun.jna.win32.StdCallLibrary
 import com.sun.jna.win32.W32APIOptions
@@ -32,7 +31,15 @@ object WinSys {
     private const val RUN_NAME = "APEX VPN"
     private const val BYPASS = "localhost;127.*;10.*;172.16.*;172.17.*;172.18.*;172.19.*;172.20.*;172.21.*;172.22.*;172.23.*;172.24.*;172.25.*;172.26.*;172.27.*;172.28.*;172.29.*;172.30.*;172.31.*;192.168.*;<local>"
 
-    fun isAdmin(): Boolean = isWindows && runCatching { Shell32.INSTANCE.IsUserAnAdmin() }.getOrDefault(false)
+    internal interface Shell32Ex : StdCallLibrary {
+        fun IsUserAnAdmin(): Boolean
+
+        companion object {
+            val I: Shell32Ex by lazy { Native.load("shell32", Shell32Ex::class.java, W32APIOptions.DEFAULT_OPTIONS) }
+        }
+    }
+
+    fun isAdmin(): Boolean = isWindows && runCatching { Shell32Ex.I.IsUserAnAdmin() }.getOrDefault(false)
 
     /** Перезапустить программу от администратора (окно UAC). */
     fun relaunchAsAdmin(): Boolean {
