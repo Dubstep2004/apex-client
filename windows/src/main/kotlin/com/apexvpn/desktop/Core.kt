@@ -111,6 +111,7 @@ object Engine {
     }
 
     fun disconnect() = scope.launch {
+        AutoOff.clear()
         lock.withLock {
             stopLocked()
             _status.value = VpnStatus.Off
@@ -121,11 +122,14 @@ object Engine {
     fun reload() = scope.launch {
         if (!running) return@launch
         lock.withLock {
+            if (!running) return@withLock
+            // Тихий перезапуск: статус остаётся «Подключено» (без звуков и уведомлений), время сеанса сохраняется
+            val since = _connectedAt.value
             stopLocked()
-            _status.value = VpnStatus.Connecting
             try {
                 start()
                 _status.value = VpnStatus.On
+                _connectedAt.value = if (since > 0) since else System.currentTimeMillis()
                 startWatch()
             } catch (e: Exception) {
                 stopLocked()
@@ -375,11 +379,10 @@ object Pinger {
     suspend fun pingOne(n: Node) = withContext(Dispatchers.IO) {
         val ms = if (n.udp) CoreCli.udpPing(JSONArray(Subscription.state.value.raw).let { a ->
             JSONArray((0 until a.length()).map { a.getJSONObject(it) }.filter { it.optString("tag") == n.tag })
-        }.toString(), 3000)[n.tag] ?: -1 else tcp(n.server, n.port)
+        }.toString(), 3000)[n.tag] ?: -1 else measure(n)
         _pings.value = _pings.value + (n.tag to ms)
     }
 
-    /** Время TCP-соединения с сервером (лучшее из двух), мс или -1. */
     /** Пинг по выбранному в «Настройках пинга» способу (через сервер — только при включённом VPN). */
     private fun measure(n: Node): Int {
         val s = Store.value
@@ -394,6 +397,7 @@ object Pinger {
         }
     }
 
+    /** Время TCP-соединения с сервером (лучшее из двух), мс или -1. */
     private fun tcp(host: String, port: Int): Int {
         var best = -1
         repeat(2) {

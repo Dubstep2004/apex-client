@@ -152,7 +152,7 @@ object AppSettings {
             // Не затираем: сохраняем копию, чтобы следующая версия могла её прочитать
             sp.edit { putString("json_broken_${System.currentTimeMillis()}", raw) }
         }
-        val loaded = parsed ?: Settings(refreshHours = Prefs.updateIntervalHours)
+        val loaded = (parsed ?: Settings(refreshHours = Prefs.updateIntervalHours)).let { it.copy(refreshHours = snapRefresh(it.refreshHours)) }
         _state.value = if (loaded.sharePass.isEmpty()) loaded.copy(sharePass = randomPassword()) else loaded
         save()
     }
@@ -399,7 +399,7 @@ object AppSettings {
             expiryAlerts = o.optBoolean("expiryAlerts", d.expiryAlerts),
             autoCheckUpdates = o.optBoolean("autoUpdates", d.autoCheckUpdates),
             crashReports = o.optBoolean("crashReports", d.crashReports),
-            refreshHours = o.optInt("refreshHours", d.refreshHours),
+            refreshHours = snapRefresh(o.optInt("refreshHours", d.refreshHours)),
             theme = ThemeMode.of(o.optString("theme", d.theme.id)),
             design = Design.of(o.optString("design", d.design.id)),
             accent = AccentColor.of(o.optString("accent", d.accent.id)),
@@ -471,3 +471,6 @@ object AppSettings {
 private val KNOWN_BEFORE_CATALOG = setOf(
     "youtube", "instagram", "telegram", "whatsapp", "tiktok", "discord", "chatgpt", "gemini", "claude", "x", "twitch", "cloudflare",
 )
+
+/** Интервал автообновления — только 1, 6, 12 или 24 ч (старые копии и заголовок подписки могли дать 0 или 48). */
+internal fun snapRefresh(h: Int): Int = listOf(1, 6, 12, 24).minByOrNull { kotlin.math.abs(it - h) } ?: 12

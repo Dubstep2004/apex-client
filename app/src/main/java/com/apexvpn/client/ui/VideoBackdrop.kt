@@ -127,12 +127,15 @@ fun VideoBackdrop(backdrop: String, stamp: Long, dim: Int) {
                 factory = { ctx ->
                     TextureView(ctx).apply {
                         surfaceTextureListener = object : TextureView.SurfaceTextureListener {
+                            private var surface: Surface? = null
+
                             override fun onSurfaceTextureAvailable(st: SurfaceTexture, w: Int, h: Int) {
                                 val mp = LiveVideos.player(ctx, backdrop) ?: return
                                 holder[0]?.release()
                                 holder[0] = mp
                                 ready[0] = false
-                                mp.setSurface(Surface(st))
+                                surface?.release()
+                                mp.setSurface(Surface(st).also { surface = it })
                                 mp.setOnPreparedListener { p ->
                                     ready[0] = true
                                     centerCrop(this@apply, p.videoWidth, p.videoHeight)
@@ -150,6 +153,7 @@ fun VideoBackdrop(backdrop: String, stamp: Long, dim: Int) {
                                 holder[0]?.let { runCatching { it.stop() }; it.release() }
                                 holder[0] = null
                                 ready[0] = false
+                                surface?.release(); surface = null
                                 return true
                             }
 

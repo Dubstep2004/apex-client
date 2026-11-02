@@ -17,7 +17,7 @@
 <p><b>Два ядра</b> · все популярные протоколы · <b>свои списки</b> с шаблонами · <b>3D-глобус</b> · <b>13 дизайнов</b>, палитры и <b>живое видео на фоне</b><br>
 автопилот с белыми списками · DNS «Авто» для каждой сети · базы сайтов каждый день · <b>программа для Windows</b> · часы Wear OS</p>
 
-<sub>📱 Android — <b>3.3.1</b> (Android 7+) · 💻 <a href="https://github.com/Dubstep2004/apex-vpn/releases?q=windows&expanded=true">Windows</a> — <b>2.2</b> (Windows 10/11) · sing-box 1.13 · Xray 26</sub><br>
+<sub>📱 Android — <b>3.3.2</b> (Android 7+) · 💻 <a href="https://github.com/Dubstep2004/apex-vpn/releases?q=windows&expanded=true">Windows</a> — <b>2.2.1</b> (Windows 10/11) · sing-box 1.13 · Xray 26</sub><br>
 <sub>💬 Поддержка: <a href="https://t.me/Apexx_support">@Apexx_support</a></sub>
 
 </div>
@@ -165,7 +165,7 @@
 
 <a id="windows"></a>
 <details open>
-<summary><b>💻 APEX VPN для Windows</b> <sup>Windows 2.2</sup></summary>
+<summary><b>💻 APEX VPN для Windows</b> <sup>Windows 2.2.1</sup></summary>
 
 <img src="docs/guide/windows.webp" width="100%">
 
@@ -1011,7 +1011,19 @@ core/apexcore/          Go: разбор подписки → конфиги sin
 
 <img src="docs/img/tags/new.svg" alt="Новое" height="22"> <img src="docs/img/tags/improved.svg" alt="Улучшено" height="22"> <img src="docs/img/tags/changed.svg" alt="Изменено" height="22"> <img src="docs/img/tags/fixed.svg" alt="Исправлено" height="22"> <img src="docs/img/tags/removed.svg" alt="Удалено" height="22">
 
-### 3.3.1 · 2 ноября 2026
+### 3.3.2 · 2 ноября 2026
+
+<img src="docs/img/tags/fixed.svg" alt="Исправлено" height="22">
+
+- Интервал автообновления подписки из старой резервной копии или прежних версий мог быть 0 или 48 ч — теперь всегда 1, 6, 12 или 24 ч
+- Живое видео на фоне: при каждом повороте экрана и сворачивании оставался неосвобождённый видеобуфер
+
+#### 📚 Все версии (64)
+
+Каждая версия — отдельная вкладка.
+
+<details>
+<summary><b>3.3.1</b> · 2 ноября 2026</summary>
 
 <img src="docs/img/tags/changed.svg" alt="Изменено" height="22">
 
@@ -1022,9 +1034,7 @@ core/apexcore/          Go: разбор подписки → конфиги sin
 - Не было звука подключения: звук шёл как «системный» (его громкость на многих телефонах — 0) и в статическом режиме, который на части телефонов молчит. Теперь — громкость уведомлений и потоковый режим
 - Звук отключения иногда пропадал, если VPN выключался быстро
 
-#### 📚 Все версии (63)
-
-Каждая версия — отдельная вкладка.
+</details>
 
 <details>
 <summary><b>3.3.0</b> · 2 ноября 2026</summary>

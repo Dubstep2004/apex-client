@@ -2,6 +2,13 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.3.2 · 2 ноября 2026
+
+<img src="img/tags/fixed.svg" alt="Исправлено" height="22">
+
+- Интервал автообновления подписки из старой резервной копии или прежних версий мог быть 0 или 48 ч — теперь всегда 1, 6, 12 или 24 ч
+- Живое видео на фоне: при каждом повороте экрана и сворачивании оставался неосвобождённый видеобуфер
+
 ## 3.3.1 · 2 ноября 2026
 
 <img src="img/tags/changed.svg" alt="Изменено" height="22">
