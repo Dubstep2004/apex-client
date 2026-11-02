@@ -594,7 +594,7 @@ fun SettingsTab(open: (Page) -> Unit) {
         Section("О программе")
         Group {
             ListRow("APEX VPN для Windows ${AppInfo.VERSION}", update ?: "sing-box 1.13 · Xray 26 · общий движок с Android", leading = { IconTile(Icons.Rounded.Info, C.Accent) },
-                onClick = { WinSys.open("https://github.com/${AppInfo.REPO}/releases/latest") })
+                onClick = { WinSys.open(Updates.PAGE) })
             GroupDivider()
             ListRow("Проверить обновления", leading = { IconTile(Icons.Rounded.SystemUpdate, Color(0xFF22C55E)) },
                 onClick = { scope.launch { update = Updates.check()?.let { "Доступна версия ${it.tag} — нажмите, чтобы скачать" } ?: "У вас последняя версия" } }) { Chevron() }

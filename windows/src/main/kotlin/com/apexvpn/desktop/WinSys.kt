@@ -114,7 +114,7 @@ object WinSys {
 }
 
 object AppInfo {
-    const val VERSION = "1.7.0"
+    const val VERSION = "1.7.1"
     const val REPO = "Dubstep2004/apex-vpn"
     const val SUPPORT = "https://t.me/Apexx_support"
 }
@@ -123,19 +123,25 @@ object AppInfo {
 object Updates {
     data class Info(val tag: String, val url: String, val page: String)
 
+    /** Страница релизов для Windows (отдельные от Android: теги windows-v…). */
+    const val PAGE = "https://github.com/${AppInfo.REPO}/releases?q=windows&expanded=true"
+
+    /** Последний релиз windows-v<версия>; Info — если он новее установленной. */
     suspend fun check(): Info? = withContext(Dispatchers.IO) {
         runCatching {
-            val c = URI("https://api.github.com/repos/${AppInfo.REPO}/releases/latest").toURL().openConnection() as HttpURLConnection
+            val c = URI("https://api.github.com/repos/${AppInfo.REPO}/releases?per_page=30").toURL().openConnection() as HttpURLConnection
             c.connectTimeout = 8000; c.readTimeout = 8000
             c.setRequestProperty("Accept", "application/vnd.github+json")
             c.setRequestProperty("User-Agent", "APEX VPN Windows ${AppInfo.VERSION}")
-            val o = try { JSONObject(c.inputStream.bufferedReader().readText()) } finally { c.disconnect() }
-            val assets = o.getJSONArray("assets")
-            val exe = (0 until assets.length()).map { assets.getJSONObject(it) }
-                .firstOrNull { it.getString("name").endsWith("-windows.exe") } ?: return@runCatching null
-            // Версия программы для Windows записана в имени: apex-vpn-<android>-windows.exe и в описании «Windows x.y.z»
-            val win = Regex("Windows (\\d+\\.\\d+\\.\\d+)").findAll(o.optString("body")).lastOrNull()?.groupValues?.get(1) ?: return@runCatching null
-            if (newer(win, AppInfo.VERSION)) Info(win, exe.getString("browser_download_url"), o.getString("html_url")) else null
+            val list = try { org.json.JSONArray(c.inputStream.bufferedReader().readText()) } finally { c.disconnect() }
+            val rel = (0 until list.length()).map { list.getJSONObject(it) }
+                .filter { !it.optBoolean("draft") && !it.optBoolean("prerelease") && it.optString("tag_name").startsWith("windows-v") }
+                .maxWithOrNull { a, b -> if (newer(a.getString("tag_name").removePrefix("windows-v"), b.getString("tag_name").removePrefix("windows-v"))) 1 else -1 }
+                ?: return@runCatching null
+            val win = rel.getString("tag_name").removePrefix("windows-v")
+            val assets = rel.getJSONArray("assets")
+            val exe = (0 until assets.length()).map { assets.getJSONObject(it) }.firstOrNull { it.getString("name").endsWith(".exe") }
+            if (newer(win, AppInfo.VERSION)) Info(win, exe?.getString("browser_download_url") ?: rel.getString("html_url"), rel.getString("html_url")) else null
         }.getOrNull()
     }
 

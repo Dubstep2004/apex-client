@@ -5,7 +5,8 @@ on:
     branches: [main]
     tags: ["v*"]
     # Правка README, картинок и скриптов VPS не пересобирает приложение
-    paths-ignore: ["**.md", "docs/**"]
+    # Windows собирается отдельно (.github/workflows/windows.yml)
+    paths-ignore: ["**.md", "docs/**", "windows/**", ".github/workflows/windows.yml"]
   pull_request:
   workflow_dispatch:
   # Раз в неделю «трогаем» ключ подписи в кэше, чтобы GitHub его не удалил
@@ -212,115 +213,3 @@ jobs:
             dist/apex-vpn-${{ steps.apk.outputs.name }}.json
             dist/apex-watch-${{ steps.apk.outputs.name }}.apk
           make_latest: true
-
-  # APEX VPN для Windows: тот же движок apexcore (apexcli.exe) + официальные sing-box и Xray.
-  # Файлы добавляются в тот же релиз v<версия Android>. Сбой здесь не мешает Android-релизу.
-  windows:
-    needs: build
-    if: github.event_name != 'schedule'
-    runs-on: windows-latest
-    timeout-minutes: 60
-    defaults:
-      run:
-        shell: bash
-    env:
-      SING_BOX_VERSION: "1.13.21"
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version: "1.25.12"
-          cache: false
-
-      - name: apexcli.exe (общий движок apexcore)
-        run: |
-          set -euo pipefail
-          T=$(cygpath -u "$RUNNER_TEMP"); W=$(pwd)
-          git clone --quiet --depth 1 --branch "v$SING_BOX_VERSION" https://github.com/SagerNet/sing-box "$T/sb"
-          cp -r core/apexcore "$T/sb/experimental/apexcore"
-          rm -f "$T/sb/experimental/apexcore/naive_test.go"
-          mkdir -p "$T/sb/cmd/apexcli" windows/resources/windows/rules
-          cp windows/core/main.go "$T/sb/cmd/apexcli/"
-          cd "$T/sb"
-          TAGS="with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,badlinkname,tfogo_checklinkname0"
-          GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -tags "$TAGS" -ldflags "-checklinkname=0 -s -w" \
-            -o "$(cygpath -w "$W/windows/resources/windows/apexcli.exe")" ./cmd/apexcli
-          echo '{"cmd":"version"}' | "$W/windows/resources/windows/apexcli.exe"
-
-      - name: Ядра sing-box и Xray для Windows, базы сайтов
-        run: |
-          set -euo pipefail
-          T=$(cygpath -u "$RUNNER_TEMP")
-          R=windows/resources/windows
-          curl -fsSL --retry 3 -o "$T/sb.zip" "https://github.com/SagerNet/sing-box/releases/download/v$SING_BOX_VERSION/sing-box-$SING_BOX_VERSION-windows-amd64.zip"
-          unzip -q -o "$T/sb.zip" -d "$T/sbz"
-          cp "$T"/sbz/*/sing-box.exe "$R/sing-box.exe"
-          XV=$(cat core/xray-version)
-          curl -fsSL --retry 3 -o "$T/xr.zip" "https://github.com/XTLS/Xray-core/releases/download/$XV/Xray-windows-64.zip"
-          unzip -q -o "$T/xr.zip" xray.exe -d "$R"
-          for f in geoip-ru.srs geosite-category-ru.srs geosite-category-ads-all.srs geosite-category-porn.srs geosite-category-betting-ru.srs; do
-            curl -fsSL --retry 2 -o "$R/rules/$f" "https://raw.githubusercontent.com/${{ github.repository }}/rules/$f" || cp "app/src/main/assets/rules/$f" "$R/rules/$f"
-          done
-          ls -la "$R" "$R/rules"
-          "$R/sing-box.exe" version | head -2
-
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.14.3"
-
-      - name: Сборка APEX VPN для Windows
-        run: |
-          set -o pipefail
-          if ! gradle -p windows --no-daemon createDistributable 2>&1 | tee win.log; then
-            grep -E "^e: |error:|What went wrong" win.log | head -40 | sed ':a;N;$!ba;s/\n/%0A/g' | sed 's/^/::error title=Windows::/'
-            for f in windows/build/compose/logs/*/*.txt; do [ -s "$f" ] && { echo "== $f"; tail -40 "$f"; echo "::error title=jpackage::$(tail -5 "$f" | tr '\n' ' ' | cut -c1-500)"; }; done
-            exit 1
-          fi
-          # Установщик: Inno Setup с картинками APEX, на русском (windows/installer/apex.iss)
-          ISCC="/c/Program Files (x86)/Inno Setup 6/ISCC.exe"
-          if [ ! -x "$ISCC" ]; then choco install innosetup -y --no-progress > /dev/null || true; fi
-          V="${{ needs.build.outputs.version }}"
-          WV=$(grep -oP 'VERSION = "\K[0-9.]+' windows/src/main/kotlin/com/apexvpn/desktop/WinSys.kt)
-          SRC=$(cygpath -w "$(pwd)/windows/build/compose/binaries/main/app/APEX VPN")
-          if ! (cd windows/installer && MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL="*" "$ISCC" /Qp "/DAppVersion=$WV" "/DSourceDir=$SRC" "/DOutputName=apex-vpn-$V-windows" apex.iss 2>&1 | tail -30); then
-            echo "::warning title=Windows::установщик не собрался — будет только .zip"
-          fi
-
-      - name: Файлы для релиза
-        id: win
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          V="${{ needs.build.outputs.version }}"
-          WV=$(gradle -p windows -q --no-daemon printVersion | tail -1)
-          mkdir -p dist
-          APPDIR="windows/build/compose/binaries/main/app/APEX VPN"
-          test -d "$APPDIR"
-          W=$(pwd)
-          (cd "windows/build/compose/binaries/main/app" && 7z a -tzip "$(cygpath -w "$W/dist/apex-vpn-$V-windows.zip")" "APEX VPN" > /dev/null)
-          EXE=$(ls windows/build/installer/*.exe 2>/dev/null | head -1 || true)
-          [ -n "$EXE" ] && cp "$EXE" "dist/apex-vpn-$V-windows.exe"
-          ls -la dist
-          echo "::notice title=Windows $WV::$(ls dist | tr '\n' ' ')"
-          # Описание релиза: прежняя строка про Windows заменяется новой (версия Windows — для проверки обновлений)
-          gh release view "v$V" --json body -q .body 2>/dev/null | grep -v "💻 \*\*Windows" > dist/win.md || true
-          test -s dist/win.md || { echo "::error title=Windows::не прочитано описание релиза v$V"; exit 1; }
-          echo "💻 **Windows $WV** — apex-vpn-$V-windows.exe (установщик) или apex-vpn-$V-windows.zip (без установки)" >> dist/win.md
-          echo "version=$V" >> "$GITHUB_OUTPUT"
-
-      - name: Добавить в релиз
-        if: github.event_name != 'pull_request'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.win.outputs.version }}
-          body_path: dist/win.md
-          files: |
-            dist/apex-vpn-*-windows.exe
-            dist/apex-vpn-*-windows.zip
