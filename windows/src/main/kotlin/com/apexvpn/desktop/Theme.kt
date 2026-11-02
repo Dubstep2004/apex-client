@@ -35,6 +35,10 @@ data class Palette(
 
 /** Дизайны Windows 1.3 — те же, что на Android. */
 enum class Design(val id: String, val title: String, val subtitle: String, val palette: Palette, val deco: String) {
+    Fluent("fluent", "Windows 11", "Нейтральный, как сама Windows: ровный фон и голубой акцент",
+        Palette(Color(0xFF1C1C1C), Color(0xFF2B2B2B), Color(0xFF353535), Color(0x1AFFFFFF), Color(0xFFFFFFFF), Color(0xFFC5C5C5), Color(0xFF4CC2FF), Color(0xFF0091F8)), "mica"),
+    FluentLight("fluent_light", "Windows 11 светлый", "Светлая тема Windows",
+        Palette(Color(0xFFF3F3F3), Color(0xFFFBFBFB), Color(0xFFF0F0F0), Color(0x14000000), Color(0xFF1B1B1B), Color(0xFF5F5F5F), Color(0xFF005FB8), Color(0xFF0091F8), light = true), "mica"),
     Apex("apex", "APEX", "Фирменный: мягкое свечение и плавающие пятна",
         Palette(Color(0xFF08080E), Color(0xFF13131C), Color(0xFF1C1C28), Color(0x14FFFFFF), Color(0xFFF4F4F7), Color(0xFF8E8E9A), Color(0xFF7B6CFF), Color(0xFF4FA8F2)), "glow"),
     Classic("classic", "Классика", "Строгий тёмный, без украшений",
@@ -56,7 +60,7 @@ enum class Design(val id: String, val title: String, val subtitle: String, val p
     ;
 
     companion object {
-        fun of(id: String) = entries.firstOrNull { it.id == id } ?: Apex
+        fun of(id: String) = entries.firstOrNull { it.id == id } ?: Fluent
     }
 }
 
@@ -81,6 +85,8 @@ object C {
     var palette by mutableStateOf(Design.Apex.palette)
     var design by mutableStateOf(Design.Apex)
     var animations by mutableStateOf(true)
+    /** Вид Windows 11: меньше скругления, мелкие значки, текст как в «Параметрах» Windows */
+    var fluent by mutableStateOf(true)
 
     fun apply(s: Settings) {
         design = s.design
@@ -88,6 +94,7 @@ object C {
         val a = s.accent
         palette = if (a.c1 != null && a.c2 != null) p.copy(accent = a.c1, accent2 = a.c2) else p
         animations = s.animations
+        fluent = s.layout == "windows"
     }
 
     val Base get() = palette.base
@@ -101,7 +108,11 @@ object C {
     val Light get() = palette.light
     val AccentSoft get() = palette.accent.copy(alpha = if (palette.light) 0.14f else 0.20f)
     val AccentText get() = if (palette.light) palette.accent else palette.accent.copy(red = (palette.accent.red + 0.25f).coerceAtMost(1f), green = (palette.accent.green + 0.25f).coerceAtMost(1f), blue = (palette.accent.blue + 0.15f).coerceAtMost(1f))
-    val Radius get() = if (design == Design.Classic || design == Design.Terminal) 18.dp else 26.dp
+    val Radius get() = when {
+        fluent -> 8.dp
+        design == Design.Classic || design == Design.Terminal -> 18.dp
+        else -> 26.dp
+    }
     val Good = Color(0xFF22C55E)
     val Warn = Color(0xFFE5A23A)
     val Bad = Color(0xFFEF4444)
@@ -125,6 +136,11 @@ fun Backdrop(connected: Boolean) {
         val a1 = p.accent; val a2 = p.accent2
         val glow = if (connected) 0.30f else 0.16f
         when (d.deco) {
+            // Windows 11: почти ровный фон с лёгким оттенком акцента (как Mica)
+            "mica" -> {
+                drawRect(Brush.linearGradient(listOf(a1.copy(alpha = if (p.light) 0.05f else 0.07f), Color.Transparent, a2.copy(alpha = if (p.light) 0.04f else 0.05f)), Offset(0f, 0f), Offset(w, h)))
+                if (connected) blob(Offset(w * 0.2f, h * 0.15f), w * 0.4f, a1, 0.06f + 0.02f * pu)
+            }
             "glow" -> {
                 blob(Offset(w * (0.15f + 0.08f * sin(2 * PI * ph).toFloat()), h * 0.05f), w * 0.55f, a1, glow + 0.06f * pu)
                 blob(Offset(w * 0.95f, h * (0.85f + 0.06f * cos(2 * PI * ph).toFloat())), w * 0.45f, a2, glow * 0.8f)

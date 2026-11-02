@@ -39,6 +39,24 @@ object WinSys {
         }
     }
 
+    internal interface Dwm : StdCallLibrary {
+        fun DwmSetWindowAttribute(hwnd: com.sun.jna.platform.win32.WinDef.HWND, attr: Int, value: com.sun.jna.ptr.IntByReference, size: Int): Int
+
+        companion object {
+            val I: Dwm by lazy { Native.load("dwmapi", Dwm::class.java) }
+        }
+    }
+
+    /** Тёмный или светлый заголовок окна (DWMWA_USE_IMMERSIVE_DARK_MODE). */
+    fun darkTitleBar(handle: Long, dark: Boolean) {
+        if (!isWindows || handle == 0L) return
+        runCatching {
+            val hwnd = com.sun.jna.platform.win32.WinDef.HWND(com.sun.jna.Pointer(handle))
+            val v = com.sun.jna.ptr.IntByReference(if (dark) 1 else 0)
+            if (Dwm.I.DwmSetWindowAttribute(hwnd, 20, v, 4) != 0) Dwm.I.DwmSetWindowAttribute(hwnd, 19, v, 4)
+        }
+    }
+
     fun isAdmin(): Boolean = isWindows && runCatching { Shell32Ex.I.IsUserAnAdmin() }.getOrDefault(false)
 
     /** Перезапустить программу от администратора (окно UAC). */
@@ -114,7 +132,7 @@ object WinSys {
 }
 
 object AppInfo {
-    const val VERSION = "1.7.1"
+    const val VERSION = "2.0.0"
     const val REPO = "Dubstep2004/apex-vpn"
     const val SUPPORT = "https://t.me/Apexx_support"
 }

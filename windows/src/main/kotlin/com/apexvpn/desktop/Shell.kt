@@ -117,6 +117,11 @@ private val ColumnMax = 560.dp
 
 @Composable
 fun AppUi() {
+    // Windows 2.0: по умолчанию свой вид для компьютера; «как на телефоне» — в «Оформлении»
+    if (C.fluent) {
+        FluentApp()
+        return
+    }
     var tab by remember { mutableStateOf(Tab.Home) }
     val pages = remember { mutableStateListOf<Page>() }
     val sub by Subscription.state.collectAsState()
@@ -244,7 +249,7 @@ fun Group(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> 
 
 @Composable
 fun GroupDivider() {
-    HorizontalDivider(Modifier.padding(start = 76.dp), thickness = 1.dp, color = C.Outline)
+    HorizontalDivider(Modifier.padding(start = if (C.fluent) 0.dp else 76.dp), thickness = 1.dp, color = C.Outline)
 }
 
 @Composable
@@ -256,16 +261,18 @@ fun ListRow(
     onClick: (() -> Unit)? = null,
     trailing: @Composable RowScope.() -> Unit = {},
 ) {
+    val f = C.fluent
     Row(
-        Modifier.fillMaxWidth().then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier).padding(horizontal = 16.dp, vertical = 13.dp),
+        Modifier.fillMaxWidth().then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = 16.dp, vertical = if (f) 14.dp else 13.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (leading != null) { leading(); Spacer(Modifier.width(16.dp)) }
+        if (leading != null) { leading(); Spacer(Modifier.width(if (f) 14.dp else 16.dp)) }
         Column(Modifier.weight(1f)) {
-            Text(title, color = titleColor, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(title, color = titleColor, fontSize = if (f) 14.sp else 17.sp, fontWeight = if (f) FontWeight.Normal else FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (subtitle != null) {
                 Spacer(Modifier.height(2.dp))
-                Text(subtitle, color = C.Dim, fontSize = 14.sp, lineHeight = 18.sp, maxLines = 4, overflow = TextOverflow.Ellipsis)
+                Text(subtitle, color = C.Dim, fontSize = if (f) 12.sp else 14.sp, lineHeight = if (f) 16.sp else 18.sp, maxLines = 4, overflow = TextOverflow.Ellipsis)
             }
         }
         Spacer(Modifier.width(12.dp))
@@ -276,6 +283,11 @@ fun ListRow(
 /** Цветная квадратная плашка со значком — как в настройках Android-версии. */
 @Composable
 fun IconTile(icon: ImageVector, color: Color = C.Accent, size: Dp = 44.dp) {
+    // Windows 11: просто значок без цветной плашки, как в «Параметрах»
+    if (C.fluent) {
+        Box(Modifier.size(28.dp), contentAlignment = Alignment.Center) { Icon(icon, null, tint = C.Text, modifier = Modifier.size(20.dp)) }
+        return
+    }
     Box(Modifier.size(size).clip(RoundedCornerShape(size * 0.3f)).background(color), contentAlignment = Alignment.Center) {
         Icon(icon, null, tint = Color.White, modifier = Modifier.size(size * 0.55f))
     }
@@ -420,7 +432,7 @@ private fun SubscriptionCard(now: Long) {
 fun ModeTab(open: (Page) -> Unit) {
     val s by Store.settings.collectAsState()
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
-        Text("Режим", color = C.Text, fontSize = 34.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 4.dp, top = 18.dp))
+        if (!C.fluent) Text("Режим", color = C.Text, fontSize = 34.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 4.dp, top = 18.dp))
         Section("Что идёт через VPN")
         Group {
             RouteMode.entries.forEachIndexed { i, m ->
@@ -487,7 +499,7 @@ fun SettingsTab(open: (Page) -> Unit) {
     var confirmRemove by remember { mutableStateOf(false) }
     var backupMsg by remember { mutableStateOf<String?>(null) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
-        Text("Настройки", color = C.Text, fontSize = 34.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 4.dp, top = 18.dp))
+        if (!C.fluent) Text("Настройки", color = C.Text, fontSize = 34.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 4.dp, top = 18.dp))
 
         Section("Подписка")
         Group {
@@ -614,6 +626,14 @@ fun SettingsTab(open: (Page) -> Unit) {
 fun AppearancePage() {
     val s by Store.settings.collectAsState()
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        Section("Вид окна")
+        Group {
+            ListRow("Windows 11", "Боковое меню, широкий главный экран — как программы Windows", leading = { IconTile(Icons.Rounded.Palette, C.Accent) },
+                onClick = { Store.update { copy(layout = "windows") } }) { Check(s.layout == "windows") }
+            GroupDivider()
+            ListRow("Как на телефоне", "Узкое окно и нижняя панель, как в приложении для Android", leading = { IconTile(Icons.Rounded.PowerSettingsNew, C.Cyan) },
+                onClick = { Store.update { copy(layout = "phone") } }) { Check(s.layout == "phone") }
+        }
         Section("Дизайн")
         androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Design.entries.forEach { d -> DesignCard(d, s.design == d) { Store.update { copy(design = d) } } }

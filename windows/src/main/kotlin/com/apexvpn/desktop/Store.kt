@@ -86,6 +86,8 @@ data class Settings(
     /** Сайты стран напрямую (kz, by…) */
     val directCountries: Set<String> = emptySet(),
     // 1.5 — главный экран
+    /** Вид окна: «windows» — Windows 11 (боковое меню, широкий экран), «phone» — как на телефоне */
+    val layout: String = "windows",
     val homeStyle: String = "shield",
     val photoPath: String = "",
     val photoDim: Int = 55,
@@ -100,7 +102,7 @@ data class Settings(
     val warpConfig: String = "",
     // 1.7 — удобство
     val expiryAlerts: Boolean = true,
-    val design: Design = Design.Apex,
+    val design: Design = Design.Fluent,
     val accent: AccentChoice = AccentChoice.Design,
     val animations: Boolean = true,
     val rulesAuto: Boolean = true,
@@ -174,6 +176,7 @@ object Store {
             customDomains = strings(o.optJSONArray("customDomains")),
             directDomains = strings(o.optJSONArray("directDomains")),
             directCountries = strings(o.optJSONArray("directCountries")).toSet(),
+            layout = o.optString("layout", d.layout).takeIf { it in listOf("windows", "phone") } ?: d.layout,
             homeStyle = o.optString("homeStyle", d.homeStyle).takeIf { it in listOf("shield", "globe") } ?: d.homeStyle,
             photoPath = o.optString("photoPath", d.photoPath),
             photoDim = o.optInt("photoDim", d.photoDim).coerceIn(0, 90),
@@ -207,7 +210,7 @@ object Store {
             .put("directCountries", JSONArray(s.directCountries.toList()))
             .put("rulesAuto", s.rulesAuto).put("rulesHours", s.rulesHours)
             .put("design", s.design.id).put("accent", s.accent.id).put("animations", s.animations)
-            .put("homeStyle", s.homeStyle).put("photoPath", s.photoPath).put("photoDim", s.photoDim).put("sound", s.sound)
+            .put("layout", s.layout).put("homeStyle", s.homeStyle).put("photoPath", s.photoPath).put("photoDim", s.photoDim).put("sound", s.sound)
             .put("services", JSONArray(s.services.toList())).put("kids", s.kids)
             .put("userRules", JSONArray(s.userRules.map { JSONObject().put("value", it.value).put("action", it.action) }))
             .put("fakeDns", s.fakeDns).put("domainStrategy", s.domainStrategy).put("warp", s.warp).put("warpConfig", s.warpConfig)

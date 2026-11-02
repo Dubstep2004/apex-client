@@ -52,17 +52,16 @@ import java.util.Locale
 @Composable
 fun ToolsScreen() {
     var section by remember { mutableStateOf(0) }
-    Column(Modifier.fillMaxSize().padding(28.dp)) {
-        Text("Инструменты", color = C.Text, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
-        Spacer(Modifier.height(12.dp))
-        Box(Modifier.width(520.dp)) {
-            Segmented(listOf("Тест скорости", "Проверка утечек", "Журнал"), section) { section = it }
+    Column(Modifier.fillMaxSize()) {
+        Box(Modifier.width(640.dp)) {
+            Segmented(listOf("Тест скорости", "Проверка утечек", "Журнал", "Не работает?"), section) { section = it }
         }
         Spacer(Modifier.height(16.dp))
         when (section) {
             0 -> SpeedTestCard()
             1 -> LeakTestCard()
-            else -> ConnLogCard()
+            2 -> ConnLogCard()
+            else -> SelfCheckPage()
         }
     }
 }
