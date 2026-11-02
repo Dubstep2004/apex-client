@@ -108,6 +108,13 @@ type routeOptions struct {
 	URLTest string `json:"urlTest"`
 	// 602. Сайты стран напрямую: домены верхнего уровня («kz», «by») и важные сайты стран
 	DirectSuffixes []string `json:"directSuffixes"`
+	// Windows: «tun» (по умолчанию, нужны права администратора) или «proxy» — без TUN,
+	// только локальный HTTP/SOCKS-прокси 127.0.0.1:ProxyPort (системный прокси ставит приложение)
+	Inbound   string `json:"inbound"`
+	ProxyPort int    `json:"proxyPort"`
+	// DirectProcesses — программы, чьи соединения идут мимо VPN (Windows: само приложение,
+	// чтобы пинг до серверов и проверка обновлений шли напрямую и в режиме TUN)
+	DirectProcesses []string `json:"directProcesses"`
 }
 
 // профиль подключения: как часто проверять серверы и рвать ли соединения при смене
@@ -358,6 +365,9 @@ func buildAll(nodesJSON string, selectedTag string, optionsJSON string) (string,
 		map[string]any{"protocol": "dns", "action": "hijack-dns"},
 		map[string]any{"ip_is_private": true, "outbound": "direct"},
 	)
+	if len(opts.DirectProcesses) > 0 {
+		rules = append(rules, map[string]any{"process_name": opts.DirectProcesses, "outbound": "direct"})
+	}
 	if opts.BlockQUIC {
 		// Отказ сразу: браузер за доли секунды переходит на обычный HTTPS по TCP
 		rules = append(rules, map[string]any{"protocol": "quic", "action": "reject"})
@@ -579,7 +589,7 @@ func buildAll(nodesJSON string, selectedTag string, optionsJSON string) (string,
 		"auto_detect_interface":   true,
 		"default_domain_resolver": "local",
 	}
-	if opts.FindProcess {
+	if opts.FindProcess || len(opts.DirectProcesses) > 0 {
 		route["find_process"] = true
 	}
 	if len(ruleSets) > 0 {
@@ -594,6 +604,13 @@ func buildAll(nodesJSON string, selectedTag string, optionsJSON string) (string,
 		"strict_route": true,
 		"stack":        "mixed",
 	}}
+	if opts.Inbound == "proxy" {
+		port := opts.ProxyPort
+		if port <= 1024 || port > 65535 {
+			port = 2081
+		}
+		inbounds = []any{map[string]any{"type": "mixed", "tag": "proxy-in", "listen": "127.0.0.1", "listen_port": port}}
+	}
 	if in := xray.dialInbound(); in != nil {
 		inbounds = append(inbounds, in)
 	}

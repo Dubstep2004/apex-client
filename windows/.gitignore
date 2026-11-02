@@ -1,0 +1,4 @@
+build/
+.gradle/
+resources/windows/*
+!resources/windows/.keep

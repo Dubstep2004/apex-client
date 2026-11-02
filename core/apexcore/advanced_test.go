@@ -198,3 +198,18 @@ func TestDirectCountries(t *testing.T) {
 	}
 }
 
+
+func TestProxyInbound(t *testing.T) {
+	nodes := `[{"tag":"a","name":"A","type":"vless","server":"1.2.3.4","port":443,"outbound":{"type":"vless","server":"1.2.3.4","server_port":443,"uuid":"` + "bf000d23-0752-40b4-affe-68f7707a9661" + `"}}]`
+	cfg, err := BuildConfig(nodes, "a", `{"mode":"all","inbound":"proxy","proxyPort":30123}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(cfg, `"type": "tun"`) || !strings.Contains(cfg, `"listen_port": 30123`) || !strings.Contains(cfg, `"type": "mixed"`) {
+		t.Fatalf("proxy inbound expected:\n%s", cfg)
+	}
+	cfg, _ = BuildConfig(nodes, "a", `{"mode":"all","directProcesses":["APEX VPN.exe"]}`)
+	if !strings.Contains(cfg, `"process_name"`) || !strings.Contains(cfg, `"find_process": true`) {
+		t.Fatalf("proxy inbound expected:\n%s", cfg)
+	}
+}
