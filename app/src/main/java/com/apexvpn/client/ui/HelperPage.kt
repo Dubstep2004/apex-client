@@ -194,7 +194,8 @@ internal fun HelperPage(viewModel: MainViewModel, onBack: () -> Unit, openPage: 
                         if (m.actions.isNotEmpty()) {
                             Spacer(Modifier.height(8.dp))
                             m.actions.forEach { a ->
-                                Box(Modifier.padding(top = 4.dp).clip(RoundedCornerShape(50)).clickable {
+                                Box(Modifier.padding(top = 6.dp).fillMaxWidth().height(46.dp).clip(RoundedCornerShape(14.dp))
+                                    .background(Apex.Accent.copy(alpha = 0.18f)).clickable {
                                     when {
                                         a.page != null -> openPage(a.page)
                                         a.link != null -> runCatching {
@@ -202,7 +203,9 @@ internal fun HelperPage(viewModel: MainViewModel, onBack: () -> Unit, openPage: 
                                         }
                                         else -> { a.run?.invoke(); messages += Helper.Msg(false, "Готово ✅") }
                                     }
-                                }) { Tag(a.title) }
+                                }, contentAlignment = Alignment.Center) {
+                                    Text(a.title, color = Apex.Accent, fontSize = 15.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
+                                }
                             }
                         }
                     }
@@ -211,7 +214,12 @@ internal fun HelperPage(viewModel: MainViewModel, onBack: () -> Unit, openPage: 
         }
         Spacer(Modifier.height(8.dp))
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Helper.suggestions.forEach { s -> Box(Modifier.clip(RoundedCornerShape(50)).clickable { ask(s) }) { Tag(s, outlined = true) } }
+            Helper.suggestions.forEach { s ->
+                Box(
+                    Modifier.height(42.dp).clip(RoundedCornerShape(50)).background(Apex.Surface).clickable { ask(s) }.padding(horizontal = 16.dp),
+                    contentAlignment = Alignment.Center,
+                ) { Text(s, color = Apex.Text, fontSize = 15.sp) }
+            }
         }
         Spacer(Modifier.height(8.dp))
         InputWithButton(input, "Что не работает?", Icons.AutoMirrored.Rounded.Send, { input = it }) { ask(input) }

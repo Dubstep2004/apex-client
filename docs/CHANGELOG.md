@@ -2,6 +2,16 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.11.3 · 3 ноября 2026
+
+<img src="img/tags/improved.svg" alt="Улучшено" height="22">
+
+- Помощник: кнопки в ответах и подсказки внизу стали крупнее — удобно нажимать пальцем
+
+<img src="img/tags/fixed.svg" alt="Исправлено" height="22">
+
+- Поле ввода в «Помощнике» и низ страниц со списками («Скрыть VPN», «Приложение не работает?») уходили под кнопки навигации Android и клавиатуру
+
 ## 3.11.2 · 3 ноября 2026
 
 <img src="img/tags/improved.svg" alt="Улучшено" height="22">
