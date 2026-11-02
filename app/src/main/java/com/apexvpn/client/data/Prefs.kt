@@ -56,6 +56,11 @@ object Prefs {
         get() = sp.getInt("dismissed_update", 0)
         set(v) = sp.edit { putInt("dismissed_update", v) }
 
+    /** 3.5: результаты проверки сервисов по серверам (JSON tag → результат) */
+    var serviceChecks: String
+        get() = sp.getString("service_checks", "{}") ?: "{}"
+        set(v) = sp.edit { putString("service_checks", v) }
+
     /** 3.4: VPN был включён перед установкой обновления — включить снова после замены приложения */
     var reconnectAfterUpdate: Boolean
         get() = sp.getBoolean("reconnect_after_update", false)

@@ -459,12 +459,21 @@ class ApexVpnService : VpnService(), PlatformInterface, CommandServerHandler {
             Intent(this, ApexVpnService::class.java).setAction(ACTION_STOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
+        // 3.5: «Приложение не работает?» — сразу к выбору приложения, которое пустить мимо VPN
+        val appIssue = PendingIntent.getActivity(
+            this, 3,
+            Intent(this, MainActivity::class.java)
+                .putExtra(MainActivity.EXTRA_OPEN_PAGE, "AppIssue")
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
         val notification: Notification = NotificationCompat.Builder(this, ApexApp.CHANNEL_VPN)
             .setSmallIcon(R.drawable.ic_stat_apex)
             .setContentTitle(title)
             .setContentText(text)
             .setContentIntent(openApp)
             .addAction(0, getString(R.string.notification_disconnect), stopIntent)
+            .apply { if (status == VpnStatus.Started) addAction(0, "Приложение не работает?", appIssue) }
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setShowWhen(false)

@@ -323,6 +323,10 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
             GroupDivider()
             ListRow("Проверить сайт", "Через VPN или напрямую", leading = { tile(Icons.Rounded.Search) }, onClick = { onOpenPage(Page.SiteCheck) }) { Chevron() }
             GroupDivider()
+            ListRow("Сервисы на серверах", "Где работают ChatGPT, YouTube Premium, Netflix, Gemini", leading = { tile(Icons.Rounded.Search) }, onClick = { onOpenPage(Page.ServiceCheck) }) { Chevron() }
+            GroupDivider()
+            ListRow("Приложение не работает?", "Пустить его мимо VPN одной кнопкой (есть и в уведомлении VPN)", leading = { tile(Icons.Rounded.Policy) }, onClick = { onOpenPage(Page.AppIssue) }) { Chevron() }
+            GroupDivider()
             val ri = rulesInfo
             ListRow(
                 "Обновить базы сайтов",

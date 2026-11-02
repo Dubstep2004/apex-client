@@ -100,12 +100,15 @@ class MainActivity : ComponentActivity() {
     companion object {
         /** Из уведомления «обновление готово» — сразу открыть установщик */
         const val EXTRA_INSTALL_UPDATE = "install_update"
+        /** 3.5: открыть страницу по имени (Page) — из уведомления VPN */
+        const val EXTRA_OPEN_PAGE = "open_page"
     }
 
     private val viewModel: MainViewModel by viewModels()
 
     /** Ссылка подписки из QR-кода, «Поделиться» или apexvpn:// — ждёт подтверждения. */
     private val pendingImport = MutableStateFlow<String?>(null)
+    private val pendingPage = MutableStateFlow<Page?>(null)
 
     /** 601. Сайт из «Поделиться» в браузере — ждёт выбора «Через VPN» или «Напрямую». */
     private val pendingSite = MutableStateFlow<String?>(null)
@@ -195,6 +198,10 @@ class MainActivity : ComponentActivity() {
                     var page by rememberSaveable { mutableStateOf<Page?>(null) }
                     var serversOpen by rememberSaveable { mutableStateOf(false) }
                     var splash by rememberSaveable { mutableStateOf(savedInstanceState == null) }
+                    val requested by pendingPage.collectAsStateWithLifecycle()
+                    LaunchedEffect(requested) {
+                        requested?.let { page = it; splash = false; pendingPage.value = null }
+                    }
 
                     LaunchedEffect(message) {
                         message?.let {
@@ -413,6 +420,10 @@ class MainActivity : ComponentActivity() {
     /** 32. apexvpn://import?url=…, «Поделиться» ссылкой, запуск из плитки/виджета. */
     private fun handleIntent(intent: Intent?) {
         intent ?: return
+        intent.getStringExtra(EXTRA_OPEN_PAGE)?.let { name ->
+            intent.removeExtra(EXTRA_OPEN_PAGE)
+            Page.entries.firstOrNull { it.name == name }?.let { pendingPage.value = it }
+        }
         if (intent.getBooleanExtra(EXTRA_INSTALL_UPDATE, false)) {
             intent.removeExtra(EXTRA_INSTALL_UPDATE)
             // 3.4: из уведомления «Доступна версия» — сразу скачиваем и ставим (диалог покажет ход)

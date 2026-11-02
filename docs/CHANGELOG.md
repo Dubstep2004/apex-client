@@ -2,6 +2,13 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.5.0 · 2 ноября 2026
+
+<img src="img/tags/new.svg" alt="Новое" height="22">
+
+- «Приложение не работает?» — кнопка прямо в уведомлении VPN: выберите приложение (недавно открытые — первыми), и оно пойдёт мимо VPN. Банк, госуслуги, маркетплейс — за два нажатия
+- Сервисы на серверах: где открываются ChatGPT, YouTube Premium, Netflix и Gemini — ✅/❌ по каждому серверу и фильтр «Где работает…». Проверка идёт через сам сервер, переключаться не нужно
+
 ## 3.4.0 · 2 ноября 2026
 
 <img src="img/tags/new.svg" alt="Новое" height="22">

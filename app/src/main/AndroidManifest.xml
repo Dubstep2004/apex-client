@@ -19,6 +19,8 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <!-- «Чтобы VPN не отключался»: системный запрос «работать без ограничений батареи» -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- 3.5: «Приложение не работает?» — недавно открытые приложения первыми (только по разрешению пользователя) -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
 
     <!-- 47. Android TV: сенсорный экран, камера и GPS не обязательны -->
     <uses-feature android:name="android.software.leanback" android:required="false" />
