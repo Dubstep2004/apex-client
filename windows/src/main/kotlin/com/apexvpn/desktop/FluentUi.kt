@@ -93,6 +93,7 @@ fun FluentApp() {
     Box(Modifier.fillMaxSize()) {
         Backdrop(status == VpnStatus.On)
         PhotoBackdrop()
+        CountryPhotoBackdrop()
         Row(Modifier.fillMaxSize()) {
             NavPane(nav) { nav = it; pages.clear() }
             Column(Modifier.weight(1f).fillMaxHeight().padding(start = 4.dp, end = 28.dp)) {
@@ -149,6 +150,10 @@ private fun ColumnScope.FluentPage(page: Page, open: (Page) -> Unit) {
         Page.Services -> ServicesPage()
         Page.Advanced -> AdvancedPage()
         Page.SelfCheck -> SelfCheckPage()
+        Page.Ping -> PingSettingsPage()
+        Page.Exclude -> ExcludeAppsPage()
+        Page.Help -> HelpPage()
+        Page.WhatsNew -> WhatsNewPage()
     }
 }
 
@@ -261,7 +266,7 @@ private fun FluentHome(open: (Page) -> Unit) {
                 }
             }
             Spacer(Modifier.height(12.dp))
-            if (s.homeStyle == "globe") {
+            if (s.homeStyle != "shield") {
                 FCard(Modifier.fillMaxWidth()) { HomeGlobe(shown, on, connecting) }
                 Spacer(Modifier.height(12.dp))
             }
@@ -291,6 +296,8 @@ private fun FluentHome(open: (Page) -> Unit) {
                     Spacer(Modifier.width(4.dp)); Chevron()
                 }
             }
+            Spacer(Modifier.height(12.dp))
+            HomeModes(Modifier.fillMaxWidth())
             Spacer(Modifier.height(12.dp))
             AnnounceCard(sub.announce)
             FCard(Modifier.fillMaxWidth()) {

@@ -51,3 +51,6 @@ compose.desktop {
 }
 
 tasks.register("printVersion") { doLast { println(winVersion) } }
+
+// «Что нового» внутри программы — из windows/CHANGELOG.md
+tasks.named<ProcessResources>("processResources") { from("CHANGELOG.md") }

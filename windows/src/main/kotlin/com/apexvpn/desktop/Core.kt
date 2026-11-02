@@ -76,6 +76,7 @@ object Engine {
     private var xray: Process? = null
     private var proxySet = false
     private var watch: Job? = null
+    @Volatile private var failCount = 0
 
     val running get() = _status.value == VpnStatus.On || _status.value == VpnStatus.Connecting
 
@@ -169,12 +170,17 @@ object Engine {
             .put("proxyPort", Store.proxyPort)
             .put("logFile", Paths.log.absolutePath)
             .put("ipv6", false)
-            .put("directProcesses", JSONArray(listOf("APEX VPN.exe", "apexcli.exe")))
+            .put("directProcesses", JSONArray((listOf("APEX VPN.exe", "apexcli.exe") + s.excludeApps).distinct()))
+            .put("customDns", s.customDns)
         if (s.warp && s.warpConfig.isNotBlank()) runCatching { o.put("warp", JSONObject(s.warpConfig)) }
         o.put("probePort", Store.probePort)
+        if (s.pingUrl.isNotBlank()) o.put("urlTest", s.pingUrl.trim())
         // Режим автопилота по замерам: только подходящие серверы, лучшие — первыми
         val allowed = AutoModes.allowed(s.autoMode, nodes)
-        if (allowed.isNotEmpty()) {
+        if (WhiteList.active && s.autoWhitelist) {
+            // Белые списки у провайдера: автопилот только по серверам «LTE-обход»
+            o.put("autoExclude", JSONArray(nodes.filter { !ServerInfo.isLte(it.name) }.map { it.tag }))
+        } else if (allowed.isNotEmpty()) {
             o.put("autoExclude", JSONArray(nodes.map { it.tag }.filter { it !in allowed }))
             o.put("autoOrder", JSONArray(allowed))
         } else {
@@ -189,6 +195,7 @@ object Engine {
         val sub = Subscription.state.value
         check(sub.nodes.isNotEmpty()) { "Сначала добавьте подписку" }
         if (s.connectType == ConnectType.Tun) check(WinSys.isAdmin()) { "Для TUN нужны права администратора — перезапустите APEX VPN от администратора или выберите «Системный прокси»" }
+        if (s.autoWhitelist) runCatching { WhiteList.check() }
         val sb = Paths.exe("sing-box.exe")
         check(sb.exists()) { "Не найден sing-box.exe — переустановите APEX VPN" }
 
@@ -264,6 +271,18 @@ object Engine {
                     lastUp = up; lastDown = down
                 }
                 if (tick % 5 == 1) _autoNow.value = Clash.autoNow()
+                // Таймер отключения
+                if (AutoOff.due()) { AutoOff.clear(); disconnect(); break }
+                // Автопереключение: выбранный вручную сервер перестал отвечать — на автопилот
+                val sel = Store.value.selected
+                if (Store.value.failover && sel != "auto" && tick % 20 == 0) {
+                    if (Clash.delay(sel, 5000) < 0) failCount++ else failCount = 0
+                    if (failCount >= 3) {
+                        failCount = 0
+                        _error.value = "Сервер перестал отвечать — включён автопилот"
+                        select("auto")
+                    }
+                }
                 if (tick % 2 == 0) ConnLog.poll()
                 // Автообновление подписки и баз сайтов, пока подключено
                 if (tick % 300 == 0 && Subscription.needsRefresh()) {
@@ -342,7 +361,7 @@ object Pinger {
             kotlinx.coroutines.coroutineScope {
                 val gate = kotlinx.coroutines.sync.Semaphore(16)
                 sub.nodes.filter { !it.udp }.map { n ->
-                    launch { gate.acquire(); try { res[n.tag] = tcp(n.server, n.port) } finally { gate.release() } }
+                    launch { gate.acquire(); try { res[n.tag] = measure(n) } finally { gate.release() } }
                 }
             }
             if (sub.nodes.any { it.udp }) res.putAll(CoreCli.udpPing(sub.raw, 3000))
@@ -361,13 +380,27 @@ object Pinger {
     }
 
     /** Время TCP-соединения с сервером (лучшее из двух), мс или -1. */
+    /** Пинг по выбранному в «Настройках пинга» способу (через сервер — только при включённом VPN). */
+    private fun measure(n: Node): Int {
+        val s = Store.value
+        return when {
+            s.pingType == "proxy" && Engine.status.value == VpnStatus.On -> Clash.delay(n.tag, s.pingTimeout * 1000)
+            s.pingType == "icmp" -> runCatching {
+                val a = java.net.InetAddress.getByName(n.server)
+                val t = System.nanoTime()
+                if (a.isReachable(s.pingTimeout * 1000)) ((System.nanoTime() - t) / 1_000_000).toInt().coerceAtLeast(1) else -1
+            }.getOrDefault(-1)
+            else -> tcp(n.server, n.port)
+        }
+    }
+
     private fun tcp(host: String, port: Int): Int {
         var best = -1
         repeat(2) {
             runCatching {
                 Socket().use { s ->
                     val t = System.nanoTime()
-                    s.connect(InetSocketAddress(host, port), 3000)
+                    s.connect(InetSocketAddress(host, port), (Store.value.pingTimeout * 1000).coerceAtMost(5000))
                     val ms = ((System.nanoTime() - t) / 1_000_000).toInt().coerceAtLeast(1)
                     if (best < 0 || ms < best) best = ms
                 }

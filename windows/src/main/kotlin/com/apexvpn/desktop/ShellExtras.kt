@@ -64,6 +64,12 @@ fun PhotoBackdrop() {
 fun HomeGlobe(server: Node?, connected: Boolean, busy: Boolean) {
     val me = remember { java.util.Locale.getDefault().country.lowercase().takeIf { it in WorldMap.coords } ?: "ru" }
     val to = server?.country?.lowercase()?.let { WorldMap.coords[it] }
+    if (Store.value.homeStyle == "map") {
+        Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(C.Radius)).clickable(enabled = !busy) { Engine.toggle() }) {
+            FlatMapCard(connected, busy, server?.country?.lowercase(), server?.title ?: "Автопилот")
+        }
+        return
+    }
     Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(C.Radius)).clickable(enabled = !busy) { Engine.toggle() }) {
         Globe(Modifier.fillMaxWidth().height(260.dp), from = WorldMap.coords[me], to = to, connected = connected, busy = busy)
     }

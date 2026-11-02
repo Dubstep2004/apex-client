@@ -89,6 +89,7 @@ object C {
     var fluent by mutableStateOf(false)
     /** Первый дизайн Windows (1.0–1.3) */
     var classic by mutableStateOf(true)
+    var liveBg by mutableStateOf("design")
 
     fun apply(s: Settings) {
         design = s.design
@@ -98,6 +99,7 @@ object C {
         animations = s.animations
         fluent = s.layout == "windows"
         classic = s.layout == "classic"
+        liveBg = s.liveBg
     }
 
     val Base get() = palette.base
@@ -139,7 +141,8 @@ fun Backdrop(connected: Boolean) {
         val w = size.width; val h = size.height
         val a1 = p.accent; val a2 = p.accent2
         val glow = if (connected) 0.30f else 0.16f
-        when (d.deco) {
+        val deco = C.liveBg.takeIf { it != "design" && it != "country" } ?: d.deco
+        when (deco) {
             // Windows 11: почти ровный фон с лёгким оттенком акцента (как Mica)
             "mica" -> {
                 drawRect(Brush.linearGradient(listOf(a1.copy(alpha = if (p.light) 0.05f else 0.07f), Color.Transparent, a2.copy(alpha = if (p.light) 0.04f else 0.05f)), Offset(0f, 0f), Offset(w, h)))

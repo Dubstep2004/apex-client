@@ -35,6 +35,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AltRoute
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Cloud
@@ -113,6 +114,7 @@ enum class Page(val title: String) {
     Servers("Серверы"), Routes("Свои списки и сайты"), Speed("Тест скорости"), Leak("Проверка утечек"),
     Log("Журнал соединений"), Appearance("Оформление"), Dns("DNS"), Core("Ядро"),
     Services("Сервисы через VPN"), Advanced("Для опытных"), SelfCheck("Не работает?"),
+    Ping("Настройки пинга"), Exclude("Программы мимо VPN"), Help("Справка"), WhatsNew("Что нового"),
 }
 
 private val ColumnMax = 560.dp
@@ -137,6 +139,7 @@ fun AppUi() {
     Box(Modifier.fillMaxSize()) {
         Backdrop(status == VpnStatus.On)
         PhotoBackdrop()
+        CountryPhotoBackdrop()
         Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
             Box(Modifier.weight(1f).widthIn(max = ColumnMax).fillMaxWidth()) {
                 val key = pages.lastOrNull()?.name ?: tab.name
@@ -177,6 +180,10 @@ private fun PageContent(page: Page, open: (Page) -> Unit) {
         Page.Services -> ServicesPage()
         Page.Advanced -> AdvancedPage()
         Page.SelfCheck -> SelfCheckPage()
+        Page.Ping -> PingSettingsPage()
+        Page.Exclude -> ExcludeAppsPage()
+        Page.Help -> HelpPage()
+        Page.WhatsNew -> WhatsNewPage()
     }
 }
 
@@ -338,7 +345,7 @@ fun HomeTab(open: (Page) -> Unit) {
         Header()
         Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             val shownNode = sub.nodes.find { it.tag == s.selected } ?: sub.nodes.find { it.tag == autoNow }
-            if (s.homeStyle == "globe") {
+            if (s.homeStyle != "shield") {
                 HomeGlobe(shownNode, on, connecting)
             } else {
                 Box(Modifier.clip(CircleShape).clickable(enabled = !connecting) { Engine.toggle() }) {
@@ -387,6 +394,8 @@ fun HomeTab(open: (Page) -> Unit) {
                     onClick = { Store.update { copy(routeMode = if (routeMode == RouteMode.Smart) RouteMode.All else RouteMode.Smart) }; Engine.reload() },
                 ) { Tag(if (s.connectType == ConnectType.Tun) "TUN" else "Прокси") }
             }
+            Spacer(Modifier.height(12.dp))
+            HomeModes(Modifier.fillMaxWidth())
             Spacer(Modifier.height(12.dp))
             AnnounceCard(sub.announce)
             SubscriptionCard(now)
@@ -537,6 +546,18 @@ fun SettingsTab(open: (Page) -> Unit) {
             GroupDivider()
             ListRow("Ядро", "${s.core.title} — ${s.core.subtitle}", leading = { IconTile(Icons.Rounded.Memory, Color(0xFF64748B)) }, onClick = { open(Page.Core) }) { Chevron() }
             GroupDivider()
+            ListRow("Настройки пинга", when (s.pingType) { "proxy" -> "Через сервер"; "icmp" -> "ICMP"; else -> "TCP до сервера" } + " · тайм-аут ${s.pingTimeout} с",
+                leading = { IconTile(Icons.Rounded.Speed, Color(0xFF0EA5E9)) }, onClick = { open(Page.Ping) }) { Chevron() }
+            GroupDivider()
+            ListRow("Автопереключение при сбое", "Выбранный сервер перестал отвечать — включить автопилот", leading = { IconTile(Icons.Rounded.AutoMode, Color(0xFF22C55E)) },
+                onClick = { Store.update { copy(failover = !failover) } }) { ApexSwitch(s.failover) { v -> Store.update { copy(failover = v) } } }
+            GroupDivider()
+            ListRow("Белые списки → LTE-обход", "Если провайдер пускает только «разрешённые» сайты, автопилот сам перейдёт на LTE-обход", leading = { IconTile(Icons.Rounded.Security, Color(0xFFEAB308)) },
+                onClick = { Store.update { copy(autoWhitelist = !autoWhitelist) } }) { ApexSwitch(s.autoWhitelist) { v -> Store.update { copy(autoWhitelist = v) } } }
+            GroupDivider()
+            ListRow("Программы мимо VPN", if (s.excludeApps.isEmpty()) "Как «Скрыть VPN» на телефоне (режим TUN)" else s.excludeApps.joinToString(", "),
+                leading = { IconTile(Icons.Rounded.Apps, Color(0xFF8B5CF6)) }, onClick = { open(Page.Exclude) }) { Chevron() }
+            GroupDivider()
             ListRow("Автопилот без России и LTE-обхода", "Особые серверы — только вручную", leading = { IconTile(Icons.Rounded.Public, Color(0xFFF97316)) },
                 onClick = { Store.update { copy(skipSpecial = !skipSpecial) }; Engine.reload() }) { ApexSwitch(s.skipSpecial) { v -> Store.update { copy(skipSpecial = v) }; Engine.reload() } }
         }
@@ -557,7 +578,7 @@ fun SettingsTab(open: (Page) -> Unit) {
             Column(Modifier.padding(16.dp)) {
                 Text("Главный экран", color = C.Text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(8.dp))
-                Segmented(listOf("Щит", "3D-глобус"), if (s.homeStyle == "globe") 1 else 0) { i -> Store.update { copy(homeStyle = if (i == 1) "globe" else "shield") } }
+                Segmented(listOf("Щит", "Карта", "3D-глобус"), listOf("shield", "map", "globe").indexOf(s.homeStyle).coerceAtLeast(0)) { i -> Store.update { copy(homeStyle = listOf("shield", "map", "globe")[i]) } }
             }
             GroupDivider()
             ListRow("Своё фото на фон", if (s.photoPath.isBlank()) "Картинка с компьютера за всем окном" else "Выбрано — нажмите, чтобы сменить",
@@ -631,6 +652,14 @@ fun SettingsTab(open: (Page) -> Unit) {
             ListRow("Поддержка", "@Apexx_support в Telegram", leading = { IconTile(Icons.Rounded.SupportAgent, Color(0xFF0EA5E9)) }, onClick = { WinSys.open(AppInfo.SUPPORT) }) { Chevron() }
             GroupDivider()
             ListRow("Папка журналов", "Для отчёта в поддержку", leading = { IconTile(Icons.Rounded.FolderOpen, Color(0xFF64748B)) }, onClick = { WinSys.openFolder(Paths.data) }) { Chevron() }
+            GroupDivider()
+            ListRow("Справка", "Короткие инструкции", leading = { IconTile(Icons.Rounded.Info, Color(0xFF6366F1)) }, onClick = { open(Page.Help) }) { Chevron() }
+            GroupDivider()
+            ListRow("Что нового", "Все версии для Windows", leading = { IconTile(Icons.Rounded.SystemUpdate, Color(0xFF10B981)) }, onClick = { open(Page.WhatsNew) }) { Chevron() }
+            GroupDivider()
+            var invited by remember { mutableStateOf(false) }
+            ListRow("Ссылка-приглашение", if (invited) "Скопирована — отправьте её другу" else "Друг откроет её и добавит вашу подписку в APEX VPN", leading = { IconTile(Icons.Rounded.Share, Color(0xFFF59E0B)) },
+                onClick = { invited = Invite.copy() }) { Chevron() }
         }
         Spacer(Modifier.height(16.dp))
     }
@@ -669,6 +698,8 @@ fun AppearancePage() {
                     onClick = { Store.update { copy(accent = a) } }) { Check(s.accent == a) }
             }
         }
+        Section("Живой фон")
+        Card(Modifier.fillMaxWidth()) { LiveBgPicker() }
         Section("Плавность")
         Group {
             ListRow("Анимации", "Живой фон, волны от щита, плавная смена экранов", onClick = { Store.update { copy(animations = !animations) } }) {
@@ -697,6 +728,7 @@ fun DnsPage() {
                     }) { Check(s.dns == d) }
             }
         }
+        if (s.dns == DnsChoice.Custom) { Spacer(Modifier.height(12.dp)); CustomDnsField() }
         if (s.dns == DnsChoice.Auto) {
             Spacer(Modifier.height(12.dp))
             Card(Modifier.fillMaxWidth()) {

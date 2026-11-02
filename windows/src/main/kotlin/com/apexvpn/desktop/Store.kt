@@ -66,6 +66,7 @@ enum class DnsChoice(val id: String, val title: String) {
     Auto("auto", "Авто"),
     Cloudflare("cloudflare", "Cloudflare"), Google("google", "Google"), Quad9("quad9", "Quad9"),
     AdGuard("adguard", "AdGuard (без рекламы)"), Mullvad("mullvad", "Mullvad"),
+    Custom("custom", "Свой DNS"),
 }
 
 /** Свой список «Через VPN»: сайты по одному на строку (example.com, full:, keyword:, IP, udp:порты). */
@@ -104,6 +105,17 @@ data class Settings(
     val warpConfig: String = "",
     // 1.7 — удобство
     val expiryAlerts: Boolean = true,
+    // 2.2 — как на Android
+    val pingType: String = "tcp",
+    val pingTimeout: Int = 5,
+    val pingUrl: String = "",
+    val customDns: String = "",
+    val failover: Boolean = true,
+    val autoWhitelist: Boolean = true,
+    /** Программы мимо VPN (режим TUN): имена .exe */
+    val excludeApps: List<String> = emptyList(),
+    /** Живой фон: «design» — как в дизайне, или свой (stars, aurora, grid, gears, scan, glow) */
+    val liveBg: String = "design",
     val design: Design = Design.Apex,
     val accent: AccentChoice = AccentChoice.Design,
     val animations: Boolean = true,
@@ -180,7 +192,7 @@ object Store {
             directCountries = strings(o.optJSONArray("directCountries")).toSet(),
             // 2.1: вернули первый дизайн — один раз переводим на него и тех, у кого был 2.0
             layout = if (o.optInt("layoutV") < 2) "classic" else o.optString("layout", d.layout).takeIf { it in listOf("classic", "windows", "phone") } ?: d.layout,
-            homeStyle = o.optString("homeStyle", d.homeStyle).takeIf { it in listOf("shield", "globe") } ?: d.homeStyle,
+            homeStyle = o.optString("homeStyle", d.homeStyle).takeIf { it in listOf("shield", "map", "globe") } ?: d.homeStyle,
             photoPath = o.optString("photoPath", d.photoPath),
             photoDim = o.optInt("photoDim", d.photoDim).coerceIn(0, 90),
             sound = o.optString("sound", d.sound).takeIf { it != "off" } ?: d.sound,
@@ -193,6 +205,14 @@ object Store {
             warp = o.optBoolean("warp", d.warp),
             warpConfig = o.optString("warpConfig", d.warpConfig),
             expiryAlerts = o.optBoolean("expiryAlerts", d.expiryAlerts),
+            pingType = o.optString("pingType", d.pingType).takeIf { it in listOf("tcp", "proxy", "icmp") } ?: d.pingType,
+            pingTimeout = o.optInt("pingTimeout", d.pingTimeout).coerceIn(2, 15),
+            pingUrl = o.optString("pingUrl", d.pingUrl),
+            customDns = o.optString("customDns", d.customDns),
+            failover = o.optBoolean("failover", d.failover),
+            autoWhitelist = o.optBoolean("autoWhitelist", d.autoWhitelist),
+            excludeApps = o.optJSONArray("excludeApps")?.let { strings(it) } ?: d.excludeApps,
+            liveBg = o.optString("liveBg", d.liveBg),
             design = Design.of(o.optString("design")).let { if (o.optInt("layoutV") < 2 && (it == Design.Fluent || it == Design.FluentLight)) Design.Apex else it },
             accent = AccentChoice.of(o.optString("accent")),
             animations = o.optBoolean("animations", d.animations),
@@ -219,6 +239,8 @@ object Store {
             .put("userRules", JSONArray(s.userRules.map { JSONObject().put("value", it.value).put("action", it.action) }))
             .put("fakeDns", s.fakeDns).put("domainStrategy", s.domainStrategy).put("warp", s.warp).put("warpConfig", s.warpConfig)
             .put("expiryAlerts", s.expiryAlerts)
+            .put("pingType", s.pingType).put("pingTimeout", s.pingTimeout).put("pingUrl", s.pingUrl).put("customDns", s.customDns)
+            .put("failover", s.failover).put("autoWhitelist", s.autoWhitelist).put("excludeApps", JSONArray(s.excludeApps)).put("liveBg", s.liveBg)
         runCatching {
             val tmp = File(Paths.data, "settings.json.tmp")
             tmp.writeText(o.toString(2))

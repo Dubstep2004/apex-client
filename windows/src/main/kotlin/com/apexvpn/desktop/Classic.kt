@@ -88,6 +88,7 @@ fun ClassicApp() {
     Box(Modifier.fillMaxSize()) {
     Backdrop(status == VpnStatus.On)
     PhotoBackdrop()
+    CountryPhotoBackdrop()
     Row(Modifier.fillMaxSize()) {
         // Боковая панель
         Column(
@@ -159,7 +160,7 @@ fun ClassicHome(openServers: () -> Unit) {
         val on = status == VpnStatus.On
         val connecting = status == VpnStatus.Connecting
         Spacer(Modifier.height(8.dp))
-        if (s.homeStyle == "globe") {
+        if (s.homeStyle != "shield") {
             Box(Modifier.width(560.dp)) { HomeGlobe(sub.nodes.find { it.tag == s.selected } ?: sub.nodes.find { it.tag == autoNow }, on, connecting) }
         } else {
             Box(Modifier.clip(CircleShape).clickable(enabled = !connecting) { Engine.toggle() }) {
@@ -185,7 +186,9 @@ fun ClassicHome(openServers: () -> Unit) {
                 SecondaryButton("Перезапустить от администратора") { if (WinSys.relaunchAsAdmin()) { Engine.shutdown(); kotlin.system.exitProcess(0) } }
             }
         }
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(16.dp))
+        HomeModes(Modifier.width(560.dp))
+        Spacer(Modifier.height(16.dp))
 
         // Сервер
         val sel = sub.nodes.find { it.tag == s.selected }
@@ -343,6 +346,7 @@ fun ClassicSettings(open: (Page) -> Unit) {
                     }
                 }
             }
+            if (s.dns == DnsChoice.Custom) { Spacer(Modifier.height(10.dp)); CustomDnsField() }
             if (s.dns == DnsChoice.Auto) {
                 val results by DnsAuto.results.collectAsState()
                 Spacer(Modifier.height(10.dp))
@@ -360,6 +364,8 @@ fun ClassicSettings(open: (Page) -> Unit) {
             }
             Spacer(Modifier.height(10.dp))
             Toggle("Блокировка рекламы", "Реклама и трекеры не загружаются", s.adBlock) { Store.update { copy(adBlock = it) }; Engine.reload() }
+            Toggle("Автопереключение при сбое", "Выбранный сервер перестал отвечать — включить автопилот", s.failover) { Store.update { copy(failover = it) } }
+            Toggle("Белые списки → LTE-обход", "Провайдер пускает только «разрешённые» сайты — автопилот на LTE-обход", s.autoWhitelist) { Store.update { copy(autoWhitelist = it) } }
             Toggle("Автопилот без России и LTE-обхода", "Особые серверы выбираются только вручную", s.skipSpecial) { Store.update { copy(skipSpecial = it) }; Engine.reload() }
         }
 
@@ -372,7 +378,11 @@ fun ClassicSettings(open: (Page) -> Unit) {
             Spacer(Modifier.height(14.dp))
             Text("Главный экран", color = C.Text, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(8.dp))
-            Segmented(listOf("Щит", "3D-глобус"), if (s.homeStyle == "globe") 1 else 0) { i -> Store.update { copy(homeStyle = if (i == 1) "globe" else "shield") } }
+            Segmented(listOf("Щит", "Карта", "3D-глобус"), listOf("shield", "map", "globe").indexOf(s.homeStyle).coerceAtLeast(0)) { i -> Store.update { copy(homeStyle = listOf("shield", "map", "globe")[i]) } }
+            Spacer(Modifier.height(14.dp))
+            Text("Живой фон", color = C.Text, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(8.dp))
+            LiveBgPicker()
             Spacer(Modifier.height(10.dp))
             Toggle("Звук подключения", if (s.soundOn) Sounds.sets.firstOrNull { it.first == s.sound }?.second else "Выключен", s.soundOn) { Store.update { copy(soundOn = it) } }
             if (s.soundOn) Segmented(Sounds.sets.map { it.second }, Sounds.sets.indexOfFirst { it.first == s.sound }.coerceAtLeast(0)) { i ->
@@ -391,6 +401,11 @@ fun ClassicSettings(open: (Page) -> Unit) {
                 }
                 SecondaryButton("Резервная копия") { Backup.export() }
                 SecondaryButton("Загрузить копию") { scope.launch { runCatching { Backup.import() }; Engine.reload() } }
+                SecondaryButton("Настройки пинга") { open(Page.Ping) }
+                SecondaryButton("Программы мимо VPN") { open(Page.Exclude) }
+                SecondaryButton("Справка") { open(Page.Help) }
+                SecondaryButton("Что нового") { open(Page.WhatsNew) }
+                SecondaryButton("Ссылка-приглашение") { Invite.copy() }
             }
         }
 
@@ -463,5 +478,9 @@ private fun ClassicPage(page: Page) {
         Page.Services -> ServicesPage()
         Page.Advanced -> AdvancedPage()
         Page.SelfCheck -> SelfCheckPage()
+        Page.Ping -> PingSettingsPage()
+        Page.Exclude -> ExcludeAppsPage()
+        Page.Help -> HelpPage()
+        Page.WhatsNew -> WhatsNewPage()
     }
 }
