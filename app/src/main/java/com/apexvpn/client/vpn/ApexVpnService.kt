@@ -343,6 +343,17 @@ class ApexVpnService : VpnService(), PlatformInterface, CommandServerHandler {
                 if (status == VpnStatus.Started && tick % 60 == 30L) {
                     scope.launch { com.apexvpn.client.data.MonthStats.ping(com.apexvpn.client.data.LivePing.measure()) }
                 }
+                // 3.11. Правила «если — то»
+                if (tick % 5 == 0L && status == VpnStatus.Started && settings.autoRules.isNotEmpty()) {
+                    val todo = com.apexvpn.client.data.AutoRulesEngine.tick(this@ApexVpnService)
+                    if ("off" in todo) { scope.launch { stopVpn() } }
+                    else {
+                        if ("reload" in todo) scope.launch { reloadVpn(); showNotification() }
+                        if ("rules" in todo) scope.launch {
+                            if (com.apexvpn.client.data.RulesUpdater.update(this@ApexVpnService) is com.apexvpn.client.data.RulesUpdater.Result.Updated) reloadVpn()
+                        }
+                    }
+                }
                 // 3.6. Семейный режим по расписанию: окно началось или закончилось — применяем
                 if (tick % 30 == 0L && status == VpnStatus.Started) {
                     val kidsNow = com.apexvpn.client.data.KidsSchedule.active(settings)

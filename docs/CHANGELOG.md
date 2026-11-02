@@ -2,6 +2,12 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.11.0 · 3 ноября 2026
+
+<img src="img/tags/new.svg" alt="Новое" height="22">
+
+- Правила «если — то»: «если открыто приложение / идёт зарядка / мобильный интернет / Wi-Fi / время» → «режим автопилота, сервер, маршрут, блокировка рекламы, обновить базы сайтов или выключить VPN». Условие прошло — настройка возвращается как была. Есть готовые правила (Настройки → «Правила „если — то“»)
+
 ## 3.10.0 · 3 ноября 2026
 
 <img src="img/tags/new.svg" alt="Новое" height="22">

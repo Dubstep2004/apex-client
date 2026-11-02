@@ -125,6 +125,7 @@ class ApexApp : Application() {
                 if (st == com.apexvpn.client.vpn.VpnStatus.Stopped && last != com.apexvpn.client.vpn.VpnStatus.Stopped && last != com.apexvpn.client.vpn.VpnStatus.Starting) {
                     com.apexvpn.client.data.ConnectFeedback.onDisconnected(this@ApexApp)
                     com.apexvpn.client.data.MonthStats.flush()
+                    com.apexvpn.client.data.AutoRulesEngine.reset()
                 }
                 last = st
             }

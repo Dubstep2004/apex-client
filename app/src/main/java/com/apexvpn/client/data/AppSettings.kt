@@ -137,6 +137,8 @@ data class Settings(
     val autoFavoritesOnly: Boolean = false,
     /** 3.8: сезонное оформление — снег зимой, лепестки весной, листья осенью */
     val seasonal: Boolean = true,
+    /** 3.11: правила «если — то» */
+    val autoRules: List<AutoRule> = emptyList(),
     // 491. На мобильной сети сам включать LTE-обход, если оператор пускает только по белым спискам
     val autoWhitelist: Boolean = true,
 ) {
@@ -365,7 +367,7 @@ object AppSettings {
         put("domainStrategy", s.domainStrategy); put("fakeDns", s.fakeDns)
         put("remoteDns", s.remoteDns.json()); put("directDns", s.directDns.json()); put("rulesSource", s.rulesSource)
         put("warp", s.warp); put("warpConfig", s.warpConfig); put("shieldBackdrop", s.shieldBackdrop); put("backdropStamp", s.backdropStamp)
-        put("iconStatus", s.iconStatus); put("animatedFlags", s.animatedFlags); put("task", s.task); put("hiddenApps", list(s.hiddenApps)); put("hideTemplateAuto", s.hideTemplateAuto); put("hideTemplateSkip", list(s.hideTemplateSkip)); put("secret", s.secretUnlocked); put("shield3d", s.shield3d); put("automation", s.automation); put("appTraffic", s.appTraffic); put("autoSkipSpecial", s.autoSkipSpecial); put("autoFavoritesOnly", s.autoFavoritesOnly); put("seasonal", s.seasonal); put("autoWhitelist", s.autoWhitelist)
+        put("iconStatus", s.iconStatus); put("animatedFlags", s.animatedFlags); put("task", s.task); put("hiddenApps", list(s.hiddenApps)); put("hideTemplateAuto", s.hideTemplateAuto); put("hideTemplateSkip", list(s.hideTemplateSkip)); put("secret", s.secretUnlocked); put("shield3d", s.shield3d); put("automation", s.automation); put("appTraffic", s.appTraffic); put("autoSkipSpecial", s.autoSkipSpecial); put("autoFavoritesOnly", s.autoFavoritesOnly); put("seasonal", s.seasonal); put("autoRules", AutoRule.listToJson(s.autoRules)); put("autoWhitelist", s.autoWhitelist)
         put("customAccent2", s.customAccent2); put("photoBlur", s.photoBlur); put("photoDim", s.photoDim); put("photoParallax", s.photoParallax); put("rulesAuto", s.rulesAuto); put("rulesHours", s.rulesHours); put("speedUnit", s.speedUnit); put("speedScale", s.speedScale); put("speedMulti", s.speedMulti); put("quicMode", s.quicMode); put("connectOnOpen", s.connectOnOpen)
         put("pingType", s.pingType); put("pingMode", s.pingMode); put("pingTimeout", s.pingTimeout); put("pingUrl", s.pingUrl); put("pingView", s.pingView); put("autoMode", s.autoMode); put("modeColors", s.modeColors); put("directCountries", list(s.directCountries)); put("connLog", s.connLog); put("greeting", s.greeting)
     }
@@ -473,6 +475,7 @@ object AppSettings {
             autoSkipSpecial = o.optBoolean("autoSkipSpecial", d.autoSkipSpecial),
             autoFavoritesOnly = o.optBoolean("autoFavoritesOnly", d.autoFavoritesOnly),
             seasonal = o.optBoolean("seasonal", d.seasonal),
+            autoRules = AutoRule.listFrom(o.optJSONArray("autoRules")),
             autoWhitelist = o.optBoolean("autoWhitelist", d.autoWhitelist),
             customAccent2 = o.optLong("customAccent2", d.customAccent2).let { if (it == 0L) 0L else it or 0xFF000000L },
             photoBlur = o.optInt("photoBlur", d.photoBlur).coerceIn(0, 24),

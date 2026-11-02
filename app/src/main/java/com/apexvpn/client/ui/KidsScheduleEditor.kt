@@ -58,7 +58,7 @@ internal fun KidsScheduleEditor(viewModel: MainViewModel, s: Settings) {
 }
 
 @Composable
-private fun TimeStepper(title: String, minutes: Int, onChange: (Int) -> Unit) {
+internal fun TimeStepper(title: String, minutes: Int, onChange: (Int) -> Unit) {
     val step = 30
     ListRow(title) {
         Text("−", color = Apex.Accent, fontSize = 24.sp, fontWeight = FontWeight.Bold,
