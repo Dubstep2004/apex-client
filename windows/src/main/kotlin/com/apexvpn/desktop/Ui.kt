@@ -239,7 +239,8 @@ fun Card(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> U
 @Composable
 fun Section(t: String) {
     // Как на Android: подпись группы обычным текстом, без капса
-    if (C.fluent) Text(t, color = C.Text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 2.dp, top = 20.dp, bottom = 8.dp))
+    if (C.classic) Text(t.uppercase(), color = C.Dim, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, modifier = Modifier.padding(start = 6.dp, top = 22.dp, bottom = 8.dp))
+    else if (C.fluent) Text(t, color = C.Text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 2.dp, top = 20.dp, bottom = 8.dp))
     else Text(t, color = C.Dim, fontSize = 15.sp, fontWeight = FontWeight.Medium, modifier = Modifier.padding(start = 4.dp, top = 22.dp, bottom = 10.dp))
 }
 

@@ -45,7 +45,7 @@ fun main(args: Array<String>) {
         val status by Engine.status.collectAsState()
         val s by Store.settings.collectAsState()
         val sub by Subscription.state.collectAsState()
-        val state = rememberWindowState(size = if (Store.value.layout == "windows") DpSize(1120.dp, 740.dp) else DpSize(500.dp, 760.dp), position = WindowPosition.PlatformDefault)
+        val state = rememberWindowState(size = when (Store.value.layout) { "windows" -> DpSize(1120.dp, 740.dp); "phone" -> DpSize(500.dp, 760.dp); else -> DpSize(1020.dp, 720.dp) }, position = WindowPosition.PlatformDefault)
 
         fun quit() {
             Engine.shutdown()
@@ -118,6 +118,7 @@ fun main(args: Array<String>) {
                     }
                 }
                 Menu("Вид окна") {
+                    CheckboxItem("Первый (классический)", checked = s.layout == "classic", onCheckedChange = { Store.update { copy(layout = "classic") } })
                     CheckboxItem("Windows 11", checked = s.layout == "windows", onCheckedChange = { Store.update { copy(layout = "windows") } })
                     CheckboxItem("Как на телефоне", checked = s.layout == "phone", onCheckedChange = { Store.update { copy(layout = "phone") } })
                 }

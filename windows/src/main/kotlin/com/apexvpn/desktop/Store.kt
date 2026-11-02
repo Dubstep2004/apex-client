@@ -87,7 +87,7 @@ data class Settings(
     val directCountries: Set<String> = emptySet(),
     // 1.5 — главный экран
     /** Вид окна: «windows» — Windows 11 (боковое меню, широкий экран), «phone» — как на телефоне */
-    val layout: String = "windows",
+    val layout: String = "classic",
     val homeStyle: String = "shield",
     val photoPath: String = "",
     val photoDim: Int = 55,
@@ -104,7 +104,7 @@ data class Settings(
     val warpConfig: String = "",
     // 1.7 — удобство
     val expiryAlerts: Boolean = true,
-    val design: Design = Design.Fluent,
+    val design: Design = Design.Apex,
     val accent: AccentChoice = AccentChoice.Design,
     val animations: Boolean = true,
     val rulesAuto: Boolean = true,
@@ -178,7 +178,8 @@ object Store {
             customDomains = strings(o.optJSONArray("customDomains")),
             directDomains = strings(o.optJSONArray("directDomains")),
             directCountries = strings(o.optJSONArray("directCountries")).toSet(),
-            layout = o.optString("layout", d.layout).takeIf { it in listOf("windows", "phone") } ?: d.layout,
+            // 2.1: вернули первый дизайн — один раз переводим на него и тех, у кого был 2.0
+            layout = if (o.optInt("layoutV") < 2) "classic" else o.optString("layout", d.layout).takeIf { it in listOf("classic", "windows", "phone") } ?: d.layout,
             homeStyle = o.optString("homeStyle", d.homeStyle).takeIf { it in listOf("shield", "globe") } ?: d.homeStyle,
             photoPath = o.optString("photoPath", d.photoPath),
             photoDim = o.optInt("photoDim", d.photoDim).coerceIn(0, 90),
@@ -192,7 +193,7 @@ object Store {
             warp = o.optBoolean("warp", d.warp),
             warpConfig = o.optString("warpConfig", d.warpConfig),
             expiryAlerts = o.optBoolean("expiryAlerts", d.expiryAlerts),
-            design = Design.of(o.optString("design")),
+            design = Design.of(o.optString("design")).let { if (o.optInt("layoutV") < 2 && (it == Design.Fluent || it == Design.FluentLight)) Design.Apex else it },
             accent = AccentChoice.of(o.optString("accent")),
             animations = o.optBoolean("animations", d.animations),
             rulesAuto = o.optBoolean("rulesAuto", d.rulesAuto),
@@ -213,7 +214,7 @@ object Store {
             .put("directCountries", JSONArray(s.directCountries.toList()))
             .put("rulesAuto", s.rulesAuto).put("rulesHours", s.rulesHours)
             .put("design", s.design.id).put("accent", s.accent.id).put("animations", s.animations)
-            .put("layout", s.layout).put("homeStyle", s.homeStyle).put("photoPath", s.photoPath).put("photoDim", s.photoDim).put("sound", s.sound).put("soundOn", s.soundOn)
+            .put("layout", s.layout).put("layoutV", 2).put("homeStyle", s.homeStyle).put("photoPath", s.photoPath).put("photoDim", s.photoDim).put("sound", s.sound).put("soundOn", s.soundOn)
             .put("services", JSONArray(s.services.toList())).put("kids", s.kids)
             .put("userRules", JSONArray(s.userRules.map { JSONObject().put("value", it.value).put("action", it.action) }))
             .put("fakeDns", s.fakeDns).put("domainStrategy", s.domainStrategy).put("warp", s.warp).put("warpConfig", s.warpConfig)

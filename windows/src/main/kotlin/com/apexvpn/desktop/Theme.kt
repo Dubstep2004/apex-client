@@ -60,7 +60,7 @@ enum class Design(val id: String, val title: String, val subtitle: String, val p
     ;
 
     companion object {
-        fun of(id: String) = entries.firstOrNull { it.id == id } ?: Fluent
+        fun of(id: String) = entries.firstOrNull { it.id == id } ?: Apex
     }
 }
 
@@ -86,7 +86,9 @@ object C {
     var design by mutableStateOf(Design.Apex)
     var animations by mutableStateOf(true)
     /** Вид Windows 11: меньше скругления, мелкие значки, текст как в «Параметрах» Windows */
-    var fluent by mutableStateOf(true)
+    var fluent by mutableStateOf(false)
+    /** Первый дизайн Windows (1.0–1.3) */
+    var classic by mutableStateOf(true)
 
     fun apply(s: Settings) {
         design = s.design
@@ -95,6 +97,7 @@ object C {
         palette = if (a.c1 != null && a.c2 != null) p.copy(accent = a.c1, accent2 = a.c2) else p
         animations = s.animations
         fluent = s.layout == "windows"
+        classic = s.layout == "classic"
     }
 
     val Base get() = palette.base
@@ -110,6 +113,7 @@ object C {
     val AccentText get() = if (palette.light) palette.accent else palette.accent.copy(red = (palette.accent.red + 0.25f).coerceAtMost(1f), green = (palette.accent.green + 0.25f).coerceAtMost(1f), blue = (palette.accent.blue + 0.15f).coerceAtMost(1f))
     val Radius get() = when {
         fluent -> 8.dp
+        classic -> 20.dp
         design == Design.Classic || design == Design.Terminal -> 18.dp
         else -> 26.dp
     }

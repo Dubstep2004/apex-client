@@ -35,6 +35,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AltRoute
+import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.Upload
@@ -119,6 +120,10 @@ private val ColumnMax = 560.dp
 @Composable
 fun AppUi() {
     // Windows 2.0: по умолчанию свой вид для компьютера; «как на телефоне» — в «Оформлении»
+    if (C.classic) {
+        ClassicApp()
+        return
+    }
     if (C.fluent) {
         FluentApp()
         return
@@ -583,7 +588,8 @@ fun SettingsTab(open: (Page) -> Unit) {
             Column(Modifier.padding(16.dp)) {
                 Text("Вид окна", color = C.Text, fontSize = if (C.fluent) 14.sp else 17.sp, fontWeight = if (C.fluent) FontWeight.Normal else FontWeight.SemiBold)
                 Spacer(Modifier.height(8.dp))
-                Segmented(listOf("Windows 11", "Как на телефоне"), if (s.layout == "phone") 1 else 0) { i -> Store.update { copy(layout = if (i == 1) "phone" else "windows") } }
+                val layouts = listOf("classic" to "Первый", "windows" to "Windows 11", "phone" to "Как на телефоне")
+                Segmented(layouts.map { it.second }, layouts.indexOfFirst { it.first == s.layout }.coerceAtLeast(0)) { i -> Store.update { copy(layout = layouts[i].first) } }
             }
         }
 
@@ -639,6 +645,9 @@ fun AppearancePage() {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Section("Вид окна")
         Group {
+            ListRow("Первый (классический)", "Боковая панель с вкладками и щит в центре — как в первых версиях", leading = { IconTile(Icons.Rounded.Home, Color(0xFF8B5CF6)) },
+                onClick = { Store.update { copy(layout = "classic") } }) { Check(s.layout == "classic") }
+            GroupDivider()
             ListRow("Windows 11", "Боковое меню, широкий главный экран — как программы Windows", leading = { IconTile(Icons.Rounded.Palette, C.Accent) },
                 onClick = { Store.update { copy(layout = "windows") } }) { Check(s.layout == "windows") }
             GroupDivider()
