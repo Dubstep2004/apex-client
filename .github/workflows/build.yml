@@ -283,6 +283,7 @@ jobs:
           set -o pipefail
           if ! gradle -p windows --no-daemon createDistributable 2>&1 | tee win.log; then
             grep -E "^e: |error:|What went wrong" win.log | head -40 | sed ':a;N;$!ba;s/\n/%0A/g' | sed 's/^/::error title=Windows::/'
+            for f in windows/build/compose/logs/*/*.txt; do [ -s "$f" ] && { echo "== $f"; tail -40 "$f"; echo "::error title=jpackage::$(tail -5 "$f" | tr '\n' ' ' | cut -c1-500)"; }; done
             exit 1
           fi
           gradle -p windows --no-daemon packageExe 2>&1 | tail -20 || echo "::warning title=Windows::установщик .exe не собрался — будет только .zip"
