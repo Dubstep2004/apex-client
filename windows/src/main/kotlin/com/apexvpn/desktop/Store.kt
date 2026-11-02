@@ -81,6 +81,9 @@ data class Settings(
     val directDomains: List<String> = emptyList(),
     /** Сайты стран напрямую (kz, by…) */
     val directCountries: Set<String> = emptySet(),
+    val design: Design = Design.Apex,
+    val accent: AccentChoice = AccentChoice.Design,
+    val animations: Boolean = true,
     val rulesAuto: Boolean = true,
     val rulesHours: Int = 24,
     val adBlock: Boolean = false,
@@ -100,6 +103,7 @@ object Store {
 
     fun update(block: Settings.() -> Settings) {
         _s.value = _s.value.block()
+        C.apply(_s.value)
         save()
     }
 
@@ -151,6 +155,9 @@ object Store {
             customDomains = strings(o.optJSONArray("customDomains")),
             directDomains = strings(o.optJSONArray("directDomains")),
             directCountries = strings(o.optJSONArray("directCountries")).toSet(),
+            design = Design.of(o.optString("design")),
+            accent = AccentChoice.of(o.optString("accent")),
+            animations = o.optBoolean("animations", d.animations),
             rulesAuto = o.optBoolean("rulesAuto", d.rulesAuto),
             rulesHours = o.optInt("rulesHours", d.rulesHours).takeIf { it in listOf(6, 12, 24, 168) } ?: d.rulesHours,
         )
@@ -168,6 +175,7 @@ object Store {
             .put("customDomains", JSONArray(s.customDomains)).put("directDomains", JSONArray(s.directDomains))
             .put("directCountries", JSONArray(s.directCountries.toList()))
             .put("rulesAuto", s.rulesAuto).put("rulesHours", s.rulesHours)
+            .put("design", s.design.id).put("accent", s.accent.id).put("animations", s.animations)
         runCatching {
             val tmp = File(Paths.data, "settings.json.tmp")
             tmp.writeText(o.toString(2))

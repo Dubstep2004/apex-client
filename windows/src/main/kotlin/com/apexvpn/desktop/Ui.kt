@@ -71,19 +71,6 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-object C {
-    val Base = Color(0xFF08080E)
-    val Surface = Color(0xFF13131C)
-    val SurfaceHigh = Color(0xFF1C1C28)
-    val Outline = Color(0x14FFFFFF)
-    val Text = Color(0xFFF4F4F7)
-    val Dim = Color(0xFF8E8E9A)
-    val Accent = Color(0xFF7B6CFF)
-    val Cyan = Color(0xFF4FA8F2)
-    val Good = Color(0xFF34D399)
-    val Warn = Color(0xFFF2B75B)
-    val Bad = Color(0xFFFF6B6B)
-}
 
 enum class Tab(val title: String, val icon: ImageVector) {
     Home("Главная", Icons.Rounded.Home), Servers("Серверы", Icons.Rounded.Dns), Routes("Маршруты", Icons.Rounded.Route), Tools("Инструменты", Icons.Rounded.Speed), Settings("Настройки", Icons.Rounded.Settings)
@@ -93,10 +80,13 @@ enum class Tab(val title: String, val icon: ImageVector) {
 fun AppUi() {
     var tab by remember { mutableStateOf(Tab.Home) }
     val sub by Subscription.state.collectAsState()
-    Row(Modifier.fillMaxSize().background(C.Base)) {
+    val status by Engine.status.collectAsState()
+    Box(Modifier.fillMaxSize()) {
+    Backdrop(status == VpnStatus.On)
+    Row(Modifier.fillMaxSize()) {
         // Боковая панель
         Column(
-            Modifier.width(92.dp).fillMaxHeight().background(Color(0xFF0C0C14)).padding(vertical = 18.dp),
+            Modifier.width(92.dp).fillMaxHeight().background(C.Surface.copy(alpha = 0.85f)).padding(vertical = 18.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text("APEX", color = C.Text, fontWeight = FontWeight.Black, fontSize = 18.sp, letterSpacing = 2.sp)
@@ -117,15 +107,19 @@ fun AppUi() {
             }
         }
         Box(Modifier.weight(1f).fillMaxHeight()) {
-            if (sub.nodes.isEmpty() && tab != Tab.Settings) AddSubscription()
-            else when (tab) {
-                Tab.Home -> HomeScreen { tab = Tab.Servers }
-                Tab.Servers -> ServersScreen()
-                Tab.Routes -> RoutesScreen()
-                Tab.Tools -> ToolsScreen()
-                Tab.Settings -> SettingsScreen()
+            // Плавная смена вкладок (выключается вместе с анимациями)
+            androidx.compose.animation.Crossfade(tab, animationSpec = tween(if (C.animations) 220 else 0)) { cur ->
+                if (sub.nodes.isEmpty() && cur != Tab.Settings) AddSubscription()
+                else when (cur) {
+                    Tab.Home -> HomeScreen { tab = Tab.Servers }
+                    Tab.Servers -> ServersScreen()
+                    Tab.Routes -> RoutesScreen()
+                    Tab.Tools -> ToolsScreen()
+                    Tab.Settings -> SettingsScreen()
+                }
             }
         }
+    }
     }
 }
 
@@ -364,6 +358,7 @@ fun ServersScreen() {
 
 // ─── Настройки ───────────────────────────────────────────────────────
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen() {
     val s by Store.settings.collectAsState()
@@ -372,6 +367,38 @@ fun SettingsScreen() {
     var update by remember { mutableStateOf<String?>(null) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(28.dp)) {
         Text("Настройки", color = C.Text, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
+        Section("Оформление")
+        Card(Modifier.fillMaxWidth()) {
+            Text("Дизайн", color = C.Text, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(10.dp))
+            androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Design.entries.forEach { d -> DesignCard(d, s.design == d) { Store.update { copy(design = d) } } }
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(s.design.subtitle, color = C.Dim, fontSize = 12.sp)
+            Spacer(Modifier.height(14.dp))
+            Text("Цвет", color = C.Text, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(8.dp))
+            androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                AccentChoice.entries.forEach { a ->
+                    val on = s.accent == a
+                    val c1 = a.c1 ?: s.design.palette.accent
+                    val c2 = a.c2 ?: s.design.palette.accent2
+                    Row(
+                        Modifier.clip(RoundedCornerShape(14.dp)).background(if (on) C.SurfaceHigh else Color.Transparent)
+                            .border(1.dp, if (on) C.Accent else C.Outline, RoundedCornerShape(14.dp))
+                            .clickable { Store.update { copy(accent = a) } }.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(Modifier.size(18.dp).clip(CircleShape).background(Brush.linearGradient(listOf(c1, c2))))
+                        Spacer(Modifier.width(8.dp))
+                        Text(a.title, color = C.Text, fontSize = 13.sp)
+                    }
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            Toggle("Анимации", "Живой фон, плавная смена вкладок. Выключите на слабом компьютере", s.animations) { Store.update { copy(animations = it) } }
+        }
         Section("Подключение")
         Card(Modifier.fillMaxWidth()) {
             Text("Способ", color = C.Text, fontWeight = FontWeight.SemiBold)
@@ -481,12 +508,20 @@ fun Shield(on: Boolean, connecting: Boolean, size: Int) {
     val t = rememberInfiniteTransition()
     val pulse by t.animateFloat(0.85f, 1.15f, infiniteRepeatable(tween(1500), RepeatMode.Reverse))
     val spin by t.animateFloat(0f, 360f, infiniteRepeatable(tween(1400, easing = LinearEasing)))
+    // Защищено: от щита расходятся волны
+    val wave by t.animateFloat(0f, 1f, infiniteRepeatable(tween(2400, easing = LinearEasing)))
+    val anim = C.animations
     val c1 by animateColorAsState(if (on) C.Accent else Color(0xFF3A3A46))
     val c2 by animateColorAsState(if (on) C.Cyan else Color(0xFF2A2A36))
     Canvas(Modifier.size((size * 1.35f).dp)) {
         val cx = this.size.width / 2; val cy = this.size.height / 2
         val r = size.dp.toPx() / 2
-        if (on || connecting) drawCircle(Brush.radialGradient(listOf(c1.copy(alpha = 0.45f), Color.Transparent), Offset(cx, cy), r * 1.3f * pulse), r * 1.3f * pulse, Offset(cx, cy))
+        val pl = if (anim) pulse else 1f
+        if (on || connecting) drawCircle(Brush.radialGradient(listOf(c1.copy(alpha = 0.45f), Color.Transparent), Offset(cx, cy), r * 1.3f * pl), r * 1.3f * pl, Offset(cx, cy))
+        if (on && anim) for (k in 0..1) {
+            val ph = (wave + k * 0.5f) % 1f
+            drawCircle(c2.copy(alpha = (1f - ph) * 0.35f), r * (0.95f + 0.4f * ph), Offset(cx, cy), style = Stroke(2.dp.toPx()))
+        }
         if (connecting) drawArc(C.Accent, spin, 90f, false, Offset(cx - r * 1.1f, cy - r * 1.1f), androidx.compose.ui.geometry.Size(r * 2.2f, r * 2.2f), style = Stroke(4.dp.toPx(), cap = StrokeCap.Round))
         val w = r * 1.4f; val h = r * 1.65f
         val p = Path().apply {
@@ -624,4 +659,25 @@ fun bytes(b: Long): String = when {
     b >= 1L shl 30 -> "%.1f ГБ".format(b / (1L shl 30).toDouble())
     b >= 1L shl 20 -> "%.0f МБ".format(b / (1L shl 20).toDouble())
     else -> "${b / 1024} КБ"
+}
+
+
+/** Карточка дизайна: мини-окно в его цветах. */
+@Composable
+fun DesignCard(d: Design, on: Boolean, onClick: () -> Unit) {
+    val p = d.palette
+    Column(
+        Modifier.width(132.dp).clip(RoundedCornerShape(16.dp)).border(2.dp, if (on) C.Accent else C.Outline, RoundedCornerShape(16.dp)).clickable(onClick = onClick),
+    ) {
+        Box(Modifier.fillMaxWidth().height(78.dp).background(Brush.linearGradient(listOf(p.base, p.accent.copy(alpha = 0.55f), p.base)))) {
+            Box(Modifier.padding(10.dp).size(34.dp, 40.dp).clip(RoundedCornerShape(10.dp)).background(Brush.linearGradient(listOf(p.accent, p.accent2))))
+            Column(Modifier.align(Alignment.BottomEnd).padding(10.dp), horizontalAlignment = Alignment.End) {
+                Box(Modifier.size(56.dp, 8.dp).clip(RoundedCornerShape(4.dp)).background(p.surfaceHigh))
+                Spacer(Modifier.height(4.dp))
+                Box(Modifier.size(38.dp, 8.dp).clip(RoundedCornerShape(4.dp)).background(p.surfaceHigh))
+            }
+        }
+        Text(d.title, color = if (on) C.Text else C.Dim, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.background(C.Surface).fillMaxWidth().padding(horizontal = 10.dp, vertical = 7.dp))
+    }
 }

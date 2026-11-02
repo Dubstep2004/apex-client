@@ -34,6 +34,7 @@ fun main(args: Array<String>) {
     WinSys.cleanupStaleProxy()
     Runtime.getRuntime().addShutdownHook(Thread { Engine.shutdown() })
     val startHidden = "--tray" in args
+    C.apply(Store.value)
 
     application {
         var visible by remember { mutableStateOf(!startHidden) }
