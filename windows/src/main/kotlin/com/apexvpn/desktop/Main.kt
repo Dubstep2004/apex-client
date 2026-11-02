@@ -35,6 +35,8 @@ fun main(args: Array<String>) {
     Runtime.getRuntime().addShutdownHook(Thread { Engine.shutdown() })
     val startHidden = "--tray" in args
     C.apply(Store.value)
+    // Галочка «Запускать вместе с Windows» в установщике — показываем её и в настройках
+    if (WinSys.autostartEnabled() != Store.value.autostart) Store.update { copy(autostart = WinSys.autostartEnabled()) }
 
     application {
         var visible by remember { mutableStateOf(!startHidden) }

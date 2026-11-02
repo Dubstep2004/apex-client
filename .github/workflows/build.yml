@@ -274,11 +274,6 @@ jobs:
         with:
           gradle-version: "8.14.3"
 
-      - name: WiX (для установщика .exe)
-        continue-on-error: true
-        shell: pwsh
-        run: choco install wixtoolset --version 3.14.1 -y --no-progress
-
       - name: Сборка APEX VPN для Windows
         run: |
           set -o pipefail
@@ -287,7 +282,15 @@ jobs:
             for f in windows/build/compose/logs/*/*.txt; do [ -s "$f" ] && { echo "== $f"; tail -40 "$f"; echo "::error title=jpackage::$(tail -5 "$f" | tr '\n' ' ' | cut -c1-500)"; }; done
             exit 1
           fi
-          gradle -p windows --no-daemon packageExe 2>&1 | tail -20 || echo "::warning title=Windows::установщик .exe не собрался — будет только .zip"
+          # Установщик: Inno Setup с картинками APEX, на русском (windows/installer/apex.iss)
+          ISCC="/c/Program Files (x86)/Inno Setup 6/ISCC.exe"
+          if [ ! -x "$ISCC" ]; then choco install innosetup -y --no-progress > /dev/null || true; fi
+          V="${{ needs.build.outputs.version }}"
+          WV=$(grep -oP 'VERSION = "\K[0-9.]+' windows/src/main/kotlin/com/apexvpn/desktop/WinSys.kt)
+          SRC=$(cygpath -w "$(pwd)/windows/build/compose/binaries/main/app/APEX VPN")
+          if ! (cd windows/installer && MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL="*" "$ISCC" /Qp "/DAppVersion=$WV" "/DSourceDir=$SRC" "/DOutputName=apex-vpn-$V-windows" apex.iss 2>&1 | tail -30); then
+            echo "::warning title=Windows::установщик не собрался — будет только .zip"
+          fi
 
       - name: Файлы для релиза
         id: win
@@ -302,7 +305,7 @@ jobs:
           test -d "$APPDIR"
           W=$(pwd)
           (cd "windows/build/compose/binaries/main/app" && 7z a -tzip "$(cygpath -w "$W/dist/apex-vpn-$V-windows.zip")" "APEX VPN" > /dev/null)
-          EXE=$(ls windows/build/compose/binaries/main/exe/*.exe 2>/dev/null | head -1 || true)
+          EXE=$(ls windows/build/installer/*.exe 2>/dev/null | head -1 || true)
           [ -n "$EXE" ] && cp "$EXE" "dist/apex-vpn-$V-windows.exe"
           ls -la dist
           echo "::notice title=Windows $WV::$(ls dist | tr '\n' ' ')"

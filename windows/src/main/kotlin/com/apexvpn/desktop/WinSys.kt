@@ -85,6 +85,11 @@ object WinSys {
         }
     }
 
+    /** Автозапуск включён (переключателем в программе или галочкой в установщике). */
+    fun autostartEnabled(): Boolean = isWindows && runCatching {
+        Advapi32Util.registryValueExists(WinReg.HKEY_CURRENT_USER, RUN, RUN_NAME)
+    }.getOrDefault(false)
+
     fun setAutostart(on: Boolean) {
         if (!isWindows) return
         runCatching {
@@ -109,7 +114,7 @@ object WinSys {
 }
 
 object AppInfo {
-    const val VERSION = "1.3.0"
+    const val VERSION = "1.3.1"
     const val REPO = "Dubstep2004/apex-vpn"
     const val SUPPORT = "https://t.me/Apexx_support"
 }

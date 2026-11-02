@@ -17,7 +17,7 @@
 <p><b>Два ядра</b> · все популярные протоколы · <b>свои списки</b> с шаблонами · <b>3D-глобус</b> · <b>13 дизайнов</b>, палитры и <b>живое видео на фоне</b><br>
 автопилот с белыми списками · DNS «Авто» для каждой сети · базы сайтов каждый день · часы Wear OS · без своего сервера</p>
 
-<sub>Последняя версия — <b>3.3.0</b> · Windows 1.3 · Android 7+ · sing-box 1.13 · Xray 26</sub><br>
+<sub>Последняя версия — <b>3.3.0</b> · Windows 1.3.1 · Android 7+ · sing-box 1.13 · Xray 26</sub><br>
 <sub>💬 Поддержка: <a href="https://t.me/Apexx_support">@Apexx_support</a></sub>
 
 </div>
@@ -165,11 +165,11 @@
 
 <a id="windows"></a>
 <details>
-<summary><b>💻 APEX VPN для Windows</b> <sup>Windows 1.3</sup></summary>
+<summary><b>💻 APEX VPN для Windows</b> <sup>Windows 1.3.1</sup></summary>
 
 Первая версия для компьютера: та же подписка `sub.knownhosts.ru`, те же ядра (**sing-box 1.13** и **Xray 26**) и тот же движок разбора подписки и маршрутизации, что на Android.
 
-**Установка:** на странице [Releases](https://github.com/Dubstep2004/apex-vpn/releases/latest) скачайте **`apex-vpn-<версия>-windows.exe`** (установщик, ставится для текущего пользователя, без прав администратора) или **`apex-vpn-<версия>-windows.zip`** (распакуйте и запустите `APEX VPN.exe`). Windows 10/11, 64-бит.
+**Установка:** на странице [Releases](https://github.com/Dubstep2004/apex-vpn/releases/latest) скачайте **`apex-vpn-<версия>-windows.exe`** — красивый установщик на русском: ставится для текущего пользователя без прав администратора, по желанию — ярлык на рабочем столе и запуск вместе с Windows; новые версии ставятся поверх, удаление — через «Приложения» Windows или **`apex-vpn-<версия>-windows.zip`** (распакуйте и запустите `APEX VPN.exe`). Windows 10/11, 64-бит.
 
 **Что умеет:**
 - подписка по ссылке, серверы с пингом (TCP, а для Hysteria 2 и TUIC — по QUIC), нажатие на пинг — перепроверка;
