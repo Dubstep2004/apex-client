@@ -106,7 +106,13 @@ object HideTemplates {
     suspend fun autoApply(context: android.content.Context): Int {
         val s = AppSettings.value
         if (!s.hideTemplateAuto) return 0
-        val apps = InstalledApps.load(context)
+        val apps = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val pm = context.packageManager
+            @Suppress("DEPRECATION")
+            pm.queryIntentActivities(android.content.Intent(android.content.Intent.ACTION_MAIN).addCategory(android.content.Intent.CATEGORY_LAUNCHER), android.content.pm.PackageManager.MATCH_ALL)
+                .map { it.activityInfo.applicationInfo }.distinctBy { it.packageName }
+                .map { AppInfo(it.packageName, it.loadLabel(pm).toString(), null) } // без значков — быстро и без лишней памяти
+        }
         val add = installed(apps, context.packageName).filter { it !in s.hiddenApps && it !in s.hideTemplateSkip }
         if (add.isNotEmpty()) AppSettings.update { copy(hiddenApps = hiddenApps + add) }
         return add.size

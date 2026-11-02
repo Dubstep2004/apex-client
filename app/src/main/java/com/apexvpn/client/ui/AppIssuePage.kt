@@ -84,10 +84,10 @@ internal fun AppIssuePage(viewModel: MainViewModel, onBack: () -> Unit) {
 
     fun pick(app: AppInfo) {
         if (app.packageName in s.hiddenApps) {
-            viewModel.change { copy(hiddenApps = hiddenApps - app.packageName) }
+            viewModel.change { copy(hiddenApps = hiddenApps - app.packageName, hideTemplateSkip = hideTemplateSkip + app.packageName) }
             viewModel.showMessage("«${app.label}» снова идёт через VPN")
         } else {
-            viewModel.change { copy(hiddenApps = hiddenApps + app.packageName) }
+            viewModel.change { copy(hiddenApps = hiddenApps + app.packageName, hideTemplateSkip = hideTemplateSkip - app.packageName) }
             viewModel.showMessage("«${app.label}» теперь идёт мимо VPN — откройте его заново. Вернуть: Режим → «Скрыть VPN»")
             onBack()
         }

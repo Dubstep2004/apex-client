@@ -507,7 +507,9 @@ class ApexVpnService : VpnService(), PlatformInterface, CommandServerHandler {
             .apply {
                 if (Build.VERSION.SDK_INT >= 36 && status == VpnStatus.Started) addExtras(android.os.Bundle().apply {
                     putBoolean("android.requestPromotedOngoing", true)
-                    putString("android.shortCriticalText", formatSpeed(VpnState.speed.value.first).substringBefore('/').take(9))
+                    // Скорость — только если уведомление обновляется каждую секунду, иначе в капсуле застынет старое число
+                    putString("android.shortCriticalText",
+                        if (AppSettings.value.speedInNotification) formatSpeed(VpnState.speed.value.first).substringBefore('/').take(9) else "VPN")
                 })
             }
             .setOngoing(true)

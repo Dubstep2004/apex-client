@@ -355,10 +355,12 @@ class UpdateReceiver : BroadcastReceiver() {
                 PackageInstaller.STATUS_SUCCESS -> Unit // приложение заменено — дальше MY_PACKAGE_REPLACED
                 PackageInstaller.STATUS_FAILURE_ABORTED -> {
                     Prefs.reconnectAfterUpdate = false
+                    Prefs.reopenAfterUpdate = false
                     UpdateInstaller.set(InstallState.Idle)
                 }
                 else -> {
                     Prefs.reconnectAfterUpdate = false
+                    Prefs.reopenAfterUpdate = false
                     val msg = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)
                     UpdateInstaller.set(InstallState.Failed("Android не установил обновление" + (msg?.let { ": $it" } ?: "")))
                 }
