@@ -1175,16 +1175,37 @@ private fun AppearancePage(viewModel: MainViewModel, onBack: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
     PageScaffold("Оформление", onBack) {
         SectionLabel("Дизайн 2026")
+        // 3.13.2. Категории дизайнов: фильтр сверху и группы с заголовками
         val designs = Design.entries.filter { it != Design.Synthwave || s.secretUnlocked }
-        designs.chunked(3).forEach { row ->
-            Row(Modifier.fillMaxWidth().padding(bottom = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                row.forEach { d ->
-                    DesignPreview(d, s.theme, s.accent, s.customAccent, s.customAccent2, selected = s.design == d, modifier = Modifier.weight(1f), custom = s.customSpec()) {
-                        ThemeReveal.run { viewModel.change(reload = false) { copy(design = d) } }
-                    }
-                }
-                repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
+        var designCat by rememberSaveable { mutableStateOf<String?>(null) }
+        val groups = designGroups.map { (id, title, list) -> Triple(id, title, list.filter { it in designs }) }.filter { it.third.isNotEmpty() }
+        Row(
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(bottom = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            (listOf<Pair<String?, String>>(null to "Все · ${designs.size}") + groups.map { it.first to "${it.second} · ${it.third.size}" }).forEach { (id, title) ->
+                val sel = designCat == id
+                Box(
+                    Modifier.height(38.dp).clip(RoundedCornerShape(50))
+                        .background(if (sel) Apex.Accent else Apex.Surface)
+                        .clickable { designCat = id }.padding(horizontal = 14.dp),
+                    contentAlignment = Alignment.Center,
+                ) { Text(title, color = if (sel) Apex.OnAccent else Apex.Text, fontSize = 14.sp) }
             }
+        }
+        groups.filter { designCat == null || it.first == designCat }.forEach { (_, title, list) ->
+            if (designCat == null) Text(title, color = Apex.TextDim, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
+            list.chunked(3).forEach { row ->
+                Row(Modifier.fillMaxWidth().padding(bottom = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    row.forEach { d ->
+                        DesignPreview(d, s.theme, s.accent, s.customAccent, s.customAccent2, selected = s.design == d, modifier = Modifier.weight(1f), custom = s.customSpec()) {
+                            ThemeReveal.run { viewModel.change(reload = false) { copy(design = d) } }
+                        }
+                    }
+                    repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
+                }
+            }
+            if (designCat == null) Spacer(Modifier.height(6.dp))
         }
         Caption(s.design.subtitle + when (s.design) {
             Design.Neon, Design.Terminal, Design.Steampunk, Design.Synthwave, Design.Cosmos, Design.Carbon, Design.Matrix, Design.Luxe, Design.Ocean -> ". Всегда тёмный."
@@ -2136,3 +2157,13 @@ private fun HomeStylePreview(map: Boolean) {
         }
     }
 }
+
+/** 3.13.2. Категории дизайнов для «Оформления». */
+private val designGroups: List<Triple<String, String, List<Design>>> = listOf(
+    Triple("brand", "Фирменные", listOf(Design.Apex2, Design.Classic, Design.Minimal, Design.Bento, Design.Expressive)),
+    Triple("glass", "Стекло и неон", listOf(Design.Glass, Design.Aurora, Design.Neon, Design.Synthwave)),
+    Triple("live", "Живые", listOf(Design.Cosmos, Design.Matrix, Design.Ocean, Design.Steampunk, Design.Terminal)),
+    Triple("light", "Светлые", listOf(Design.Pastel, Design.Japan, Design.Sakura)),
+    Triple("premium", "Премиум", listOf(Design.Carbon, Design.Luxe)),
+    Triple("custom", "Свой", listOf(Design.Custom)),
+)

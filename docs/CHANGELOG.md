@@ -2,6 +2,16 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.13.2 · 3 ноября 2026
+
+<img src="img/tags/new.svg" alt="Новое" height="22">
+
+- Дизайны разложены по категориям: Фирменные · Стекло и неон · Живые · Светлые · Премиум · Свой — фильтр сверху и группы с заголовками
+
+<img src="img/tags/fixed.svg" alt="Исправлено" height="22">
+
+- «Свой дизайн» со стеклом: вместо жёстких кругов на фоне — мягкие размытые пятна; разделители, полоса трафика, выбранная вкладка и щит больше не становятся белыми (текст на них снова видно)
+
 ## 3.13.1 · 3 ноября 2026
 
 <img src="img/tags/changed.svg" alt="Изменено" height="22">

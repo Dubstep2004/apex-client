@@ -51,16 +51,18 @@ private fun pal(
     bg = if (backdrop == Backdrop.Solid) base else Color.Transparent,
     base = base,
     surface = surface,
-    surfaceHigh = lerp(surface, text, 0.08f).copy(alpha = maxOf(surface.alpha, 0.9f)),
+    // Стекло (полупрозрачные карточки): приглушённые элементы тоже полупрозрачные, а не белые полосы
+    surfaceHigh = if (surface.alpha < 0.5f) (if (dark) Color.White.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.85f))
+        else lerp(surface.copy(alpha = 1f), text, 0.08f),
     outline = lerp(base, text, 0.16f),
-    divider = lerp(surface, text, 0.07f).copy(alpha = 1f),
+    divider = text.copy(alpha = if (dark) 0.09f else 0.08f),
     text = text,
     textDim = textDim,
     accent = accent,
     accentSoft = accent.copy(alpha = if (dark) 0.2f else 0.16f),
     accentText = lerp(accent, text, if (dark) 0.35f else 0.2f),
     selectedCard = lerp(base, accent, 0.12f),
-    heroCard = lerp(surface.copy(alpha = 1f), accent, 0.1f).copy(alpha = surface.alpha),
+    heroCard = if (surface.alpha < 0.5f) accent.copy(alpha = 0.10f) else lerp(surface.copy(alpha = 1f), accent, 0.1f).copy(alpha = surface.alpha),
     brand1 = brand1, brand2 = brand2,
     radius = radius.dp,
     cardBorder = border,
@@ -176,8 +178,11 @@ private fun DrawScope.drawLuxe(p: Palette) {
 
 private fun DrawScope.drawCustomGlass(p: Palette) {
     drawRect(p.base)
-    drawCircle(p.brand1.copy(alpha = 0.45f), size.width * 0.55f, Offset(size.width * 0.1f, size.height * 0.15f))
-    drawCircle(p.brand2.copy(alpha = 0.4f), size.width * 0.5f, Offset(size.width * 0.95f, size.height * 0.55f))
+    // Мягкие размытые пятна (без жёстких краёв): радиальный градиент к прозрачному
+    fun blob(c: Color, center: Offset, r: Float) =
+        drawCircle(Brush.radialGradient(listOf(c.copy(alpha = 0.32f), c.copy(alpha = 0.12f), Color.Transparent), center, r), r, center)
+    blob(p.brand1, Offset(size.width * 0.1f, size.height * 0.12f), size.width * 0.9f)
+    blob(p.brand2, Offset(size.width * 0.95f, size.height * 0.62f), size.width * 0.85f)
 }
 
 @Composable
