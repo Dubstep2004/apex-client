@@ -22,7 +22,7 @@ import com.apexvpn.client.data.Design
 import com.apexvpn.client.data.ThemeMode
 
 /** Чем закрашен фон экранов. */
-enum class Backdrop { Solid, Glass, Aurora, Neon, Terminal, Pastel, Apex2, Steampunk, Synthwave, Cosmos, Japan }
+enum class Backdrop { Solid, Glass, Aurora, Neon, Terminal, Pastel, Apex2, Steampunk, Synthwave, Cosmos, Japan, Carbon, Sakura, Matrix, Luxe, Ocean, Custom }
 
 /** Всё, что определяет внешний вид: цвета, форма карточек, фон, шрифт, раскладка главного экрана. */
 data class Palette(
@@ -456,7 +456,10 @@ fun paletteFor(
     customArgb: Long? = null,
     /** 564. Второй цвет готовой палитры (градиент щита), 0 — нет */
     customArgb2: Long = 0,
+    /** 3.13. «Свой дизайн» */
+    custom: CustomSpec = CustomSpec(),
 ): Palette {
+    if (design == Design.Custom) return customPalette(custom)
     val p = basePaletteFor(design, theme, accent, systemDark, wallpaper, customArgb)
     // Палитра из двух цветов — только для дизайнов, где цвет выбирает пользователь
     if (accent != AccentColor.Custom || customArgb2 == 0L || customArgb == null) return p
@@ -502,6 +505,12 @@ private fun basePaletteFor(
         Design.Synthwave -> synthwavePalette()
         Design.Cosmos -> cosmosPalette()
         Design.Japan -> japanPalette()
+        Design.Carbon -> carbonPalette()
+        Design.Sakura -> sakuraPalette()
+        Design.Matrix -> matrixPalette()
+        Design.Luxe -> luxePalette()
+        Design.Ocean -> oceanPalette()
+        Design.Custom -> customPalette(CustomSpec())
     }
 }
 

@@ -71,6 +71,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import com.apexvpn.client.ui.theme.customSpec
 import com.apexvpn.client.BuildConfig
 import com.apexvpn.client.data.AppSettings
 import com.apexvpn.client.data.Changelog
@@ -160,7 +161,7 @@ class MainActivity : ComponentActivity() {
                 val wallpaper = if (Build.VERSION.SDK_INT >= 31) {
                     runCatching { androidx.compose.ui.graphics.Color(getColor(android.R.color.system_accent1_400)) }.getOrNull()
                 } else null
-                val base = paletteFor(s.design, s.theme, s.accent, systemDark, wallpaper, customArgb = s.customAccent, customArgb2 = s.customAccent2)
+                val base = paletteFor(s.design, s.theme, s.accent, systemDark, wallpaper, customArgb = s.customAccent, customArgb2 = s.customAccent2, custom = s.customSpec())
                 val mode = com.apexvpn.client.data.AutoModes.Mode.of(s.autoMode)
                 val p = if (s.modeColors && on && auto && mode.c1 != 0L) {
                     base.copy(brand1 = androidx.compose.ui.graphics.Color(mode.c1), brand2 = androidx.compose.ui.graphics.Color(mode.c2))

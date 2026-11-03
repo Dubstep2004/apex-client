@@ -78,6 +78,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
+import com.apexvpn.client.ui.theme.customSpec
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.apexvpn.client.data.AccentColor
 import com.apexvpn.client.data.Design
@@ -1178,7 +1179,7 @@ private fun AppearancePage(viewModel: MainViewModel, onBack: () -> Unit) {
         designs.chunked(3).forEach { row ->
             Row(Modifier.fillMaxWidth().padding(bottom = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 row.forEach { d ->
-                    DesignPreview(d, s.theme, s.accent, s.customAccent, s.customAccent2, selected = s.design == d, modifier = Modifier.weight(1f)) {
+                    DesignPreview(d, s.theme, s.accent, s.customAccent, s.customAccent2, selected = s.design == d, modifier = Modifier.weight(1f), custom = s.customSpec()) {
                         ThemeReveal.run { viewModel.change(reload = false) { copy(design = d) } }
                     }
                 }
@@ -1186,11 +1187,13 @@ private fun AppearancePage(viewModel: MainViewModel, onBack: () -> Unit) {
             }
         }
         Caption(s.design.subtitle + when (s.design) {
-            Design.Neon, Design.Terminal, Design.Steampunk, Design.Synthwave, Design.Cosmos -> ". Всегда тёмный."
-            Design.Pastel, Design.Japan -> ". Всегда светлый."
+            Design.Neon, Design.Terminal, Design.Steampunk, Design.Synthwave, Design.Cosmos, Design.Carbon, Design.Matrix, Design.Luxe, Design.Ocean -> ". Всегда тёмный."
+            Design.Pastel, Design.Japan, Design.Sakura -> ". Всегда светлый."
+            Design.Custom -> ". Настройте ниже."
             Design.Expressive -> ". Цвет берётся из обоев (Android 12+)."
             else -> "."
         })
+        if (s.design == Design.Custom) CustomDesignEditor(viewModel, s)
 
         SectionLabel("Тема")
         Group {
@@ -1691,11 +1694,12 @@ private fun DesignPreview(
     customAccent2: Long,
     selected: Boolean,
     modifier: Modifier = Modifier,
+    custom: com.apexvpn.client.ui.theme.CustomSpec = com.apexvpn.client.ui.theme.CustomSpec(),
     onClick: () -> Unit,
 ) {
     val systemDark = androidx.compose.foundation.isSystemInDarkTheme()
-    val p = remember(design, theme, accent, customAccent, customAccent2, systemDark) {
-        com.apexvpn.client.ui.theme.paletteFor(design, theme, accent, systemDark, customArgb = customAccent, customArgb2 = customAccent2)
+    val p = remember(design, theme, accent, customAccent, customAccent2, systemDark, custom) {
+        com.apexvpn.client.ui.theme.paletteFor(design, theme, accent, systemDark, customArgb = customAccent, customArgb2 = customAccent2, custom = custom)
     }
     val shape = RoundedCornerShape(18.dp)
     Column(
@@ -1714,6 +1718,13 @@ private fun DesignPreview(
                         Design.Japan -> androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFFF7F2E8), Color(0xFFEFE8DA)))
                         Design.Steampunk -> androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFF3A2614), p.base))
                         Design.Synthwave -> androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFF3A0A5E), Color(0xFFB0186E), Color(0xFF1A0033)))
+                        Design.Carbon -> androidx.compose.ui.graphics.Brush.linearGradient(listOf(Color(0xFF22252A), Color(0xFF0D0E10), Color(0xFF1B1D21)))
+                        Design.Sakura -> androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFFFFF6F8), Color(0xFFF9C9DA)))
+                        Design.Matrix -> androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFF00331A), Color.Black))
+                        Design.Luxe -> androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFF3A2F10), Color(0xFF07070A)))
+                        Design.Ocean -> androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFF0B3A5C), Color(0xFF031526), Color(0xFF0E5A7A)))
+                        Design.Custom -> if (custom.glass) androidx.compose.ui.graphics.Brush.linearGradient(listOf(Color(custom.accent).copy(alpha = 0.6f), p.base, Color(custom.accent2).copy(alpha = 0.6f)))
+                            else androidx.compose.ui.graphics.Brush.verticalGradient(listOf(p.base, p.base))
                         Design.Apex2 -> androidx.compose.ui.graphics.Brush.verticalGradient(listOf(p.brand1.copy(alpha = if (p.dark) 0.35f else 0.2f), p.base, p.base))
                         Design.Glass, Design.Aurora -> androidx.compose.ui.graphics.Brush.linearGradient(listOf(p.accent.copy(alpha = 0.7f), p.base, Color(0xFF22D3EE).copy(alpha = 0.6f)))
                         Design.Pastel -> androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFFFFF1E8), Color(0xFFF6EEFF)))

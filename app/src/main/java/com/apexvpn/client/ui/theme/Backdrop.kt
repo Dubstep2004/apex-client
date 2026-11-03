@@ -43,6 +43,7 @@ fun DesignBackground(modifier: Modifier = Modifier) {
         Backdrop.Synthwave -> SynthwaveBackground(modifier, p)
         Backdrop.Cosmos -> CosmosBackground(modifier, p)
         Backdrop.Japan -> Canvas(modifier.fillMaxSize()) { drawJapan(p) }
+        Backdrop.Carbon, Backdrop.Sakura, Backdrop.Matrix, Backdrop.Luxe, Backdrop.Ocean, Backdrop.Custom -> NewBackdrop(p.backdrop, modifier, p)
     }
 }
 
