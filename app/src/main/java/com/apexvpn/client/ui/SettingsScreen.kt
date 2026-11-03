@@ -724,8 +724,8 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
                 onClick = { supportDialog = true },
             ) { Chevron() }
         }
-        Spacer(Modifier.height(24.dp))
         }
+        Spacer(Modifier.height(24.dp))
     }
 
     // 24. Поддержка: чат из подписки (support-url), копия отчёта или файл

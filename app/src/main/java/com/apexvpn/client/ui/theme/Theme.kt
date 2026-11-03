@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -409,7 +410,8 @@ object Apex {
     val Radius get() = palette.radius
     val isDark get() = palette.dark
     /** Текст и значки поверх акцента (в чёрно-белом и терминале — тёмные) */
-    val OnAccent get() = if (palette.design == Design.Minimal && palette.dark || palette.design == Design.Terminal) Color.Black else Color.White
+    val OnAccent get() = if (palette.design == Design.Minimal && palette.dark || palette.design == Design.Terminal ||
+        palette.accent.luminance() > 0.55f) Color.Black else Color.White
     /** Непрозрачный фон диалогов */
     val Dialog get() = if (palette.dark) lerp(palette.base, palette.text, 0.07f).copy(alpha = 1f) else Color.White
 

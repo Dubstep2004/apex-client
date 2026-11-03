@@ -224,7 +224,7 @@ class MainActivity : ComponentActivity() {
                         com.apexvpn.client.ui.theme.DesignBackground()
                         // 3.8. Сезонное оформление (выключается в «Оформлении»)
                         val powerSave = remember { (getSystemService(android.os.PowerManager::class.java))?.isPowerSaveMode == true }
-                        if (st.seasonal && !st.smoothMode && !powerSave) com.apexvpn.client.ui.theme.SeasonalOverlay()
+                        if (st.seasonal && !st.smoothMode && !powerSave && st.design != com.apexvpn.client.data.Design.Sakura && st.design != com.apexvpn.client.data.Design.Matrix) com.apexvpn.client.ui.theme.SeasonalOverlay()
                         if (sub.url.isEmpty() && !onboarded) {
                             // 320. Знакомство при первом запуске
                             Onboarding {
