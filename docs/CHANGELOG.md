@@ -2,6 +2,12 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.13.4 · 3 ноября 2026
+
+<img src="img/tags/fixed.svg" alt="Исправлено" height="22">
+
+- Стеклянные карточки со свечением («Свой дизайн», «Матрица»): внутри был виден тёмный сдвинутый прямоугольник — тень просвечивала сквозь стекло. Теперь вместо тени светится рамка
+
 ## 3.13.3 · 3 ноября 2026
 
 <img src="img/tags/fixed.svg" alt="Исправлено" height="22">

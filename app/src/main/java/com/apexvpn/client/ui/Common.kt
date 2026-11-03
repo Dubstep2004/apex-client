@@ -172,7 +172,9 @@ fun Modifier.apexCard(color: Color = Apex.Surface, radius: Dp = Apex.Radius): Mo
     val glow = Apex.palette.glow
     val glowColor = Apex.Cyan
     return this
-        .then(if (glow) Modifier.shadow(14.dp, shape, ambientColor = glowColor, spotColor = glowColor) else Modifier)
+        // Тень-свечение — только у непрозрачных карточек: сквозь стекло она видна тёмным прямоугольником
+        .then(if (glow && color.alpha >= 0.99f) Modifier.shadow(14.dp, shape, ambientColor = glowColor, spotColor = glowColor) else Modifier)
+        .then(if (glow && color.alpha < 0.99f) Modifier.border(2.dp, glowColor.copy(alpha = 0.35f), shape) else Modifier)
         .clip(shape)
         .background(color)
         .then(if (Apex.palette.design == com.apexvpn.client.data.Design.Glass) Modifier.glassGlare() else Modifier)
