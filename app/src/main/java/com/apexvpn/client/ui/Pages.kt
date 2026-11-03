@@ -1231,7 +1231,7 @@ private fun AppearancePage(viewModel: MainViewModel, onBack: () -> Unit) {
         if (s.design == Design.Bento) Caption("В дизайне «Бенто» главный экран всегда из плиток.")
 
         // 17. Фон за щитом
-        SectionLabel("Фон за щитом")
+        SectionLabel("Фон главного экрана")
         ChipRow(listOf("none" to "Нет", "waves" to "Волны", "particles" to "Частицы", "stars" to "Звёзды", "country" to "Страна"), s.shieldBackdrop) {
             viewModel.change(reload = false) { copy(shieldBackdrop = it) }
         }
@@ -1247,25 +1247,6 @@ private fun AppearancePage(viewModel: MainViewModel, onBack: () -> Unit) {
                 }
             }
         }
-        Spacer(Modifier.height(10.dp))
-        Group {
-            ListRow(
-                "Своё фото",
-                if (s.shieldBackdrop == "photo") "Выбрано — нажмите, чтобы сменить" else "Фото из галереи на главный экран",
-                onClick = { pickPhoto.launch(androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
-            ) {
-                if (s.shieldBackdrop == "photo") {
-                    androidx.compose.material3.TextButton(onClick = {
-                        com.apexvpn.client.data.Backdrop.clear(context)
-                        viewModel.change(reload = false) { copy(shieldBackdrop = "none") }
-                    }) { Text("Убрать", color = Apex.Bad) }
-                } else {
-                    Chevron()
-                }
-            }
-        }
-        // Живые видео: готовые шаблоны и своё видео
-        SectionLabel("Живое видео на фоне")
         val scopeV = androidx.compose.runtime.rememberCoroutineScope()
         val pickVideo = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
             if (uri != null) scopeV.launch {
@@ -1277,6 +1258,9 @@ private fun AppearancePage(viewModel: MainViewModel, onBack: () -> Unit) {
                 }
             }
         }
+        // Живые видео — в том же разделе, рядом с фото
+        Spacer(Modifier.height(12.dp))
+        Text("Живое видео", color = Apex.TextDim, fontSize = 14.sp, modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
         androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             items(LiveVideos.templates.size) { i ->
                 val tpl = LiveVideos.templates[i]
@@ -1308,8 +1292,24 @@ private fun AppearancePage(viewModel: MainViewModel, onBack: () -> Unit) {
                 }
             }
         }
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(12.dp))
+        // Своё фото и своё видео — одной группой
         Group {
+            ListRow(
+                "Своё фото",
+                if (s.shieldBackdrop == "photo") "Выбрано — нажмите, чтобы сменить" else "Фото из галереи на главный экран",
+                onClick = { pickPhoto.launch(androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+            ) {
+                if (s.shieldBackdrop == "photo") {
+                    androidx.compose.material3.TextButton(onClick = {
+                        com.apexvpn.client.data.Backdrop.clear(context)
+                        viewModel.change(reload = false) { copy(shieldBackdrop = "none") }
+                    }) { Text("Убрать", color = Apex.Bad) }
+                } else {
+                    Chevron()
+                }
+            }
+            GroupDivider()
             ListRow(
                 "Своё видео",
                 if (s.shieldBackdrop == "video") "Выбрано — нажмите, чтобы сменить" else "Видео из галереи: без звука, по кругу",

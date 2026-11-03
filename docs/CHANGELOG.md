@@ -2,6 +2,12 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.13.1 · 3 ноября 2026
+
+<img src="img/tags/changed.svg" alt="Изменено" height="22">
+
+- Оформление: фон главного экрана теперь в одном разделе — готовые фоны, живое видео, а «Своё фото» и «Своё видео» рядом, одной группой
+
 ## 3.13.0 · 3 ноября 2026
 
 <img src="img/tags/new.svg" alt="Новое" height="22">
