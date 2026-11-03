@@ -6,6 +6,7 @@ import androidx.core.content.edit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import org.json.JSONArray
 import org.json.JSONObject
 import java.security.SecureRandom
@@ -194,9 +195,10 @@ object AppSettings {
     }
 
     fun update(change: Settings.() -> Settings) {
-        _state.value = _state.value.change()
+        // 3.13.6: атомарно — фоновые изменения (правила, шаблон) и изменения на экране не затирают друг друга
+        _state.update { it.change() }
         Prefs.updateIntervalHours = _state.value.refreshHours
-        save()
+        synchronized(this) { save() }
     }
 
     private fun save() = sp.edit { putString("json", toJson(_state.value).toString()) }

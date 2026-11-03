@@ -56,6 +56,10 @@ object Prefs {
         get() = sp.getInt("dismissed_update", 0)
         set(v) = sp.edit { putInt("dismissed_update", v) }
 
+    var hideTemplateAt: Long
+        get() = sp.getLong("hide_template_at", 0)
+        set(v) = sp.edit { putLong("hide_template_at", v) }
+
     /** 3.10: список шаблона «Скрыть VPN», скачанный из интернета (JSON) */
     var hideTemplateJson: String
         get() = sp.getString("hide_template", "") ?: ""

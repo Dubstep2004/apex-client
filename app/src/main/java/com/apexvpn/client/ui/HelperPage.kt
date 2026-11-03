@@ -133,16 +133,16 @@ object Helper {
                 Msg(false, buildString {
                     append(statusLine())
                     if (!err.isNullOrBlank()) append("\nПоследняя ошибка: $err")
-                    if (sub.expireAt in 1 until System.currentTimeMillis()) append("\n\nПодписка закончилась — продлите её, и VPN заработает.")
+                    if (sub.expireAt > 0 && sub.expireAt * 1000 < System.currentTimeMillis()) append("\n\nПодписка закончилась — продлите её, и VPN заработает.")
                     if (sub.total > 0 && sub.used >= sub.total) append("\n\nТрафик по подписке закончился.")
                     append("\n\n«Самопроверка» по шагам проверит интернет, подписку, серверы и сайты и подскажет, что делать.")
                 }, listOf(Action("Самопроверка", Page.SelfCheck), support))
             }
             has(t, "подписк", "срок", "закончи", "истек", "продл", "трафик") -> Msg(false, buildString {
                 if (sub.expireAt > 0) {
-                    val days = (sub.expireAt - System.currentTimeMillis()) / 86_400_000L
-                    append(if (days >= 0) "Подписка действует ещё $days дн. (до ${java.text.SimpleDateFormat("d MMMM yyyy", java.util.Locale("ru")).format(java.util.Date(sub.expireAt))})." else "Подписка закончилась.")
-                } else append("Срок подписки панель не сообщает.")
+                    val days = (sub.expireAt * 1000 - System.currentTimeMillis()) / 86_400_000L
+                    append(if (days >= 0) "Подписка действует ещё $days дн. (до ${java.text.SimpleDateFormat("d MMMM yyyy", java.util.Locale("ru")).format(java.util.Date(sub.expireAt * 1000))})." else "Подписка закончилась.")
+                } else if (sub.expireAt == 0L) append("Подписка бессрочная.") else append("Срок подписки панель не сообщает.")
                 if (sub.total > 0) append("\nТрафик: ${formatBytes(sub.used.coerceAtLeast(0))} из ${formatBytes(sub.total)}.")
                 append("\n\nПродлить — у того, кто выдал подписку, или в поддержке.")
             }, listOf(support))

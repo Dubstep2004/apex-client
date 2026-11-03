@@ -75,7 +75,9 @@ object HideTemplates {
     fun remoteInfo(): String? = cached()?.let { "список №${it.version}" + (if (it.updated.isNotBlank()) " от ${it.updated}" else "") }
 
     /** Скачать свежий список (раз в сутки из фоновой проверки). true — список изменился. */
-    suspend fun refresh(): Boolean = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+    suspend fun refresh(force: Boolean = false): Boolean = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        // Список меняется редко — не чаще раза в 12 часов (фоновая проверка идёт каждый час)
+        if (!force && cached() != null && System.currentTimeMillis() - Prefs.hideTemplateAt < 12 * 3_600_000L) return@withContext false
         val text = listOf(REMOTE, MIRROR).firstNotNullOfOrNull { url ->
             runCatching {
                 val c = java.net.URL(url).openConnection() as java.net.HttpURLConnection
@@ -86,6 +88,7 @@ object HideTemplates {
         val r = parse(text)!!
         val old = cached()
         Prefs.hideTemplateJson = text
+        Prefs.hideTemplateAt = System.currentTimeMillis()
         remote = r
         old == null || old.version != r.version
     }

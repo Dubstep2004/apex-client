@@ -344,7 +344,7 @@ class ApexVpnService : VpnService(), PlatformInterface, CommandServerHandler {
                     scope.launch { com.apexvpn.client.data.MonthStats.ping(com.apexvpn.client.data.LivePing.measure()) }
                 }
                 // 3.11. Правила «если — то»
-                if (tick % 5 == 0L && status == VpnStatus.Started && settings.autoRules.isNotEmpty()) {
+                if (tick % 5 == 0L && status == VpnStatus.Started && (settings.autoRules.isNotEmpty() || com.apexvpn.client.data.AutoRulesEngine.active.isNotEmpty())) {
                     val todo = com.apexvpn.client.data.AutoRulesEngine.tick(this@ApexVpnService)
                     if ("off" in todo) { scope.launch { stopVpn() } }
                     else {
