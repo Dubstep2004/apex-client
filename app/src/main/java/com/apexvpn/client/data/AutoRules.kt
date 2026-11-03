@@ -117,8 +117,16 @@ object AutoRulesEngine {
      * Проверка (раз в 5 с, пока VPN включён). Ответ: что сделать сервису —
      * reload (настройки поменялись), rules (обновить базы), off (выключить VPN).
      */
+    private var lastWarn = 0L
+
     fun tick(ctx: Context): Set<String> {
         val rules = AppSettings.value.autoRules
+        if (rules.any { it.enabled && it.trigger == "app" } && !com.apexvpn.client.ui.RecentApps.granted(ctx) &&
+            System.currentTimeMillis() - lastWarn > 24 * 3_600_000L
+        ) {
+            lastWarn = System.currentTimeMillis()
+            warnUsage(ctx)
+        }
         val out = HashSet<String>()
         synchronized(applied) {
             // Удалённые и выключенные правила — вернуть, что меняли
@@ -144,6 +152,28 @@ object AutoRulesEngine {
             }
         }
         return out
+    }
+
+    /** Уведомление: правилам «Открыто приложение» нужен доступ к истории использования. */
+    private fun warnUsage(ctx: Context) {
+        val nm = ctx.getSystemService<android.app.NotificationManager>() ?: return
+        val pi = android.app.PendingIntent.getActivity(
+            ctx, 16,
+            android.content.Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+            android.app.PendingIntent.FLAG_IMMUTABLE or android.app.PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        runCatching {
+            nm.notify(
+                8,
+                androidx.core.app.NotificationCompat.Builder(ctx, com.apexvpn.client.ApexApp.CHANNEL_ALERTS)
+                    .setSmallIcon(com.apexvpn.client.R.drawable.ic_stat_apex)
+                    .setContentTitle("Правила «если — то» не видят приложения")
+                    .setContentText("Android отключил доступ к истории использования. Нажмите и включите его для APEX VPN")
+                    .setContentIntent(pi)
+                    .setAutoCancel(true)
+                    .build(),
+            )
+        }
     }
 
     /** VPN выключили — забываем, что действовало (настройки остаются как есть). */

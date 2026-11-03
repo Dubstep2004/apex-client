@@ -124,6 +124,7 @@ func runServiceCheck(dial func(ctx context.Context, network, addr string) (net.C
 	if r.ChatGPT.Status == "yes" && r.ChatGPT.Region == "" {
 		r.ChatGPT.Region = r.Country
 	}
+	applyCountryRules(&r)
 	r.Duration = time.Since(start).Milliseconds()
 	out, _ := json.Marshal(r)
 	return string(out)
@@ -167,7 +168,7 @@ func youtubeResult(code int, body string, err error) serviceResult {
 	if strings.Contains(low, "premium is not available in your country") || strings.Contains(low, "not available in your country") || region == "RU" || region == "CN" {
 		return serviceResult{Status: "no", Region: region}
 	}
-	if code == 200 {
+	if code == 200 && (region != "" || strings.Contains(low, "premium")) {
 		return serviceResult{Status: "yes", Region: region}
 	}
 	return serviceResult{Status: "error", Region: region}
@@ -207,5 +208,33 @@ func geminiResult(code int, body string, err error) serviceResult {
 		return serviceResult{Status: "yes"}
 	default:
 		return serviceResult{Status: "no"}
+	}
+}
+
+// Страны, где сервис официально недоступен: страна сервера (по Cloudflare) надёжнее,
+// чем разбор страницы, — если она в списке, «работает» по странице не верим.
+var (
+	noChatGPT        = map[string]bool{"RU": true, "BY": true, "CN": true, "HK": true, "MO": true, "IR": true, "KP": true, "SY": true, "CU": true, "VE": true, "AF": true}
+	noGemini         = map[string]bool{"RU": true, "BY": true, "CN": true, "HK": true, "MO": true, "IR": true, "KP": true, "SY": true, "CU": true}
+	noYouTubePremium = map[string]bool{"RU": true, "BY": true, "CN": true, "IR": true, "KP": true, "SY": true, "CU": true}
+	noNetflix        = map[string]bool{"RU": true, "BY": true, "CN": true, "KP": true, "SY": true, "CRIMEA": true}
+)
+
+func applyCountryRules(r *serviceReport) {
+	c := r.Country
+	if c == "" {
+		return
+	}
+	if noChatGPT[c] && r.ChatGPT.Status == "yes" {
+		r.ChatGPT = serviceResult{Status: "no"}
+	}
+	if noGemini[c] && r.Gemini.Status == "yes" {
+		r.Gemini = serviceResult{Status: "no"}
+	}
+	if noYouTubePremium[c] && r.YouTube.Status == "yes" {
+		r.YouTube = serviceResult{Status: "no", Region: r.YouTube.Region}
+	}
+	if noNetflix[c] && (r.Netflix.Status == "yes" || r.Netflix.Status == "partial") {
+		r.Netflix = serviceResult{Status: "no"}
 	}
 }

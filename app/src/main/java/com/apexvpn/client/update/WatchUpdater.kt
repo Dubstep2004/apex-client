@@ -55,6 +55,11 @@ object WatchUpdater {
                 Tasks.await(channels.sendFile(ch, Uri.fromFile(file)), 5, TimeUnit.MINUTES)
             }
             _status.value = "Передано — часы предложат установить"
+            // Часы не ответили — подсказываем, что сделать на часах
+            kotlinx.coroutines.delay(90_000)
+            if (_status.value == "Передано — часы предложат установить") {
+                _status.value = "Часы не ответили. Откройте APEX Watch на часах; если окна установки нет — в настройках часов разрешите «Установку неизвестных приложений» для APEX Watch и нажмите «Обновить часы» ещё раз"
+            }
             true
         }.getOrElse {
             _status.value = it.message ?: "Не удалось передать на часы"

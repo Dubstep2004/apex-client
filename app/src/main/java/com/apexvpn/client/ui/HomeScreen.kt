@@ -683,7 +683,7 @@ private fun SubscriptionCard(
             }
             if (sub.announce.isNotBlank()) Spacer(Modifier.height(12.dp))
             if (sub.announce.isNotBlank()) Text(
-                sub.announce,
+                com.apexvpn.client.data.AnnounceParser.tidy(sub.announce, sub.expireAt, sub.total),
                 color = Apex.Text,
                 fontSize = 15.sp,
                 lineHeight = 22.sp,

@@ -208,7 +208,7 @@ private fun Modifier.glassGlare(): Modifier = this.drawWithContent {
 
 @Composable
 fun GroupDivider() {
-    HorizontalDivider(Modifier.padding(start = 76.dp), thickness = 1.dp, color = Apex.Divider)
+    HorizontalDivider(Modifier.padding(start = 76.dp, end = 16.dp), thickness = 1.dp, color = Apex.Divider)
 }
 
 /** Строка: плашка-значок, заголовок, подзаголовок, справа — что угодно. */

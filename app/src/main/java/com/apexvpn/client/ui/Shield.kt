@@ -230,7 +230,8 @@ fun ShieldButton(status: VpnStatus, onClick: () -> Unit, diameter: androidx.comp
                     measure.getSegment(0f, measure.length * check.value, part, true)
                     drawPath(part, Color.White, style = Stroke(8.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
                 } else {
-                    drawPower(s, if (paused) accent else dim)
+                    // 3.13.5: в выключенном состоянии значок ярче — на тёмном стекле серый терялся
+                    drawPower(s, if (paused) accent else androidx.compose.ui.graphics.lerp(dim, Apex.Text, 0.6f))
                 }
             }
         }

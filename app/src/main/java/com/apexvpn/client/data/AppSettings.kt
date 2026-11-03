@@ -147,6 +147,8 @@ data class Settings(
     val seasonal: Boolean = true,
     /** 3.11: правила «если — то» */
     val autoRules: List<AutoRule> = emptyList(),
+    /** 3.13.5: «живое» уведомление Android 16 (капсула в строке состояния) */
+    val liveNotification: Boolean = true,
     // 491. На мобильной сети сам включать LTE-обход, если оператор пускает только по белым спискам
     val autoWhitelist: Boolean = true,
 ) {
@@ -380,7 +382,7 @@ object AppSettings {
         put("domainStrategy", s.domainStrategy); put("fakeDns", s.fakeDns)
         put("remoteDns", s.remoteDns.json()); put("directDns", s.directDns.json()); put("rulesSource", s.rulesSource)
         put("warp", s.warp); put("warpConfig", s.warpConfig); put("shieldBackdrop", s.shieldBackdrop); put("backdropStamp", s.backdropStamp)
-        put("iconStatus", s.iconStatus); put("animatedFlags", s.animatedFlags); put("task", s.task); put("hiddenApps", list(s.hiddenApps)); put("hideTemplateAuto", s.hideTemplateAuto); put("hideTemplateSkip", list(s.hideTemplateSkip)); put("secret", s.secretUnlocked); put("shield3d", s.shield3d); put("automation", s.automation); put("appTraffic", s.appTraffic); put("autoSkipSpecial", s.autoSkipSpecial); put("autoFavoritesOnly", s.autoFavoritesOnly); put("seasonal", s.seasonal); put("autoRules", AutoRule.listToJson(s.autoRules)); put("autoWhitelist", s.autoWhitelist)
+        put("iconStatus", s.iconStatus); put("animatedFlags", s.animatedFlags); put("task", s.task); put("hiddenApps", list(s.hiddenApps)); put("hideTemplateAuto", s.hideTemplateAuto); put("hideTemplateSkip", list(s.hideTemplateSkip)); put("secret", s.secretUnlocked); put("shield3d", s.shield3d); put("automation", s.automation); put("appTraffic", s.appTraffic); put("autoSkipSpecial", s.autoSkipSpecial); put("autoFavoritesOnly", s.autoFavoritesOnly); put("seasonal", s.seasonal); put("autoRules", AutoRule.listToJson(s.autoRules)); put("liveNotification", s.liveNotification); put("autoWhitelist", s.autoWhitelist)
         put("customAccent2", s.customAccent2); put("cdBase", s.cdBase); put("cdAccent", s.cdAccent); put("cdAccent2", s.cdAccent2); put("cdRadius", s.cdRadius); put("cdGlass", s.cdGlass); put("cdBorder", s.cdBorder); put("cdGlow", s.cdGlow); put("photoBlur", s.photoBlur); put("photoDim", s.photoDim); put("photoParallax", s.photoParallax); put("rulesAuto", s.rulesAuto); put("rulesHours", s.rulesHours); put("speedUnit", s.speedUnit); put("speedScale", s.speedScale); put("speedMulti", s.speedMulti); put("quicMode", s.quicMode); put("connectOnOpen", s.connectOnOpen)
         put("pingType", s.pingType); put("pingMode", s.pingMode); put("pingTimeout", s.pingTimeout); put("pingUrl", s.pingUrl); put("pingView", s.pingView); put("autoMode", s.autoMode); put("modeColors", s.modeColors); put("directCountries", list(s.directCountries)); put("connLog", s.connLog); put("greeting", s.greeting)
     }
@@ -489,6 +491,7 @@ object AppSettings {
             autoFavoritesOnly = o.optBoolean("autoFavoritesOnly", d.autoFavoritesOnly),
             seasonal = o.optBoolean("seasonal", d.seasonal),
             autoRules = AutoRule.listFrom(o.optJSONArray("autoRules")),
+            liveNotification = o.optBoolean("liveNotification", d.liveNotification),
             autoWhitelist = o.optBoolean("autoWhitelist", d.autoWhitelist),
             cdBase = o.optLong("cdBase", d.cdBase) or 0xFF000000L,
             cdAccent = o.optLong("cdAccent", d.cdAccent) or 0xFF000000L,

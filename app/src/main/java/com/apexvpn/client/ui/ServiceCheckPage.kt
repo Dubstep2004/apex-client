@@ -148,7 +148,8 @@ internal fun ServiceCheckPage(viewModel: MainViewModel, onBack: () -> Unit) {
                     ListRow(
                         listOfNotNull(ServerInfo.flag(n.name), ServerInfo.title(n.name)).joinToString(" "),
                         if (r == null) "Не проверен · нажмите, чтобы проверить"
-                        else with(ServiceCheck) { ServiceCheck.services.joinToString("  ") { (id, t) -> "${mark(r.status(id))} ${t.substringBefore(' ')}" } },
+                        else with(ServiceCheck) { ServiceCheck.services.joinToString("  ") { (id, t) -> "${mark(r.status(id))} ${t.substringBefore(' ')}" } } +
+                            "\n" + age(r.at) + (if (r.country.isNotBlank()) " · страна сервера ${r.country}" else ""),
                         onClick = { if (on && !busy) scope.launch { ServiceCheck.check(listOf(n.tag)) } },
                     ) {
                         if (busy) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = Apex.Accent)
@@ -176,5 +177,18 @@ internal fun ServiceCheckPage(viewModel: MainViewModel, onBack: () -> Unit) {
             )
         }
         Spacer(Modifier.height(24.dp))
+    }
+}
+
+/** «проверено 5 мин назад»; старше недели — «устарело, проверьте ещё раз». */
+private fun age(at: Long): String {
+    val m = (System.currentTimeMillis() - at) / 60_000
+    return when {
+        at <= 0 -> ""
+        m < 1 -> "проверено только что"
+        m < 60 -> "проверено $m мин назад"
+        m < 24 * 60 -> "проверено ${m / 60} ч назад"
+        m < 7 * 24 * 60 -> "проверено ${m / 1440} дн назад"
+        else -> "устарело — проверьте ещё раз"
     }
 }

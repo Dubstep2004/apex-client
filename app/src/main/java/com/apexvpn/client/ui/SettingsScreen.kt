@@ -48,6 +48,7 @@ import androidx.compose.material.icons.rounded.QrCode2
 import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.material.icons.rounded.DataUsage
 import androidx.compose.material.icons.rounded.SmartToy
+import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.automirrored.rounded.HelpOutline
 import androidx.compose.material.icons.rounded.Code
 import androidx.compose.material.icons.automirrored.rounded.Send
@@ -422,6 +423,21 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
                 leading = { tile(Icons.Rounded.Speed) },
                 onClick = { viewModel.change(reload = false) { copy(speedInNotification = !speedInNotification) } },
             ) { ApexSwitch(s.speedInNotification, { v -> viewModel.change(reload = false) { copy(speedInNotification = v) } }) }
+            // 3.13.5. Android 16: «живое» уведомление (капсула в строке состояния)
+            if (android.os.Build.VERSION.SDK_INT >= 36) {
+                GroupDivider()
+                ListRow(
+                    "Живое уведомление",
+                    if (s.liveNotification) "Капсула APEX в строке состояния (Android 16). Если её нет — разрешите «Живые уведомления» в настройках уведомлений" else "Выключено",
+                    leading = { tile(Icons.Rounded.Notifications) },
+                    onClick = {
+                        runCatching {
+                            context.startActivity(android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                                .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName))
+                        }
+                    },
+                ) { ApexSwitch(s.liveNotification, { v -> viewModel.change(reload = false) { copy(liveNotification = v) }; com.apexvpn.client.vpn.ApexVpnService.reload(context) }) }
+            }
             GroupDivider()
             ListRow(
                 "Конец подписки",

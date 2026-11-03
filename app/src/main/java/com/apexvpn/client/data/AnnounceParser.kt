@@ -15,6 +15,21 @@ import java.security.MessageDigest
  * В тексте: ![](https://…/banner.jpg) — картинка, [Продлить](https://…) — кнопка.
  */
 object AnnounceParser {
+    /**
+     * 3.13.5. Шаблон панели иногда пишет для бессрочной безлимитной подписки «Истекает: 26538»
+     * (дни до условного «никогда») и «Осталось ГБ: 0». Показываем по-человечески.
+     */
+    fun tidy(text: String, expireAt: Long, total: Long): String = text.lines().joinToString("\n") { line ->
+        val l = line.lowercase()
+        when {
+            "истека" in l && (expireAt == 0L || Regex("""\d{4,}""").containsMatchIn(line)) && !Regex("""\d{1,2}[./]\d{1,2}[./]\d{2,4}""").containsMatchIn(line) ->
+                Regex("""(истека\p{L}*\s*:?\s*).*""", RegexOption.IGNORE_CASE).replace(line) { m -> m.groupValues[1] + "никогда" }
+            "осталось" in l && total <= 0L && ("гб" in l || "gb" in l || "трафик" in l) && Regex("""\d""").containsMatchIn(line) ->
+                Regex("""(осталось).*""", RegexOption.IGNORE_CASE).replace(line) { m -> m.groupValues[1] + ": безлимит" }
+            else -> line
+        }
+    }
+
     data class Rich(val text: String, val image: String, val button: String, val url: String)
 
     private val imageRe = Regex("""!\[[^\]]*]\((https://[^\s)]+)\)""")

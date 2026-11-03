@@ -77,3 +77,20 @@ func TestServiceCheckFlow(t *testing.T) {
 		t.Fatal("must refuse without probe proxy")
 	}
 }
+
+func TestServiceCountryRules(t *testing.T) {
+	r := serviceReport{Country: "RU", ChatGPT: serviceResult{Status: "yes"}, Gemini: serviceResult{Status: "yes"},
+		YouTube: serviceResult{Status: "yes"}, Netflix: serviceResult{Status: "partial"}}
+	applyCountryRules(&r)
+	if r.ChatGPT.Status != "no" || r.Gemini.Status != "no" || r.YouTube.Status != "no" || r.Netflix.Status != "no" {
+		t.Fatalf("RU must be no: %+v", r)
+	}
+	r = serviceReport{Country: "NL", ChatGPT: serviceResult{Status: "yes"}}
+	applyCountryRules(&r)
+	if r.ChatGPT.Status != "yes" {
+		t.Fatal("NL must stay yes")
+	}
+	if youtubeResult(200, "<html>consent</html>", nil).Status != "error" {
+		t.Fatal("page without markers must be error")
+	}
+}
