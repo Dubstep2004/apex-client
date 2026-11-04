@@ -117,7 +117,10 @@ data class Settings(
     val greeting: Boolean = true,                     // 615. приветствие по времени суток на главном
     val pingMode: String = "keepalive",               // через прокси: default | double | keepalive
     val pingTimeout: Int = 5,                         // тайм-аут пинга через прокси, с (5…15)
-    val pingUrl: String = "",                         // свой адрес проверки (пусто — gstatic)
+    val pingUrl: String = "",
+    /** 3.14: свои пороги цвета пинга, мс: до pingGood — зелёный, до pingOk — жёлтый, дальше — красный */
+    val pingGood: Int = 300,
+    val pingOk: Int = 800,                         // свой адрес проверки (пусто — gstatic)
     val pingView: String = "time",                    // результат: time — мс | bars — столбики | both
     val quicMode: String = "mobile",                  // QUIC (HTTP/3): mobile — выкл. на мобильной сети | off — всегда выкл. | on — не трогать
     // 20. Иконка на рабочем столе показывает, включён ли VPN
@@ -386,7 +389,7 @@ object AppSettings {
         put("warp", s.warp); put("warpConfig", s.warpConfig); put("shieldBackdrop", s.shieldBackdrop); put("backdropStamp", s.backdropStamp)
         put("iconStatus", s.iconStatus); put("animatedFlags", s.animatedFlags); put("task", s.task); put("hiddenApps", list(s.hiddenApps)); put("hideTemplateAuto", s.hideTemplateAuto); put("hideTemplateSkip", list(s.hideTemplateSkip)); put("secret", s.secretUnlocked); put("shield3d", s.shield3d); put("automation", s.automation); put("appTraffic", s.appTraffic); put("autoSkipSpecial", s.autoSkipSpecial); put("autoFavoritesOnly", s.autoFavoritesOnly); put("seasonal", s.seasonal); put("autoRules", AutoRule.listToJson(s.autoRules)); put("liveNotification", s.liveNotification); put("autoWhitelist", s.autoWhitelist)
         put("customAccent2", s.customAccent2); put("cdBase", s.cdBase); put("cdAccent", s.cdAccent); put("cdAccent2", s.cdAccent2); put("cdRadius", s.cdRadius); put("cdGlass", s.cdGlass); put("cdBorder", s.cdBorder); put("cdGlow", s.cdGlow); put("photoBlur", s.photoBlur); put("photoDim", s.photoDim); put("photoParallax", s.photoParallax); put("rulesAuto", s.rulesAuto); put("rulesHours", s.rulesHours); put("speedUnit", s.speedUnit); put("speedScale", s.speedScale); put("speedMulti", s.speedMulti); put("quicMode", s.quicMode); put("connectOnOpen", s.connectOnOpen)
-        put("pingType", s.pingType); put("pingMode", s.pingMode); put("pingTimeout", s.pingTimeout); put("pingUrl", s.pingUrl); put("pingView", s.pingView); put("autoMode", s.autoMode); put("modeColors", s.modeColors); put("directCountries", list(s.directCountries)); put("connLog", s.connLog); put("greeting", s.greeting)
+        put("pingType", s.pingType); put("pingMode", s.pingMode); put("pingTimeout", s.pingTimeout); put("pingUrl", s.pingUrl); put("pingGood", s.pingGood); put("pingOk", s.pingOk); put("pingView", s.pingView); put("autoMode", s.autoMode); put("modeColors", s.modeColors); put("directCountries", list(s.directCountries)); put("connLog", s.connLog); put("greeting", s.greeting)
     }
 
     private fun fromJson(o: JSONObject): Settings {
@@ -525,6 +528,8 @@ object AppSettings {
             pingMode = o.optString("pingMode", d.pingMode).takeIf { it in listOf("default", "double", "keepalive") } ?: d.pingMode,
             pingTimeout = o.optInt("pingTimeout", d.pingTimeout).coerceIn(5, 15),
             pingUrl = o.optString("pingUrl", d.pingUrl),
+            pingGood = o.optInt("pingGood", d.pingGood).coerceIn(20, 2000),
+            pingOk = o.optInt("pingOk", d.pingOk).coerceIn(40, 5000),
             pingView = o.optString("pingView", d.pingView).takeIf { it in listOf("time", "bars", "both") } ?: d.pingView,
             quicMode = o.optString("quicMode", d.quicMode).takeIf { it in listOf("mobile", "off", "on") } ?: d.quicMode,
         )

@@ -389,9 +389,13 @@ fun formatAgo(time: Long): String {
     }
 }
 
-fun pingColor(ms: Int) = when {
-    ms < 0 -> Apex.TextDim
-    ms < 300 -> Apex.Good
-    ms < 800 -> Apex.Warn
-    else -> Apex.Bad
+fun pingColor(ms: Int): androidx.compose.ui.graphics.Color {
+    // 3.14: пороги задаются в «Пинге» → «Цвет пинга»
+    val s = com.apexvpn.client.data.AppSettings.value
+    return when {
+        ms < 0 -> Apex.TextDim
+        ms < s.pingGood -> Apex.Good
+        ms < maxOf(s.pingOk, s.pingGood + 10) -> Apex.Warn
+        else -> Apex.Bad
+    }
 }

@@ -123,6 +123,43 @@ internal fun PingSettingsPage(viewModel: MainViewModel, onBack: () -> Unit) {
         err?.let { Text(it, color = Apex.Bad, fontSize = 13.sp, modifier = Modifier.padding(start = 4.dp)) }
         Caption("По этому адресу проверяют серверы пинг «через прокси» и автопилот. По умолчанию — https://www.gstatic.com/generate_204. Адрес должен отвечать быстро и надёжно.")
 
+        // 3.14. Свои пороги цвета
+        SectionLabel("Цвет пинга", "до ${s.pingGood} мс — зелёный")
+        val presets = listOf(Triple("Обычный", 300, 800), Triple("Для игр", 60, 150), Triple("Строгий", 120, 300), Triple("Мягкий", 500, 1500))
+        Row(Modifier.fillMaxWidth().padding(bottom = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            presets.forEach { (title, g, o) ->
+                val sel = s.pingGood == g && s.pingOk == o
+                Box(
+                    Modifier.weight(1f).height(38.dp).clip(RoundedCornerShape(50))
+                        .background(if (sel) Apex.Accent else Apex.Surface)
+                        .clickable { viewModel.change(reload = false) { copy(pingGood = g, pingOk = o) } },
+                    contentAlignment = Alignment.Center,
+                ) { Text(title, color = if (sel) Apex.OnAccent else Apex.Text, fontSize = 13.sp) }
+            }
+        }
+        var good by remember(s.pingGood) { mutableFloatStateOf(s.pingGood.toFloat()) }
+        var okv by remember(s.pingOk) { mutableFloatStateOf(s.pingOk.toFloat()) }
+        Column(Modifier.fillMaxWidth().apexCard().padding(horizontal = 16.dp, vertical = 10.dp)) {
+            Text("Зелёный — до ${good.toInt()} мс", color = Apex.Good, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            Slider(
+                value = good, onValueChange = { good = it; if (okv < it + 20) okv = it + 20 },
+                onValueChangeFinished = { viewModel.change(reload = false) { copy(pingGood = good.toInt(), pingOk = maxOf(okv.toInt(), good.toInt() + 20)) } },
+                valueRange = 30f..1000f,
+                colors = SliderDefaults.colors(thumbColor = Apex.Good, activeTrackColor = Apex.Good, inactiveTrackColor = Apex.SurfaceHigh),
+            )
+            Text("Жёлтый — до ${okv.toInt()} мс, дальше красный", color = Apex.Warn, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            Slider(
+                value = okv, onValueChange = { okv = maxOf(it, good + 20) },
+                onValueChangeFinished = { viewModel.change(reload = false) { copy(pingOk = okv.toInt()) } },
+                valueRange = 60f..3000f,
+                colors = SliderDefaults.colors(thumbColor = Apex.Warn, activeTrackColor = Apex.Warn, inactiveTrackColor = Apex.SurfaceHigh),
+            )
+            Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                listOf((good * 0.5f).toInt(), ((good + okv) / 2).toInt(), (okv * 1.3f).toInt()).forEach { PingResult(it, "both") }
+            }
+        }
+        Caption("Цвет пинга в списке серверов, на главной и в виджетах. «Для игр» — строже: зелёный только до 60 мс.")
+
         SectionLabel("Результат пинга")
         Group {
             val views = listOf("time" to "Время (мс)", "bars" to "Столбики", "both" to "Время и столбики")
@@ -154,8 +191,8 @@ internal fun PingResult(ms: Int, view: String, text: String? = null) {
     val color = pingColor(ms)
     val bars = when {
         ms < 0 -> 0
-        ms < 120 -> 3
-        ms < 300 -> 2
+        ms < com.apexvpn.client.data.AppSettings.value.pingGood * 2 / 5 -> 3
+        ms < com.apexvpn.client.data.AppSettings.value.pingGood -> 2
         else -> 1
     }
     Row(verticalAlignment = Alignment.CenterVertically) {

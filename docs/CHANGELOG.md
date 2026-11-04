@@ -2,6 +2,12 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.14.1 · 4 ноября 2026
+
+<img src="img/tags/new.svg" alt="Новое" height="22">
+
+- «Цвет пинга»: свои пороги — до скольких мс пинг зелёный и жёлтый. Готовые наборы: Обычный (300/800), Для игр (60/150), Строгий (120/300), Мягкий (500/1500). Цвета меняются везде: список серверов, главная, виджеты
+
 ## 3.14.0 · 4 ноября 2026
 
 <img src="img/tags/new.svg" alt="Новое" height="22">
