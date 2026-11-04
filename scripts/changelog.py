@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# APEX VPN — © 2026 Dubstep2004. Код — GPL-3.0 (LICENSE), название и логотип — TRADEMARKS.md.
 """История версий из app/.../data/Changelog.kt с цветными метками.
 
   python3 scripts/changelog.py notes [версия]   описание релиза для GitHub (по умолчанию — последняя версия)

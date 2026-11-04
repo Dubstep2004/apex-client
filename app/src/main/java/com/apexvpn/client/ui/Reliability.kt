@@ -276,6 +276,8 @@ internal fun AboutPage(onBack: () -> Unit) {
             Text("APEX VPN", color = Apex.Text, fontSize = 32.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
             Text("Версия ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})", color = Apex.TextDim, fontSize = 15.sp)
             Text("sing-box ${singBoxVersion()} · Xray ${BuildConfig.XRAY_VERSION}", color = Apex.TextDim, fontSize = 13.sp)
+            Spacer(Modifier.height(6.dp))
+            Text("© 2026 Dubstep2004", color = Apex.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         }
         Spacer(Modifier.height(24.dp))
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
