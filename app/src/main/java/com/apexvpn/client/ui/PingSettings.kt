@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.apexvpn.client.ui.theme.Apex
+import kotlinx.coroutines.launch
 
 /** Пинг серверов: тип, режим «через прокси», тайм-аут, адрес проверки и вид результата. */
 @Composable
@@ -57,6 +58,7 @@ internal fun PingSettingsPage(viewModel: MainViewModel, onBack: () -> Unit) {
         if (s.pingType == "get" || s.pingType == "head") {
             Caption("Через прокси меряется только при включённом VPN. Без VPN — пинг до сервера (TCP).")
         }
+        PingTester(s.pingType)
 
         SectionLabel("Режим (через прокси)")
         Group {
@@ -85,9 +87,18 @@ internal fun PingSettingsPage(viewModel: MainViewModel, onBack: () -> Unit) {
                 colors = SliderDefaults.colors(thumbColor = Apex.Accent, activeTrackColor = Apex.Accent, inactiveTrackColor = Apex.SurfaceHigh),
             )
             Row(Modifier.fillMaxWidth()) {
-                Text("5 сек", color = Apex.TextDim, fontSize = 13.sp, modifier = Modifier.weight(1f))
-                Text("${t.toInt()} сек", color = Apex.Text, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                Text("15 сек", color = Apex.TextDim, fontSize = 13.sp, modifier = Modifier.weight(1f), textAlign = androidx.compose.ui.text.style.TextAlign.End)
+                Text("быстрее", color = Apex.TextDim, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                Text("терпеливее", color = Apex.TextDim, fontSize = 13.sp, modifier = Modifier.weight(1f), textAlign = androidx.compose.ui.text.style.TextAlign.End)
+            }
+        }
+        // 185: длинный тайм-аут — список проверяется дольше
+        Caption(
+            if (t.toInt() > 8) "Сейчас ${t.toInt()} сек: неработающий сервер будет «думать» до ${t.toInt()} секунд, и список проверяется дольше. Рекомендуем 5–8 сек; больше — только для очень медленной сети."
+            else "Рекомендуем 5–8 сек. Сервер, который не ответил за это время, считается недоступным.",
+        )
+        if (t.toInt() > 8) {
+            TextButton(onClick = { t = 6f; viewModel.change(reload = false) { copy(pingTimeout = 6) } }) {
+                Text("Поставить 6 сек", color = Apex.AccentText)
             }
         }
 
@@ -161,6 +172,85 @@ internal fun PingResult(ms: Int, view: String, text: String? = null) {
         if (view != "bars") {
             if (view == "both") Spacer(Modifier.width(6.dp))
             Text(text ?: if (ms >= 0) "$ms мс" else "нет ответа", color = color, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
+private val pingTypes = listOf("tcp" to "TCP — до сервера", "get" to "Через прокси · GET", "head" to "Через прокси · HEAD", "icmp" to "ICMP")
+
+/**
+ * 3.14. «Проверить сейчас» — пинг текущего сервера выбранным способом; «Сравнить способы» —
+ * тот же сервер всеми четырьмя (через прокси — только при включённом VPN).
+ */
+@Composable
+private fun PingTester(current: String) {
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val sub by com.apexvpn.client.data.Subscription.state.collectAsStateWithLifecycle()
+    val status by com.apexvpn.client.vpn.VpnState.status.collectAsStateWithLifecycle()
+    val on = status == com.apexvpn.client.vpn.VpnStatus.Started
+    var server by remember { mutableStateOf<String?>(null) }
+    var results by remember { mutableStateOf<Map<String, Int?>>(emptyMap()) } // тип → мс; null — идёт замер
+    var busy by remember { mutableStateOf(false) }
+
+    suspend fun target(): com.apexvpn.client.data.Node? {
+        val nodes = sub.nodes
+        val tag = if (sub.selectedTag == com.apexvpn.client.data.AUTO_TAG) {
+            (if (on) com.apexvpn.client.data.Pinger.autopilotNow() else null)
+                ?: com.apexvpn.client.data.Prefs.lastPings().filter { it.value > 0 }.minByOrNull { it.value }?.key
+        } else sub.selectedTag
+        return nodes.firstOrNull { it.tag == tag } ?: nodes.firstOrNull { !it.ads } ?: nodes.firstOrNull()
+    }
+
+    fun measure(types: List<String>) {
+        if (busy) return
+        busy = true
+        scope.launch {
+            try {
+                val n = target()
+                if (n == null) { server = "Нет серверов — добавьте подписку"; return@launch }
+                server = com.apexvpn.client.data.ServerInfo.title(n.name)
+                results = types.associateWith { null }
+                for (type in types) {
+                    val ms = if ((type == "get" || type == "head") && !on) -3
+                    else com.apexvpn.client.data.Pinger.pingAll(listOf(n), save = false, type = type)[n.tag] ?: -1
+                    results = results + (type to ms)
+                }
+            } finally {
+                busy = false
+            }
+        }
+    }
+
+    Spacer(Modifier.height(10.dp))
+    Column(Modifier.fillMaxWidth().apexCard().padding(16.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            androidx.compose.material3.Button(
+                onClick = { measure(listOf(current)) }, enabled = !busy,
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Apex.Accent, contentColor = Apex.OnAccent),
+                modifier = Modifier.weight(1f),
+            ) { Text("Проверить сейчас", fontWeight = FontWeight.SemiBold, fontSize = 14.sp) }
+            androidx.compose.material3.OutlinedButton(onClick = { measure(pingTypes.map { it.first }) }, enabled = !busy, modifier = Modifier.weight(1f)) {
+                Text("Сравнить способы", color = Apex.Text, fontSize = 14.sp)
+            }
+        }
+        server?.let {
+            Spacer(Modifier.height(10.dp))
+            Text("Сервер: $it", color = Apex.TextDim, fontSize = 13.sp)
+        }
+        results.forEach { (type, ms) ->
+            Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(pingTypes.firstOrNull { it.first == type }?.second ?: type, color = if (type == current) Apex.Text else Apex.TextDim,
+                    fontSize = 14.sp, fontWeight = if (type == current) FontWeight.SemiBold else FontWeight.Normal, modifier = Modifier.weight(1f))
+                when {
+                    ms == null -> Text("…", color = Apex.TextDim, fontSize = 15.sp)
+                    ms == -3 -> Text("нужен включённый VPN", color = Apex.TextDim, fontSize = 13.sp)
+                    else -> PingResult(ms, "time")
+                }
+            }
+        }
+        if (results.size > 1 && results.values.none { it == null }) {
+            Spacer(Modifier.height(8.dp))
+            Caption("TCP и ICMP — время до самого сервера; «через прокси» — до сайта через сервер, поэтому больше. Для списка серверов честнее TCP, для проверки «работает ли интернет» — GET.")
         }
     }
 }

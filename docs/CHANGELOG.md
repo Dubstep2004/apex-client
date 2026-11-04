@@ -2,6 +2,17 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.14.0 · 4 ноября 2026
+
+<img src="img/tags/new.svg" alt="Новое" height="22">
+
+- «Пинг»: кнопка «Проверить сейчас» — текущий сервер выбранным способом, результат сразу на экране
+- «Сравнить способы»: тот же сервер проверяется TCP, GET, HEAD и ICMP — видно, какой способ что показывает
+
+<img src="img/tags/fixed.svg" alt="Исправлено" height="22">
+
+- Тайм-аут: под ползунком больше нет дубля «15 сек · 15 сек»; подсказка, что 5–8 сек — оптимально, и кнопка «Поставить 6 сек», если стоит больше 8
+
 ## 3.13.7 · 4 ноября 2026
 
 <img src="img/tags/changed.svg" alt="Изменено" height="22">

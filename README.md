@@ -17,7 +17,7 @@
 <p><b>Два ядра</b> · все популярные протоколы · <b>свои списки</b> с шаблонами · <b>3D-глобус</b> · <b>13 дизайнов</b>, палитры и <b>живое видео на фоне</b><br>
 автопилот с белыми списками · DNS «Авто» для каждой сети · базы сайтов каждый день · часы Wear OS</p>
 
-<sub>📱 Android — <b>3.13.7</b> (Android 7+) · sing-box 1.13 · Xray 26</sub><br>
+<sub>📱 Android — <b>3.14.0</b> (Android 7+) · sing-box 1.13 · Xray 26</sub><br>
 <sub>💬 Поддержка: <a href="https://t.me/Apexx_support">@Apexx_support</a></sub>
 
 </div>
@@ -970,15 +970,29 @@ core/apexcore/          Go: разбор подписки → конфиги sin
 
 <img src="docs/img/tags/new.svg" alt="Новое" height="22"> <img src="docs/img/tags/improved.svg" alt="Улучшено" height="22"> <img src="docs/img/tags/changed.svg" alt="Изменено" height="22"> <img src="docs/img/tags/fixed.svg" alt="Исправлено" height="22"> <img src="docs/img/tags/removed.svg" alt="Удалено" height="22">
 
-### 3.13.7 · 4 ноября 2026
+### 3.14.0 · 4 ноября 2026
+
+<img src="docs/img/tags/new.svg" alt="Новое" height="22">
+
+- «Пинг»: кнопка «Проверить сейчас» — текущий сервер выбранным способом, результат сразу на экране
+- «Сравнить способы»: тот же сервер проверяется TCP, GET, HEAD и ICMP — видно, какой способ что показывает
+
+<img src="docs/img/tags/fixed.svg" alt="Исправлено" height="22">
+
+- Тайм-аут: под ползунком больше нет дубля «15 сек · 15 сек»; подсказка, что 5–8 сек — оптимально, и кнопка «Поставить 6 сек», если стоит больше 8
+
+#### 📚 Все версии (87)
+
+Каждая версия — отдельная вкладка.
+
+<details>
+<summary><b>3.13.7</b> · 4 ноября 2026</summary>
 
 <img src="docs/img/tags/changed.svg" alt="Изменено" height="22">
 
 - «О приложении»: строка об авторских правах © 2026 Dubstep2004
 
-#### 📚 Все версии (86)
-
-Каждая версия — отдельная вкладка.
+</details>
 
 <details>
 <summary><b>3.13.6</b> · 3 ноября 2026</summary>
