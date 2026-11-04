@@ -2212,6 +2212,10 @@ core/apexcore/          Go: разбор подписки → конфиги sin
 
 ---
 
+## 💬 Участие
+
+Нашли ошибку или есть идея? Создайте [issue](https://github.com/Dubstep2004/apex-vpn/issues). Присылая pull request, вы соглашаетесь, что ваши изменения распространяются по [лицензии GPL-3.0](LICENSE) и автор может включать их в APEX VPN, в том числе в официальные сборки. Если APEX VPN пригодился — поставьте ⭐, это помогает проекту.
+
 <div align="center">
 <sub><b>© 2026 Dubstep2004</b> — <a href="COPYRIGHT.md">авторские права</a>.<br>Ядро sing-box распространяется по GPL-3.0, поэтому и приложение распространяется на условиях GPL-3.0 (<a href="LICENSE">LICENSE</a>). Название «APEX VPN» и логотип под GPL не передаются — <a href="TRADEMARKS.md">TRADEMARKS.md</a>. Флаги стран: flag-icons (MIT). Карта мира: world.geo.json (Unlicense).</sub>
 </div>
