@@ -91,8 +91,9 @@ object TvPairing {
             val body = CharArray(length).let { buf -> var n = 0; while (n < length) { val k = r.read(buf, n, length - n); if (k < 0) break; n += k }; String(buf, 0, n) }
             val url = body.split('&').firstOrNull { it.startsWith("url=") }?.removePrefix("url=")
                 ?.let { URLDecoder.decode(it, "UTF-8").trim() }.orEmpty()
-            if (!url.startsWith("https://sub.knownhosts.xyz/")) {
-                return reply(s, 200, page("Нужна ссылка вида https://sub.knownhosts.xyz/…", ""))
+            val host = runCatching { java.net.URL(url).host }.getOrNull()
+            if (!url.startsWith("https://") || !com.apexvpn.client.data.SubHosts.isAllowed(host)) {
+                return reply(s, 200, page("Нужна ссылка вида https://${com.apexvpn.client.data.SubHosts.primary()}/…", ""))
             }
             reply(s, 200, "<h2>✅ Готово</h2><p>Телевизор загружает подписку. Эту страницу можно закрыть.</p>")
             onUrl(url)
@@ -104,9 +105,9 @@ object TvPairing {
 
     private fun page(error: String?, value: String) = """
         <h2>APEX VPN → телевизор</h2>
-        <p>Вставьте ссылку подписки (https://sub.knownhosts.xyz/…) и нажмите «Отправить».</p>
+        <p>Вставьте ссылку подписки (https://${com.apexvpn.client.data.SubHosts.primary()}/…) и нажмите «Отправить».</p>
         ${if (error != null) "<p style='color:#ef4444'>$error</p>" else ""}
-        <form method='post'><input name='url' value='$value' placeholder='https://sub.knownhosts.xyz/…' autofocus
+        <form method='post'><input name='url' value='$value' placeholder='https://${com.apexvpn.client.data.SubHosts.primary()}/…' autofocus
         style='width:100%;font-size:18px;padding:12px;border-radius:12px;border:1px solid #555;box-sizing:border-box'>
         <p><button style='font-size:18px;padding:12px 24px;border-radius:12px;border:0;background:#6366f1;color:#fff'>Отправить</button></p></form>
     """.trimIndent()

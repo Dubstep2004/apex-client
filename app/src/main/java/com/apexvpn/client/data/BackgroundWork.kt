@@ -36,6 +36,8 @@ class BackgroundWork(context: Context, params: WorkerParameters) : CoroutineWork
             }
         }
         ExpiryAlerts.check(ctx)
+        // 3.16. Адрес подписки из файла на GitHub (раз в 6 часов); перенесли ссылку — обновляем подписку
+        if (runCatching { SubHosts.refresh() }.getOrDefault(false)) runCatching { Subscription.refresh() }
         // 3.10. Шаблон «Скрыть VPN»: свежий список из интернета и новые приложения — сразу в список
         runCatching { HideTemplates.refresh() }
         if (runCatching { HideTemplates.autoApply(ctx) }.getOrDefault(0) > 0) com.apexvpn.client.vpn.ApexVpnService.reload(ctx)

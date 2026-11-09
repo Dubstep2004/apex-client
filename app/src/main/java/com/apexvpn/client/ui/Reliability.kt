@@ -283,7 +283,7 @@ internal fun AboutPage(onBack: () -> Unit) {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
             AboutLine(Icons.Rounded.VisibilityOff, "Без журналов: APEX VPN не хранит и никуда не отправляет, какие сайты вы открываете")
             AboutLine(Icons.Rounded.Public, "Серверы по всему миру; российские сайты и банки идут напрямую")
-            AboutLine(Icons.Rounded.Lock, "Только подписки ${BuildConfig.SUBSCRIPTION_HOST} — чужие ссылки приложение не примет")
+            AboutLine(Icons.Rounded.Lock, "Только подписки ${com.apexvpn.client.data.SubHosts.primary()} — чужие ссылки приложение не примет")
             AboutLine(Icons.Rounded.SupportAgent, "Поддержка в Telegram: ${com.apexvpn.client.data.Links.SUPPORT_NAME}") {
                 open(com.apexvpn.client.data.Links.SUPPORT)
             }

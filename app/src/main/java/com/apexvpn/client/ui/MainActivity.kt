@@ -139,7 +139,7 @@ class MainActivity : ComponentActivity() {
             return@registerForActivityResult
         }
         val link = Subscription.extractLink(text)
-        if (link != null) pendingImport.value = link else viewModel.showMessage("В QR-коде нет ссылки на sub.knownhosts.xyz")
+        if (link != null) pendingImport.value = link else viewModel.showMessage("В QR-коде нет ссылки на ${com.apexvpn.client.data.SubHosts.primary()}")
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -459,7 +459,7 @@ class MainActivity : ComponentActivity() {
             val url = Regex("""https?://[^\s]+""").find(text)?.value ?: text.trim().takeIf { !it.contains(' ') }
             val site = url?.let { AppSettings.normalizeDomain(it) }
             if (site != null) pendingSite.value = site
-            else viewModel.showMessage("Поддерживаются ссылки на сайты и подписки sub.knownhosts.xyz")
+            else viewModel.showMessage("Поддерживаются ссылки на сайты и подписки ${com.apexvpn.client.data.SubHosts.primary()}")
         }
         // 9/16. Ярлыки и голосовые команды
         when (intent.action) {

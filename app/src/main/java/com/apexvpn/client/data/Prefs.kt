@@ -60,6 +60,14 @@ object Prefs {
         get() = sp.getLong("hide_template_at", 0)
         set(v) = sp.edit { putLong("hide_template_at", v) }
 
+    /** 3.16: адреса подписки из docs/config/subscription.json (JSON) и когда скачан */
+    var subHostsJson: String
+        get() = sp.getString("sub_hosts", "") ?: ""
+        set(v) = sp.edit { putString("sub_hosts", v) }
+    var subHostsAt: Long
+        get() = sp.getLong("sub_hosts_at", 0)
+        set(v) = sp.edit { putLong("sub_hosts_at", v) }
+
     /** 3.10: список шаблона «Скрыть VPN», скачанный из интернета (JSON) */
     var hideTemplateJson: String
         get() = sp.getString("hide_template", "") ?: ""

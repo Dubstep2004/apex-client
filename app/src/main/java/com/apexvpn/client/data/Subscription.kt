@@ -73,7 +73,7 @@ data class SubscriptionState(
 
 const val AUTO_TAG = "auto"
 
-/** Загрузка и хранение подписки. Разрешена только ссылка на sub.knownhosts.xyz. */
+/** Загрузка и хранение подписки. Разрешены только адреса из [SubHosts] (файл на GitHub + вшитый при сборке). */
 object Subscription {
     /** Протоколы, которые приложение не показывает (объявлено до _state: load() его использует) */
     private val hiddenTypes = setOf("shadowsocks")
@@ -104,12 +104,13 @@ object Subscription {
      * IllegalArgumentException с понятным текстом.
      */
     fun validate(raw: String): String {
-        val text = raw.trim()
+        // Ссылка на старом адресе подписки — сразу на новый (тот же путь и токен)
+        val text = SubHosts.rewrite(raw.trim())
         require(text.isNotEmpty()) { "Вставьте ссылку на подписку" }
         val uri = runCatching { Uri.parse(text) }.getOrNull()
         val host = uri?.host?.lowercase()
-        require(host == BuildConfig.SUBSCRIPTION_HOST) {
-            "Поддерживается только ссылка https://${BuildConfig.SUBSCRIPTION_HOST}/…"
+        require(SubHosts.isAllowed(host)) {
+            "Поддерживается только ссылка https://${SubHosts.primary()}/…"
         }
         require(uri!!.scheme.equals("https", ignoreCase = true)) { "Ссылка должна начинаться с https://" }
         return text
@@ -175,8 +176,8 @@ object Subscription {
     fun extractLink(text: String?): String? {
         if (text.isNullOrBlank()) return null
         val decoded = runCatching { Uri.decode(text) }.getOrDefault(text)
-        val re = Regex("https://${Regex.escape(BuildConfig.SUBSCRIPTION_HOST)}/[^\\s\"'<>]*", RegexOption.IGNORE_CASE)
-        return re.find(decoded)?.value?.trimEnd('.', ',', ')', ']')
+        val re = Regex("https://(" + (SubHosts.allowed() + SubHosts.movedFrom()).joinToString("|") { Regex.escape(it) } + ")/[^\\s\"'<>]*", RegexOption.IGNORE_CASE)
+        return re.find(decoded)?.value?.trimEnd('.', ',', ')', ']')?.let { SubHosts.rewrite(it) }
     }
 
     /** Приложение представляется серверу только как APEX VPN. */
@@ -229,7 +230,7 @@ object Subscription {
                 }
             }
             // Защита от редиректа на чужой домен
-            require(conn.url.host.equals(BuildConfig.SUBSCRIPTION_HOST, ignoreCase = true)) {
+            require(SubHosts.isAllowed(conn.url.host)) {
                 "Подписка перенаправила на другой домен — отклонено"
             }
             val body = conn.inputStream.bufferedReader().use { it.readText() }

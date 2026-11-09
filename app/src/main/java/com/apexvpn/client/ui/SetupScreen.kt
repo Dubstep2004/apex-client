@@ -110,11 +110,11 @@ fun SubscriptionInput(viewModel: MainViewModel, buttonText: String, onSuccess: (
         onValueChange = { url = it.trim(); error = null },
         modifier = Modifier.fillMaxWidth(),
         label = { Text("Ссылка на подписку") },
-        placeholder = { Text("https://${BuildConfig.SUBSCRIPTION_HOST}/…") },
+        placeholder = { Text("https://${com.apexvpn.client.data.SubHosts.primary()}/…") },
         singleLine = true,
         isError = error != null,
         supportingText = {
-            Text(error ?: "Поддерживается только ${BuildConfig.SUBSCRIPTION_HOST}")
+            Text(error ?: "Поддерживается только ${com.apexvpn.client.data.SubHosts.primary()}")
         },
         trailingIcon = {
             IconButton(onClick = {

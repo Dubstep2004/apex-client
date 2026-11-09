@@ -40,10 +40,15 @@ class ApexApp : Application() {
         com.apexvpn.client.update.UpdateManager.init(this)
         com.apexvpn.client.update.UpdateInstaller.init(this)
         com.apexvpn.client.data.MonthStats.init(this)
-        // 3.15: подписка переехала на sub.knownhosts.xyz — сохранённую ссылку переносим сами (тот же путь и токен)
+        // 3.15/3.16: адрес подписки сменился — сохранённая ссылка переносится сама. Сначала встроенный перенос
+        // .ru → .xyz (на случай, если файл с GitHub ещё не скачался), потом — по файлу docs/config/subscription.json
         com.apexvpn.client.data.Prefs.subscriptionUrl.let { u ->
             if (u.startsWith("https://sub.knownhosts.ru/", ignoreCase = true))
                 com.apexvpn.client.data.Prefs.subscriptionUrl = "https://sub.knownhosts.xyz/" + u.substring("https://sub.knownhosts.ru/".length)
+        }
+        com.apexvpn.client.data.SubHosts.migrate()
+        appScope.launch {
+            if (runCatching { com.apexvpn.client.data.SubHosts.refresh() }.getOrDefault(false)) runCatching { com.apexvpn.client.data.Subscription.refresh() }
         }
         // 3.10. Шаблон «Скрыть VPN»: свежий список и новые приложения — при запуске
         appScope.launch {

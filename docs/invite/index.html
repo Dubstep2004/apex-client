@@ -88,9 +88,16 @@
 <script>
 (function () {
   var REPO = "Dubstep2004/apex-vpn";
-  var HOST = "sub.knownhosts.xyz";
+  // Адреса подписки — из docs/config/subscription.json (тот же файл читает приложение)
+  var HOSTS = ["sub.knownhosts.xyz"], MOVED = { "sub.knownhosts.ru": "sub.knownhosts.xyz" };
+  var HOST = HOSTS[0];
+  try {
+    fetch("../config/subscription.json", { cache: "no-cache" }).then(function (r) { return r.json(); }).then(function (c) {
+      if (c && c.hosts && c.hosts.length) { HOSTS = c.hosts; HOST = HOSTS[0]; MOVED = c.moved || {}; }
+    }).catch(function () {});
+  } catch (e) {}
   function valid(u) {
-    try { var x = new URL(u); return x.protocol === "https:" && x.hostname === HOST; } catch (e) { return false; }
+    try { var x = new URL(u); return x.protocol === "https:" && HOSTS.indexOf(x.hostname) >= 0; } catch (e) { return false; }
   }
   function qr(el, text) {
     el.innerHTML = "";
@@ -111,6 +118,8 @@
   window.addEventListener("hashchange", function () { location.reload(); });
   var base = location.href.split("#")[0];
   var sub = decodeURIComponent(location.hash.slice(1));
+  // Старое приглашение (адрес подписки сменился) — тот же путь на новом адресе
+  try { var ox = new URL(sub); if (MOVED[ox.hostname]) { ox.hostname = MOVED[ox.hostname]; sub = ox.toString(); } } catch (e) {}
   if (sub && valid(sub)) {
     document.getElementById("invite").hidden = false;
     document.getElementById("dl").href = "https://github.com/" + REPO + "/releases/latest";

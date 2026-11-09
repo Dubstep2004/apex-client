@@ -2,6 +2,13 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.16.0 · 9 ноября 2026
+
+<img src="img/tags/new.svg" alt="Новое" height="22">
+
+- Адрес подписки теперь задаётся файлом на GitHub (docs/config/subscription.json): при смене домена достаточно поправить файл — приложения подхватят новый адрес сами, без новой версии
+- Старые ссылки, приглашения и QR-коды с прежним адресом подписки сами переписываются на новый — путь и токен те же
+
 ## 3.15.0 · 9 ноября 2026
 
 <img src="img/tags/changed.svg" alt="Изменено" height="22">
