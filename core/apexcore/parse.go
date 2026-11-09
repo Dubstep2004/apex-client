@@ -1,4 +1,4 @@
-// Package apexcore converts a subscription from sub.knownhosts.ru into
+// Package apexcore converts a subscription from sub.knownhosts.xyz into
 // sing-box outbounds and a ready-to-run sing-box config for APEX VPN.
 // It is bound to Android together with libbox via gomobile, so the exported
 // API uses only strings, int32, bool and error.

@@ -73,7 +73,7 @@ data class SubscriptionState(
 
 const val AUTO_TAG = "auto"
 
-/** Загрузка и хранение подписки. Разрешена только ссылка на sub.knownhosts.ru. */
+/** Загрузка и хранение подписки. Разрешена только ссылка на sub.knownhosts.xyz. */
 object Subscription {
     /** Протоколы, которые приложение не показывает (объявлено до _state: load() его использует) */
     private val hiddenTypes = setOf("shadowsocks")

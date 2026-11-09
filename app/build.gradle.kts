@@ -17,7 +17,7 @@ val xrayVersion: String = rootProject.file("core/xray-version").takeIf { it.exis
 val rulesBaseUrl: String = (project.findProperty("rulesBaseUrl") as String?) ?: System.getenv("RULES_BASE_URL") ?: ""
 
 // Единственный разрешённый хост подписки
-val subscriptionHost = "sub.knownhosts.ru"
+val subscriptionHost = "sub.knownhosts.xyz"
 
 // Подпись релиза: keystore.properties в корне проекта или переменные окружения (CI)
 val keystoreProps = Properties().apply {
@@ -35,8 +35,8 @@ android {
         applicationId = "com.apexvpn.client"
         minSdk = 24
         targetSdk = 35
-        versionCode = 88
-        versionName = "3.14.1"
+        versionCode = 89
+        versionName = "3.15.0"
 
         buildConfigField("String", "SUBSCRIPTION_HOST", "\"$subscriptionHost\"")
         buildConfigField("String", "RULES_BASE_URL", "\"$rulesBaseUrl\"")

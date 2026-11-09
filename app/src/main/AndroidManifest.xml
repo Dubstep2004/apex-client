@@ -86,7 +86,7 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
-            <!-- Ссылка-приглашение: apexvpn://import?url=https://sub.knownhosts.ru/… -->
+            <!-- Ссылка-приглашение: apexvpn://import?url=https://sub.knownhosts.xyz/… -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />

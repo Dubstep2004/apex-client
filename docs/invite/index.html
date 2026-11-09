@@ -68,7 +68,7 @@
   <section id="make" hidden>
     <h1>Ссылка-приглашение</h1>
     <p class="lead">Вставьте ссылку подписки — получите страницу для друга или своего второго телефона.</p>
-    <input id="sub" type="url" inputmode="url" placeholder="https://sub.knownhosts.ru/…" autocomplete="off">
+    <input id="sub" type="url" inputmode="url" placeholder="https://sub.knownhosts.xyz/…" autocomplete="off">
     <button class="btn" id="makeBtn" type="button">Создать приглашение</button>
     <p class="msg" id="msg2"></p>
     <div id="result" hidden>
@@ -88,7 +88,7 @@
 <script>
 (function () {
   var REPO = "Dubstep2004/apex-vpn";
-  var HOST = "sub.knownhosts.ru";
+  var HOST = "sub.knownhosts.xyz";
   function valid(u) {
     try { var x = new URL(u); return x.protocol === "https:" && x.hostname === HOST; } catch (e) { return false; }
   }

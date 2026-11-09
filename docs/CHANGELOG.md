@@ -2,6 +2,16 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.15.0 · 9 ноября 2026
+
+<img src="img/tags/changed.svg" alt="Изменено" height="22">
+
+- Подписка переехала на sub.knownhosts.xyz: приложение принимает только новые ссылки https://sub.knownhosts.xyz/…, а сохранённая ссылка sub.knownhosts.ru переносится на новый адрес сама — ничего вводить заново не нужно
+
+<img src="img/tags/removed.svg" alt="Удалено" height="22">
+
+- Старый адрес sub.knownhosts.ru больше не поддерживается
+
 ## 3.14.1 · 4 ноября 2026
 
 <img src="img/tags/new.svg" alt="Новое" height="22">
