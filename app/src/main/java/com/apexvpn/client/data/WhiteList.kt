@@ -64,11 +64,15 @@ object WhiteList {
         // 3.16.1: при белых списках оператор часто пропускает само TCP-соединение к любому
         // серверу, а данные потом не идут — TCP-пинг «зелёный», и белые списки не находились.
         // Пока VPN включён, проверяем настоящим запросом в интернет через каждый сервер.
+        var sure = false
         if (VpnState.status.value == VpnStatus.Started && lteOk) {
             val lteUrl = urlOk(tcpLte.take(3))
             if (lteUrl) {
                 lteOk = true
                 normalOk = urlOk(tcpNormal.take(6))
+                // Настоящий запрос: LTE-обход открыл сайт, а обычные — нет. Это уже не
+                // «медленный LTE», а белые списки — включаем обход сразу, без второй проверки
+                sure = !normalOk
             } else if (active) {
                 // Обход уже включён, но замер через ядро не прошёл (ядро как раз перезагружается
                 // после переключения) — по одному TCP-пингу не выключаем, иначе автопилот «мигает»
@@ -79,7 +83,7 @@ object WhiteList {
         val looks = !normalOk && lteOk
         hits = if (looks) hits + 1 else 0
         // Включаем после подтверждения, выключаем сразу, как только обычные серверы ответили
-        val now = if (active) looks else hits >= CONFIRM
+        val now = if (active) looks else (hits >= CONFIRM || (looks && sure))
         if (now == active) return false
         active = now
         notify(context, now)

@@ -180,6 +180,12 @@ class ApexApp : Application() {
                         if (reload) com.apexvpn.client.vpn.ApexVpnService.reload(app)
                         kotlinx.coroutines.delay(3000)
                         if (VpnState.status.value != com.apexvpn.client.vpn.VpnStatus.Started) return@launch
+                        // 3.17.1: белые списки — первыми. Раньше сначала шёл замер DNS «Авто»
+                        // (при белых списках все DNS не отвечают — это десятки секунд), и только
+                        // потом проверка, поэтому автопилот «долго думал»
+                        if (mobile && AppSettings.value.autoWhitelist &&
+                            com.apexvpn.client.data.WhiteList.check(app)
+                        ) com.apexvpn.client.vpn.ApexVpnService.reload(app)
                         if (AppSettings.value.dns == com.apexvpn.client.data.DnsChoice.Auto && com.apexvpn.client.data.DnsAuto.measure()) {
                             com.apexvpn.client.vpn.ApexVpnService.reload(app)
                         }
@@ -187,9 +193,10 @@ class ApexApp : Application() {
                         while (mobile && AppSettings.value.autoWhitelist &&
                             VpnState.status.value == com.apexvpn.client.vpn.VpnStatus.Started
                         ) {
-                            if (com.apexvpn.client.data.WhiteList.check(app)) com.apexvpn.client.vpn.ApexVpnService.reload(app)
-                            // Похоже на белые списки — перепроверяем через 15 секунд (без интернета ждать минуту долго)
+                            // Первая проверка уже была выше — следующая по расписанию
                             kotlinx.coroutines.delay(if (com.apexvpn.client.data.WhiteList.suspected) 15_000L else if (com.apexvpn.client.data.WhiteList.active) 3 * 60_000L else 5 * 60_000L)
+                            if (VpnState.status.value != com.apexvpn.client.vpn.VpnStatus.Started) break
+                            if (com.apexvpn.client.data.WhiteList.check(app)) com.apexvpn.client.vpn.ApexVpnService.reload(app)
                         }
                     }
                 }
