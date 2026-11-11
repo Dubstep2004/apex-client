@@ -17,7 +17,7 @@
 <p><b>Два ядра</b> · все популярные протоколы · <b>свои списки</b> с шаблонами · <b>3D-глобус</b> · <b>13 дизайнов</b>, палитры и <b>живое видео на фоне</b><br>
 автопилот с белыми списками · DNS «Авто» для каждой сети · базы сайтов каждый день · часы Wear OS</p>
 
-<sub>📱 Android — <b>3.17.0</b> (Android 7+) · sing-box 1.13 · Xray 26</sub><br>
+<sub>📱 Android — <b>3.17.1</b> (Android 7+) · sing-box 1.13 · Xray 26</sub><br>
 <sub>💬 Поддержка: <a href="https://t.me/Apexx_support">@Apexx_support</a></sub>
 
 </div>
@@ -970,7 +970,23 @@ core/apexcore/          Go: разбор подписки → конфиги sin
 
 <img src="docs/img/tags/new.svg" alt="Новое" height="22"> <img src="docs/img/tags/improved.svg" alt="Улучшено" height="22"> <img src="docs/img/tags/changed.svg" alt="Изменено" height="22"> <img src="docs/img/tags/fixed.svg" alt="Исправлено" height="22"> <img src="docs/img/tags/removed.svg" alt="Удалено" height="22">
 
-### 3.17.0 · 11 ноября 2026
+### 3.17.1 · 11 ноября 2026
+
+<img src="docs/img/tags/improved.svg" alt="Улучшено" height="22">
+
+- Отчёт для поддержки показывает, какой сервер на самом деле выбран в ядре, и ошибку Xray, если он остановился
+
+<img src="docs/img/tags/fixed.svg" alt="Исправлено" height="22">
+
+- Бывало, что в приложении выбран сервер (например, LTE-обход), а ядро продолжало идти через автопилот — выбор не действовал. Теперь после подключения и каждой перезагрузки ядро сверяется с выбором и переключается само
+- Hysteria 2 из подписки Xray JSON подписывалась как «Hysteria»
+
+#### 📚 Все версии (95)
+
+Каждая версия — отдельная вкладка.
+
+<details>
+<summary><b>3.17.0</b> · 11 ноября 2026</summary>
 
 <img src="docs/img/tags/new.svg" alt="Новое" height="22">
 
@@ -980,9 +996,7 @@ core/apexcore/          Go: разбор подписки → конфиги sin
 
 - Если панель отдаёт Happ и APEX разные адреса серверов (например, «обход» через CDN только в JSON), теперь APEX может получать ту же подписку, что и Happ
 
-#### 📚 Все версии (94)
-
-Каждая версия — отдельная вкладка.
+</details>
 
 <details>
 <summary><b>3.16.3</b> · 11 ноября 2026</summary>

@@ -125,6 +125,9 @@ func xrayJSONNode(cfg map[string]any, name string) (*Node, error) {
 		}
 	}
 	n := &Node{Name: strings.TrimSpace(name), Type: proto, Server: server, Port: port, Xray: ob}
+	if st, _ := ob["settings"].(map[string]any); proto == "hysteria" && st != nil && anyInt(st["version"]) == 2 {
+		n.Category = "Hysteria 2" // в Xray Hysteria 2 — это hysteria с version 2
+	}
 	if m, ok := cfg["meta"].(map[string]any); ok {
 		n.Description, _ = m["serverDescription"].(string)
 	}

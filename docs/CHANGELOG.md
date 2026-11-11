@@ -2,6 +2,17 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.17.1 · 11 ноября 2026
+
+<img src="img/tags/improved.svg" alt="Улучшено" height="22">
+
+- Отчёт для поддержки показывает, какой сервер на самом деле выбран в ядре, и ошибку Xray, если он остановился
+
+<img src="img/tags/fixed.svg" alt="Исправлено" height="22">
+
+- Бывало, что в приложении выбран сервер (например, LTE-обход), а ядро продолжало идти через автопилот — выбор не действовал. Теперь после подключения и каждой перезагрузки ядро сверяется с выбором и переключается само
+- Hysteria 2 из подписки Xray JSON подписывалась как «Hysteria»
+
 ## 3.17.0 · 11 ноября 2026
 
 <img src="img/tags/new.svg" alt="Новое" height="22">

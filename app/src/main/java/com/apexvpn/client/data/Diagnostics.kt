@@ -66,6 +66,14 @@ object Diagnostics {
             val ip = Regex("""^(\d+\.\d+)\.\d+\.\d+$""").find(n.server)?.groupValues?.get(1)
             b.appendLine("Адрес сервера: " + (if (ip != null) "$ip.x.x" else "домен") + ", порт ${n.port}")
         }
+        if (VpnState.status.value == com.apexvpn.client.vpn.VpnStatus.Started) {
+            // Что выбрано в самом ядре — может не совпасть с приложением (отдельный поток: сеть)
+            var cur: String? = null
+            Thread { cur = com.apexvpn.client.vpn.CoreSelector.now() }.apply { start(); join(3000) }
+            val name = cur?.let { t -> if (t == AUTO_TAG) "Автопилот" else sub.nodes.find { it.tag == t }?.name ?: t } ?: "нет ответа"
+            b.appendLine("Ядро сейчас: $name")
+            if (com.apexvpn.client.vpn.XrayCore.crashed()) b.appendLine("Xray: остановился — ${mask(com.apexvpn.client.vpn.XrayCore.lastError(), hosts)}")
+        }
         val byCat = sub.nodes.groupingBy { it.category }.eachCount().entries.joinToString { "${it.key} ${it.value}" }
         b.appendLine("Протоколы: $byCat")
         b.appendLine()

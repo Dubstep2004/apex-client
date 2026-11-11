@@ -132,6 +132,7 @@ class ApexVpnService : VpnService(), PlatformInterface, CommandServerHandler {
                 VpnState.set(VpnStatus.Paused)
             } else {
                 server.startOrReloadService(prepareConfig(), overrideOptions())
+                checkSelection()
                 VpnState.set(VpnStatus.Started)
             }
             showNotification()
@@ -154,11 +155,20 @@ class ApexVpnService : VpnService(), PlatformInterface, CommandServerHandler {
         if (VpnState.status.value != VpnStatus.Started) return@withLock
         try {
             server.startOrReloadService(prepareConfig(), overrideOptions())
+            checkSelection()
             showNotification()
         } catch (e: Throwable) {
             Log.e(TAG, "reload failed", e)
             VpnState.fail(e.message)
             failOrBlock()
+        }
+    }
+
+    /** Ядро должно идти через выбранный сервер (см. CoreSelector). */
+    private fun checkSelection() {
+        scope.launch {
+            kotlinx.coroutines.delay(1500)
+            runCatching { CoreSelector.ensure() }
         }
     }
 
@@ -187,6 +197,7 @@ class ApexVpnService : VpnService(), PlatformInterface, CommandServerHandler {
         if (VpnState.status.value != VpnStatus.Paused) return@withLock
         try {
             server.startOrReloadService(prepareConfig(), overrideOptions())
+            checkSelection()
             VpnState.set(VpnStatus.Started)
             showNotification()
         } catch (e: Throwable) {
@@ -240,6 +251,7 @@ class ApexVpnService : VpnService(), PlatformInterface, CommandServerHandler {
         if (VpnState.status.value != VpnStatus.Blocked) return@withLock
         try {
             server.startOrReloadService(prepareConfig(), overrideOptions())
+            checkSelection()
             VpnState.set(VpnStatus.Started)
             VpnState.clearError()
             showNotification()
