@@ -51,7 +51,7 @@ data class AutoRule(
 
 object AutoRulesEngine {
     /** id правила → значение, которое было до него (для возврата) */
-    private val applied = HashMap<String, Pair<String, String>>() // id → (действие, прежнее значение)
+    private val applied = HashMap<String, Triple<String, String, String>>() // id → (действие, прежнее значение, что поставили)
     @Volatile private var foreground = ""
     private var lastEventCheck = 0L
 
@@ -93,9 +93,11 @@ object AutoRulesEngine {
         else -> false
     }
 
-    private fun current(r: AutoRule): String {
+    private fun current(r: AutoRule): String = current(r.action)
+
+    private fun current(action: String): String {
         val s = AppSettings.value
-        return when (r.action) {
+        return when (action) {
             "mode" -> s.autoMode
             "route" -> s.mode.id
             "server" -> Subscription.state.value.selectedTag
@@ -131,23 +133,25 @@ object AutoRulesEngine {
         synchronized(applied) {
             // Удалённые и выключенные правила — вернуть, что меняли
             applied.keys.filter { id -> rules.none { it.id == id && it.enabled } }.forEach { id ->
-                val (action, prev) = applied.remove(id) ?: return@forEach
-                if (action != "rules" && action != "off") { set(action, prev); out += "reload" }
+                val (action, prev, value) = applied.remove(id) ?: return@forEach
+                // Как и при обычном окончании правила: возвращаем, только если вручную не меняли
+                if (action != "rules" && action != "off" && current(action) == value && prev != value) { set(action, prev); out += "reload" }
             }
             for (r in rules.filter { it.enabled }) {
                 val on = holds(ctx, r)
                 val was = r.id in applied
                 if (on && !was) {
-                    applied[r.id] = r.action to current(r)
+                    applied[r.id] = Triple(r.action, current(r), r.value)
                     when (r.action) {
                         "rules" -> out += "rules"
                         "off" -> out += "off"
                         else -> if (current(r) != r.value) { set(r.action, r.value); out += "reload" }
                     }
                 } else if (!on && was) {
-                    val prev = applied.remove(r.id)?.second ?: continue
+                    val (action, prev, value) = applied.remove(r.id) ?: continue
                     // Возвращаем, только если настройку за это время не меняли вручную
-                    if (!r.oneShot && current(r) == r.value && prev != r.value) { set(r.action, prev); out += "reload" }
+                    // (действие и значение — те, что ставили: правило могли отредактировать, пока оно действовало)
+                    if (!r.oneShot && action != "rules" && action != "off" && current(action) == value && prev != value) { set(action, prev); out += "reload" }
                 }
             }
         }
