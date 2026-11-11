@@ -188,8 +188,8 @@ class ApexApp : Application() {
                             VpnState.status.value == com.apexvpn.client.vpn.VpnStatus.Started
                         ) {
                             if (com.apexvpn.client.data.WhiteList.check(app)) com.apexvpn.client.vpn.ApexVpnService.reload(app)
-                            // Похоже на белые списки — перепроверяем через минуту, а не через 5
-                            kotlinx.coroutines.delay(if (com.apexvpn.client.data.WhiteList.suspected) 60_000L else 5 * 60_000L)
+                            // Похоже на белые списки — перепроверяем через 15 секунд (без интернета ждать минуту долго)
+                            kotlinx.coroutines.delay(if (com.apexvpn.client.data.WhiteList.suspected) 15_000L else if (com.apexvpn.client.data.WhiteList.active) 3 * 60_000L else 5 * 60_000L)
                         }
                     }
                 }

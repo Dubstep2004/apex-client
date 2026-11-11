@@ -254,10 +254,10 @@ object LivePing {
 
     /** null — Clash API недоступен (тогда пробуем HTTP), -1 — сервер не ответил. */
     private fun viaCore(): Int? = runCatching {
-        val path = "/proxies/proxy/delay?timeout=4000&url=" + java.net.URLEncoder.encode(URL_TEST, "UTF-8")
+        val path = "/proxies/proxy/delay?timeout=8000&url=" + java.net.URLEncoder.encode(URL_TEST, "UTF-8")
         val c = URL("http://127.0.0.1:${Prefs.clashApiPort}$path").openConnection() as HttpURLConnection
         c.connectTimeout = 1500
-        c.readTimeout = 6000
+        c.readTimeout = 10000
         c.setRequestProperty("Authorization", "Bearer ${Prefs.xrayAuth}")
         try {
             when (c.responseCode) {
@@ -273,8 +273,9 @@ object LivePing {
 
     private fun viaHttp(url: String): Int = runCatching {
         val c = URL(url).openConnection() as HttpURLConnection
-        c.connectTimeout = 4000
-        c.readTimeout = 4000
+        // LTE-обход медленный: соединение + шифрование через него легко дольше 4 секунд
+        c.connectTimeout = 6000
+        c.readTimeout = 6000
         c.useCaches = false
         val t = System.nanoTime()
         try {

@@ -64,7 +64,9 @@ object FastestServer {
             val pings = Pinger.pingAll(nodes, type = "tcp")
             // Как и автопилот: без России и обхода LTE (они «быстрые», но сайты через них не открываются)
             val skip = AppSettings.value.autoSkipSpecial
-            val pool = nodes.filter { !skip || !ServerInfo.isSpecial(it.name) }.ifEmpty { nodes }
+            // Белые списки у оператора: работает только LTE-обход — из него и выбираем
+            val wl = WhiteList.active && AppSettings.value.autoWhitelist
+            val pool = (if (wl) nodes.filter { ServerInfo.isLte(it.name) } else nodes.filter { !skip || !ServerInfo.isSpecial(it.name) }).ifEmpty { nodes }
             val top = pool
                 .mapNotNull { n -> pings[n.tag]?.takeIf { it > 0 }?.let { n to it } }
                 .sortedBy { it.second }
