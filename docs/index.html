@@ -36,7 +36,8 @@
 
   /* Герой: щит в свечении — главный образ приложения */
   .hero { position: relative; padding: 72px 0 40px; }
-  .hero::before { content: ""; position: absolute; inset: -200px -20% auto; height: 900px; z-index: -1;
+  .hero::before { content: ""; position: absolute; inset: -200px 0 auto; height: 900px; z-index: -1; pointer-events: none;
+    -webkit-mask-image: linear-gradient(#000 55%, transparent); mask-image: linear-gradient(#000 55%, transparent);
     background: radial-gradient(520px 380px at 72% 38%, #6d5cff40, transparent 70%), radial-gradient(420px 320px at 85% 60%, #22d3ee30, transparent 70%), radial-gradient(500px 300px at 10% 20%, #2fd38b1c, transparent 70%); }
   .hero .hgrid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 40px; align-items: center; }
   .hero h1 { font-family: var(--display); font-weight: 700; font-size: clamp(38px, 6vw, 68px); line-height: 1.04; letter-spacing: -.035em; margin: 0 0 22px; }
@@ -75,7 +76,7 @@
   .wl p { color: var(--dim); margin: 0 0 12px; }
   .flow { display: grid; gap: 10px; }
   .flow div { display: flex; align-items: center; gap: 12px; background: #0a0d1caa; border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; font-weight: 700; }
-  .flow span { color: var(--dim); font-weight: 500; margin-left: auto; font-size: 14px; }
+  .flow span { color: var(--dim); font-weight: 500; margin-left: auto; font-size: 14px; white-space: nowrap; }
   .flow .ok { border-color: #2fd38b66; }
 
   .devices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
@@ -106,10 +107,15 @@
   @media (max-width: 860px) {
     header nav { display: none; } .dl-mini { margin-left: auto; }
     .hero { padding-top: 40px; } .hero .hgrid, .wl, .feats { grid-template-columns: 1fr; }
-    .shield-wrap { height: 320px; order: -1; overflow: hidden; } .shield { width: 180px; height: 210px; } .ring.a { width: 280px; height: 280px; } .ring.b { width: 380px; height: 380px; }
+    .shield-wrap { height: 320px; order: -1; overflow: hidden; border-radius: 28px; } .shield { width: 180px; height: 210px; } .ring.a { width: 280px; height: 280px; } .ring.b { width: 380px; height: 380px; }
     .chip.c1 { left: 0; top: 10px; } .chip.c2 { right: 0; bottom: 40px; } .chip.c3 { display: none; }
     .devices, .steps { grid-template-columns: 1fr; } .wl { padding: 26px; } section { padding-top: 70px; }
     .strip img { border-radius: 18px; }
+    footer nav { margin-left: 0; width: 100%; }
+  }
+  @media (max-width: 520px) {
+    .flow div { flex-direction: column; align-items: flex-start; gap: 2px; }
+    .flow span { margin-left: 0; }
   }
   @media (prefers-reduced-motion: reduce) { .shield { animation: none; } html { scroll-behavior: auto; } }
 </style>
@@ -176,7 +182,7 @@
     <div class="devices">
       <div class="dev"><div class="big">📱</div><b>Телефон</b><p>Кнопка, автопилот, виджеты на рабочий стол, плитка в шторке и ярлыки.</p></div>
       <div class="dev"><div class="big">📺</div><b>Android TV</b><p>Управление с пульта. Подписку можно отправить с телефона по QR-коду, без набора ссылки.</p></div>
-      <div class="dev"><img src="img/apex-watch.webp" alt="APEX Watch на часах" loading="lazy" width="110" height="110"><b>Часы Wear OS</b><p>Включить VPN, выбрать страну и увидеть пинг — прямо с руки.</p></div>
+      <div class="dev"><img src="img/apex-watch.webp" alt="APEX Watch на часах" width="110" height="110"><b>Часы Wear OS</b><p>Включить VPN, выбрать страну и увидеть пинг — прямо с руки.</p></div>
     </div>
   </div></section>
 
@@ -184,7 +190,7 @@
     <h2>Установка за минуту</h2>
     <p class="lead">Приложения нет в Google Play — оно скачивается файлом с GitHub, где лежит его открытый код.</p>
     <ol class="steps">
-      <li><b>Скачайте файл</b><p>Нажмите «Скачать для Android» — загрузится файл apex-vpn-….apk.</p></li>
+      <li><b>Скачайте файл</b><p>Нажмите «Скачать для Android» — загрузится файл <span id="apkName">apex-vpn.apk</span>.</p></li>
       <li><b>Разрешите установку</b><p>Откройте файл. Android попросит разрешить установку из браузера — разрешите один раз.</p></li>
       <li><b>Вставьте подписку</b><p>Откройте APEX VPN, вставьте ссылку подписки и нажмите на щит. Обновления дальше ставятся сами.</p></li>
     </ol>
@@ -219,6 +225,7 @@ fetch('https://api.github.com/repos/Dubstep2004/apex-vpn/releases/latest')
     const apk = rel.assets.find(a => /^apex-vpn-.*\.apk$/.test(a.name))
     const v = rel.tag_name.replace(/^v/, '')
     if (apk) document.querySelectorAll('a[data-dl]').forEach(a => { if (!a.classList.contains('dl-mini')) a.href = apk.browser_download_url })
+    if (apk) document.getElementById('apkName').textContent = apk.name
     const mb = apk ? ' · ' + (apk.size / 1048576).toFixed(0) + ' МБ' : ''
     document.getElementById('ver').textContent = 'Версия ' + v + mb + ' · бесплатно · Android 7 и новее'
     document.getElementById('ver2').textContent = 'Версия ' + v + ', бесплатно, для Android 7 и новее'
