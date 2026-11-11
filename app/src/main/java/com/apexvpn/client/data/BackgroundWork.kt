@@ -236,7 +236,7 @@ object ExpiryAlerts {
         }
         // 3.17.4: кнопка «Продлить» — личный кабинет из подписки, иначе чат поддержки
         val sub = Subscription.state.value
-        val renewUrl = sub.webPageUrl.ifBlank { sub.supportUrl }.ifBlank { Links.SUPPORT }
+        val renewUrl = sub.webPageUrl.ifBlank { sub.supportUrl }.ifBlank { Links.support() }
         val renew = runCatching {
             PendingIntent.getActivity(
                 context, 12, Intent(Intent.ACTION_VIEW, android.net.Uri.parse(renewUrl)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),

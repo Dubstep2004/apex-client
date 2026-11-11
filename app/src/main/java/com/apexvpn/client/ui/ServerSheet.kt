@@ -37,6 +37,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -101,7 +102,9 @@ fun ServerSheet(viewModel: MainViewModel, onDismiss: () -> Unit) {
 
     // Категории протоколов: сколько серверов каждого вида в подписке
     // В режиме «Только sing-box» серверы, которым нужен Xray, не показываем
-    val base = sub.nodes.filter { !(settings.core == CoreMode.SingBox && it.xrayOnly) }
+    // 3.18. Админка: скрытые серверы не показываем
+    val cfg = com.apexvpn.client.data.AppConfig.state.collectAsState().value
+    val base = sub.nodes.filter { !(settings.core == CoreMode.SingBox && it.xrayOnly) && !cfg.isHidden(ServerInfo.title(it.name)) }
     val categories = base.groupingBy { it.category }.eachCount().entries
         .sortedWith(compareByDescending<Map.Entry<String, Int>> { it.value }.thenBy { it.key })
     val activeProtocol = settings.protocol.takeIf { p -> categories.any { it.key == p } } ?: ""
@@ -388,6 +391,16 @@ private fun GroupRow(
                     if (fastest) {
                         Tag("Быстрый")
                         Spacer(Modifier.width(6.dp))
+                    }
+                    // 3.18. Пометки из веб-админки: рекомендуем / обслуживание / медленно
+                    val adm = com.apexvpn.client.data.AppConfig.value
+                    if (adm.isRecommended(group.title)) {
+                        Tag("⭐ Советуем")
+                        Spacer(Modifier.width(6.dp))
+                    }
+                    when (adm.stateOf(group.title)?.state) {
+                        "maintenance" -> { Tag("🔧 Обслуживание", color = Apex.Bad, outlined = true); Spacer(Modifier.width(6.dp)) }
+                        "slow" -> { Tag("🐢 Медленно", color = Apex.Warn, outlined = true); Spacer(Modifier.width(6.dp)) }
                     }
                     if (group.nodes.any { ServerInfo.isLte(it.name) }) {
                         Tag("LTE", color = Apex.Warn, outlined = true)

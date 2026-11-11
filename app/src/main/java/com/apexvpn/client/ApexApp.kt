@@ -50,6 +50,18 @@ class ApexApp : Application() {
         appScope.launch {
             if (runCatching { com.apexvpn.client.data.SubHosts.refresh() }.getOrDefault(false)) runCatching { com.apexvpn.client.data.Subscription.refresh() }
         }
+        // 3.18. Настройки из веб-админки (баннер, статус серверов, ссылки…): изменились — перестроить ядро
+        appScope.launch {
+            if (runCatching { com.apexvpn.client.data.AppConfig.refresh(force = true) }.getOrDefault(false) &&
+                VpnState.status.value == com.apexvpn.client.vpn.VpnStatus.Started
+            ) com.apexvpn.client.vpn.ApexVpnService.reload(this@ApexApp)
+            while (true) {
+                kotlinx.coroutines.delay(60 * 60_000L)
+                if (runCatching { com.apexvpn.client.data.AppConfig.refresh() }.getOrDefault(false) &&
+                    VpnState.status.value == com.apexvpn.client.vpn.VpnStatus.Started
+                ) com.apexvpn.client.vpn.ApexVpnService.reload(this@ApexApp)
+            }
+        }
         // 3.10. Шаблон «Скрыть VPN»: свежий список и новые приложения — при запуске
         appScope.launch {
             runCatching { com.apexvpn.client.data.HideTemplates.refresh() }
@@ -181,7 +193,7 @@ class ApexApp : Application() {
                         val app = this@ApexApp
                         var reload = false
                         val s = AppSettings.value
-                        val mobile = tr.substringBefore(':') == "mobile"
+                        val mobile = tr.substringBefore(':') == "mobile" && com.apexvpn.client.data.AppConfig.value.on("whitelistAuto")
                         if (!mobile || !s.autoWhitelist) reload = com.apexvpn.client.data.WhiteList.reset(app)
                         // QUIC: на мобильной выключен, на Wi-Fi включён — сеть сменилась, обновляем ядро
                         if (AppSettings.quicApplied != null && AppSettings.quicBlocked() != AppSettings.quicApplied) reload = true

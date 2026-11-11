@@ -269,7 +269,7 @@ object AppSettings {
      * LTE-обход выбран вручную, весь трафик идёт через VPN, какой бы режим ни был выбран.
      */
     fun whitelistAll(): Boolean {
-        if (WhiteList.active && _state.value.autoWhitelist) return true
+        if (WhiteList.active && _state.value.autoWhitelist && AppConfig.value.on("whitelistAuto")) return true
         val tag = Prefs.selectedTag
         if (tag == AUTO_TAG) return false
         return Subscription.state.value.nodes.find { it.tag == tag }?.let { ServerInfo.isLte(it.name) } == true
@@ -346,6 +346,18 @@ object AppSettings {
                 val excluded = optJSONArray("autoExclude")?.let { a -> (0 until a.length()).map { a.optString(it) } }.orEmpty().toSet()
                 if (fav.any { it !in excluded }) put("autoExclude", JSONArray((excluded + nodes.map { it.tag }.filter { it !in fav }).toList()))
             }
+        }
+        // 3.18. Админка: серверы «на обслуживании» и скрытые — мимо автопилота (если остаётся хоть один)
+        run {
+            val cfg = AppConfig.value
+            val blocked = nodes.filter { cfg.blocked(ServerInfo.title(it.name)) }.map { it.tag }
+            if (blocked.isNotEmpty()) {
+                val excluded = optJSONArray("autoExclude")?.let { a -> (0 until a.length()).map { a.optString(it) } }.orEmpty().toSet()
+                val merged = excluded + blocked
+                if (nodes.any { it.tag !in merged }) put("autoExclude", JSONArray(merged.toList()))
+            }
+            val off = listOfNotNull("ads-hagezi".takeIf { !cfg.on("adsHagezi") }, "threats".takeIf { !cfg.on("threats") })
+            if (off.isNotEmpty()) put("disabledSets", JSONArray(off))
         }
         // …и до первой проверки — сначала серверы, которые были быстрее при прошлом замере
         if (!has("autoOrder")) put("autoOrder", JSONArray(Prefs.lastPings().entries.filter { it.value > 0 }.sortedBy { it.value }.map { it.key }))

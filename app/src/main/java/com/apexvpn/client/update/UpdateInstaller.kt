@@ -264,6 +264,8 @@ object UpdateInstaller {
     /** «Ставить само»: скачать заранее; поставить, когда VPN выключен или экран погас. */
     suspend fun autoUpdate(ctx: Context, info: UpdateInfo): Boolean {
         val s = AppSettings.value
+        // 3.18: админка может временно остановить автоустановку у всех (если версия оказалась плохой)
+        if (!com.apexvpn.client.data.AppConfig.value.on("autoUpdate")) return false
         if (s.updateWifiOnly && ctx.getSystemService<ConnectivityManager>()?.isActiveNetworkMetered != false) return false
         if (!canInstall(ctx)) return false
         val apk = download(ctx, info, showProgress = false) ?: return false

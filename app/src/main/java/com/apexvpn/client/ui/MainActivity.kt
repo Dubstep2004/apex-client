@@ -413,6 +413,21 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     UpdateDialog(viewModel)
+                    // 3.18. Админка отозвала эту версию — предложить вернуться на прошлую
+                    val adminCfg by com.apexvpn.client.data.AppConfig.state.collectAsStateWithLifecycle()
+                    var revokedShown by remember { mutableStateOf(false) }
+                    if (!revokedShown && BuildConfig.VERSION_CODE in adminCfg.revoked) {
+                        AlertDialog(
+                            onDismissRequest = { revokedShown = true },
+                            containerColor = Apex.Dialog,
+                            title = { Text("В этой версии нашли ошибку", color = Apex.Text) },
+                            text = { Text("Версия ${BuildConfig.VERSION_NAME} отозвана. Лучше вернуться на прошлую или дождаться исправления — оно придёт обновлением.", color = Apex.TextDim) },
+                            confirmButton = {
+                                TextButton(onClick = { revokedShown = true; pendingPage.value = com.apexvpn.client.ui.Page.Rollback }) { Text("Вернуть прошлую", color = Apex.Accent) }
+                            },
+                            dismissButton = { TextButton(onClick = { revokedShown = true }) { Text("Позже", color = Apex.TextDim) } },
+                        )
+                    }
                 }
             }
         }

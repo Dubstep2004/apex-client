@@ -54,6 +54,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -160,6 +161,26 @@ fun HomeScreen(
                 "Её собрал не автор — она может украсть подписку. Нажмите, чтобы скачать оригинал.",
                 onClick = { openUrl(context, com.apexvpn.client.data.Integrity.OFFICIAL_URL) },
                 onClose = null,
+            )
+        }
+
+        // 3.18. Баннер из веб-админки: технические работы, сбой, новости
+        val cfg by com.apexvpn.client.data.AppConfig.state.collectAsStateWithLifecycle()
+        var bannerHidden by remember(cfg.banner?.text) { mutableStateOf(false) }
+        cfg.banner?.takeIf { !bannerHidden && com.apexvpn.client.data.AppConfig.bannerVisible(it) }?.let { b ->
+            Spacer(Modifier.height(10.dp))
+            val (icon, color) = when (b.level) {
+                "alert" -> Icons.Rounded.WarningAmber to Apex.Bad
+                "warn" -> Icons.Rounded.WarningAmber to Apex.Warn
+                else -> Icons.Rounded.Info to Apex.Accent
+            }
+            Banner(
+                icon, color, null, b.text,
+                onClick = b.url.takeIf { it.startsWith("https://") }?.let { u -> { openUrl(context, u) } },
+                onClose = {
+                    com.apexvpn.client.data.Prefs.bannerDismissed = b.text.hashCode()
+                    bannerHidden = true
+                },
             )
         }
 

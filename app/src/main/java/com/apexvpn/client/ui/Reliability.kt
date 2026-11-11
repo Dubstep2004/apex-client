@@ -285,7 +285,7 @@ internal fun AboutPage(onBack: () -> Unit) {
             AboutLine(Icons.Rounded.Public, "Серверы по всему миру; российские сайты и банки идут напрямую")
             AboutLine(Icons.Rounded.Lock, "Только подписки ${com.apexvpn.client.data.SubHosts.primary()} — чужие ссылки приложение не примет")
             AboutLine(Icons.Rounded.SupportAgent, "Поддержка в Telegram: ${com.apexvpn.client.data.Links.SUPPORT_NAME}") {
-                open(com.apexvpn.client.data.Links.SUPPORT)
+                open(com.apexvpn.client.data.Links.support())
             }
         }
         Spacer(Modifier.height(20.dp))

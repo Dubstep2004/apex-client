@@ -74,7 +74,9 @@ object UpdateManager {
         try {
             val info = fetchLatest()
             _state.value = if (info != null && rank(info.versionName) > rank(BuildConfig.VERSION_NAME)) {
-                UpdateState.Available(info)
+                // 3.18: из веб-админки — «версии ниже N обязаны обновиться»
+                val required = com.apexvpn.client.data.AppConfig.value.requiredCode
+                UpdateState.Available(if (required > BuildConfig.VERSION_CODE) info.copy(mandatory = true) else info)
             } else {
                 UpdateState.UpToDate
             }

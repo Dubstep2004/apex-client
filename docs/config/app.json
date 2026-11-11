@@ -1,0 +1,7 @@
+{
+  "banner": { "text": "", "level": "info", "until": "", "url": "", "minCode": 0, "maxCode": 0 },
+  "servers": { "status": {}, "recommended": "", "hidden": [] },
+  "links": { "support": "", "channel": "", "site": "" },
+  "update": { "required": 0, "revoked": [] },
+  "features": { "whitelistAuto": true, "adsHagezi": true, "threats": true, "autoUpdate": true }
+}

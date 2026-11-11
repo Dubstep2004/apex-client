@@ -90,7 +90,7 @@ object Helper {
         val t = question.lowercase()
         val sub = Subscription.state.value
         val on = VpnState.status.value == VpnStatus.Started
-        val support = Action("Написать в поддержку", link = Links.SUPPORT)
+        val support = Action("Написать в поддержку", link = Links.support())
 
         // Сайт или сервис по названию / адресу
         val domain = sites.entries.firstOrNull { it.key in t }?.value

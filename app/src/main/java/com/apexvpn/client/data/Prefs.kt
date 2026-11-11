@@ -60,6 +60,17 @@ object Prefs {
         get() = sp.getLong("hide_template_at", 0)
         set(v) = sp.edit { putLong("hide_template_at", v) }
 
+    /** 3.18: настройки из веб-админки — docs/config/app.json (JSON), когда скачан, закрытый баннер */
+    var appConfigJson: String
+        get() = sp.getString("app_config", "") ?: ""
+        set(v) = sp.edit { putString("app_config", v) }
+    var appConfigAt: Long
+        get() = sp.getLong("app_config_at", 0)
+        set(v) = sp.edit { putLong("app_config_at", v) }
+    var bannerDismissed: Int
+        get() = sp.getInt("banner_dismissed", 0)
+        set(v) = sp.edit { putInt("banner_dismissed", v) }
+
     /** 3.16: адреса подписки из docs/config/subscription.json (JSON) и когда скачан */
     var subHostsJson: String
         get() = sp.getString("sub_hosts", "") ?: ""

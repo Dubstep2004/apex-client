@@ -1,0 +1,30 @@
+name: Config check
+
+# 3.18: файлы, которые правит веб-админка (docs/admin), проверяются после каждого изменения.
+# Битый файл приложения просто не применят, но лучше сразу увидеть ошибку здесь.
+on:
+  push:
+    paths:
+      - "docs/config/**"
+      - "docs/templates/**"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate JSON
+        run: |
+          set -e
+          ok=1
+          for f in docs/config/*.json docs/templates/*.json; do
+            if jq empty "$f" 2>/tmp/err; then echo "✓ $f"; else echo "::error file=$f::$(cat /tmp/err)"; ok=0; fi
+          done
+          jq -e '.hosts | type == "array" and length > 0' docs/config/subscription.json >/dev/null || { echo "::error file=docs/config/subscription.json::нужен непустой список hosts"; ok=0; }
+          jq -e '.packages | type == "array"' docs/templates/hide-vpn.json >/dev/null || { echo "::error file=docs/templates/hide-vpn.json::нужен список packages"; ok=0; }
+          if [ -f docs/config/app.json ]; then
+            jq -e '(.banner.text // "" | length) <= 300' docs/config/app.json >/dev/null || { echo "::error file=docs/config/app.json::баннер длиннее 300 символов"; ok=0; }
+            jq -e '[.links // {} | .[] | select(. != "" and (startswith("https://") | not))] | length == 0' docs/config/app.json >/dev/null || { echo "::error file=docs/config/app.json::ссылки должны начинаться с https://"; ok=0; }
+          fi
+          [ $ok = 1 ]

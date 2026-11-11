@@ -791,13 +791,13 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
                     }
                 },
             ) { Chevron() }
-            if (com.apexvpn.client.data.Links.TELEGRAM.isNotEmpty()) {
+            if (com.apexvpn.client.data.Links.channel().isNotEmpty()) {
                 GroupDivider()
                 ListRow(
                     "Telegram-канал",
                     "Новости и обновления APEX VPN",
                     leading = { tile(Icons.AutoMirrored.Rounded.Send) },
-                    onClick = { openLink(context, com.apexvpn.client.data.Links.TELEGRAM) },
+                    onClick = { openLink(context, com.apexvpn.client.data.Links.channel()) },
                 ) { Chevron() }
             }
             GroupDivider()
@@ -841,7 +841,7 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
                     Button(
                         onClick = {
                             runCatching { com.apexvpn.client.data.Diagnostics.sendTelegram(context) }
-                                .onSuccess { viewModel.showMessage("Выберите чат ${com.apexvpn.client.data.Links.SUPPORT_NAME} — отчёт уже вставлен") }
+                                .onSuccess { viewModel.showMessage("Выберите чат ${com.apexvpn.client.data.Links.supportName()} — отчёт уже вставлен") }
                                 .onFailure { viewModel.showMessage("Не удалось открыть Telegram") }
                             supportDialog = false
                         },
@@ -849,7 +849,7 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
                         colors = ButtonDefaults.buttonColors(containerColor = Apex.SurfaceHigh, contentColor = Apex.Text),
                     ) { Text("✈️ Отправить отчёт в Telegram") }
                     // Чат из подписки (support-url в панели), иначе — наша поддержка @Apexx_support
-                    val chat = sub.supportUrl.ifBlank { com.apexvpn.client.data.Links.SUPPORT }
+                    val chat = sub.supportUrl.ifBlank { com.apexvpn.client.data.Links.support() }
                     Button(
                         onClick = {
                             runCatching {
@@ -862,7 +862,7 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
                         },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = Apex.SurfaceHigh, contentColor = Apex.Text),
-                    ) { Text(if (sub.supportUrl.isBlank()) "Открыть ${com.apexvpn.client.data.Links.SUPPORT_NAME}" else "Открыть чат поддержки") }
+                    ) { Text(if (sub.supportUrl.isBlank()) "Открыть ${com.apexvpn.client.data.Links.supportName()}" else "Открыть чат поддержки") }
                     androidx.compose.material3.TextButton(
                         onClick = {
                             runCatching { com.apexvpn.client.data.Diagnostics.share(context) }

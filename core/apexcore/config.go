@@ -62,6 +62,7 @@ type routeOptions struct {
 	Kids          bool         `json:"kids"`          // семейный DNS для всех запросов
 	AdBlock       bool         `json:"adBlock"`       // блокировка рекламы и трекеров
 	BlockThreats  bool         `json:"blockThreats"`  // мошенники и вирусы (HaGeZi TIF, необязательная база)
+	DisabledSets  []string     `json:"disabledSets"`  // базы, выключенные из веб-админки (ads-hagezi, threats)
 	IPv6          bool         `json:"ipv6"`
 	Profile       string       `json:"profile"` // normal | gaming | calls | battery
 	Share         shareOptions `json:"share"`   // раздача на компьютер
@@ -332,7 +333,9 @@ func buildAll(nodesJSON string, selectedTag string, optionsJSON string) (string,
 	}
 	if opts.AdBlock {
 		ads = opts.rulesFile(fileAds)
-		adsHagezi = opts.rulesFile(fileAdsHagezi)
+		if !contains(opts.DisabledSets, "ads-hagezi") {
+			adsHagezi = opts.rulesFile(fileAdsHagezi)
+		}
 	}
 	porn, betting := "", ""
 	if opts.Kids {
@@ -349,7 +352,7 @@ func buildAll(nodesJSON string, selectedTag string, optionsJSON string) (string,
 	addSet("ads", ads)
 	addSet("ads-hagezi", adsHagezi)
 	threats := ""
-	if opts.BlockThreats {
+	if opts.BlockThreats && !contains(opts.DisabledSets, "threats") {
 		threats = opts.rulesFile(fileThreats)
 	}
 	addSet("threats", threats)
@@ -840,4 +843,14 @@ func nonEmptyTags(m map[string]string) []string {
 		}
 	}
 	return out
+}
+
+// contains — есть ли строка в списке.
+func contains(list []string, s string) bool {
+	for _, v := range list {
+		if v == s {
+			return true
+		}
+	}
+	return false
 }
