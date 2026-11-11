@@ -39,6 +39,7 @@ object AppConfig {
     data class Announce(
         val id: String, val title: String, val text: String, val image: String, val url: String, val button: String,
         val minCode: Int = 0, val maxCode: Int = 0, val preview: Boolean = false,
+        val from: Long = 0, val to: Long = 0, // 3.18.4: показать по расписанию
     )
     data class Config(
         val banners: List<Banner> = emptyList(),
@@ -83,7 +84,9 @@ object AppConfig {
         /** Объявление для этой версии (ещё не показанное — см. Prefs.announceSeen). */
         fun announceNow(): Announce? = announce?.takeIf { a ->
             val code = BuildConfig.VERSION_CODE
-            (a.minCode == 0 || code >= a.minCode) && (a.maxCode == 0 || code <= a.maxCode) && (!a.preview || previewer)
+            val now = System.currentTimeMillis()
+            (a.minCode == 0 || code >= a.minCode) && (a.maxCode == 0 || code <= a.maxCode) && (!a.preview || previewer) &&
+                (a.from == 0L || now >= a.from) && (a.to == 0L || now < a.to)
         }
     }
 
@@ -145,6 +148,7 @@ object AppConfig {
                 url = a.optString("url").trim().takeIf { it.startsWith("https://") }.orEmpty(),
                 button = a.optString("button").ifBlank { "Подробнее" }.take(30),
                 minCode = a.optInt("minCode", 0), maxCode = a.optInt("maxCode", 0), preview = a.optBoolean("preview", false),
+                from = a.optLong("from", 0), to = a.optLong("to", 0),
             )
         }
         Config(

@@ -473,6 +473,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        // 3.18.4: объявление или баннер по расписанию — пересчитать, наступило ли их время
+        com.apexvpn.client.data.AppConfig.touch()
         // 3.18: открыли приложение — свежие настройки из админки (не чаще раза в 5 минут)
         lifecycleScope.launch {
             if (runCatching { com.apexvpn.client.data.AppConfig.refresh() }.getOrDefault(false) &&
