@@ -234,9 +234,19 @@ object ExpiryAlerts {
             3 -> "Подписка скоро закончится"
             else -> "APEX VPN"
         }
+        // 3.17.4: кнопка «Продлить» — личный кабинет из подписки, иначе чат поддержки
+        val sub = Subscription.state.value
+        val renewUrl = sub.webPageUrl.ifBlank { sub.supportUrl }.ifBlank { Links.SUPPORT }
+        val renew = runCatching {
+            PendingIntent.getActivity(
+                context, 12, Intent(Intent.ACTION_VIEW, android.net.Uri.parse(renewUrl)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+        }.getOrNull()
         nm.notify(
             4,
             NotificationCompat.Builder(context, ApexApp.CHANNEL_ALERTS)
+                .apply { if (stage >= 0 && renew != null) addAction(0, "Продлить", renew) }
                 .setSmallIcon(R.drawable.ic_stat_apex)
                 .setContentTitle(title)
                 .setContentText(if (stage >= 0) "$text. Продлите в личном кабинете, чтобы VPN не отключился." else text)

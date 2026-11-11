@@ -932,7 +932,9 @@ private fun WifiPage(viewModel: MainViewModel, onBack: () -> Unit) {
 private fun SharePage(viewModel: MainViewModel, onBack: () -> Unit) {
     val s by viewModel.settings.collectAsStateWithLifecycle()
     val clipboard = LocalClipboardManager.current
-    val ip = remember { localIp() }
+    // 3.17.4 (71): адреса обновляются — точку доступа можно включить, не уходя со страницы
+    var addrs by remember { mutableStateOf(lanAddresses()) }
+    LaunchedEffect(Unit) { while (true) { kotlinx.coroutines.delay(3000); addrs = lanAddresses() } }
     PageScaffold("Раздача на компьютер", onBack) {
         Group {
             ListRow(
@@ -944,9 +946,8 @@ private fun SharePage(viewModel: MainViewModel, onBack: () -> Unit) {
         if (s.share) {
             SectionLabel("Настройки для компьютера")
             Group {
-                val rows = listOf(
-                    "Тип" to "HTTP или SOCKS5",
-                    "Адрес" to (ip ?: "IP телефона в сети Wi-Fi"),
+                val rows = listOf("Тип" to "HTTP или SOCKS5") +
+                    (if (addrs.isEmpty()) listOf("Адрес" to "IP телефона в сети Wi-Fi") else addrs.map { (label, a) -> "Адрес · $label" to a }) + listOf(
                     "Порт" to s.sharePort.toString(),
                     "Логин" to s.shareUser,
                     "Пароль" to s.sharePass,
@@ -977,18 +978,35 @@ private fun SharePage(viewModel: MainViewModel, onBack: () -> Unit) {
             )
         }
         Caption("Укажите эти данные в настройках прокси на компьютере (Windows: Параметры → Сеть → Прокси). Работает, пока VPN на телефоне включён.")
+        // 3.17.4 (71): раздача через точку доступа телефона
+        SectionLabel("Через точку доступа телефона")
+        Caption(
+            "1. Включите на телефоне точку доступа (Настройки → Точка доступа).\n" +
+                "2. Подключите к ней ноутбук, планшет или телевизор.\n" +
+                "3. На том устройстве в настройках этой сети Wi-Fi выберите «Прокси → Вручную» и укажите адрес «Точка доступа» и порт выше " +
+                "(Android: долгое нажатие на сеть → Изменить → Прокси; iPhone: ⓘ у сети → Прокси → Вручную).\n\n" +
+                "Без настройки прокси трафик с точки доступа идёт мимо VPN — так устроен Android: приложение VPN не может перехватить раздачу без root.",
+        )
         Spacer(Modifier.height(24.dp))
     }
 }
 
-private fun localIp(): String? = runCatching {
+/** Адреса телефона в локальных сетях с подписью: «Wi-Fi» или «Точка доступа». */
+private fun lanAddresses(): List<Pair<String, String>> = runCatching {
     NetworkInterface.getNetworkInterfaces().toList()
-        .filter { it.isUp && !it.isLoopback && !it.name.startsWith("tun") }
-        .sortedByDescending { it.name.startsWith("wlan") || it.name.startsWith("ap") || it.name.startsWith("swlan") }
-        .flatMap { it.inetAddresses.toList() }
-        .firstOrNull { it is Inet4Address && it.isSiteLocalAddress }
-        ?.hostAddress
-}.getOrNull()
+        .filter { it.isUp && !it.isLoopback && !it.name.startsWith("tun") && !it.name.startsWith("rmnet") && !it.name.startsWith("ccmni") }
+        .flatMap { nif ->
+            nif.inetAddresses.toList().filterIsInstance<Inet4Address>().filter { it.isSiteLocalAddress }.map { a ->
+                val n = nif.name
+                val host = a.hostAddress.orEmpty()
+                // Точка доступа: ap0/swlan0, или второй wlan с адресом шлюза …1
+                val hotspot = n.startsWith("ap") || n.startsWith("swlan") || (n.startsWith("wlan") && n != "wlan0" && host.endsWith(".1"))
+                (if (hotspot) "Точка доступа" else if (n.startsWith("wlan")) "Wi-Fi" else if (n.startsWith("eth")) "Кабель" else n) to host
+            }
+        }
+        .sortedBy { if (it.first == "Wi-Fi") 0 else 1 }
+}.getOrDefault(emptyList())
+
 
 // ─── DNS: 27 свой DNS, 50 детский режим ─────────────────────────────────
 

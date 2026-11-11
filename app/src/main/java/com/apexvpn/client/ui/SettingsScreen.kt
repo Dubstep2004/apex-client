@@ -577,6 +577,7 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
             )
         }
         var transferQr by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+        var subQr by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
         Group {
             // 262. Перенос на новый телефон одним QR
             ListRow(
@@ -600,6 +601,19 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
                 leading = { tile(Icons.Rounded.QrCodeScanner) },
                 onClick = onScanQr,
             ) { Chevron() }
+            // 3.17.4 (58). Только ссылка подписки — для второго телефона или другого приложения
+            if (com.apexvpn.client.data.Prefs.subscriptionUrl.isNotEmpty()) {
+                GroupDivider()
+                ListRow(
+                    "QR-код подписки",
+                    "Только ссылка подписки — для второго устройства",
+                    leading = { tile(Icons.Rounded.QrCode2) },
+                    onClick = {
+                        subQr = runCatching { com.apexvpn.client.data.Transfer.qrBitmap(com.apexvpn.client.data.Prefs.subscriptionUrl) }.getOrNull()
+                            ?: run { viewModel.showMessage("Не удалось создать QR-код"); null }
+                    },
+                ) { Chevron() }
+            }
             GroupDivider()
             ListRow(
                 "Сохранить настройки в файл",
@@ -617,6 +631,13 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
         }
         transferQr?.let { bmp ->
             TransferQrDialog(bmp) { transferQr = null }
+        }
+        subQr?.let { bmp ->
+            TransferQrDialog(
+                bmp,
+                title = "QR-код подписки",
+                hint = "Только ссылка подписки, без настроек. Отсканируйте в APEX VPN («Сканировать QR-код») или в другом приложении, например Happ.",
+            ) { subQr = null }
         }
         Caption("Новый телефон: установите APEX VPN, нажмите «Сканировать QR-код» и наведите камеру на QR переноса. Настройки сохраняются при обновлении приложения. Файл нужен, если приложение пришлось удалить. В нём ссылка подписки — не отправляйте его другим. Ещё настройки попадают в резервную копию Android, если она включена на телефоне.")
 
@@ -721,6 +742,28 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
                 "Исходный код, все версии и инструкции",
                 leading = { tile(Icons.Rounded.Code) },
                 onClick = { openLink(context, com.apexvpn.client.data.Links.GITHUB) },
+            ) { Chevron() }
+            // 3.17.4 (70). Поделиться приложением: ссылка на скачивание и короткая инструкция
+            GroupDivider()
+            ListRow(
+                "Поделиться APEX VPN",
+                "Ссылка на скачивание и как установить",
+                leading = { tile(Icons.Rounded.Share) },
+                onClick = {
+                    val text = "APEX VPN — VPN для Android: автопилот, обход белых списков, блокировка рекламы.\n\n" +
+                        "Скачать: ${com.apexvpn.client.data.Links.GITHUB}/releases/latest\n\n" +
+                        "Как установить:\n1. Скачайте файл apex-vpn-….apk\n2. Откройте его и разрешите установку\n" +
+                        "3. В приложении вставьте ссылку подписки и нажмите «Подключить»"
+                    runCatching {
+                        context.startActivity(
+                            android.content.Intent.createChooser(
+                                android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain")
+                                    .putExtra(android.content.Intent.EXTRA_TEXT, text),
+                                "Поделиться APEX VPN",
+                            ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+                        )
+                    }
+                },
             ) { Chevron() }
             if (com.apexvpn.client.data.Links.TELEGRAM.isNotEmpty()) {
                 GroupDivider()
@@ -980,7 +1023,12 @@ private fun maskUrl(url: String): String {
 
 /** 262. QR переноса: крупно, на белом фоне, с предупреждением — в нём ссылка подписки. */
 @Composable
-private fun TransferQrDialog(bitmap: android.graphics.Bitmap, onDismiss: () -> Unit) {
+private fun TransferQrDialog(
+    bitmap: android.graphics.Bitmap,
+    title: String = "Перенос на новый телефон",
+    hint: String = "На новом телефоне: APEX VPN → «Сканировать QR-код». Перенесутся настройки, свои списки, избранное и подписка.",
+    onDismiss: () -> Unit,
+) {
     // Пока QR на экране — максимальная яркость, чтобы камера нового телефона его быстро прочитала
     val activity = androidx.compose.ui.platform.LocalContext.current as? android.app.Activity
     androidx.compose.runtime.DisposableEffect(Unit) {
@@ -992,7 +1040,7 @@ private fun TransferQrDialog(bitmap: android.graphics.Bitmap, onDismiss: () -> U
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = Apex.Dialog,
-        title = { Text("Перенос на новый телефон", color = Apex.Text) },
+        title = { Text(title, color = Apex.Text) },
         text = {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 androidx.compose.foundation.Image(
@@ -1007,7 +1055,7 @@ private fun TransferQrDialog(bitmap: android.graphics.Bitmap, onDismiss: () -> U
                 )
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    "На новом телефоне: APEX VPN → «Сканировать QR-код». Перенесутся настройки, свои списки, избранное и подписка.",
+                    hint,
                     color = Apex.TextDim, fontSize = 14.sp,
                 )
                 Spacer(Modifier.height(8.dp))
