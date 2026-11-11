@@ -143,6 +143,32 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
             }
         }
 
+        // 3.17.9: поиск по настройкам — сразу к нужному пункту
+        var search by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+        Spacer(Modifier.height(10.dp))
+        SearchField(search, "Поиск по настройкам") { search = it }
+        if (search.isNotBlank()) {
+            val q = search.trim().lowercase()
+            val found = settingsSearch.filter { q in it.title.lowercase() || q in it.keywords }
+            Spacer(Modifier.height(10.dp))
+            if (found.isEmpty()) {
+                Text("Ничего не нашлось", color = Apex.TextDim, fontSize = 14.sp, modifier = Modifier.padding(start = 4.dp))
+            } else Group {
+                found.forEachIndexed { i, item ->
+                    if (i > 0) GroupDivider()
+                    val where = if (item.cat == "mode") "Вкладка «Режим»" else settingsCategories.firstOrNull { it.first == item.cat }?.second ?: ""
+                    ListRow(item.title, where, onClick = {
+                        when {
+                            item.page != null -> onOpenPage(item.page)
+                            item.cat == "mode" -> viewModel.showMessage("Это на вкладке «Режим» внизу экрана")
+                            else -> cat = item.cat
+                        }
+                        search = ""
+                    }) { Chevron() }
+                }
+            }
+        }
+        if (search.isBlank()) {
         if (cat == "all" || cat == "sub") {
         // ── Подписка ──
         SectionLabel("Подписка")
@@ -233,21 +259,21 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
                 "Автопилот не выбирает серверы с пометкой «реклама на YouTube»",
                 leading = { tile(Icons.Rounded.Block) },
                 onClick = { viewModel.change { copy(excludeAds = !excludeAds) } },
-            ) { ApexSwitch(s.excludeAds, { v -> viewModel.change { copy(excludeAds = v) } }) }
+            ) { InfoHint("Без серверов с рекламой", "Некоторые бесплатные серверы в подписке показывают рекламу. С этой настройкой автопилот их не выбирает."); ApexSwitch(s.excludeAds, { v -> viewModel.change { copy(excludeAds = v) } }) }
             GroupDivider()
             ListRow(
                 "IPv6",
                 if (s.ipv6) "Сайты могут открываться по IPv6" else "Только IPv4 — стабильнее",
                 leading = { tile(Icons.Rounded.SettingsEthernet) },
                 onClick = { viewModel.change { copy(ipv6 = !ipv6) } },
-            ) { ApexSwitch(s.ipv6, { v -> viewModel.change { copy(ipv6 = v) } }) }
+            ) { InfoHint("IPv6", "Новый вид интернет-адресов. Если оператор его даёт, а сервер VPN — нет, часть сайтов может идти мимо VPN или не открываться. Не уверены — оставьте выключенным."); ApexSwitch(s.ipv6, { v -> viewModel.change { copy(ipv6 = v) } }) }
             GroupDivider()
             ListRow(
                 "Аварийный выключатель",
                 if (s.killSwitch) "Если VPN упадёт — интернет закроется, пока он не вернётся" else "Выключен",
                 leading = { tile(Icons.Rounded.GppMaybe) },
                 onClick = { viewModel.change(reload = false) { copy(killSwitch = !killSwitch) } },
-            ) { ApexSwitch(s.killSwitch, { v -> viewModel.change(reload = false) { copy(killSwitch = v) } }) }
+            ) { InfoHint("Аварийный выключатель", "Если VPN неожиданно упадёт, интернет закроется, пока VPN не переподключится. Так ни один запрос не уйдёт без защиты. Банки и скрытые приложения работают как обычно."); ApexSwitch(s.killSwitch, { v -> viewModel.change(reload = false) { copy(killSwitch = v) } }) }
         }
 
         // ── Надёжность ──
@@ -784,6 +810,7 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
             ) { Chevron() }
         }
         }
+        } // поиск пуст — обычный список настроек
         Spacer(Modifier.height(24.dp))
     }
 
@@ -810,6 +837,17 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = Apex.Accent, contentColor = Apex.OnAccent),
                     ) { Text("Скопировать отчёт") }
+                    // 3.17.9: одной кнопкой — в Telegram, остаётся только выбрать чат поддержки
+                    Button(
+                        onClick = {
+                            runCatching { com.apexvpn.client.data.Diagnostics.sendTelegram(context) }
+                                .onSuccess { viewModel.showMessage("Выберите чат ${com.apexvpn.client.data.Links.SUPPORT_NAME} — отчёт уже вставлен") }
+                                .onFailure { viewModel.showMessage("Не удалось открыть Telegram") }
+                            supportDialog = false
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Apex.SurfaceHigh, contentColor = Apex.Text),
+                    ) { Text("✈️ Отправить отчёт в Telegram") }
                     // Чат из подписки (support-url в панели), иначе — наша поддержка @Apexx_support
                     val chat = sub.supportUrl.ifBlank { com.apexvpn.client.data.Links.SUPPORT }
                     Button(
@@ -1119,4 +1157,73 @@ private fun BackupPasswordDialog(
 private val settingsCategories = listOf(
     "all" to "Все", "conn" to "Подключение", "tools" to "Инструменты", "look" to "Вид и звук",
     "sub" to "Подписка", "updates" to "Обновления", "data" to "Данные", "about" to "О приложении",
+)
+
+/** 3.17.9. Поиск по настройкам: название, раздел, страница (если есть) и слова для поиска. */
+private data class SearchItem(val title: String, val cat: String, val page: Page?, val keywords: String = "")
+
+private val settingsSearch = listOf(
+    SearchItem("Обновить сейчас", "sub", null, ""),
+    SearchItem("Изменить ссылку", "sub", null, ""),
+    SearchItem("Сканировать QR-код", "sub", null, ""),
+    SearchItem("Ссылка-приглашение", "sub", null, "друг пригласить"),
+    SearchItem("Удалить подписку", "sub", null, ""),
+    SearchItem("Режим автопилота", "conn", Page.Profile, "игры скорость стабильность звонки профиль белые списки lte обход"),
+    SearchItem("Автопереключение при сбое", "conn", null, ""),
+    SearchItem("DNS", "conn", Page.Dns, "днс doh dot"),
+    SearchItem("Маршрутизация", "conn", Page.Advanced, "правила базы сайтов fakedns warp домены"),
+    SearchItem("Ядро", "conn", null, "xray sing-box"),
+    SearchItem("Без серверов с рекламой", "conn", null, ""),
+    SearchItem("IPv6", "conn", null, ""),
+    SearchItem("Аварийный выключатель", "conn", null, "kill switch интернет блок"),
+    SearchItem("Защита без перерывов", "conn", null, ""),
+    SearchItem("Чтобы VPN не отключался", "conn", null, ""),
+    SearchItem("Подключать при открытии", "conn", null, ""),
+    SearchItem("Не работает?", "conn", Page.SelfCheck, ""),
+    SearchItem("Правила Wi-Fi", "conn", Page.Wifi, "вайфай сеть дом"),
+    SearchItem("Раздача на компьютер", "conn", Page.Share, ""),
+    SearchItem("Пинг", "tools", Page.Ping, "задержка"),
+    SearchItem("Тест скорости", "tools", Page.SpeedTest, ""),
+    SearchItem("Трафик по приложениям", "tools", Page.AppTraffic, ""),
+    SearchItem("Автоматизация", "tools", null, ""),
+    SearchItem("Проверка утечек", "tools", Page.LeakTest, "webrtc ipv6 dns утечка"),
+    SearchItem("Журнал соединений", "tools", Page.ConnLog, ""),
+    SearchItem("Проверить сайт", "tools", Page.SiteCheck, ""),
+    SearchItem("Правила «если — то»", "tools", Page.AutoRules, ""),
+    SearchItem("Помощник", "tools", Page.Helper, ""),
+    SearchItem("Отчёт за месяц", "tools", Page.Report, ""),
+    SearchItem("Сервисы на серверах", "tools", Page.ServiceCheck, ""),
+    SearchItem("Приложение не работает?", "tools", Page.AppIssue, ""),
+    SearchItem("Обновить базы сайтов", "tools", Page.Advanced, ""),
+    SearchItem("Автообновление баз", "tools", Page.Advanced, ""),
+    SearchItem("Скорость в уведомлении", "look", null, "шторка"),
+    SearchItem("Живое уведомление", "look", null, ""),
+    SearchItem("Конец подписки", "look", null, ""),
+    SearchItem("Дизайн, тема и иконка", "look", Page.Appearance, "оформление тёмная цвет фон обои"),
+    SearchItem("Проверять автоматически", "updates", null, ""),
+    SearchItem("Ставить само", "updates", null, "автообновление установка"),
+    SearchItem("Бета-версии", "updates", null, "тестовые ранний доступ"),
+    SearchItem("Вернуть прошлую версию", "updates", Page.Rollback, ""),
+    SearchItem("Обновить часы APEX Watch", "updates", null, ""),
+    SearchItem("Скачивать только по Wi-Fi", "updates", null, ""),
+    SearchItem("Проверить сейчас", "updates", null, ""),
+    SearchItem("Перенести на новый телефон", "data", null, ""),
+    SearchItem("Принять с другого телефона", "data", null, ""),
+    SearchItem("QR-код подписки", "data", null, ""),
+    SearchItem("Сохранить настройки в файл", "data", null, ""),
+    SearchItem("Восстановить из файла", "data", null, ""),
+    SearchItem("Очистить данные", "data", null, ""),
+    SearchItem("Отчёты об ошибках", "about", null, ""),
+    SearchItem("Справка", "about", null, ""),
+    SearchItem("Что нового", "about", Page.Changelog, ""),
+    SearchItem("GitHub", "about", null, ""),
+    SearchItem("Поделиться APEX VPN", "about", null, ""),
+    SearchItem("Telegram-канал", "about", null, ""),
+    SearchItem("Написать в поддержку", "about", null, "отчёт помощь ошибка telegram"),
+    SearchItem("Блокировка рекламы", "mode", null, "реклама трекеры hagezi"),
+    SearchItem("Защита от мошенников", "mode", null, "фишинг вирусы"),
+    SearchItem("Банки не увидят VPN", "mode", null, "банк сбер"),
+    SearchItem("Скрыть VPN от приложений", "mode", Page.HideApps, "исключения скрыть"),
+    SearchItem("Приложения через VPN", "mode", Page.Apps, "выбрать приложения"),
+    SearchItem("Справка", "about", Page.Help, "помощь как пользоваться"),
 )

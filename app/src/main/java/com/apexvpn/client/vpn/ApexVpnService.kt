@@ -110,6 +110,7 @@ class ApexVpnService : VpnService(), PlatformInterface, CommandServerHandler {
 
     override fun onRevoke() {
         // Пользователь включил другой VPN или отозвал разрешение
+        stoppedAlert("Скорее всего, включили другой VPN — Android разрешает только один")
         scope.launch { stopVpn() }
     }
 
@@ -210,7 +211,35 @@ class ApexVpnService : VpnService(), PlatformInterface, CommandServerHandler {
 
     /** VPN упал после подключения: с аварийным выключателем закрываем интернет, иначе выключаемся. */
     private fun failOrBlock() {
-        if (AppSettings.value.killSwitch) enterBlocked() else shutdown()
+        if (AppSettings.value.killSwitch) enterBlocked() else {
+            stoppedAlert(VpnState.error.value?.take(160) ?: "Ошибка ядра")
+            shutdown()
+        }
+    }
+
+    /**
+     * 3.17.9. VPN отключился сам (не по кнопке): уведомление с причиной и кнопкой
+     * «Подключить снова» — раньше VPN мог тихо пропасть, и сайты шли без защиты.
+     */
+    private fun stoppedAlert(reason: String) = runCatching {
+        if (VpnState.status.value != VpnStatus.Started && VpnState.status.value != VpnStatus.Starting) return@runCatching
+        val nm = getSystemService<NotificationManager>() ?: return@runCatching
+        val again = PendingIntent.getActivity(
+            this, 21, Shortcuts.connectIntent(this, null),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        nm.notify(
+            ALERT_ID,
+            NotificationCompat.Builder(this, ApexApp.CHANNEL_ALERTS)
+                .setSmallIcon(R.drawable.ic_stat_apex)
+                .setContentTitle(if (VpnState.status.value == VpnStatus.Starting) "VPN не подключился" else "VPN отключился")
+                .setContentText(reason)
+                .setStyle(NotificationCompat.BigTextStyle().bigText("Причина: $reason\nСейчас интернет идёт без VPN."))
+                .setContentIntent(again)
+                .addAction(0, "Подключить снова", again)
+                .setAutoCancel(true)
+                .build(),
+        )
     }
 
     /**

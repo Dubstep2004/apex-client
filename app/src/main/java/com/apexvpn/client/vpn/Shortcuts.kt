@@ -41,10 +41,12 @@ object Shortcuts {
     fun refresh(context: Context) = runCatching {
         val favorites = AppSettings.value.favorites
         val titles = Subscription.state.value.nodes.map { ServerInfo.title(it.name) }.distinct()
-        val list = titles.filter { it in favorites }.take(3).mapIndexed { i, t -> shortcut(context, "fav$i", t, t) }
+        // 3.17.9: ярлык «LTE-обход» — первый сервер обхода из подписки (для белых списков)
+        val lte = Subscription.state.value.nodes.firstOrNull { ServerInfo.isLte(it.name) }?.let { ServerInfo.title(it.name) }
+        val list = titles.filter { it in favorites && it != lte }.take(if (lte != null) 2 else 3).mapIndexed { i, t -> shortcut(context, "fav$i", t, t) }
         ShortcutManagerCompat.setDynamicShortcuts(
             context,
-            list + shortcut(context, "auto", "Автопилот", "auto"),
+            list + listOfNotNull(lte?.let { shortcut(context, "lte", "LTE-обход", it) }) + shortcut(context, "auto", "Автопилот", "auto"),
         )
     }
 

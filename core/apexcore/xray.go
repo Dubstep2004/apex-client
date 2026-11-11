@@ -18,6 +18,7 @@ import (
 	"net/url"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -537,9 +538,24 @@ func (x *xrayPlan) lookup(host string) []string {
 		return ips
 	}
 	ips := lookupIPs(host)
+	// 3.17.9: DNS не ответил (часто — при белых списках или во время перезагрузки) — берём
+	// прошлый удачный ответ. Иначе конфиг Xray менялся (IP ↔ домен), и Xray перезапускался
+	// с обрывом всех соединений, а сервер с доменом при белых списках вообще терял адрес.
+	lastResolvedMu.Lock()
+	if len(ips) > 0 {
+		lastResolved[host] = ips
+	} else if prev := lastResolved[host]; len(prev) > 0 {
+		ips = prev
+	}
+	lastResolvedMu.Unlock()
 	x.resolved[host] = ips
 	return ips
 }
+
+var (
+	lastResolvedMu sync.Mutex
+	lastResolved   = map[string][]string{}
+)
 
 // singBoxRules — правила sing-box, чтобы соединения Xray к серверам шли мимо туннеля.
 func (x *xrayPlan) singBoxRules() []any {

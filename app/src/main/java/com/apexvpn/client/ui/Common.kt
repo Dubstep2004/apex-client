@@ -399,3 +399,25 @@ fun pingColor(ms: Int): androidx.compose.ui.graphics.Color {
         else -> Apex.Bad
     }
 }
+
+/**
+ * 3.17.9. Кнопка «?» у сложной настройки: по нажатию — объяснение простыми словами.
+ */
+@Composable
+fun InfoHint(title: String, text: String) {
+    var open by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    Box(
+        Modifier.padding(end = 6.dp).size(28.dp).clip(androidx.compose.foundation.shape.CircleShape)
+            .background(Apex.SurfaceHigh).clickable { open = true },
+        contentAlignment = Alignment.Center,
+    ) { Text("?", color = Apex.TextDim, fontSize = 15.sp, fontWeight = FontWeight.Bold) }
+    if (open) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { open = false },
+            containerColor = Apex.Dialog,
+            title = { Text(title, color = Apex.Text) },
+            text = { Text(text, color = Apex.TextDim, fontSize = 15.sp, lineHeight = 21.sp) },
+            confirmButton = { androidx.compose.material3.TextButton(onClick = { open = false }) { Text("Понятно", color = Apex.Accent) } },
+        )
+    }
+}

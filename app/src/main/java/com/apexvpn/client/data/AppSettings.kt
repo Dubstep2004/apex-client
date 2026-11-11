@@ -23,6 +23,8 @@ data class Settings(
     val directDomains: List<String> = emptyList(),   // всегда напрямую
     val hideFromBanks: Boolean = true,
     val adBlock: Boolean = false,
+    /** 3.17.9: защита от мошеннических и вредоносных сайтов (HaGeZi Threat Intelligence). */
+    val blockThreats: Boolean = false,
     // Приложения
     val appsMode: AppsMode = AppsMode.AllApps,
     val apps: Set<String> = emptySet(),
@@ -298,6 +300,7 @@ object AppSettings {
         put("customDns", s.customDns)
         put("kids", KidsSchedule.active(s))
         put("adBlock", s.adBlock)
+        put("blockThreats", s.blockThreats)
         // 413. Ядро определяет приложение каждого соединения (Android 10+)
         put("blockQuic", quicBlocked(s).also { quicApplied = it })
         // DNS «Авто» меряет DNS через сервер, как они и работают под VPN
@@ -383,7 +386,7 @@ object AppSettings {
             JSONObject().put("id", it.id).put("name", it.name).put("items", JSONArray(it.items)).put("enabled", it.enabled).put("color", it.color)
         }))
         put("custom", list(s.customDomains)); put("direct", list(s.directDomains))
-        put("banks", s.hideFromBanks); put("adBlock", s.adBlock)
+        put("banks", s.hideFromBanks); put("adBlock", s.adBlock); put("blockThreats", s.blockThreats)
         put("appsMode", s.appsMode.id); put("apps", list(s.apps))
         put("dns", s.dns.id); put("customDns", s.customDns); put("kids", s.kids); put("kidsSchedule", s.kidsSchedule); put("kidsFrom", s.kidsFrom); put("kidsTo", s.kidsTo); put("kidsDays", JSONArray(s.kidsDays.toList()))
         put("ipv6", s.ipv6); put("profile", s.profile.id); put("failover", s.failover); put("killSwitch", s.killSwitch); put("autoDl", s.autoDownloadUpdates); put("appIcon", s.appIcon)
@@ -432,6 +435,7 @@ object AppSettings {
             directDomains = arr("direct", d.directDomains),
             hideFromBanks = o.optBoolean("banks", d.hideFromBanks),
             adBlock = o.optBoolean("adBlock", d.adBlock),
+            blockThreats = o.optBoolean("blockThreats", d.blockThreats),
             // 3.3: пункт «Приложения» убран — «Кроме выбранных» перешло в «Скрыть VPN»
             appsMode = AppsMode.AllApps,
             apps = arr("apps", d.apps).toSet(),

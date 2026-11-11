@@ -141,6 +141,25 @@ object Diagnostics {
         cm.setPrimaryClip(android.content.ClipData.newPlainText("APEX VPN — отчёт", text))
     }
 
+    /**
+     * 3.17.9. Отчёт одной кнопкой в Telegram: текст сразу уходит в Telegram (выбрать чат
+     * поддержки), без копирования. Нет Telegram — обычное окно «Поделиться».
+     */
+    fun sendTelegram(context: Context) {
+        copy(context) // заодно в буфере — если Telegram откроется не в том чате
+        val text = (context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager)
+            .primaryClip?.getItemAt(0)?.text?.toString() ?: build(context).take(4000)
+        val pm = context.packageManager
+        val tg = listOf("org.telegram.messenger", "org.telegram.messenger.web", "org.thunderdog.challegram", "tw.nekomimi.nekogram", "nekox.messenger")
+            .firstOrNull { runCatching { pm.getPackageInfo(it, 0) }.isSuccess }
+        val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
+        if (tg != null) {
+            context.startActivity(send.setPackage(tg).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        } else {
+            context.startActivity(Intent.createChooser(send, "Отправить отчёт").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        }
+    }
+
     /** Окно «Поделиться» с файлом отчёта — например, в Telegram поддержки. */
     fun share(context: Context) {
         val dir = File(context.cacheDir, "support").apply { mkdirs() }

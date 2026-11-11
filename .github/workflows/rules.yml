@@ -53,6 +53,26 @@ jobs:
             echo "::warning title=HaGeZi::список не собран — остаётся основная база"
           fi
 
+      - name: HaGeZi Threat Intelligence
+        run: |
+          set -uo pipefail
+          # 3.17.9: мошенники, фишинг, вирусы (HaGeZi TIF, облегчённая версия) — по переключателю
+          SB=$(ls -d sing-box-*/)sing-box
+          ok=""
+          for v in tif.mini tif.medium; do
+            if curl -fsSL --retry 3 -o tif.txt "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/$v.txt" &&
+               [ "$(grep -c '^||' tif.txt)" -gt 1000 ] &&
+               "$SB" rule-set convert --type adguard -o out/threats-hagezi.srs tif.txt &&
+               [ "$(head -c 3 out/threats-hagezi.srs)" = "SRS" ]; then ok=$v; break; fi
+          done
+          if [ -n "$ok" ]; then
+            grep -c '^||' tif.txt > json/threats-hagezi.count
+            echo "::notice title=HaGeZi TIF::$ok — $(cat json/threats-hagezi.count) доменов"
+          else
+            rm -f out/threats-hagezi.srs
+            echo "::warning title=HaGeZi TIF::не собран"
+          fi
+
       - name: Russia — only from inside
         run: |
           set -uo pipefail

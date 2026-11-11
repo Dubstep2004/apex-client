@@ -28,6 +28,7 @@ import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material3.Icon
@@ -136,6 +137,14 @@ fun ModeScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit) {
                 leading = { IconTile(Color(0xFFE5484D)) { Icon(Icons.Rounded.Block, null, tint = Color.White) } },
                 onClick = { viewModel.change { copy(adBlock = !adBlock) } },
             ) { ApexSwitch(s.adBlock, { v -> viewModel.change { copy(adBlock = v) } }) }
+            GroupDivider()
+            // 3.17.9: мошенники, фишинг, вирусы — отдельно от рекламы
+            ListRow(
+                title = "Защита от мошенников",
+                subtitle = "Фишинг, поддельные банки и вирусные сайты не откроются",
+                leading = { IconTile(Color(0xFFF59E0B)) { Icon(Icons.Rounded.Shield, null, tint = Color.White) } },
+                onClick = { viewModel.change { copy(blockThreats = !blockThreats) } },
+            ) { ApexSwitch(s.blockThreats, { v -> viewModel.change { copy(blockThreats = v) } }) }
             GroupDivider()
             ListRow(
                 title = "Банки не увидят VPN",

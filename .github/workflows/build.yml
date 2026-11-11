@@ -57,7 +57,7 @@ jobs:
             fi
           done
           # HaGeZi и «только из России» — только из ветки «rules» (у SagerNet их нет); не скачались — без них
-          for f in ads-hagezi.srs ru-inside.srs; do
+          for f in ads-hagezi.srs ru-inside.srs threats-hagezi.srs; do
             if curl -fsSL --retry 2 -o "/tmp/$f" "https://raw.githubusercontent.com/${{ github.repository }}/rules/$f" &&
                [ "$(head -c 3 "/tmp/$f")" = "SRS" ]; then cp "/tmp/$f" "app/src/main/assets/rules/$f"; fi
           done

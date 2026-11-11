@@ -28,6 +28,7 @@ const (
 	fileAds       = "geosite-category-ads-all.srs"
 	fileAdsHagezi = "ads-hagezi.srs" // HaGeZi Multi Normal (необязательный: нет файла — без него)
 	fileRuInside  = "ru-inside.srs"  // сайты, работающие только из России (runetfreedom, необязательный)
+	fileThreats   = "threats-hagezi.srs"
 	filePorn      = "geosite-category-porn.srs"
 	fileBetting   = "geosite-category-betting-ru.srs"
 )
@@ -60,6 +61,7 @@ type routeOptions struct {
 	CustomDNS     string       `json:"customDns"`     // https://host/dns-query
 	Kids          bool         `json:"kids"`          // семейный DNS для всех запросов
 	AdBlock       bool         `json:"adBlock"`       // блокировка рекламы и трекеров
+	BlockThreats  bool         `json:"blockThreats"`  // мошенники и вирусы (HaGeZi TIF, необязательная база)
 	IPv6          bool         `json:"ipv6"`
 	Profile       string       `json:"profile"` // normal | gaming | calls | battery
 	Share         shareOptions `json:"share"`   // раздача на компьютер
@@ -346,6 +348,11 @@ func buildAll(nodesJSON string, selectedTag string, optionsJSON string) (string,
 	addSet("ru-inside", ruInside)
 	addSet("ads", ads)
 	addSet("ads-hagezi", adsHagezi)
+	threats := ""
+	if opts.BlockThreats {
+		threats = opts.rulesFile(fileThreats)
+	}
+	addSet("threats", threats)
 	addSet("porn", porn)
 	addSet("betting", betting)
 
@@ -407,6 +414,9 @@ func buildAll(nodesJSON string, selectedTag string, optionsJSON string) (string,
 	rules = append(rules, userSets["direct"].portRules(map[string]any{"outbound": "direct"})...)
 	if sets := nonEmptyTags(map[string]string{"ads": ads, "ads-hagezi": adsHagezi}); len(sets) > 0 {
 		rules = append(rules, map[string]any{"rule_set": sets, "action": "reject"})
+	}
+	if threats != "" {
+		rules = append(rules, map[string]any{"rule_set": "threats", "action": "reject"})
 	}
 	// 15. Семейный режим: сайты 18+ и азартные игры закрыты (плюс семейный DNS)
 	if opts.Kids {

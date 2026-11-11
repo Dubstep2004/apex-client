@@ -420,6 +420,27 @@ private fun HideAppsPage(viewModel: MainViewModel, onBack: () -> Unit) {
             val filtered = searched.filter {
                 when (hideCat) { null -> true; "hidden" -> it.packageName in s.hiddenApps; else -> cats[it.packageName]?.name == hideCat }
             }.sortedWith(compareBy<com.apexvpn.client.data.AppInfo> { cats[it.packageName]?.ordinal ?: 99 }.thenBy { it.label.lowercase() })
+            // 3.17.9: вся категория одной кнопкой — «Скрыть все банки» и т. п.
+            if (hideCat != null && hideCat != "hidden" && filtered.isNotEmpty()) {
+                val pkgs = filtered.map { it.packageName }
+                val allHidden = pkgs.all { it in s.hiddenApps }
+                val catTitle = com.apexvpn.client.data.AppCategories.Cat.entries.firstOrNull { it.name == hideCat }?.title ?: ""
+                androidx.compose.material3.OutlinedButton(
+                    onClick = {
+                        viewModel.change {
+                            if (allHidden) copy(hiddenApps = hiddenApps - pkgs.toSet(), hideTemplateSkip = hideTemplateSkip + pkgs)
+                            else copy(hiddenApps = hiddenApps + pkgs, hideTemplateSkip = hideTemplateSkip - pkgs.toSet())
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                    shape = RoundedCornerShape(14.dp),
+                ) {
+                    Text(
+                        if (allHidden) "Показать VPN всем: «$catTitle» (${pkgs.size})" else "Скрыть VPN от всех: «$catTitle» (${pkgs.size})",
+                        color = Apex.Accent, fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
             val groups = filtered.groupBy { cats[it.packageName] ?: com.apexvpn.client.data.AppCategories.Cat.Other }
             LazyColumn(
                 Modifier
@@ -1976,6 +1997,7 @@ private fun AdvancedPage(viewModel: MainViewModel, onBack: () -> Unit) {
         val baseGroups = listOf(
             "Россия — напрямую" to listOf("geosite-category-ru.srs", "ru-inside.srs", "geoip-ru.srs"),
             "Реклама и трекеры" to listOf("geosite-category-ads-all.srs", "ads-hagezi.srs"),
+            "Защита от мошенников" to listOf("threats-hagezi.srs"),
             "Семейный режим" to listOf("geosite-category-porn.srs", "geosite-category-betting-ru.srs"),
         ).let { g -> g + ("Другое" to all.filter { n -> g.none { n in it.second } }) }
             .map { (t, names) -> t to names.filter { it in all } }.filter { it.second.isNotEmpty() }
@@ -2052,9 +2074,13 @@ private fun AdvancedPage(viewModel: MainViewModel, onBack: () -> Unit) {
         }
         if (cat == "all" || cat == "domains") {
         // ── Настройки доменов
-        SectionLabel("Настройки доменов")
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(1f)) { SectionLabel("Настройки доменов") }
+            InfoHint("Стратегия доменов", "Как приложение решает, куда отправить сайт. «Как есть» — по имени сайта (быстро). «IP, если домен не подошёл» — если имя не нашлось в правилах, узнаёт адрес сайта и проверяет правила ещё раз (точнее для «Умного» режима, но чуть медленнее).")
+        }
         Group {
             ListRow("Поддельный DNS (FakeDNS)", "Быстрее открывает сайты через VPN, адреса 198.18.x.x") {
+                InfoHint("FakeDNS", "Телефон сразу получает «условный» адрес сайта, а настоящий адрес узнаёт уже сервер VPN. Сайты открываются быстрее, а оператор не видит, какие адреса вы запрашиваете. Если какое-то приложение перестало работать — выключите.")
                 ApexSwitch(s.fakeDns, { v -> viewModel.change { copy(fakeDns = v) } })
             }
         }
@@ -2069,7 +2095,10 @@ private fun AdvancedPage(viewModel: MainViewModel, onBack: () -> Unit) {
         }
         if (cat == "all" || cat == "warp") {
         // ── 31. WARP-цепочка
-        SectionLabel("WARP-цепочка")
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(1f)) { SectionLabel("WARP-цепочка") }
+            InfoHint("WARP-цепочка", "Трафик идёт: вы → ваш сервер VPN → бесплатная сеть Cloudflare WARP → сайт. Сайты видят адрес Cloudflare, а не сервера VPN. Помогает, если сайт пишет «недоступно в вашей стране» или постоянно просит капчу.")
+        }
         val warpBusy by viewModel.warpBusy.collectAsStateWithLifecycle()
         Group {
             ListRow(
