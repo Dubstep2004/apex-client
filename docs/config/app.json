@@ -1,5 +1,21 @@
 {
-  "banners": [],
+  "banners": [
+    {
+      "id": "bmwcmr1c6afc",
+      "text": "Сегодня с 22:00 до 23:00 технические работы. Возможны короткие перерывы.",
+      "level": "warn",
+      "url": "",
+      "from": 1794432480000,
+      "to": 1794432600000,
+      "minCode": 0,
+      "maxCode": 0,
+      "devices": [
+        "phone"
+      ],
+      "countries": [],
+      "preview": true
+    }
+  ],
   "servers": {
     "status": {},
     "recommended": "",
