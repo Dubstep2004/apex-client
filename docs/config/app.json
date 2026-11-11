@@ -1,6 +1,73 @@
 {
   "banners": [
     {
+      "id": "bmwcmzmfzusn",
+      "text": "Сейчас есть сбой у части серверов. Мы уже чиним — автопилот переключит вас на рабочий.",
+      "level": "alert",
+      "url": "",
+      "from": 0,
+      "to": 0,
+      "minCode": 0,
+      "maxCode": 0,
+      "devices": [],
+      "countries": [],
+      "preview": false
+    },
+    {
+      "id": "bmwcmzky48w5",
+      "text": "Сегодня с 22:00 до 23:00 технические работы. Возможны короткие перерывы.",
+      "level": "warn",
+      "url": "",
+      "from": 0,
+      "to": 0,
+      "minCode": 0,
+      "maxCode": 0,
+      "devices": [],
+      "countries": [],
+      "preview": false
+    },
+    {
+      "id": "bmwcmyhc148p",
+      "text": "Вышла новая версия — обновите приложение в Настройках.",
+      "level": "info",
+      "url": "",
+      "from": 0,
+      "to": 0,
+      "minCode": 0,
+      "maxCode": 0,
+      "devices": [],
+      "countries": [],
+      "preview": false
+    },
+    {
+      "id": "bmwcmyf6v6ho",
+      "text": "Всё работает. Спасибо, что подождали!",
+      "level": "info",
+      "url": "",
+      "from": 0,
+      "to": 0,
+      "minCode": 0,
+      "maxCode": 0,
+      "devices": [],
+      "countries": [],
+      "preview": false
+    },
+    {
+      "id": "bmwcmyax8m7n",
+      "text": "У операторов включены белые списки. Выберите «Автопилот» — он сам переключит на LTE-обход.",
+      "level": "warn",
+      "url": "",
+      "from": 0,
+      "to": 0,
+      "minCode": 0,
+      "maxCode": 0,
+      "devices": [],
+      "countries": [
+        "RU"
+      ],
+      "preview": false
+    },
+    {
       "id": "bmwcmr1c6afc",
       "text": "Сегодня с 22:00 до 23:00 технические работы. Возможны короткие перерывы.",
       "level": "warn",
