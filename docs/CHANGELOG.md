@@ -2,6 +2,16 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.16.3 · 11 ноября 2026
+
+<img src="img/tags/improved.svg" alt="Улучшено" height="22">
+
+- Отчёт для поддержки показывает адрес выбранного сервера (только первые две части IP или «домен») и порт — проще сравнить с другим приложением
+
+<img src="img/tags/fixed.svg" alt="Исправлено" height="22">
+
+- В отчёте в строке сервера «Xray» повторялось дважды
+
 ## 3.16.2 · 11 ноября 2026
 
 <img src="img/tags/improved.svg" alt="Улучшено" height="22">

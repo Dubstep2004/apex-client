@@ -60,7 +60,12 @@ object Diagnostics {
         b.appendLine("VPN: ${VpnState.status.value}, пинг: ${VpnState.ping.value} мс")
         VpnState.error.value?.let { b.appendLine("Ошибка: ${mask(it, hosts)}") }
         b.appendLine("Подписка: «${sub.title}», серверов: ${sub.nodes.size}")
-        b.appendLine("Сервер: " + (sel?.let { "${it.name} · ${it.category} · ${it.detail}${if (it.xrayOnly) " · Xray" else ""}" } ?: "Автопилот"))
+        b.appendLine("Сервер: " + (sel?.let { "${it.name} · ${it.category} · ${it.detail}${if (it.xrayOnly && !it.detail.contains("Xray")) " · Xray" else ""}" } ?: "Автопилот"))
+        sel?.let { n ->
+            // Без полного адреса: первые две части IP или «домен» — чтобы сравнить с другим приложением
+            val ip = Regex("""^(\d+\.\d+)\.\d+\.\d+$""").find(n.server)?.groupValues?.get(1)
+            b.appendLine("Адрес сервера: " + (if (ip != null) "$ip.x.x" else "домен") + ", порт ${n.port}")
+        }
         val byCat = sub.nodes.groupingBy { it.category }.eachCount().entries.joinToString { "${it.key} ${it.value}" }
         b.appendLine("Протоколы: $byCat")
         b.appendLine()
