@@ -166,7 +166,18 @@ object AppConfig {
     /** Баннер ещё показывать: не просрочен и не закрыт пользователем. */
     fun bannerVisible(b: Banner?): Boolean = b != null && Prefs.bannerDismissed != (b.id + b.text).hashCode()
 
-    /** Скачать свежий файл (не чаще раза в 5 минут, если не force). true — изменился. */
+    /**
+     * 3.18.3. Что из настроек влияет на ядро: пометки и скрытие серверов, выключенные функции, код предпросмотра.
+     * Баннер, объявление и ссылки ядро не трогают — из-за них VPN больше не перезагружается.
+     */
+    private fun coreKey(c: Config) = listOf(
+        c.servers.entries.sortedBy { it.key }.joinToString { "${it.key}=${it.value.state}/${it.value.until}/${it.value.preview}" },
+        c.hidden.sorted().joinToString(), c.recommended,
+        c.features.entries.sortedBy { it.key }.joinToString { "${it.key}=${it.value}" },
+        c.previewCode,
+    ).joinToString("|")
+
+    /** Скачать свежий файл (не чаще раза в 5 минут, если не force). true — изменилось то, что влияет на ядро (нужно перезагрузить VPN). */
     suspend fun refresh(force: Boolean = false): Boolean = withContext(Dispatchers.IO) {
         if (!force && System.currentTimeMillis() - Prefs.appConfigAt < 5 * 60_000L) return@withContext false
         val text = sources.firstNotNullOfOrNull { src ->
@@ -179,7 +190,8 @@ object AppConfig {
         Prefs.appConfigAt = System.currentTimeMillis()
         if (text == Prefs.appConfigJson) return@withContext false
         Prefs.appConfigJson = text
+        val before = coreKey(_state.value)
         _state.value = parse(text) ?: Config()
-        true
+        before != coreKey(_state.value)
     }
 }

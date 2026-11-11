@@ -2,6 +2,12 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.18.3 · 12 ноября 2026
+
+<img src="img/tags/fixed.svg" alt="Исправлено" height="22">
+
+- VPN больше не перезапускается, когда в пульте меняют только баннер, объявление или ссылки — соединение не прерывается
+
 ## 3.18.2 · 12 ноября 2026
 
 <img src="img/tags/fixed.svg" alt="Исправлено" height="22">

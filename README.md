@@ -17,7 +17,7 @@
 <p><b>Два ядра</b> · все популярные протоколы · <b>свои списки</b> с шаблонами · <b>3D-глобус</b> · <b>13 дизайнов</b>, палитры и <b>живое видео на фоне</b><br>
 автопилот с белыми списками · DNS «Авто» для каждой сети · базы сайтов каждый день · часы Wear OS</p>
 
-<sub>📱 Android — <b>3.18.2</b> (Android 7+) · sing-box 1.13 · Xray 26</sub><br>
+<sub>📱 Android — <b>3.18.3</b> (Android 7+) · sing-box 1.13 · Xray 26</sub><br>
 <sub>💬 Поддержка: <a href="https://t.me/Apexx_support">@Apexx_support</a></sub>
 
 </div>
@@ -860,16 +860,25 @@ core/apexcore/          Go: разбор подписки → конфиги sin
 
 <img src="docs/img/tags/new.svg" alt="Новое" height="22"> <img src="docs/img/tags/improved.svg" alt="Улучшено" height="22"> <img src="docs/img/tags/changed.svg" alt="Изменено" height="22"> <img src="docs/img/tags/fixed.svg" alt="Исправлено" height="22"> <img src="docs/img/tags/removed.svg" alt="Удалено" height="22">
 
-### 3.18.2 · 12 ноября 2026
+### 3.18.3 · 12 ноября 2026
+
+<img src="docs/img/tags/fixed.svg" alt="Исправлено" height="22">
+
+- VPN больше не перезапускается, когда в пульте меняют только баннер, объявление или ссылки — соединение не прерывается
+
+#### 📚 Все версии (109)
+
+Каждая версия — отдельная вкладка.
+
+<details>
+<summary><b>3.18.2</b> · 12 ноября 2026</summary>
 
 <img src="docs/img/tags/fixed.svg" alt="Исправлено" height="22">
 
 - Код предпросмотра срабатывает сразу: приложение тут же скачивает свежие настройки из пульта и пишет, подошёл код или нет
 - После ввода кода снова показывается баннер, если его раньше закрыли
 
-#### 📚 Все версии (108)
-
-Каждая версия — отдельная вкладка.
+</details>
 
 <details>
 <summary><b>3.18.1</b> · 12 ноября 2026</summary>

@@ -450,7 +450,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.0', PANEL_DATE = '12 ноября 2026'
+const PANEL_VERSION = '2.1', PANEL_DATE = '12 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-vpn', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json'
 const DESIGNS = [
@@ -473,6 +473,7 @@ const APP_TABS = ['banner', 'servers', 'announce', 'links', 'update', 'features'
 const PART = { banners: ['banner', 'Баннеры'], servers: ['servers', 'Серверы'], announce: ['announce', 'Объявление'], links: ['links', 'Ссылки'],
   update: ['update', 'Обновления'], features: ['features', 'Функции'], previewCode: ['preview', 'Предпросмотр'] }
 const LEVEL = { info: ['ℹ️', 'Новость'], warn: ['⚠️', 'Внимание'], alert: ['🛑', 'Авария'] }
+const lv = l => LEVEL[l] || LEVEL.info
 const DEVICES = [['phone', 'Телефон'], ['tv', 'Телевизор'], ['watch', 'Часы']]
 const COUNTRIES = [['RU', 'Россия'], ['KZ', 'Казахстан'], ['BY', 'Беларусь'], ['UA', 'Украина']]
 const TEMPLATES = [
@@ -538,7 +539,15 @@ async function getFile(path, ref = BRANCH) {
 async function putFile(path, data, message) {
   const text = JSON.stringify(data, null, 2) + '\n'; JSON.parse(text)
   const body = { message, content: b64enc(text), branch: BRANCH }; if (files[path]?.sha) body.sha = files[path].sha
-  const r = await api('/contents/' + path, { method: 'PUT', body: JSON.stringify(body) }); files[path] = { sha: r.content.sha, data }
+  let r
+  try { r = await api('/contents/' + path, { method: 'PUT', body: JSON.stringify(body) }) }
+  catch (e) {
+    // Файл успели изменить (другая вкладка/телефон) — берём свежую версию и сохраняем поверх, правки не теряются
+    if (e.status !== 409 && !(e.status === 422 && /sha/i.test(e.message))) throw e
+    const f = await api('/contents/' + path + '?ref=' + BRANCH).catch(() => null); body.sha = f?.sha
+    r = await api('/contents/' + path, { method: 'PUT', body: JSON.stringify(body) })
+  }
+  files[path] = { sha: r.content.sha, data }
 }
 
 // ── Время: поле datetime-local ↔ мс
@@ -638,6 +647,7 @@ function collectApp(loose = false) {
   const aTitle = $('aTitle').value.trim(), aText = $('aText').value.trim()
   const announce = aTitle || aText ? { id: annId || 'a-new', title: aTitle, text: aText, image: url($('aImage').value), button: $('aButton').value.trim(), url: url($('aUrl').value),
     minCode: int($('aMin').value), maxCode: int($('aMax').value), preview: $('aPreview').checked } : null
+  if (!loose) banners.forEach((b, i) => { if (b.text.trim() && b.from && b.to && b.to <= b.from) throw new Error('Баннер ' + (i + 1) + ': «до» раньше, чем «с»') })
   return {
     banners: banners.filter(b => b.text.trim()).map(b => ({ id: b.id, text: b.text.trim(), level: b.level, url: url(b.url), from: b.from || 0, to: b.to || 0,
       minCode: b.minCode || 0, maxCode: b.maxCode || 0, devices: b.devices, countries: b.countries, preview: !!b.preview })),
@@ -666,7 +676,7 @@ function preview(c) {
   document.querySelectorAll('[data-preview]').forEach(host => {
     if (!host.firstElementChild) host.appendChild($('phoneTpl').content.cloneNode(true))
     const bn = host.querySelector('[data-ph-banner]')
-    bn.hidden = !shown; if (shown) { bn.dataset.l = shown.level; host.querySelector('[data-ph-icon]').textContent = LEVEL[shown.level][0]; host.querySelector('[data-ph-text]').textContent = shown.text }
+    bn.hidden = !shown; if (shown) { bn.dataset.l = shown.level; host.querySelector('[data-ph-icon]').textContent = lv(shown.level)[0]; host.querySelector('[data-ph-text]').textContent = shown.text }
     const rows = Object.entries(c.servers.status).map(([n, v]) => [n, v.state])
     if (c.servers.recommended && !rows.some(r => r[0] === c.servers.recommended)) rows.unshift([c.servers.recommended, 'rec'])
     host.querySelector('[data-ph-list]').innerHTML = rows.length
@@ -687,7 +697,7 @@ function overview(c) {
   const live = c.banners.filter(b => !b.preview && (!b.from || now >= b.from) && (!b.to || now < b.to))
   const marksN = Object.values(c.servers.status).filter(v => !v.until || now < v.until).length
   const rows = [
-    ['banner', 'Баннеры', live.length ? live.map(b => LEVEL[b.level][1] + ': ' + b.text).join(' / ') : c.banners.length ? 'запланировано: ' + c.banners.length : 'нет', !c.banners.length, live.some(b => b.level !== 'info')],
+    ['banner', 'Баннеры', live.length ? live.map(b => lv(b.level)[1] + ': ' + b.text).join(' / ') : c.banners.length ? 'запланировано: ' + c.banners.length : 'нет', !c.banners.length, live.some(b => b.level !== 'info')],
     ['announce', 'Объявление', c.announce ? (c.announce.preview ? 'предпросмотр: ' : '') + (c.announce.title || c.announce.text.slice(0, 40)) : 'нет', !c.announce],
     ['servers', 'Пометки серверов', marksN ? marksN + ' шт.' : 'нет', !marksN],
     ['servers', 'Советуем', c.servers.recommended || 'нет', !c.servers.recommended],
@@ -801,6 +811,7 @@ async function guarded(btn, fn) {
   btn.disabled = true
   try { await fn() } catch (e) {
     if (e.status === 409 || e.status === 422) { toast('Файл изменился на GitHub — данные обновлены, сохраните ещё раз', false); await loadAll() }
+    else if (e.status === 403) toast('У токена нет права записи. Создайте новый токен: Only select repositories → apex-vpn, Add permissions → Contents: Read and write. Потом «Выйти» и войти с ним.', false)
     else if (e.status === 401) { toast('Токен не подошёл или истёк — войдите снова', false); logout() }
     else toast(e.message, false)
   } finally { btn.disabled = false }
@@ -836,7 +847,11 @@ $('addMark').onclick = () => { marks.push({ name: '', state: 'maintenance', note
 $('app').addEventListener('input', e => { if (e.target.closest('[data-tab=servers],[data-tab=announce],[data-tab=links],[data-tab=update],[data-tab=features],[data-tab=preview]') && !e.target.closest('#marks')) changed() })
 $('aAgain').onclick = () => { annId = 'a' + Date.now().toString(36); changed(); toast('Окно покажется снова всем после сохранения') }
 $('aClear').onclick = () => { ['aTitle', 'aText', 'aImage', 'aButton', 'aUrl', 'aMin', 'aMax'].forEach(id => ($(id).value = '')); $('aPreview').checked = false; annId = ''; changed() }
-$('pGen').onclick = () => { $('pCode').value = String(crypto.getRandomValues(new Uint32Array(1))[0] % 900000 + 100000); changed() }
+$('pGen').onclick = () => {
+  const had = (files[APP]?.data?.previewCode || '').trim()
+  $('pCode').value = String(crypto.getRandomValues(new Uint32Array(1))[0] % 900000 + 100000); changed()
+  toast(had ? 'Код сменился — после «Сохранить» введите новый код в приложении, старый перестанет работать' : 'Код готов — сохраните и введите его в приложении')
+}
 $('panicBtn').onclick = () => { $('panicServers').value = marks.map(m => m.name).join('\n'); $('panic').showModal() }
 $('panicCancel').onclick = () => $('panic').close()
 $('panicGo').onclick = () => {
