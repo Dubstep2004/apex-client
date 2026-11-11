@@ -1,5 +1,6 @@
 package com.apexvpn.client.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -10,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -35,6 +38,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.apexvpn.client.data.AUTO_TAG
 import com.apexvpn.client.data.AutoModes
@@ -45,12 +51,29 @@ import com.apexvpn.client.data.RouteMode
 import com.apexvpn.client.data.ServerInfo
 import com.apexvpn.client.ui.theme.Apex
 
-/** Ряд «таблеток» на выбор (листается вбок). */
+/**
+ * Варианты на выбор. 3.17.10: переносятся на новую строку (раньше уезжали за край экрана),
+ * выбранный — залит цветом, чтобы было видно, что выбрано.
+ */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun Pills(items: List<Pair<String, String>>, selected: String?, onPick: (String) -> Unit) {
-    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    androidx.compose.foundation.layout.FlowRow(
+        Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         items.forEach { (id, title) ->
-            Box(Modifier.clip(RoundedCornerShape(50)).clickable { onPick(id) }) { Tag(title, outlined = selected != id) }
+            val on = selected == id
+            Box(
+                Modifier.heightIn(min = 38.dp).clip(RoundedCornerShape(50))
+                    .background(if (on) Apex.Accent else Apex.SurfaceHigh)
+                    .clickable { onPick(id) }.padding(horizontal = 14.dp, vertical = 8.dp),
+                contentAlignment = androidx.compose.ui.Alignment.Center,
+            ) {
+                Text(title, color = if (on) Apex.OnAccent else Apex.Text, fontSize = 14.sp,
+                    fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal)
+            }
         }
     }
 }
@@ -101,10 +124,15 @@ internal fun AutoRulesPage(viewModel: MainViewModel, onBack: () -> Unit) {
 
         SectionLabel("Готовые")
         Group {
-            AutoRulesEngine.presets.forEachIndexed { i, (title, rule) ->
+            AutoRulesEngine.presets.forEachIndexed { i, (_, rule) ->
                 if (i > 0) GroupDivider()
                 val has = s.autoRules.any { it.trigger == rule.trigger && it.arg == rule.arg && it.action == rule.action && it.value == rule.value }
-                ListRow(title, onClick = { if (!has) save(s.autoRules + rule.copy(id = java.util.UUID.randomUUID().toString().take(8))) }) {
+                // 3.17.10: «если» и «то» на двух строках — длинные названия больше не обрезаются
+                ListRow(
+                    "Если: ${AutoRulesEngine.triggerTitle(rule)}",
+                    "То: ${AutoRulesEngine.actionTitle(rule)}",
+                    onClick = { if (!has) save(s.autoRules + rule.copy(id = java.util.UUID.randomUUID().toString().take(8))) },
+                ) {
                     Tag(if (has) "Добавлено" else "Добавить", outlined = has)
                 }
             }
@@ -119,12 +147,34 @@ internal fun AutoRulesPage(viewModel: MainViewModel, onBack: () -> Unit) {
                     when (trigger) {
                         "app" -> {
                             if (!usageOk) {
-                                Text("Нужен доступ к истории использования — так APEX узнаёт, какое приложение открыто.", color = Apex.TextDim)
-                                Box(Modifier.clip(RoundedCornerShape(50)).clickable { RecentApps.openSettings(ctx) }) { Tag("Разрешить") }
+                                Spacer(Modifier.height(4.dp))
+                                Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Apex.Warn.copy(alpha = 0.12f)).padding(12.dp)) {
+                                    androidx.compose.foundation.layout.Column {
+                                        Text("Нужен доступ к истории использования — так APEX узнаёт, какое приложение открыто.",
+                                            color = Apex.Text, fontSize = 14.sp, lineHeight = 19.sp)
+                                        Spacer(Modifier.height(8.dp))
+                                        TextButton(onClick = { RecentApps.openSettings(ctx) }) { Text("Разрешить доступ", color = Apex.Accent, fontWeight = FontWeight.SemiBold) }
+                                    }
+                                }
                                 Spacer(Modifier.height(6.dp))
                             }
-                            Box(Modifier.clip(RoundedCornerShape(50)).clickable { viewModel.loadApps(); pickApp = true }) {
-                                Tag(app?.second?.let { "Приложение: $it" } ?: "Выбрать приложение")
+                            // Выбранное приложение — с иконкой, по нажатию можно сменить
+                            val chosenIcon = remember(app?.first, appList) {
+                                appList?.firstOrNull { it.packageName == app?.first }?.icon
+                                    ?.let { d -> runCatching { d.toBitmap(80, 80).asImageBitmap() }.getOrNull() }
+                            }
+                            Row(
+                                Modifier.fillMaxWidth().padding(top = 6.dp).clip(RoundedCornerShape(14.dp)).background(Apex.SurfaceHigh)
+                                    .clickable { viewModel.loadApps(); pickApp = true }.padding(12.dp),
+                                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                            ) {
+                                if (chosenIcon != null) {
+                                    androidx.compose.foundation.Image(chosenIcon, null, Modifier.size(32.dp))
+                                    Spacer(Modifier.width(10.dp))
+                                }
+                                Text(app?.second ?: "Выбрать приложение…", color = if (app != null) Apex.Text else Apex.Accent,
+                                    fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                                Text(if (app != null) "Сменить" else "", color = Apex.TextDim, fontSize = 13.sp)
                             }
                         }
                         "time" -> {
@@ -177,16 +227,36 @@ internal fun AutoRulesPage(viewModel: MainViewModel, onBack: () -> Unit) {
 
     if (pickApp) {
         LaunchedEffect(Unit) { viewModel.loadApps() }
+        // 3.17.10: поиск, иконки, недавно открытые — сверху
+        var q by remember { mutableStateOf("") }
+        val recent = remember { if (usageOk) runCatching { RecentApps.recent(ctx) }.getOrDefault(emptyList()) else emptyList() }
         AlertDialog(
             onDismissRequest = { pickApp = false },
             containerColor = Apex.Dialog,
             title = { Text("Какое приложение?", color = Apex.Text) },
             text = {
-                val list = appList
-                if (list == null) Text("Загружаем список…", color = Apex.TextDim)
-                else LazyColumn(Modifier.heightIn(max = 420.dp)) {
-                    items(list.filter { it.packageName != ctx.packageName }, key = { it.packageName }) { a ->
-                        ListRow(a.label, a.packageName, onClick = { app = a.packageName to a.label; pickApp = false })
+                androidx.compose.foundation.layout.Column {
+                    SearchField(q, "Поиск приложения") { q = it }
+                    Spacer(Modifier.height(8.dp))
+                    val list = appList
+                    if (list == null) Text("Загружаем список…", color = Apex.TextDim)
+                    else {
+                        val shown = list.filter { it.packageName != ctx.packageName }
+                            .filter { q.isBlank() || it.label.contains(q, true) || it.packageName.contains(q, true) }
+                            .sortedWith(compareBy<com.apexvpn.client.data.AppInfo> { a -> recent.indexOf(a.packageName).let { if (it < 0) Int.MAX_VALUE else it } }
+                                .thenBy { it.label.lowercase() })
+                        if (shown.isEmpty()) Text("Ничего не нашлось", color = Apex.TextDim)
+                        LazyColumn(Modifier.heightIn(max = 460.dp)) {
+                            items(shown, key = { it.packageName }) { a ->
+                                val icon = remember(a.packageName) { runCatching { a.icon?.toBitmap(80, 80)?.asImageBitmap() }.getOrNull() }
+                                ListRow(
+                                    a.label,
+                                    if (a.packageName in recent) "Недавно открыто" else null,
+                                    leading = { if (icon != null) androidx.compose.foundation.Image(icon, null, Modifier.size(36.dp)) else GlyphTile(a.label.take(1), Apex.Accent) },
+                                    onClick = { app = a.packageName to a.label; pickApp = false },
+                                )
+                            }
+                        }
                     }
                 }
             },
