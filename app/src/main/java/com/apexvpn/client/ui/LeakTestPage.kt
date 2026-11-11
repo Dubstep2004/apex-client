@@ -8,6 +8,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Visibility
+import androidx.compose.material.icons.rounded.VisibilityOff
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Error
 import androidx.compose.material.icons.rounded.RadioButtonUnchecked
@@ -35,16 +38,31 @@ import kotlinx.coroutines.launch
 internal fun LeakTestPage(onBack: () -> Unit) {
     val st by LeakTest.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+    // 3.17.11: адреса скрыты точками — удобно делать скриншоты; глазик показывает их
+    var showIp by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    val m: (String) -> String = { if (showIp) it else maskIps(it) }
     PageScaffold("Проверка утечек", onBack) {
         Caption("Проверяем, не видят ли сайты, звонки и WebRTC ваш настоящий адрес. Запросы — к Cloudflare, Google STUN и ip-api, только по нажатию; результат остаётся на телефоне.")
         Spacer(Modifier.height(12.dp))
         if (st.items.isNotEmpty()) {
+            androidx.compose.foundation.layout.Row(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).clickable { showIp = !showIp }.padding(horizontal = 4.dp, vertical = 8.dp),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            ) {
+                Icon(
+                    if (showIp) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility, null,
+                    tint = Apex.Accent, modifier = Modifier.size(22.dp),
+                )
+                androidx.compose.foundation.layout.Spacer(Modifier.size(8.dp))
+                Text(if (showIp) "Скрыть IP-адреса" else "Показать IP-адреса", color = Apex.Accent, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            }
+            Spacer(Modifier.height(6.dp))
             Group {
                 st.items.forEachIndexed { i, item ->
                     if (i > 0) GroupDivider()
                     ListRow(
                         item.title,
-                        listOf(item.value, item.note).filter { it.isNotEmpty() }.joinToString("\n").ifEmpty { null },
+                        listOf(item.value, item.note).filter { it.isNotEmpty() }.joinToString("\n").ifEmpty { null }?.let(m),
                         leading = {
                             if (st.running && item.mark == LeakTest.Mark.Wait) {
                                 CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.5.dp, color = Apex.Accent)
@@ -66,7 +84,7 @@ internal fun LeakTestPage(onBack: () -> Unit) {
             Spacer(Modifier.height(12.dp))
             val good = st.items.none { it.mark == LeakTest.Mark.Bad }
             Text(
-                v, color = Apex.Text, fontSize = 16.sp, lineHeight = 22.sp,
+                m(v), color = Apex.Text, fontSize = 16.sp, lineHeight = 22.sp,
                 modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp))
                     .background((if (good) Apex.Good else Apex.Bad).copy(alpha = 0.12f)).padding(16.dp),
             )
@@ -82,3 +100,8 @@ internal fun LeakTestPage(onBack: () -> Unit) {
         Spacer(Modifier.height(24.dp))
     }
 }
+
+/** IP-адреса в тексте → «185.•••.•••.•••» (IPv4) и «2a02:••••» (IPv6). */
+internal fun maskIps(text: String): String =
+    text.replace(Regex("""\b(\d{1,3})\.\d{1,3}\.\d{1,3}\.\d{1,3}\b""")) { "${it.groupValues[1]}.•••.•••.•••" }
+        .replace(Regex("""\b([0-9a-fA-F]{1,4}):(?:[0-9a-fA-F]{0,4}:){1,7}[0-9a-fA-F]{0,4}\b""")) { "${it.groupValues[1]}:••••" }

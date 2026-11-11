@@ -2,6 +2,12 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.17.11 · 12 ноября 2026
+
+<img src="img/tags/improved.svg" alt="Улучшено" height="22">
+
+- «Проверка утечек»: IP-адреса скрыты точками (185.•••.•••.•••) — можно спокойно делать скриншоты. Кнопка «Показать IP-адреса» открывает их
+
 ## 3.17.10 · 12 ноября 2026
 
 <img src="img/tags/improved.svg" alt="Улучшено" height="22">
