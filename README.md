@@ -18,7 +18,7 @@
 автопилот с белыми списками · DNS «Авто» для каждой сети · базы сайтов каждый день · часы Wear OS</p>
 
 <sub>📱 Android — <b>3.18.3</b> (Android 7+) · sing-box 1.13 · Xray 26</sub><br>
-<sub>💬 Поддержка: <a href="https://t.me/Apexx_support">@Apexx_support</a></sub>
+<sub>🌐 Сайт: <a href="https://dubstep2004.github.io">dubstep2004.github.io</a> · 💬 Поддержка: <a href="https://t.me/Apexx_support">@Apexx_support</a></sub>
 
 </div>
 
