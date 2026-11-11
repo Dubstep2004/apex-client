@@ -592,11 +592,12 @@ private fun SpeedTestPage(viewModel: MainViewModel, onBack: () -> Unit) {
         }
 
         // Провайдер и сервер теста
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(10.dp))
+        IpToggle()
         Group {
             ListRow(
                 meta?.provider?.ifEmpty { null } ?: if (metaLoading) "Поиск провайдера…" else "Провайдер не определён",
-                meta?.let { m -> listOf(m.ip, listOf(m.city, m.country).filter { it.isNotEmpty() }.joinToString(", ")).filter { it.isNotEmpty() }.joinToString(" · ") },
+                meta?.let { m -> listOf(IpMask.apply(m.ip), listOf(m.city, m.country).filter { it.isNotEmpty() }.joinToString(", ")).filter { it.isNotEmpty() }.joinToString(" · ") },
                 leading = { if (metaLoading) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.5.dp, color = Apex.Accent) else IconTile(Apex.SurfaceHigh) { Text("🛰", fontSize = 20.sp) } },
                 onClick = { viewModel.loadSpeedMeta() },
             )

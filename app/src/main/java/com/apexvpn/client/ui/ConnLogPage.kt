@@ -62,7 +62,7 @@ internal fun ConnLogPage(viewModel: MainViewModel, onBack: () -> Unit) {
         }
         Spacer(Modifier.height(12.dp))
         PlainField(query, "Поиск: сайт или приложение") { query = it }
-        Spacer(Modifier.height(10.dp))
+        IpToggle()
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf("all" to "Все", "vpn" to "Через VPN", "direct" to "Напрямую", "blocked" to "Заблокировано").forEach { (id, title) ->
                 val n = entries.count { matches(it, id) }
@@ -96,7 +96,7 @@ internal fun ConnLogPage(viewModel: MainViewModel, onBack: () -> Unit) {
                         Box(Modifier.size(10.dp).clip(CircleShape).background(color))
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
-                            Text(e.host, color = Apex.Text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(IpMask.apply(e.host), color = Apex.Text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             val route = when (e.route) {
                                 ConnLog.Route.Vpn -> "VPN" + (e.server.takeIf { it.isNotEmpty() }?.let { " · $it" } ?: "")
                                 ConnLog.Route.Direct -> "Напрямую"
