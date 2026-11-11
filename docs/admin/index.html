@@ -199,6 +199,18 @@
   .login .ver { color: var(--faint); font-size: 12.5px; margin: 16px 0 0; text-align: center; }
   .pin { font-size: 26px !important; letter-spacing: .5em; text-align: center; font-weight: 800; }
   .linkbtn { background: none; border: 0; color: var(--dim); cursor: pointer; margin-top: 14px; font-size: 13.5px; text-decoration: underline; padding: 0; }
+  .helpdoc h2 { font-size: 18px; margin: 0 0 10px; }
+  .helpdoc p, .helpdoc li { color: var(--dim); font-size: 14.5px; line-height: 1.55; }
+  .helpdoc b, .helpdoc strong { color: var(--text); }
+  .helpdoc ol, .helpdoc ul { padding-left: 20px; margin: 8px 0; } .helpdoc li { margin: 5px 0; }
+  .helpdoc code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px; background: var(--line); border-radius: 6px; padding: 1px 6px; color: var(--text); word-break: break-word; }
+  .helpdoc pre { background: var(--line); border-radius: 12px; padding: 12px; overflow-x: auto; font-size: 12.5px; }
+  .helpdoc a { color: var(--go2); word-break: break-word; }
+  .helpdoc .tbl { overflow-x: auto; } .helpdoc table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  .helpdoc td { border-top: 1px solid var(--line); padding: 9px 8px 9px 0; vertical-align: top; color: var(--dim); } .helpdoc td:first-child { color: var(--text); font-weight: 700; white-space: nowrap; }
+  .helpdoc .callout { border-left: 3px solid var(--go2); background: var(--line); border-radius: 0 12px 12px 0; padding: 10px 14px; margin: 12px 0; font-size: 14px; color: var(--dim); }
+  .helpdoc .callout.warn { border-color: #f2b75b; } .helpdoc .callout.bad { border-color: #f0616d; }
+  .helpdoc details { margin: 0; } .helpdoc details summary { font-size: 16px; padding: 4px 0; }
   details { margin-top: 18px; color: var(--dim); font-size: 14px; } details summary { cursor: pointer; font-weight: 700; color: var(--text); }
   details ol { padding-left: 20px; } details li { margin: 6px 0; }
 
@@ -413,6 +425,104 @@
         <button class="btn go" id="saveHide" style="width:100%;margin-top:14px">Сохранить шаблон</button></div>
     </section>
 
+    <!-- Справка -->
+    <section data-tab="help" hidden class="helpdoc">
+      <h1>Справка для владельца</h1>
+      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 12 ноября 2026 · приложение 3.18.3.</p>
+
+      <div class="block"><h2>🎛 Как работает пульт</h2>
+        <p>Пульт меняет файл <code>docs/config/app.json</code> на GitHub. Приложения забирают его при запуске, при открытии (не чаще раза в 5 минут) и раз в 15 минут в фоне — <b>изменения доходят за 1–15 минут</b>. Новую версию приложения выпускать не нужно.</p>
+        <p><b>Вход:</b> первый раз — токен GitHub и PIN из 4–8 цифр, дальше только PIN. Токен хранится только в этом браузере, зашифрованный PIN-ом.</p>
+        <div class="tbl"><table>
+          <tr><td>Обзор</td><td>Что видят пользователи, версии, скачивания, <b>аварийный режим</b>: красный баннер всем, серверы на обслуживание, стоп автообновлениям</td></tr>
+          <tr><td>Баннеры</td><td>Полоса на главном экране: расписание «с … до …», устройства, страна оператора, версии, шаблоны</td></tr>
+          <tr><td>Серверы</td><td>«🔧 Обслуживание» — автопилот не выбирает, «🐢 Медленно», «⭐ Советуем», «Скрыть у всех». Сервер ищется по части названия: «Германия» — все немецкие</td></tr>
+          <tr><td>Объявление</td><td>Большое окно с картинкой и кнопкой, показывается один раз. «Показать снова всем» — увидят ещё раз</td></tr>
+          <tr><td>Ссылки</td><td>Поддержка, канал, сайт</td></tr>
+          <tr><td>Обновления</td><td>«Обязательное обновление для версий ниже N» — окно без «Позже». «Отозванные версии» — предложат откатиться</td></tr>
+          <tr><td>Функции</td><td>Экстренно выключить LTE-автопереход, HaGeZi, защиту от мошенников, автоустановку обновлений</td></tr>
+          <tr><td>Предпросмотр</td><td>Черновики видны только на вашем телефоне</td></tr>
+          <tr><td>История</td><td>Все сохранения, «Вернуть» прошлую версию</td></tr>
+          <tr><td>Проверка</td><td>Открываются ли подписка и поддержка, дошёл ли файл до GitHub и зеркала</td></tr>
+        </table></div>
+        <div class="callout">VPN у пользователей перезапускается (с 3.18.3) только из-за серверов, функций и кода предпросмотра. Баннеры, объявление и ссылки соединение не прерывают.</div>
+        <div class="callout">Внизу полоса «Есть несохранённые изменения» — не забудьте «Сохранить». Если файл поменяли с другого устройства, пульт сам возьмёт свежую версию и сохранит ваши правки.</div>
+      </div>
+
+      <div class="block"><details><summary>🔑 Новый токен (срок вышел или ошибка 403)</summary>
+        <ol>
+          <li>Откройте <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a></li>
+          <li>Token name: <b>APEX admin</b>, Expiration: <b>90 дней</b>.</li>
+          <li><b>Repository access → Only select repositories → Dubstep2004/apex-vpn.</b> «Public repositories» (по умолчанию) — только чтение, будет 403.</li>
+          <li><b>Permissions → «+ Add permissions» → Contents → Read and write.</b></li>
+          <li><b>Generate token</b> → скопируйте → здесь «Выйти и стереть токен» → войдите с новым.</li>
+        </ol>
+        <div class="callout bad">Токен — как пароль. Никому не присылайте, в том числе в чаты и боту.</div>
+      </details></div>
+
+      <div class="block"><details><summary>👁 Код предпросмотра</summary>
+        <ol>
+          <li>Вкладка «Предпросмотр» → код или «Придумать» → Сохранить.</li>
+          <li>Приложение → Настройки → О приложении → «Код предпросмотра» → тот же код. Приложение напишет «Код подошёл» или «Код не совпадает».</li>
+          <li>У баннера, объявления или пометки включите «Только предпросмотр» → Сохранить. Видите только вы.</li>
+          <li>Проверили — снимите галочку и сохраните: увидят все.</li>
+        </ol>
+        <div class="callout warn">Каждое «Придумать» делает <b>новый</b> код — старый на телефоне перестаёт работать.</div>
+      </details></div>
+
+      <div class="block"><details><summary>🌐 Сайты</summary>
+        <div class="tbl"><table>
+          <tr><td><a href="https://dubstep2004.github.io" target="_blank" rel="noopener">dubstep2004.github.io</a></td><td>Визитка — репозиторий Dubstep2004.github.io</td></tr>
+          <tr><td>/apex-vpn/admin/</td><td>Этот пульт — apex-vpn/docs/admin</td></tr>
+          <tr><td>/apex-vpn/invite/</td><td>Приглашение — apex-vpn/docs/invite</td></tr>
+          <tr><td>/apex-vpn/</td><td>Старый лендинг, сам переводит на визитку</td></tr>
+        </table></div>
+        <ul>
+          <li>Картинки и иконку визитка берёт из <code>apex-vpn/docs/img</code> и <code>docs/invite</code> — не удаляйте их.</li>
+          <li>Pages: apex-vpn → main, папка /docs; Dubstep2004.github.io → main, папка / (root).</li>
+          <li>Изменения на сайтах — через 1–3 минуты. Не видно — Ctrl+F5.</li>
+        </ul>
+      </details></div>
+
+      <div class="block"><details><summary>🛠 Выпуск новой версии и беты</summary>
+        <ol>
+          <li><code>app/build.gradle.kts</code> — увеличьте versionCode и versionName.</li>
+          <li><code>Changelog.kt</code> — добавьте запись: это описание релиза и окна обновления.</li>
+          <li>Запушьте в main (или Actions → Build APEX VPN → Run workflow). Сборка ~25 минут, потом релиз и окно «Доступна версия».</li>
+        </ol>
+        <p><b>Бета:</b> имя со словом beta (<code>3.19.0-beta1</code>) — выйдет как Pre-release, получат только с «Настройки → Обновления → Бета-версии».</p>
+        <p><b>Плохая версия:</b> «Функции» → выключить автоустановку обновлений, номер сборки — в «Отозванные версии».</p>
+        <div class="callout warn">Все версии подписываются одним ключом (секреты APEX_KEYSTORE_BASE64 / APEX_KEYSTORE_PASSWORD). Не удаляйте их и храните копию ключа — иначе обновления не встанут поверх.</div>
+      </details></div>
+
+      <div class="block"><details><summary>📢 Объявление в карточке подписки (Remnawave)</summary>
+        <ol>
+          <li>Remnawave → Подписка → поле объявления (announce), до 200 символов → Сохранить.</li>
+          <li>Картинка и кнопка: допишите <code>![](https://сайт/b.jpg)</code> и <code>[Продлить](https://сайт/pay)</code>.</li>
+          <li>Убрать — очистите поле или впишите 0.</li>
+        </ol>
+        <p>Не приходит — добавьте правило ответа с <code>additionalExtendedClientsRegex: ["^APEX VPN/"]</code>: APEX получит то же, что Happ (объявление, описания серверов, support-url).</p>
+      </details></div>
+
+      <div class="block"><details><summary>📶 Подписка, Xray JSON и LTE-обход</summary>
+        <ul>
+          <li>Понимает base64-список, обычный список, JSON sing-box и Xray JSON. User-Agent: <code>APEX VPN/версия</code>.</li>
+          <li>LTE-обход узнаётся по названию: LTE, 📶, Обход, Bypass, Белые списки.</li>
+          <li>Если у обхода особые настройки (XHTTP, CDN) — Response Rules → «User-Agent содержит APEX VPN» → тип ответа <b>XRAY_JSON</b>.</li>
+          <li>Сменили домен подписки — вкладка «Подписка»: новый адрес первым + строка переезда «старый = новый».</li>
+        </ul>
+      </details></div>
+
+      <div class="block"><details><summary>🩺 GitHub не собирает или сайт не открывается</summary>
+        <ul>
+          <li><a href="https://github.com/Dubstep2004/apex-vpn/actions" target="_blank" rel="noopener">Actions</a>: жёлтый — в очереди, зелёный — готово, красный — ошибка.</li>
+          <li>Долго в очереди или «startup_failure» — обычно сбой у GitHub. Подождите и нажмите Re-run jobs.</li>
+          <li>Лимиты не тратятся: репозитории публичные, Actions бесплатные. Старые файлы сборок удаляет ежедневная очистка.</li>
+          <li>Сайт показывает 404 — проверьте, прошёл ли pages-build-deployment, и Settings → Pages.</li>
+        </ul>
+      </details></div>
+    </section>
+
     <button class="btn quiet out-m" id="lock2">Заблокировать пульт</button>
   </main>
 
@@ -450,7 +560,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.1', PANEL_DATE = '12 ноября 2026'
+const PANEL_VERSION = '2.2', PANEL_DATE = '12 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-vpn', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json'
 const DESIGNS = [
@@ -468,7 +578,7 @@ const FEATURES = [
 ]
 const TABS = [['home', '◎', 'Обзор'], ['banner', '📢', 'Баннеры'], ['servers', '🖥', 'Серверы'], ['announce', '🪧', 'Объявление'],
   ['links', '🔗', 'Ссылки'], ['update', '📦', 'Обновления'], ['features', '⚙️', 'Функции'], ['preview', '👁', 'Предпросмотр'], '-',
-  ['history', '🕘', 'История'], ['checks', '🩺', 'Проверка'], ['sub', '🔐', 'Подписка'], ['hide', '🧩', 'Скрыть VPN']]
+  ['history', '🕘', 'История'], ['checks', '🩺', 'Проверка'], ['sub', '🔐', 'Подписка'], ['hide', '🧩', 'Скрыть VPN'], ['help', '📖', 'Справка']]
 const APP_TABS = ['banner', 'servers', 'announce', 'links', 'update', 'features', 'preview']
 const PART = { banners: ['banner', 'Баннеры'], servers: ['servers', 'Серверы'], announce: ['announce', 'Объявление'], links: ['links', 'Ссылки'],
   update: ['update', 'Обновления'], features: ['features', 'Функции'], previewCode: ['preview', 'Предпросмотр'] }
