@@ -4,205 +4,365 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>APEX VPN — админка</title>
+<meta name="theme-color" content="#0e1220">
+<title>APEX · пульт</title>
 <link rel="icon" href="../invite/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0b0b14; --card: #15151f; --card2: #1d1d2a; --line: #2a2a3a;
-    --text: #f2f2f7; --dim: #9a9ab0; --accent: #22c55e; --accent-ink: #04130a;
-    --warn: #f2b75b; --bad: #ef4444; --info: #6366f1; --radius: 18px;
+    --ink: #0e1220; --panel: #161b2e; --panel2: #1d2340; --line: #262d4a;
+    --text: #eef1fa; --dim: #8c93b0; --faint: #5b6283;
+    --go1: #2fd38b; --go2: #18b6c9; --go-ink: #04201a;
+    --info: #7c8cff; --warn: #f5b759; --alert: #f0616d;
+    --r-lg: 22px; --r-md: 14px; --r-sm: 10px;
+    --display: "Unbounded", "Manrope", system-ui, sans-serif;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  body { padding: 16px; padding-bottom: 96px; max-width: 720px; margin: 0 auto; }
-  h1 { font-size: 26px; margin: 8px 0 2px; letter-spacing: -.02em; }
-  h2 { font-size: 19px; margin: 0 0 12px; }
-  .sub { color: var(--dim); font-size: 14px; margin: 0 0 16px; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin: 0 0 14px; }
-  label { display: block; color: var(--dim); font-size: 13px; margin: 12px 0 6px; }
-  input, select, textarea {
-    width: 100%; background: var(--card2); color: var(--text); border: 1px solid var(--line);
-    border-radius: 12px; padding: 12px; font: inherit; outline: none;
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; min-height: 100vh; color: var(--text); background: var(--ink);
+    font: 15px/1.5 "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background-image: radial-gradient(900px 500px at 85% -10%, #18b6c922, transparent 60%),
+                      radial-gradient(700px 420px at -10% 10%, #2fd38b18, transparent 60%);
+    background-attachment: fixed;
   }
-  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
-  textarea { min-height: 110px; font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
-  .row { display: flex; gap: 8px; align-items: center; }
-  .row > * { flex: 1; }
-  .row > .shrink { flex: 0 0 auto; }
-  button {
-    background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 14px;
-    padding: 13px 16px; font: inherit; font-weight: 650; cursor: pointer; min-height: 48px;
+  button, input, select, textarea { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--go2); outline-offset: 2px; }
+  a { color: var(--go1); }
+
+  /* ── Каркас: рейка навигации слева, работа в центре, телефон справа */
+  .shell { display: grid; grid-template-columns: 236px minmax(0, 1fr) 320px; gap: 28px; max-width: 1240px; margin: 0 auto; padding: 28px 24px 120px; }
+  .rail { position: sticky; top: 28px; align-self: start; }
+  .brand { display: flex; align-items: center; gap: 12px; margin: 0 0 26px; }
+  .brand img { width: 40px; height: 40px; border-radius: 12px; }
+  .brand b { font-family: var(--display); font-size: 17px; letter-spacing: -.01em; display: block; }
+  .brand span { color: var(--dim); font-size: 13px; }
+  .nav { display: flex; flex-direction: column; gap: 2px; }
+  .nav button {
+    display: flex; align-items: center; gap: 12px; text-align: left; width: 100%;
+    background: none; border: 0; border-radius: 12px; padding: 10px 12px; color: var(--dim); cursor: pointer; font-weight: 600;
   }
-  button.ghost { background: var(--card2); color: var(--text); border: 1px solid var(--line); }
-  button.danger { background: transparent; color: var(--bad); border: 1px solid var(--bad); }
-  button:disabled { opacity: .5; cursor: default; }
-  .tabs { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 14px; scrollbar-width: none; }
-  .tabs::-webkit-scrollbar { display: none; }
-  .tab { flex: 0 0 auto; background: var(--card); color: var(--text); border: 1px solid var(--line); border-radius: 999px; padding: 9px 15px; min-height: 40px; font-weight: 500; }
-  .tab.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 650; }
-  .hint { color: var(--dim); font-size: 13px; margin: 8px 0 0; }
-  .switch { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
-  .switch:last-child { border-bottom: 0; }
-  .switch b { display: block; font-weight: 600; }
-  .switch span { color: var(--dim); font-size: 13px; }
-  .switch input { width: 52px; height: 30px; flex: 0 0 auto; accent-color: var(--accent); }
-  .srv { background: var(--card2); border: 1px solid var(--line); border-radius: 14px; padding: 10px; margin: 8px 0; }
-  .toast { position: fixed; left: 16px; right: 16px; bottom: 18px; max-width: 688px; margin: 0 auto; padding: 14px 16px;
-           border-radius: 14px; background: var(--card2); border: 1px solid var(--line); box-shadow: 0 10px 30px #0008; display: none; z-index: 9; }
-  .toast.ok { border-color: var(--accent); } .toast.err { border-color: var(--bad); }
-  .stat { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
-  .stat:last-child { border-bottom: 0; }
-  .big { font-size: 34px; font-weight: 800; letter-spacing: -.02em; }
-  .preview { border-radius: 16px; padding: 12px 14px; margin-top: 12px; font-size: 14px; }
-  .muted { color: var(--dim); }
-  a { color: var(--accent); }
+  .nav button .ic { width: 22px; text-align: center; font-size: 17px; }
+  .nav button:hover { color: var(--text); background: #ffffff08; }
+  .nav button.on { color: var(--text); background: var(--panel2); }
+  .nav button .dot { margin-left: auto; width: 7px; height: 7px; border-radius: 50%; background: var(--warn); }
+  .rail .out { margin-top: 22px; color: var(--faint); background: none; border: 0; padding: 8px 12px; cursor: pointer; font-size: 13px; }
+  .rail .out:hover { color: var(--alert); }
+
+  .work h1 { font-family: var(--display); font-weight: 700; font-size: 30px; letter-spacing: -.02em; line-height: 1.15; margin: 4px 0 6px; }
+  .work .lead { color: var(--dim); margin: 0 0 22px; max-width: 60ch; }
+  .block { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 20px; margin: 0 0 16px; }
+  .block h2 { font-size: 16px; font-weight: 700; margin: 0 0 4px; }
+  .block .note { color: var(--dim); font-size: 13.5px; margin: 0 0 14px; }
+
+  label.f { display: block; color: var(--dim); font-size: 13px; font-weight: 600; margin: 14px 0 7px; }
+  label.f:first-child { margin-top: 0; }
+  input[type=text], input[type=url], input[type=number], input[type=date], input[type=password], select, textarea {
+    width: 100%; background: var(--ink); border: 1px solid var(--line); border-radius: var(--r-md);
+    padding: 12px 14px; outline: none; transition: border-color .15s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--go2); }
+  textarea { min-height: 96px; resize: vertical; }
+  textarea.code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px; min-height: 320px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .help { color: var(--faint); font-size: 12.5px; margin: 7px 0 0; }
+
+  /* Сегменты: вид баннера */
+  .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; background: var(--ink); border: 1px solid var(--line); border-radius: var(--r-md); padding: 4px; }
+  .seg button { border: 0; background: none; border-radius: 10px; padding: 10px 6px; color: var(--dim); font-weight: 700; cursor: pointer; }
+  .seg button.on[data-v=info] { background: #7c8cff26; color: #c7ceff; }
+  .seg button.on[data-v=warn] { background: #f5b75926; color: #ffd99b; }
+  .seg button.on[data-v=alert] { background: #f0616d26; color: #ffb3b9; }
+
+  /* Переключатели */
+  .sw { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-top: 1px solid var(--line); }
+  .sw:first-of-type { border-top: 0; padding-top: 4px; }
+  .sw .t { flex: 1; } .sw .t b { display: block; font-weight: 700; } .sw .t span { color: var(--dim); font-size: 13px; }
+  .tog { position: relative; width: 50px; height: 30px; flex: 0 0 auto; }
+  .tog input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+  .tog i { position: absolute; inset: 0; border-radius: 99px; background: var(--line); transition: background .2s; pointer-events: none; }
+  .tog i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; transition: transform .2s; }
+  .tog input:checked + i { background: linear-gradient(135deg, var(--go1), var(--go2)); }
+  .tog input:checked + i::after { transform: translateX(20px); }
+  .tog input:focus-visible + i { outline: 2px solid var(--go2); outline-offset: 2px; }
+
+  /* Пометки серверов */
+  .mark { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; padding: 10px; border: 1px solid var(--line); border-radius: var(--r-md); margin: 0 0 8px; background: var(--ink); }
+  .mark input.n { background: transparent; border: 0; padding: 6px 4px; font-weight: 700; }
+  .mark input.note { grid-column: 1 / -1; background: transparent; border: 0; border-top: 1px dashed var(--line); border-radius: 0; padding: 8px 4px 2px; font-size: 13px; color: var(--dim); }
+  .chips { display: flex; gap: 4px; }
+  .chips button { border: 1px solid var(--line); background: none; color: var(--dim); border-radius: 99px; padding: 6px 10px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .chips button.on[data-v=maintenance] { border-color: #f0616d80; color: #ffb3b9; background: #f0616d1a; }
+  .chips button.on[data-v=slow] { border-color: #f5b75980; color: #ffd99b; background: #f5b7591a; }
+  .x { border: 0; background: none; color: var(--faint); width: 34px; height: 34px; border-radius: 10px; cursor: pointer; font-size: 18px; }
+  .x:hover { color: var(--alert); background: #f0616d14; }
+  .add { width: 100%; border: 1px dashed var(--line); background: none; color: var(--dim); border-radius: var(--r-md); padding: 12px; cursor: pointer; font-weight: 700; }
+  .add:hover { color: var(--text); border-color: var(--dim); }
+
+  /* Обзор */
+  .live { display: grid; gap: 1px; background: var(--line); border-radius: var(--r-md); overflow: hidden; }
+  .live div { background: var(--panel); padding: 13px 14px; display: flex; gap: 12px; align-items: baseline; }
+  .live dt { color: var(--dim); font-size: 13.5px; width: 150px; flex: 0 0 auto; }
+  .live dd { margin: 0; font-weight: 700; }
+  .live dd.off { color: var(--faint); font-weight: 600; }
+  .live dd.hot { color: #ffd99b; }
+  .rel { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; font-size: 14px; }
+  .rel span:nth-child(odd) { color: var(--dim); } .rel b { text-align: right; font-variant-numeric: tabular-nums; }
+  .bar { height: 6px; border-radius: 6px; background: var(--ink); grid-column: 1 / -1; margin: -2px 0 6px; overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--go1), var(--go2)); }
+
+  /* Кнопки */
+  .btn { border: 0; border-radius: var(--r-md); padding: 13px 18px; font-weight: 800; cursor: pointer; min-height: 48px; }
+  .btn.go { background: linear-gradient(135deg, var(--go1), var(--go2)); color: var(--go-ink); }
+  .btn.quiet { background: var(--panel2); color: var(--text); }
+  .btn:disabled { opacity: .45; cursor: default; }
+
+  /* Нижняя панель сохранения */
+  .savebar {
+    position: fixed; left: 50%; bottom: 18px; transform: translate(-50%, 140%); transition: transform .28s cubic-bezier(.2,.8,.2,1);
+    display: flex; gap: 10px; align-items: center; background: #1d2340f0; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--line); border-radius: 18px; padding: 10px 10px 10px 18px; box-shadow: 0 16px 50px #0009; z-index: 20; width: min(560px, calc(100% - 32px));
+  }
+  .savebar.show { transform: translate(-50%, 0); }
+  .savebar p { flex: 1; margin: 0; font-weight: 700; } .savebar p small { display: block; color: var(--dim); font-weight: 500; }
+
+  /* Телефон: как увидят пользователи */
+  .phone-col { position: sticky; top: 28px; align-self: start; }
+  .phone-col h3 { font-size: 13px; color: var(--dim); font-weight: 700; margin: 6px 0 12px 6px; }
+  .phone { width: 300px; border-radius: 42px; padding: 12px; background: #05070d; border: 1px solid #2a3150; box-shadow: 0 30px 80px #000a, inset 0 0 0 2px #0e1220; }
+  .screen { border-radius: 32px; overflow: hidden; min-height: 560px; padding: 34px 16px 18px; position: relative;
+            background: radial-gradient(260px 220px at 50% 30%, #18b6c940, transparent 70%), linear-gradient(180deg, #123a30, #1a1630 70%); }
+  .screen::before { content: ""; position: absolute; top: 12px; left: 50%; width: 80px; height: 22px; margin-left: -40px; border-radius: 99px; background: #05070d; }
+  .ph-top { display: flex; align-items: center; gap: 8px; font-family: var(--display); font-weight: 700; font-size: 14px; margin: 6px 0 12px; }
+  .ph-top i { font-style: normal; margin-left: auto; font-family: "Manrope"; font-size: 10.5px; font-weight: 700; color: #9ff0c9; background: #2fd38b22; padding: 4px 8px; border-radius: 99px; }
+  .ph-banner { border-radius: 16px; padding: 10px 12px; font-size: 12.5px; line-height: 1.35; display: flex; gap: 8px; margin: 0 0 12px; }
+  .ph-banner[data-l=info] { background: #7c8cff2a; } .ph-banner[data-l=warn] { background: #f5b7592a; } .ph-banner[data-l=alert] { background: #f0616d2a; }
+  .ph-banner .x2 { margin-left: auto; color: #ffffff80; }
+  .shield { width: 120px; height: 140px; margin: 18px auto 10px; border-radius: 50% 50% 46% 46% / 30% 30% 70% 70%;
+            background: linear-gradient(160deg, #2fb8ff, #6d5cff); box-shadow: 0 0 60px #4c7dff66; display: grid; place-items: center; font-size: 46px; color: #fff; }
+  .ph-state { text-align: center; font-family: var(--display); font-weight: 700; font-size: 20px; margin: 0 0 16px; }
+  .ph-list { background: #ffffff10; border-radius: 18px; padding: 4px 12px; }
+  .ph-srv { display: flex; align-items: center; gap: 8px; padding: 9px 0; border-top: 1px solid #ffffff12; font-size: 13px; font-weight: 700; flex-wrap: wrap; }
+  .ph-srv:first-child { border-top: 0; }
+  .ph-tag { font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 99px; }
+  .ph-tag.rec { background: #2fd38b2a; color: #9ff0c9; } .ph-tag.m { background: #f0616d2a; color: #ffb3b9; } .ph-tag.s { background: #f5b7592a; color: #ffd99b; }
+  .ph-empty { color: #ffffff70; font-size: 12px; padding: 10px 0; }
+
+  /* Вход */
+  .login { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+  .login .card { width: min(440px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 28px; padding: 28px; }
+  .login img { width: 64px; height: 64px; border-radius: 18px; margin: 0 0 18px; box-shadow: 0 12px 40px #18b6c955; }
+  .login h1 { font-family: var(--display); font-size: 26px; margin: 0 0 6px; letter-spacing: -.02em; }
+  .login p { color: var(--dim); margin: 0 0 20px; }
+  .login .btn { width: 100%; margin-top: 14px; }
+  details { margin-top: 18px; color: var(--dim); font-size: 14px; }
+  details summary { cursor: pointer; font-weight: 700; color: var(--text); }
+  details ol { padding-left: 20px; } details li { margin: 6px 0; }
+
+  .toast { position: fixed; top: 18px; left: 50%; transform: translate(-50%, -160%); transition: transform .25s; z-index: 30;
+           background: var(--panel2); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; font-weight: 700; box-shadow: 0 16px 40px #0008; max-width: calc(100% - 32px); }
+  .toast:not(.show) { visibility: hidden; }
+  .toast.show { transform: translate(-50%, 0); } .toast.ok { border-color: #2fd38b80; } .toast.err { border-color: #f0616d80; }
   [hidden] { display: none !important; }
-  ol { padding-left: 20px; color: var(--dim); font-size: 14px; } ol li { margin: 4px 0; }
+
+  /* Телефон-ширина: навигация — полоска сверху, превью — под формой */
+  @media (max-width: 1100px) { .shell { grid-template-columns: 220px minmax(0, 1fr); } .phone-col { display: none; } .phone-inline { display: block !important; } }
+  @media (max-width: 760px) {
+    .shell { display: block; padding: 16px 16px 120px; }
+    .rail { position: sticky; top: 0; z-index: 10; margin: -16px -16px 18px; padding: 12px 16px 10px; background: #0e1220e6; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+    .brand { margin: 0 0 10px; } .brand img { width: 32px; height: 32px; border-radius: 10px; }
+    .nav { flex-direction: row; overflow-x: auto; scrollbar-width: none; gap: 6px; } .nav::-webkit-scrollbar { display: none; }
+    .nav button { flex: 0 0 auto; width: auto; padding: 8px 12px; background: var(--panel); border-radius: 99px; }
+    .nav button .dot { margin-left: 2px; }
+    .rail .out { display: none; } .out-m { display: block !important; }
+    .work h1 { font-size: 24px; }
+    .two { grid-template-columns: 1fr; }
+    .live dt { width: 120px; }
+    .savebar { padding: 10px; gap: 8px; } .savebar p { font-size: 13.5px; line-height: 1.3; } .savebar p small { display: none; }
+    .savebar .btn { padding: 11px 14px; min-height: 44px; }
+  }
+  .phone-inline { display: none; margin: 0 0 16px; }
+  .phone-inline .phone { width: 100%; max-width: 320px; margin: 0 auto; } .phone-inline .screen { min-height: 0; }
+  .out-m { display: none; width: 100%; margin-top: 8px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
-<h1>APEX VPN · админка</h1>
-<p class="sub">Изменения сохраняются в репозиторий <b>Dubstep2004/apex-vpn</b>, приложения подхватывают их через 1–5 минут при открытии, а в фоне — в течение 15 минут. Новая версия не нужна.</p>
 
 <!-- Вход -->
-<section id="login" class="card">
-  <h2>Вход</h2>
-  <label for="token">Токен GitHub (fine-grained)</label>
-  <input id="token" type="password" autocomplete="off" placeholder="github_pat_…">
-  <p class="hint">Токен хранится только в этом браузере. Никому его не присылайте.</p>
-  <div class="row" style="margin-top:12px"><button id="loginBtn">Войти</button></div>
-  <details style="margin-top:14px"><summary class="muted">Как получить токен</summary>
-    <ol>
-      <li>GitHub → Settings → Developer settings → Personal access tokens → <b>Fine-grained tokens</b> → Generate new token.</li>
-      <li>Repository access: <b>Only select repositories</b> → <b>apex-vpn</b>.</li>
-      <li>Permissions → Repository permissions → <b>Contents: Read and write</b>. Остальное не трогать.</li>
-      <li>Срок (Expiration) — например, 90 дней. Generate token → скопировать сюда.</li>
-    </ol>
-  </details>
-</section>
-
-<main id="app" hidden>
-  <nav class="tabs" id="tabs"></nav>
-
-  <!-- Баннер -->
-  <section data-tab="banner" class="card">
-    <h2>📢 Баннер на главном экране</h2>
-    <label for="bText">Текст (пусто — баннера нет)</label>
-    <textarea id="bText" style="min-height:70px;font-family:inherit;font-size:15px" maxlength="300" placeholder="Сегодня 22:00–23:00 технические работы"></textarea>
-    <div class="row">
-      <div><label for="bLevel">Вид</label>
-        <select id="bLevel"><option value="info">ℹ️ Новость</option><option value="warn">⚠️ Предупреждение</option><option value="alert">🛑 Авария</option></select></div>
-      <div><label for="bUntil">Показывать до</label><input id="bUntil" type="date"></div>
-    </div>
-    <label for="bUrl">Ссылка по нажатию (необязательно, https://…)</label>
-    <input id="bUrl" type="url" placeholder="https://t.me/…">
-    <div class="row">
-      <div><label for="bMin">С версии (0 — все)</label><input id="bMin" type="number" min="0" value="0"></div>
-      <div><label for="bMax">До версии (0 — все)</label><input id="bMax" type="number" min="0" value="0"></div>
-    </div>
-    <div id="bPreview" class="preview" hidden></div>
-    <p class="hint">Пользователь может закрыть баннер — новый текст покажется снова.</p>
-  </section>
-
-  <!-- Серверы -->
-  <section data-tab="servers" class="card" hidden>
-    <h2>🖥 Серверы</h2>
-    <p class="hint">Сервер ищется по части названия без флага: «Германия» — все немецкие, «Обход №1» — один сервер.</p>
-    <div id="srvList"></div>
-    <button class="ghost" id="srvAdd" style="width:100%;margin-top:6px">+ Добавить пометку</button>
-    <label for="recommended">⭐ Советуем (часть названия)</label>
-    <input id="recommended" placeholder="Албания">
-    <label for="hidden">🙈 Скрыть у всех (по одному в строке)</label>
-    <textarea id="hidden" style="min-height:70px" placeholder="Россия"></textarea>
-    <p class="hint">«Обслуживание» и скрытые серверы автопилот не выбирает (если остаётся хоть один другой).</p>
-  </section>
-
-  <!-- Ссылки -->
-  <section data-tab="links" class="card" hidden>
-    <h2>🔗 Ссылки</h2>
-    <label for="lSupport">Поддержка (пусто — @Apexx_support)</label><input id="lSupport" type="url" placeholder="https://t.me/Apexx_support">
-    <label for="lChannel">Telegram-канал (пусто — не показывать)</label><input id="lChannel" type="url" placeholder="https://t.me/…">
-    <label for="lSite">Сайт</label><input id="lSite" type="url" placeholder="https://…">
-  </section>
-
-  <!-- Обновления -->
-  <section data-tab="update" class="card" hidden>
-    <h2>📦 Обновления</h2>
-    <div id="latest" class="hint">Загружаем последнюю версию…</div>
-    <label for="uRequired">Обязательное обновление: версии с кодом ниже</label>
-    <input id="uRequired" type="number" min="0" value="0">
-    <p class="hint">0 — выключено. Пример: 105 — у всех с версией ниже 105 окно обновления нельзя закрыть.</p>
-    <label for="uRevoked">Отозванные версии (коды через запятую)</label>
-    <input id="uRevoked" placeholder="104, 103">
-    <p class="hint">У них приложение предложит вернуться на прошлую версию.</p>
-  </section>
-
-  <!-- Функции -->
-  <section data-tab="features" class="card" hidden>
-    <h2>⚙️ Функции — экстренное выключение</h2>
-    <div id="feats"></div>
-    <p class="hint">Выключили — функция перестаёт работать у всех в течение 15 минут. Включите обратно, когда исправите.</p>
-  </section>
-
-  <!-- Адрес подписки -->
-  <section data-tab="sub" class="card" hidden>
-    <h2>🔐 Адрес подписки</h2>
-    <label for="sHosts">Разрешённые адреса (первый — основной), по одному в строке</label>
-    <textarea id="sHosts" style="min-height:70px" placeholder="sub.knownhosts.xyz"></textarea>
-    <label for="sMoved">Переезд: «старый = новый», по одному в строке</label>
-    <textarea id="sMoved" style="min-height:70px" placeholder="sub.knownhosts.ru = sub.knownhosts.xyz"></textarea>
-    <p class="hint">Сохранённые ссылки у всех сами перепишутся на новый адрес (путь и токен те же).</p>
-    <button id="saveSub" style="width:100%;margin-top:12px">Сохранить адрес подписки</button>
-  </section>
-
-  <!-- Скрыть VPN -->
-  <section data-tab="hide" class="card" hidden>
-    <h2>🧩 Шаблон «Скрыть VPN»</h2>
-    <p class="hint">JSON-файл docs/templates/hide-vpn.json. Пакеты приложений — в списке «packages».</p>
-    <textarea id="hideJson" style="min-height:300px"></textarea>
-    <button id="saveHide" style="width:100%;margin-top:12px">Сохранить шаблон</button>
-  </section>
-
-  <!-- Статистика -->
-  <section data-tab="stats" class="card" hidden>
-    <h2>📊 Скачивания</h2>
-    <div id="stats" class="hint">Загружаем…</div>
-  </section>
-
-  <div id="saveBar" class="row" style="margin-top:4px">
-    <button id="saveApp">Сохранить</button>
-    <button class="ghost shrink" id="reload">Обновить</button>
+<div class="login" id="login">
+  <div class="card">
+    <img src="../invite/icon.png" alt="">
+    <h1>Пульт APEX VPN</h1>
+    <p>Баннер, серверы, ссылки и обновления для всех пользователей — без новой версии приложения.</p>
+    <label class="f" for="token">Токен GitHub</label>
+    <input id="token" type="password" autocomplete="off" placeholder="github_pat_…">
+    <button class="btn go" id="loginBtn">Войти</button>
+    <p class="help">Токен хранится только в этом браузере и никуда не отправляется, кроме GitHub.</p>
+    <details><summary>Где взять токен</summary>
+      <ol>
+        <li>Откройте <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">создание токена</a> на GitHub.</li>
+        <li>Срок — 90 дней. Repository access → Only select repositories → apex-vpn.</li>
+        <li>Permissions → Contents: Read and write. Остальное не трогайте.</li>
+        <li>Generate token, скопируйте и вставьте сюда.</li>
+      </ol>
+    </details>
   </div>
-  <p class="hint" id="appInfo"></p>
-  <button class="danger" id="logout" style="width:100%;margin-top:18px">Выйти (стереть токен из браузера)</button>
-</main>
+</div>
 
-<div class="toast" id="toast"></div>
+<!-- Пульт -->
+<div class="shell" id="app" hidden>
+  <aside class="rail">
+    <div class="brand"><img src="../invite/icon.png" alt=""><div><b>APEX пульт</b><span id="who">Dubstep2004/apex-vpn</span></div></div>
+    <nav class="nav" id="nav"></nav>
+    <button class="out" id="logout">Выйти и стереть токен</button>
+  </aside>
+
+  <main class="work">
+    <!-- Обзор -->
+    <section data-tab="home">
+      <h1>Что сейчас видят пользователи</h1>
+      <p class="lead">Изменения доходят до приложений за 1–5 минут при открытии и за 15 минут в фоне.</p>
+      <div class="phone-inline" data-preview></div>
+      <div class="block"><h2>Сейчас действует</h2><p class="note">Нажмите на строку, чтобы изменить.</p><dl class="live" id="liveList"></dl></div>
+      <div class="block"><h2>Скачивания по версиям</h2><p class="note" id="relNote">Загружаем…</p><div class="rel" id="relList"></div></div>
+    </section>
+
+    <!-- Баннер -->
+    <section data-tab="banner" hidden>
+      <h1>Баннер на главном экране</h1>
+      <p class="lead">Короткая строка над щитом: новости, технические работы, сбои. Пользователь может её закрыть, новый текст покажется снова.</p>
+      <div class="phone-inline" data-preview></div>
+      <div class="block">
+        <label class="f" for="bText">Текст</label>
+        <textarea id="bText" maxlength="300" placeholder="Сегодня с 22:00 до 23:00 технические работы"></textarea>
+        <p class="help"><span id="bCount">0</span> из 300. Пусто — баннера нет.</p>
+        <label class="f">Вид</label>
+        <div class="seg" id="bLevel"><button data-v="info">Новость</button><button data-v="warn">Внимание</button><button data-v="alert">Авария</button></div>
+        <div class="two">
+          <div><label class="f" for="bUntil">Показывать до</label><input id="bUntil" type="date"></div>
+          <div><label class="f" for="bUrl">Ссылка по нажатию</label><input id="bUrl" type="url" placeholder="https://t.me/…"></div>
+        </div>
+        <div class="two">
+          <div><label class="f" for="bMin">С версии</label><input id="bMin" type="number" min="0" placeholder="0 — все"></div>
+          <div><label class="f" for="bMax">До версии</label><input id="bMax" type="number" min="0" placeholder="0 — все"></div>
+        </div>
+        <p class="help">Версия — это номер сборки, например 106 для 3.18.0.</p>
+      </div>
+    </section>
+
+    <!-- Серверы -->
+    <section data-tab="servers" hidden>
+      <h1>Серверы</h1>
+      <p class="lead">Пометки ищут сервер по части названия: «Германия» — все немецкие, «Обход №1» — один. Серверы на обслуживании и скрытые автопилот не выбирает.</p>
+      <div class="phone-inline" data-preview></div>
+      <div class="block"><h2>Пометки</h2><p class="note">Видны в списке серверов в приложении.</p><div id="marks"></div><button class="add" id="addMark">Добавить пометку</button></div>
+      <div class="block">
+        <label class="f" for="recommended">Советуем</label><input id="recommended" type="text" placeholder="Албания">
+        <label class="f" for="hidden">Скрыть у всех — по одному в строке</label><textarea id="hidden" placeholder="Россия"></textarea>
+      </div>
+    </section>
+
+    <!-- Ссылки -->
+    <section data-tab="links" hidden>
+      <h1>Ссылки</h1>
+      <p class="lead">Куда ведут кнопки поддержки и канала в приложении. Пусто — как встроено.</p>
+      <div class="block">
+        <label class="f" for="lSupport">Поддержка</label><input id="lSupport" type="url" placeholder="https://t.me/Apexx_support">
+        <label class="f" for="lChannel">Telegram-канал</label><input id="lChannel" type="url" placeholder="Пусто — строки не будет">
+        <label class="f" for="lSite">Сайт</label><input id="lSite" type="url" placeholder="https://…">
+      </div>
+    </section>
+
+    <!-- Обновления -->
+    <section data-tab="update" hidden>
+      <h1>Обновления</h1>
+      <p class="lead" id="latest">Последняя версия — загружаем…</p>
+      <div class="block">
+        <label class="f" for="uRequired">Обязательное обновление для версий ниже</label>
+        <input id="uRequired" type="number" min="0" placeholder="0 — выключено">
+        <p class="help">Например, 106: у всех, кто ниже 106, окно обновления нельзя закрыть.</p>
+        <label class="f" for="uRevoked">Отозванные версии</label>
+        <input id="uRevoked" type="text" placeholder="104, 105">
+        <p class="help">Номера сборок через запятую. Приложение предложит вернуться на прошлую версию.</p>
+      </div>
+    </section>
+
+    <!-- Функции -->
+    <section data-tab="features" hidden>
+      <h1>Экстренное выключение</h1>
+      <p class="lead">Если функция сломалась, выключите её у всех, пока готовите исправление.</p>
+      <div class="block" id="feats"></div>
+    </section>
+
+    <!-- Подписка -->
+    <section data-tab="sub" hidden>
+      <h1>Адрес подписки</h1>
+      <p class="lead">Сменили домен — впишите новый первым и добавьте переезд. Сохранённые ссылки у всех перепишутся сами, путь и токен останутся.</p>
+      <div class="block">
+        <label class="f" for="sHosts">Адреса, первый — основной</label><textarea id="sHosts" placeholder="sub.knownhosts.xyz"></textarea>
+        <label class="f" for="sMoved">Переезд: старый = новый</label><textarea id="sMoved" placeholder="sub.knownhosts.ru = sub.knownhosts.xyz"></textarea>
+        <button class="btn go" id="saveSub" style="width:100%;margin-top:16px">Сохранить адрес подписки</button>
+      </div>
+    </section>
+
+    <!-- Скрыть VPN -->
+    <section data-tab="hide" hidden>
+      <h1>Шаблон «Скрыть VPN»</h1>
+      <p class="lead">Приложения, которые идут мимо VPN у всех. Пакеты — в списке packages.</p>
+      <div class="block"><textarea id="hideJson" class="code" spellcheck="false"></textarea>
+        <button class="btn go" id="saveHide" style="width:100%;margin-top:14px">Сохранить шаблон</button></div>
+    </section>
+
+    <button class="btn quiet out-m" id="logout2">Выйти и стереть токен</button>
+  </main>
+
+  <aside class="phone-col"><h3>Так увидят пользователи</h3><div data-preview></div></aside>
+</div>
+
+<div class="savebar" id="savebar">
+  <p>Есть несохранённые изменения<small id="saveWhat">Баннер</small></p>
+  <button class="btn quiet" id="discard">Отменить</button>
+  <button class="btn go" id="saveApp">Сохранить</button>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<template id="phoneTpl">
+  <div class="phone"><div class="screen">
+    <div class="ph-top">APEX VPN<i>VPN включён</i></div>
+    <div class="ph-banner" data-ph-banner hidden><span data-ph-icon></span><span data-ph-text></span><span class="x2">✕</span></div>
+    <div class="shield">✓</div>
+    <div class="ph-state">Защищено</div>
+    <div class="ph-list" data-ph-list></div>
+  </div></div>
+</template>
 
 <script>
 'use strict'
 const OWNER = 'Dubstep2004', REPO = 'apex-vpn', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json'
 const FEATURES = [
-  ['whitelistAuto', 'Автопилот и белые списки', 'Автопереход на LTE-обход при белых списках'],
-  ['adsHagezi', 'Список HaGeZi (реклама)', 'Дополнительная база рекламы и трекеров'],
-  ['threats', 'Защита от мошенников', 'База HaGeZi Threat Intelligence'],
-  ['autoUpdate', 'Автоустановка обновлений', 'Если версия плохая — остановить установку у всех'],
+  ['whitelistAuto', 'Белые списки', 'Автопереход на LTE-обход, когда оператор включает белые списки'],
+  ['adsHagezi', 'Список рекламы HaGeZi', 'Дополнительные 200 тысяч рекламных и следящих адресов'],
+  ['threats', 'Защита от мошенников', 'База опасных сайтов HaGeZi Threat Intelligence'],
+  ['autoUpdate', 'Автоустановка обновлений', 'Остановите, если выпущенная версия оказалась плохой'],
 ]
-const TABS = [['banner', '📢 Баннер'], ['servers', '🖥 Серверы'], ['links', '🔗 Ссылки'], ['update', '📦 Обновления'],
-  ['features', '⚙️ Функции'], ['sub', '🔐 Подписка'], ['hide', '🧩 Скрыть VPN'], ['stats', '📊 Статистика']]
+const TABS = [['home', '◎', 'Обзор'], ['banner', '📢', 'Баннер'], ['servers', '🖥', 'Серверы'], ['links', '🔗', 'Ссылки'],
+  ['update', '📦', 'Обновления'], ['features', '⚙️', 'Функции'], ['sub', '🔐', 'Подписка'], ['hide', '🧩', 'Скрыть VPN']]
 const APP_TABS = ['banner', 'servers', 'links', 'update', 'features']
+const LEVEL = { info: ['ℹ️', 'Новость'], warn: ['⚠️', 'Внимание'], alert: ['🛑', 'Авария'] }
 
 const $ = id => document.getElementById(id)
-let token = ''
-const files = {} // path → { sha, data }
+let token = '', level = 'info', saved = '', releases = []
+const files = {}
 
 function store(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v) } catch {} }
 function load(k) { try { return localStorage.getItem(k) || '' } catch { return '' } }
-
 function toast(msg, ok = true) {
-  const t = $('toast'); t.textContent = msg; t.className = 'toast ' + (ok ? 'ok' : 'err'); t.style.display = 'block'
-  clearTimeout(toast.h); toast.h = setTimeout(() => (t.style.display = 'none'), ok ? 2600 : 6000)
+  const t = $('toast'); t.textContent = msg; t.className = 'toast show ' + (ok ? 'ok' : 'err')
+  clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('show'), ok ? 2600 : 6000)
 }
 
 async function api(path, opts = {}) {
@@ -210,97 +370,134 @@ async function api(path, opts = {}) {
     ...opts,
     headers: { Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + token, 'X-GitHub-Api-Version': '2022-11-28', ...(opts.headers || {}) },
   })
-  if (!r.ok) {
-    let m = ''; try { m = (await r.json()).message } catch {}
-    const e = new Error(r.status + (m ? ': ' + m : '')); e.status = r.status; throw e
-  }
+  if (!r.ok) { let m = ''; try { m = (await r.json()).message } catch {}; const e = new Error(r.status + (m ? ': ' + m : '')); e.status = r.status; throw e }
   return r.json()
 }
 const b64dec = s => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\s/g, '')), c => c.charCodeAt(0)))
 const b64enc = s => { const b = new TextEncoder().encode(s); let x = ''; for (let i = 0; i < b.length; i += 0x8000) x += String.fromCharCode(...b.subarray(i, i + 0x8000)); return btoa(x) }
-
 async function getFile(path) {
-  try {
-    const f = await api('/contents/' + path + '?ref=' + BRANCH)
-    files[path] = { sha: f.sha, data: JSON.parse(b64dec(f.content)) }
-  } catch (e) {
-    if (e.status !== 404) throw e
-    files[path] = { sha: undefined, data: null }
-  }
+  try { const f = await api('/contents/' + path + '?ref=' + BRANCH); files[path] = { sha: f.sha, data: JSON.parse(b64dec(f.content)) } }
+  catch (e) { if (e.status !== 404) throw e; files[path] = { sha: undefined, data: null } }
   return files[path].data
 }
-
 async function putFile(path, data, message) {
-  const text = JSON.stringify(data, null, 2) + '\n'
-  JSON.parse(text) // проверка
+  const text = JSON.stringify(data, null, 2) + '\n'; JSON.parse(text)
   const body = { message, content: b64enc(text), branch: BRANCH }
   if (files[path]?.sha) body.sha = files[path].sha
   const r = await api('/contents/' + path, { method: 'PUT', body: JSON.stringify(body) })
   files[path] = { sha: r.content.sha, data }
 }
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
 
-// ── Форма app.json
+// ── app.json ↔ форма
+function setLevel(v) { level = LEVEL[v] ? v : 'info'; document.querySelectorAll('#bLevel button').forEach(b => b.classList.toggle('on', b.dataset.v === level)) }
+function addMark(name = '', state = 'maintenance', note = '') {
+  const d = document.createElement('div'); d.className = 'mark'
+  d.innerHTML = `<input class="n" type="text" placeholder="Часть названия, например Германия">
+    <div class="chips"><button data-v="maintenance">🔧 Обслуживание</button><button data-v="slow">🐢 Медленно</button></div>
+    <button class="x" title="Убрать" aria-label="Убрать пометку">×</button>
+    <input class="note" type="text" placeholder="Заметка для себя">`
+  d.querySelector('.n').value = name; d.querySelector('.note').value = note; d.dataset.state = state
+  const paint = () => d.querySelectorAll('.chips button').forEach(b => b.classList.toggle('on', b.dataset.v === d.dataset.state))
+  d.querySelectorAll('.chips button').forEach(b => (b.onclick = () => { d.dataset.state = b.dataset.v; paint(); changed() }))
+  d.querySelector('.x').onclick = () => { d.remove(); changed() }
+  paint(); $('marks').appendChild(d)
+}
 function fillApp(c) {
   c = c || {}
   const b = c.banner || {}
-  $('bText').value = b.text || ''; $('bLevel').value = b.level || 'info'; $('bUntil').value = b.until || ''
-  $('bUrl').value = b.url || ''; $('bMin').value = b.minCode || 0; $('bMax').value = b.maxCode || 0
+  $('bText').value = b.text || ''; setLevel(b.level); $('bUntil').value = b.until || ''; $('bUrl').value = b.url || ''
+  $('bMin').value = b.minCode || ''; $('bMax').value = b.maxCode || ''
   const s = c.servers || {}
-  $('srvList').innerHTML = ''
-  Object.entries(s.status || {}).forEach(([k, v]) => addSrv(k, v.state, v.note))
-  $('recommended').value = s.recommended || ''
-  $('hidden').value = (s.hidden || []).join('\n')
+  $('marks').innerHTML = ''; Object.entries(s.status || {}).forEach(([k, v]) => addMark(k, v.state, v.note))
+  $('recommended').value = s.recommended || ''; $('hidden').value = (s.hidden || []).join('\n')
   const l = c.links || {}
   $('lSupport').value = l.support || ''; $('lChannel').value = l.channel || ''; $('lSite').value = l.site || ''
   const u = c.update || {}
-  $('uRequired').value = u.required || 0; $('uRevoked').value = (u.revoked || []).join(', ')
+  $('uRequired').value = u.required || ''; $('uRevoked').value = (u.revoked || []).join(', ')
   const f = c.features || {}
   $('feats').innerHTML = FEATURES.map(([id, t, d]) =>
-    `<label class="switch"><div><b>${t}</b><span>${d}</span></div><input type="checkbox" id="f_${id}" ${f[id] === false ? '' : 'checked'}></label>`).join('')
-  preview()
+    `<label class="sw"><div class="t"><b>${t}</b><span>${d}</span></div><span class="tog"><input type="checkbox" id="f_${id}" ${f[id] === false ? '' : 'checked'}><i></i></span></label>`).join('')
+  saved = JSON.stringify(collectApp(true)); changed()
 }
-
-function addSrv(name = '', state = 'maintenance', note = '') {
-  const d = document.createElement('div'); d.className = 'srv'
-  d.innerHTML = `<div class="row"><input class="sName" placeholder="Часть названия: Германия"><select class="sState shrink" style="width:auto">
-    <option value="maintenance">🔧 Обслуживание</option><option value="slow">🐢 Медленно</option></select>
-    <button class="ghost shrink sDel" title="Убрать" style="min-height:44px">✕</button></div>
-    <input class="sNote" placeholder="Заметка (необязательно)" style="margin-top:8px">`
-  d.querySelector('.sName').value = name; d.querySelector('.sState').value = state; d.querySelector('.sNote').value = note
-  d.querySelector('.sDel').onclick = () => d.remove()
-  $('srvList').appendChild(d)
-}
-
-function collectApp() {
+function collectApp(loose = false) {
   const status = {}
-  document.querySelectorAll('#srvList .srv').forEach(d => {
-    const n = d.querySelector('.sName').value.trim()
-    if (n) status[n] = { state: d.querySelector('.sState').value, note: d.querySelector('.sNote').value.trim() }
+  document.querySelectorAll('#marks .mark').forEach(d => {
+    const n = d.querySelector('.n').value.trim()
+    if (n) status[n] = { state: d.dataset.state, note: d.querySelector('.note').value.trim() }
   })
-  const url = v => { v = v.trim(); if (v && !v.startsWith('https://')) throw new Error('Ссылка должна начинаться с https://: ' + v); return v }
+  const url = v => { v = v.trim(); if (!loose && v && !v.startsWith('https://')) throw new Error('Ссылка должна начинаться с https://'); return v }
   const int = v => Math.max(0, parseInt(v, 10) || 0)
   return {
-    banner: { text: $('bText').value.trim(), level: $('bLevel').value, until: $('bUntil').value, url: url($('bUrl').value), minCode: int($('bMin').value), maxCode: int($('bMax').value) },
+    banner: { text: $('bText').value.trim(), level, until: $('bUntil').value, url: url($('bUrl').value), minCode: int($('bMin').value), maxCode: int($('bMax').value) },
     servers: { status, recommended: $('recommended').value.trim(), hidden: $('hidden').value.split('\n').map(s => s.trim()).filter(Boolean) },
     links: { support: url($('lSupport').value), channel: url($('lChannel').value), site: url($('lSite').value) },
     update: { required: int($('uRequired').value), revoked: $('uRevoked').value.split(/[,\s]+/).map(x => parseInt(x, 10)).filter(x => x > 0) },
-    features: Object.fromEntries(FEATURES.map(([id]) => [id, $('f_' + id).checked])),
+    features: Object.fromEntries(FEATURES.map(([id]) => [id, $('f_' + id)?.checked !== false])),
   }
 }
 
-function preview() {
-  const t = $('bText').value.trim(), p = $('bPreview')
-  if (!t) { p.hidden = true; return }
-  const col = { info: '#6366f1', warn: '#f2b75b', alert: '#ef4444' }[$('bLevel').value]
-  p.hidden = false; p.style.background = col + '22'; p.style.border = '1px solid ' + col + '66'
-  p.textContent = 'Так увидят пользователи: ' + t
+// ── Изменения, превью, обзор
+function changed() {
+  const now = collectApp(true), old = saved ? JSON.parse(saved) : now
+  const parts = [['banner', 'Баннер'], ['servers', 'Серверы'], ['links', 'Ссылки'], ['update', 'Обновления'], ['features', 'Функции']]
+    .filter(([k]) => JSON.stringify(now[k]) !== JSON.stringify(old[k]))
+  $('savebar').classList.toggle('show', parts.length > 0)
+  $('saveWhat').textContent = parts.map(p => p[1]).join(', ')
+  document.querySelectorAll('.nav button').forEach(b => { const d = b.querySelector('.dot'); if (d) d.hidden = !parts.some(p => p[0] === b.dataset.id) })
+  $('bCount').textContent = $('bText').value.length
+  preview(now); overview(now)
+}
+function preview(c) {
+  document.querySelectorAll('[data-preview]').forEach(host => {
+    if (!host.firstChild) host.appendChild($('phoneTpl').content.cloneNode(true))
+    const bn = host.querySelector('[data-ph-banner]')
+    bn.hidden = !c.banner.text; bn.dataset.l = c.banner.level
+    host.querySelector('[data-ph-icon]').textContent = LEVEL[c.banner.level][0]
+    host.querySelector('[data-ph-text]').textContent = c.banner.text
+    const rows = Object.entries(c.servers.status).map(([n, v]) => [n, v.state])
+    if (c.servers.recommended && !rows.some(r => r[0] === c.servers.recommended)) rows.unshift([c.servers.recommended, 'rec'])
+    host.querySelector('[data-ph-list]').innerHTML = rows.length
+      ? rows.slice(0, 5).map(([n, st]) => {
+          const tags = (c.servers.recommended && n.toLowerCase().includes(c.servers.recommended.toLowerCase()) ? '<span class="ph-tag rec">⭐ Советуем</span>' : '') +
+            (st === 'maintenance' ? '<span class="ph-tag m">🔧 Обслуживание</span>' : st === 'slow' ? '<span class="ph-tag s">🐢 Медленно</span>' : '')
+          return `<div class="ph-srv">${esc(n)} ${tags}</div>`
+        }).join('')
+      : '<div class="ph-empty">Пометок серверов нет — список выглядит как обычно</div>'
+  })
+}
+function overview(c) {
+  const off = FEATURES.filter(([id]) => c.features[id] === false).map(f => f[1])
+  const marks = Object.keys(c.servers.status).length
+  const rows = [
+    ['banner', 'Баннер', c.banner.text ? LEVEL[c.banner.level][1] + ': ' + c.banner.text : 'нет', !c.banner.text, c.banner.level !== 'info' && !!c.banner.text],
+    ['servers', 'Пометки серверов', marks ? marks + ' шт.' : 'нет', !marks],
+    ['servers', 'Советуем', c.servers.recommended || 'нет', !c.servers.recommended],
+    ['servers', 'Скрыто у всех', c.servers.hidden.length ? c.servers.hidden.join(', ') : 'ничего', !c.servers.hidden.length],
+    ['update', 'Обязательное обновление', c.update.required ? 'ниже ' + c.update.required : 'выключено', !c.update.required, !!c.update.required],
+    ['update', 'Отозванные версии', c.update.revoked.length ? c.update.revoked.join(', ') : 'нет', !c.update.revoked.length, !!c.update.revoked.length],
+    ['features', 'Выключенные функции', off.length ? off.join(', ') : 'все работают', !off.length, !!off.length],
+  ]
+  $('liveList').innerHTML = rows.map(([tab, k, v, dim, hot]) =>
+    `<div data-go="${tab}" style="cursor:pointer"><dt>${k}</dt><dd class="${dim ? 'off' : hot ? 'hot' : ''}">${esc(v)}</dd></div>`).join('')
+}
+async function loadReleases() {
+  try {
+    releases = await api('/releases?per_page=30')
+    const latest = releases.find(r => !r.prerelease && !r.draft)
+    if (latest) $('latest').textContent = 'Последняя версия — ' + latest.tag_name + ', вышла ' + new Date(latest.published_at).toLocaleDateString('ru', { day: 'numeric', month: 'long' }) + '.'
+    const rows = releases.slice(0, 8).map(r => [r.tag_name + (r.prerelease ? ' бета' : ''), r.assets.filter(a => a.name.startsWith('apex-vpn-') && a.name.endsWith('.apk')).reduce((s, a) => s + a.download_count, 0)])
+    const total = releases.reduce((s, r) => s + r.assets.filter(a => a.name.startsWith('apex-vpn-') && a.name.endsWith('.apk')).reduce((x, a) => x + a.download_count, 0), 0)
+    const max = Math.max(1, ...rows.map(r => r[1]))
+    $('relNote').textContent = 'Всего скачали приложение ' + total.toLocaleString('ru') + ' раз за последние 30 версий.'
+    $('relList').innerHTML = rows.map(([n, c]) => `<span>${esc(n)}</span><b>${c.toLocaleString('ru')}</b><div class="bar"><i style="width:${Math.max(2, c / max * 100)}%"></i></div>`).join('')
+  } catch (e) { $('relNote').textContent = 'Не удалось загрузить: ' + e.message }
 }
 
-// ── Подписка и шаблон
+// ── Подписка
 function fillSub(c) {
   c = c || { hosts: [], moved: {} }
-  $('sHosts').value = (c.hosts || []).join('\n')
-  $('sMoved').value = Object.entries(c.moved || {}).map(([a, b]) => a + ' = ' + b).join('\n')
+  $('sHosts').value = (c.hosts || []).join('\n'); $('sMoved').value = Object.entries(c.moved || {}).map(([a, b]) => a + ' = ' + b).join('\n')
 }
 function collectSub() {
   const host = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/
@@ -310,82 +507,65 @@ function collectSub() {
   const moved = {}
   $('sMoved').value.split('\n').map(s => s.trim()).filter(Boolean).forEach(l => {
     const [a, b] = l.split('=').map(s => (s || '').trim().toLowerCase())
-    if (!host.test(a) || !host.test(b)) throw new Error('Строка переезда «старый = новый»: ' + l)
+    if (!host.test(a) || !host.test(b)) throw new Error('Строка переезда пишется так: старый = новый')
     moved[a] = b
   })
   return { hosts, moved }
 }
 
-async function loadStats() {
-  try {
-    const rel = await api('/releases?per_page=30')
-    const latest = rel.find(r => !r.prerelease && !r.draft)
-    if (latest) $('latest').innerHTML = 'Последняя версия: <b>' + latest.tag_name + '</b> · ' + new Date(latest.published_at).toLocaleDateString('ru')
-    let total = 0, apk = 0
-    const rows = rel.slice(0, 12).map(r => {
-      const n = r.assets.filter(a => a.name.endsWith('.apk')).reduce((s, a) => s + a.download_count, 0)
-      total += n; return `<div class="stat"><span>${r.tag_name}${r.prerelease ? ' · бета' : ''}</span><b>${n}</b></div>`
-    })
-    rel.forEach(r => r.assets.forEach(a => { if (a.name.startsWith('apex-vpn-') && a.name.endsWith('.apk')) apk += a.download_count }))
-    $('stats').innerHTML = `<div class="big">${apk}</div><div class="muted">скачиваний приложения (последние 30 версий)</div><div style="margin-top:12px">${rows.join('')}</div>`
-  } catch (e) { $('stats').textContent = 'Не удалось загрузить: ' + e.message }
-}
-
-async function loadAll() {
-  $('appInfo').textContent = 'Загружаем…'
-  const [app, sub, hide] = await Promise.all([getFile(APP), getFile(SUB), getFile(HIDE)])
-  fillApp(app); fillSub(sub)
-  $('hideJson').value = hide ? JSON.stringify(hide, null, 2) : ''
-  $('appInfo').textContent = 'Загружено ' + new Date().toLocaleTimeString('ru')
-  loadStats()
-}
-
+// ── Навигация и действия
 function showTab(id) {
   document.querySelectorAll('[data-tab]').forEach(s => (s.hidden = s.dataset.tab !== id))
-  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.id === id))
-  $('saveBar').hidden = !APP_TABS.includes(id)
-  store('apex_admin_tab', id)
+  document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('on', b.dataset.id === id))
+  store('apex_admin_tab', id); window.scrollTo({ top: 0 })
 }
-
+async function loadAll() {
+  const [app, sub, hide] = await Promise.all([getFile(APP), getFile(SUB), getFile(HIDE)])
+  fillApp(app); fillSub(sub); $('hideJson').value = hide ? JSON.stringify(hide, null, 2) : ''
+  loadReleases()
+}
 async function guarded(btn, fn) {
   btn.disabled = true
   try { await fn() } catch (e) {
-    if (e.status === 409 || e.status === 422) { toast('Файл изменился на GitHub — обновил данные, повторите сохранение', false); await loadAll() }
+    if (e.status === 409 || e.status === 422) { toast('Файл изменился на GitHub — данные обновлены, сохраните ещё раз', false); await loadAll() }
     else if (e.status === 401) { toast('Токен не подошёл или истёк — войдите снова', false); logout() }
     else toast(e.message, false)
   } finally { btn.disabled = false }
 }
-
 async function login() {
   token = $('token').value.trim() || load('apex_admin_token')
   if (!token) return toast('Вставьте токен', false)
   try {
     const repo = await api('')
-    if (!repo.permissions?.push) throw new Error('У токена нет права записи (Contents: Read and write)')
-    store('apex_admin_token', token)
-    $('login').hidden = true; $('app').hidden = false; $('token').value = ''
-    await loadAll()
-    showTab(load('apex_admin_tab') || 'banner')
+    if (!repo.permissions?.push) throw new Error('у токена нет права записи — нужен Contents: Read and write')
+    store('apex_admin_token', token); $('token').value = ''
+    $('login').hidden = true; $('app').hidden = false
+    await loadAll(); showTab(load('apex_admin_tab') || 'home')
   } catch (e) { token = ''; toast('Не удалось войти: ' + e.message, false) }
 }
-function logout() { store('apex_admin_token', null); token = ''; $('app').hidden = true; $('login').hidden = false }
+function logout() { store('apex_admin_token', null); token = ''; $('app').hidden = true; $('login').hidden = false; $('savebar').classList.remove('show') }
 
-$('tabs').innerHTML = TABS.map(([id, t]) => `<button class="tab" data-id="${id}">${t}</button>`).join('')
-$('tabs').onclick = e => { const id = e.target.closest('.tab')?.dataset.id; if (id) showTab(id) }
+$('nav').innerHTML = TABS.map(([id, ic, t]) => `<button data-id="${id}"><span class="ic">${ic}</span>${t}${APP_TABS.includes(id) ? '<span class="dot" hidden></span>' : ''}</button>`).join('')
+$('nav').onclick = e => { const id = e.target.closest('button')?.dataset.id; if (id) showTab(id) }
+$('liveList').onclick = e => { const id = e.target.closest('[data-go]')?.dataset.go; if (id) showTab(id) }
+$('bLevel').onclick = e => { const v = e.target.closest('button')?.dataset.v; if (v) { setLevel(v); changed() } }
+$('addMark').onclick = () => { addMark(); changed(); document.querySelector('#marks .mark:last-child .n').focus() }
+$('app').addEventListener('input', e => { if (e.target.closest('[data-tab=banner],[data-tab=servers],[data-tab=links],[data-tab=update],[data-tab=features]')) changed() })
 $('loginBtn').onclick = login
 $('token').onkeydown = e => { if (e.key === 'Enter') login() }
-$('logout').onclick = logout
-$('srvAdd').onclick = () => addSrv()
-;['bText', 'bLevel'].forEach(id => $(id).addEventListener('input', preview))
-$('reload').onclick = () => guarded($('reload'), async () => { await loadAll(); toast('Обновлено') })
-$('saveApp').onclick = () => guarded($('saveApp'), async () => { await putFile(APP, collectApp(), 'Админка: настройки приложения'); toast('Сохранено ✓ Приложения подхватят через несколько минут') })
-$('saveSub').onclick = () => guarded($('saveSub'), async () => { await putFile(SUB, collectSub(), 'Админка: адрес подписки'); toast('Адрес подписки сохранён ✓') })
+$('logout').onclick = logout; $('logout2').onclick = logout
+$('discard').onclick = () => { fillApp(files[APP]?.data); toast('Изменения отменены') }
+$('saveApp').onclick = () => guarded($('saveApp'), async () => {
+  const data = collectApp(); await putFile(APP, data, 'Пульт: ' + $('saveWhat').textContent.toLowerCase())
+  saved = JSON.stringify(data); changed(); toast('Сохранено — приложения получат изменения за несколько минут')
+})
+$('saveSub').onclick = () => guarded($('saveSub'), async () => { await putFile(SUB, collectSub(), 'Пульт: адрес подписки'); toast('Адрес подписки сохранён') })
 $('saveHide').onclick = () => guarded($('saveHide'), async () => {
   let d; try { d = JSON.parse($('hideJson').value) } catch (e) { throw new Error('Ошибка в JSON: ' + e.message) }
   if (!Array.isArray(d.packages)) throw new Error('Нужен список "packages"')
-  await putFile(HIDE, d, 'Админка: шаблон «Скрыть VPN»'); toast('Шаблон сохранён ✓')
+  await putFile(HIDE, d, 'Пульт: шаблон «Скрыть VPN»'); toast('Шаблон сохранён')
 })
-
+window.addEventListener('beforeunload', e => { if ($('savebar').classList.contains('show')) { e.preventDefault(); e.returnValue = '' } })
 if (load('apex_admin_token')) login()
 </script>
 </body>
