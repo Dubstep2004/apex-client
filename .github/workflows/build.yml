@@ -207,6 +207,8 @@ jobs:
         with:
           name: apex-vpn-${{ steps.apk.outputs.name }}
           path: dist/*.apk
+          # APK и так лежит в Releases — копию в Actions храним 1 день, чтобы не забивать место
+          retention-days: 1
 
       # Прямая ссылка на .apk (не zip) — на странице Releases
       - name: GitHub Release

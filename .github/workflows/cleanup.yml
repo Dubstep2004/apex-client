@@ -1,0 +1,37 @@
+name: Очистка места Actions
+
+# Удаляет старые файлы сборок (APK есть в Releases) — бесплатное место на GitHub ограничено.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * *'
+  push:
+    branches: [main]
+    paths: ['.github/workflows/cleanup.yml']
+
+permissions:
+  actions: write
+
+jobs:
+  clean:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Удалить файлы сборок старше суток
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          cutoff=$(date -u -d '1 day ago' +%Y-%m-%dT%H:%M:%SZ)
+          gh api --paginate "repos/$REPO/actions/artifacts?per_page=100" \
+            -q ".artifacts[] | select(.expired == false and .created_at < \"$cutoff\") | .id" > ids.txt || true
+          echo "Удаляю: $(wc -l < ids.txt)"
+          while read -r id; do gh api -X DELETE "repos/$REPO/actions/artifacts/$id" || true; done < ids.txt
+      - name: Удалить старый кеш (кроме ключа подписи)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh api --paginate "repos/$REPO/actions/caches?per_page=100&sort=last_accessed_at&direction=asc" \
+            -q '.actions_caches[] | select(.key | startswith("apex-debug-keystore") | not) | "\(.id) \(.key)"' > caches.txt || true
+          # Оставляем 2 самых свежих кеша ядра
+          head -n -2 caches.txt | while read -r id key; do gh api -X DELETE "repos/$REPO/actions/caches/$id" || true; done
