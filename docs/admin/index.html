@@ -147,8 +147,8 @@
   .bar i { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--go1), var(--go2)); }
   .hist, .check { display: flex; gap: 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); }
   .hist:first-child, .check:first-child { border-top: 0; }
-  .hist .t, .check .t { flex: 1; min-width: 0; }
-  .hist .t b { display: block; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hist .t, .check .t { flex: 1; min-width: 0; } .hist { flex-wrap: wrap; } .hist .t { flex-basis: 100%; }
+  .hist .t b { display: block; font-weight: 700; }
   .hist .t span, .check .t span { display: block; color: var(--dim); font-size: 13px; word-break: break-all; }
   .st { font-weight: 800; font-size: 13px; padding: 4px 10px; border-radius: 99px; background: var(--panel2); color: var(--dim); white-space: nowrap; }
   .st.ok { background: #2fd38b26; color: #2fd38b; } .st.bad { background: #f0616d26; color: var(--alert); } .st.warn { background: #f5b75926; color: var(--warn-text); }
@@ -199,6 +199,10 @@
   .login .ver { color: var(--faint); font-size: 12.5px; margin: 16px 0 0; text-align: center; }
   .pin { font-size: 26px !important; letter-spacing: .5em; text-align: center; font-weight: 800; }
   .linkbtn { background: none; border: 0; color: var(--dim); cursor: pointer; margin-top: 14px; font-size: 13.5px; text-decoration: underline; padding: 0; }
+  .diff { margin: 8px 0 4px; font: 12px/1.5 ui-monospace, "SF Mono", Menlo, monospace; background: var(--line); border-radius: 12px; padding: 10px 12px; overflow-x: auto; white-space: pre; }
+  .diff .a { color: #2fd38b; } .diff .d { color: #f0616d; } .diff .n { color: var(--faint); }
+  .quick { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; } .quick .pill { font-size: 13px; }
+  .bname { background: transparent; border: 0; border-bottom: 1px dashed var(--line); border-radius: 0; padding: 2px 0; font-weight: 800; font-size: 15px; color: var(--text); min-width: 0; flex: 1; }
   .helpdoc h2 { font-size: 18px; margin: 0 0 10px; }
   .helpdoc p, .helpdoc li { color: var(--dim); font-size: 14.5px; line-height: 1.55; }
   .helpdoc b, .helpdoc strong { color: var(--text); }
@@ -319,6 +323,9 @@
       <h1>Серверы</h1>
       <p class="lead">Пометки ищут сервер по части названия: «Германия» — все немецкие, «Обход №1» — один. Серверы на обслуживании и скрытые автопилот не выбирает.</p>
       <div class="phone-inline" data-preview></div>
+      <div class="block"><h2>Быстро: сервер на обслуживание</h2><p class="note">Впишите часть названия и выберите срок — пометка добавится, останется нажать «Сохранить».</p>
+        <input id="qsName" type="text" placeholder="Например, Германия">
+        <div class="quick"><button class="pill m" data-qs="1">🔧 на 1 час</button><button class="pill m" data-qs="2">🔧 на 2 часа</button><button class="pill m" data-qs="morning">🔧 до 9:00</button><button class="pill s" data-qs="slow">🐢 медленно 2 часа</button></div></div>
       <div class="block"><h2>Пометки</h2><p class="note">Можно указать «до» — пометка снимется сама.</p><div id="marks"></div><button class="add" id="addMark">Добавить пометку</button></div>
       <div class="block">
         <label class="f" for="recommended">Советуем</label><input id="recommended" type="text" placeholder="Албания">
@@ -343,6 +350,11 @@
           <div><label class="f" for="aMin">С версии</label><input id="aMin" type="number" min="0" placeholder="0 — все"></div>
           <div><label class="f" for="aMax">До версии</label><input id="aMax" type="number" min="0" placeholder="0 — все"></div>
         </div>
+        <div class="two">
+          <div><label class="f" for="aFrom">Показать с (пусто — сразу)</label><input id="aFrom" type="datetime-local"></div>
+          <div><label class="f" for="aTo">Не показывать после</label><input id="aTo" type="datetime-local"></div>
+        </div>
+        <p class="help">Расписание работает с версии приложения 3.18.4. В старых версиях окно покажется сразу.</p>
         <label class="sw" style="margin-top:10px"><div class="t"><b>Только предпросмотр</b><span>Увидят только телефоны с кодом предпросмотра</span></div><span class="tog"><input type="checkbox" id="aPreview"><i></i></span></label>
         <div class="rowx" style="margin-top:8px"><button class="btn quiet small" id="aAgain">Показать снова всем</button><button class="btn quiet small" id="aClear">Убрать объявление</button></div>
         <p class="help">«Показать снова» — новый номер объявления: окно увидят и те, кто его уже закрыл.</p>
@@ -397,6 +409,8 @@
       <h1>История изменений</h1>
       <p class="lead">Каждое сохранение пульта — отдельная запись на GitHub. «Вернуть» загружает ту версию в пульт, дальше нажмите «Сохранить».</p>
       <div class="block" id="histList"><p class="note">Загружаем…</p></div>
+      <div class="block"><h2>Резервная копия</h2><p class="note">Все настройки пульта (баннеры, серверы, объявление, ссылки, функции, адрес подписки, «Скрыть VPN») — одним файлом. Загрузили копию — проверьте и нажмите «Сохранить».</p>
+        <div class="rowx"><button class="btn quiet small" id="exportBtn">⬇ Скачать копию</button><button class="btn quiet small" id="importBtn">⬆ Загрузить из файла</button><input type="file" id="importFile" accept="application/json,.json" hidden></div></div>
     </section>
 
     <!-- Проверка -->
@@ -435,14 +449,14 @@
         <p><b>Вход:</b> первый раз — токен GitHub и PIN из 4–8 цифр, дальше только PIN. Токен хранится только в этом браузере, зашифрованный PIN-ом.</p>
         <div class="tbl"><table>
           <tr><td>Обзор</td><td>Что видят пользователи, версии, скачивания, <b>аварийный режим</b>: красный баннер всем, серверы на обслуживание, стоп автообновлениям</td></tr>
-          <tr><td>Баннеры</td><td>Полоса на главном экране: расписание «с … до …», устройства, страна оператора, версии, шаблоны</td></tr>
-          <tr><td>Серверы</td><td>«🔧 Обслуживание» — автопилот не выбирает, «🐢 Медленно», «⭐ Советуем», «Скрыть у всех». Сервер ищется по части названия: «Германия» — все немецкие</td></tr>
-          <tr><td>Объявление</td><td>Большое окно с картинкой и кнопкой, показывается один раз. «Показать снова всем» — увидят ещё раз</td></tr>
+          <tr><td>Баннеры</td><td>Полоса на главном экране: название для себя, расписание «с … до …», устройства, страна оператора, версии, шаблоны. Отметьте «Сайт» — баннер появится и на визитке</td></tr>
+          <tr><td>Серверы</td><td>«🔧 Обслуживание» — автопилот не выбирает, «🐢 Медленно», «⭐ Советуем», «Скрыть у всех». Сервер ищется по части названия: «Германия» — все немецкие. Быстрые кнопки: на 1, 2, 4 часа или до 9:00</td></tr>
+          <tr><td>Объявление</td><td>Большое окно с картинкой и кнопкой, показывается один раз, можно по расписанию (с 3.18.4). «Показать снова всем» — увидят ещё раз</td></tr>
           <tr><td>Ссылки</td><td>Поддержка, канал, сайт</td></tr>
           <tr><td>Обновления</td><td>«Обязательное обновление для версий ниже N» — окно без «Позже». «Отозванные версии» — предложат откатиться</td></tr>
           <tr><td>Функции</td><td>Экстренно выключить LTE-автопереход, HaGeZi, защиту от мошенников, автоустановку обновлений</td></tr>
           <tr><td>Предпросмотр</td><td>Черновики видны только на вашем телефоне</td></tr>
-          <tr><td>История</td><td>Все сохранения, «Вернуть» прошлую версию</td></tr>
+          <tr><td>История</td><td>Все сохранения, «Что изменилось» (было/стало), «Вернуть» прошлую версию, резервная копия в файл и загрузка из файла</td></tr>
           <tr><td>Проверка</td><td>Открываются ли подписка и поддержка, дошёл ли файл до GitHub и зеркала</td></tr>
         </table></div>
         <div class="callout">VPN у пользователей перезапускается (с 3.18.3) только из-за серверов, функций и кода предпросмотра. Баннеры, объявление и ссылки соединение не прерывают.</div>
@@ -560,7 +574,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.2', PANEL_DATE = '12 ноября 2026'
+const PANEL_VERSION = '2.3', PANEL_DATE = '12 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-vpn', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json'
 const DESIGNS = [
@@ -584,7 +598,7 @@ const PART = { banners: ['banner', 'Баннеры'], servers: ['servers', 'Се
   update: ['update', 'Обновления'], features: ['features', 'Функции'], previewCode: ['preview', 'Предпросмотр'] }
 const LEVEL = { info: ['ℹ️', 'Новость'], warn: ['⚠️', 'Внимание'], alert: ['🛑', 'Авария'] }
 const lv = l => LEVEL[l] || LEVEL.info
-const DEVICES = [['phone', 'Телефон'], ['tv', 'Телевизор'], ['watch', 'Часы']]
+const DEVICES = [['phone', 'Телефон'], ['tv', 'Телевизор'], ['watch', 'Часы'], ['site', 'Сайт']]
 const COUNTRIES = [['RU', 'Россия'], ['KZ', 'Казахстан'], ['BY', 'Беларусь'], ['UA', 'Украина']]
 const TEMPLATES = [
   ['🔧 Техработы', { text: 'Сегодня с 22:00 до 23:00 технические работы. Возможны короткие перерывы.', level: 'warn' }],
@@ -678,12 +692,12 @@ function renderBanners() {
   banners.forEach((b, i) => {
     const [st, cls] = bannerState(b)
     const d = document.createElement('div'); d.className = 'item'
-    d.innerHTML = `<div class="item-head"><b>Баннер ${i + 1}</b><span class="badge ${cls}">${esc(st)}</span><button class="x" data-del aria-label="Удалить баннер">×</button></div>
+    d.innerHTML = `<div class="item-head"><input class="bname" data-k="name" maxlength="60" value="${esc(b.name)}" placeholder="Баннер ${i + 1} — название для себя"><span class="badge ${cls}">${esc(st)}</span><button class="x" data-del aria-label="Удалить баннер">×</button></div>
       <label class="f">Текст</label><textarea data-k="text" maxlength="300" placeholder="Сегодня с 22:00 до 23:00 технические работы">${esc(b.text)}</textarea>
       <label class="f">Вид</label><div class="seg">${Object.entries(LEVEL).map(([v, [, t]]) => `<button data-level="${v}" class="${b.level === v ? 'on' : ''}" data-v="${v}">${t}</button>`).join('')}</div>
       <div class="two"><div><label class="f">Показывать с</label><input type="datetime-local" data-k="from" value="${toLocal(b.from)}"></div>
         <div><label class="f">Показывать до</label><input type="datetime-local" data-k="to" value="${toLocal(b.to)}"></div></div>
-      <label class="f">Устройства — ничего не выбрано, значит все</label><div class="rowx">${DEVICES.map(([v, t]) => `<button class="pill ${b.devices.includes(v) ? 'on' : ''}" data-dev="${v}">${t}</button>`).join('')}</div>
+      <label class="f">Где показывать — ничего не выбрано: во всех приложениях. «Сайт» — ещё и на визитке dubstep2004.github.io</label><div class="rowx">${DEVICES.map(([v, t]) => `<button class="pill ${b.devices.includes(v) ? 'on' : ''}" data-dev="${v}">${t}</button>`).join('')}</div>
       <label class="f">Страна оператора — ничего не выбрано, значит все</label><div class="rowx">${COUNTRIES.map(([v, t]) => `<button class="pill ${b.countries.includes(v) ? 'on' : ''}" data-cty="${v}">${t}</button>`).join('')}</div>
       <div class="two"><div><label class="f">Ссылка по нажатию</label><input type="url" data-k="url" value="${esc(b.url)}" placeholder="https://t.me/…"></div>
         <div class="two" style="gap:8px"><div><label class="f">С версии</label><input type="number" min="0" data-k="minCode" value="${b.minCode || ''}" placeholder="все"></div>
@@ -708,7 +722,7 @@ function renderBanners() {
   })
 }
 const toggle = (arr, v) => arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v]
-const newBanner = (o = {}) => ({ id: 'b' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), text: '', level: 'info', url: '', from: 0, to: 0, minCode: 0, maxCode: 0, devices: [], countries: [], preview: false, ...o })
+const newBanner = (o = {}) => ({ id: 'b' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), name: '', text: '', level: 'info', url: '', from: 0, to: 0, minCode: 0, maxCode: 0, devices: [], countries: [], preview: false, ...o })
 
 // ── Пометки серверов
 function renderMarks() {
@@ -722,11 +736,19 @@ function renderMarks() {
       ${expired ? '<span class="st">срок вышел</span>' : ''}</div>
       <div class="more"><div><label class="f">До (пусто — пока не уберёте)</label><input type="datetime-local" data-k="until" value="${toLocal(m.until)}"></div>
       <div><label class="f">Заметка для себя</label><input type="text" data-k="note" value="${esc(m.note)}"></div></div>
+      <div class="quick"><button class="pill" data-q="1">на 1 час</button><button class="pill" data-q="2">на 2 часа</button><button class="pill" data-q="4">на 4 часа</button><button class="pill" data-q="morning">до 9:00</button><button class="pill" data-q="0">без срока</button></div>
       <label class="sw"><div class="t"><b>Только предпросмотр</b></div><span class="tog"><input type="checkbox" data-k="preview" ${m.preview ? 'checked' : ''}><i></i></span></label>`
     d.oninput = e => { const k = e.target.dataset.k; if (!k) return; m[k] = k === 'until' ? fromLocal(e.target.value) : k === 'preview' ? e.target.checked : e.target.value; changed() }
-    d.onclick = e => { const t = e.target.closest('button'); if (!t) return; if (t.dataset.del !== undefined) marks.splice(i, 1); else if (t.dataset.st) m.state = t.dataset.st; else return; renderMarks(); changed() }
+    d.onclick = e => { const t = e.target.closest('button'); if (!t) return; if (t.dataset.del !== undefined) marks.splice(i, 1); else if (t.dataset.st) m.state = t.dataset.st; else if (t.dataset.q) m.until = quickUntil(t.dataset.q); else return; renderMarks(); changed() }
     host.appendChild(d)
   })
+}
+
+// Быстрый срок: через N часов или до 9:00 ближайшего утра
+function quickUntil(q) {
+  if (q === '0') return 0
+  if (q === 'morning') { const d = new Date(); if (d.getHours() >= 9) d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); return d.getTime() }
+  return Date.now() + Number(q) * 3600000
 }
 
 // ── app.json ↔ пульт
@@ -742,6 +764,7 @@ function fillApp(c) {
   annId = a.id || ''
   $('aTitle').value = a.title || ''; $('aText').value = a.text || ''; $('aImage').value = a.image || ''; $('aButton').value = a.button || ''; $('aUrl').value = a.url || ''
   $('aMin').value = a.minCode || ''; $('aMax').value = a.maxCode || ''; $('aPreview').checked = !!a.preview
+  $('aFrom').value = toLocal(a.from); $('aTo').value = toLocal(a.to)
   const l = c.links || {}; $('lSupport').value = l.support || ''; $('lChannel').value = l.channel || ''; $('lSite').value = l.site || ''
   const u = c.update || {}; $('uRequired').value = u.required || ''; $('uRevoked').value = (u.revoked || []).join(', ')
   const f = c.features || {}
@@ -756,10 +779,11 @@ function collectApp(loose = false) {
   marks.forEach(m => { const n = m.name.trim(); if (n) status[n] = { state: m.state, note: m.note.trim(), until: m.until || 0, preview: !!m.preview } })
   const aTitle = $('aTitle').value.trim(), aText = $('aText').value.trim()
   const announce = aTitle || aText ? { id: annId || 'a-new', title: aTitle, text: aText, image: url($('aImage').value), button: $('aButton').value.trim(), url: url($('aUrl').value),
-    minCode: int($('aMin').value), maxCode: int($('aMax').value), preview: $('aPreview').checked } : null
+    minCode: int($('aMin').value), maxCode: int($('aMax').value), preview: $('aPreview').checked, from: fromLocal($('aFrom').value), to: fromLocal($('aTo').value) } : null
+  if (!loose && announce && announce.from && announce.to && announce.to <= announce.from) throw new Error('Объявление: «не показывать после» раньше, чем «показать с»')
   if (!loose) banners.forEach((b, i) => { if (b.text.trim() && b.from && b.to && b.to <= b.from) throw new Error('Баннер ' + (i + 1) + ': «до» раньше, чем «с»') })
   return {
-    banners: banners.filter(b => b.text.trim()).map(b => ({ id: b.id, text: b.text.trim(), level: b.level, url: url(b.url), from: b.from || 0, to: b.to || 0,
+    banners: banners.filter(b => b.text.trim()).map(b => ({ id: b.id, ...(b.name?.trim() ? { name: b.name.trim() } : {}), text: b.text.trim(), level: b.level, url: url(b.url), from: b.from || 0, to: b.to || 0,
       minCode: b.minCode || 0, maxCode: b.maxCode || 0, devices: b.devices, countries: b.countries, preview: !!b.preview })),
     servers: { status, recommended: $('recommended').value.trim(), hidden: $('hidden').value.split('\n').map(s => s.trim()).filter(Boolean) },
     announce,
@@ -807,7 +831,7 @@ function overview(c) {
   const live = c.banners.filter(b => !b.preview && (!b.from || now >= b.from) && (!b.to || now < b.to))
   const marksN = Object.values(c.servers.status).filter(v => !v.until || now < v.until).length
   const rows = [
-    ['banner', 'Баннеры', live.length ? live.map(b => lv(b.level)[1] + ': ' + b.text).join(' / ') : c.banners.length ? 'запланировано: ' + c.banners.length : 'нет', !c.banners.length, live.some(b => b.level !== 'info')],
+    ['banner', 'Баннеры', live.length ? live.map(b => lv(b.level)[1] + ': ' + (b.name || b.text)).join(' / ') : c.banners.length ? 'запланировано: ' + c.banners.length : 'нет', !c.banners.length, live.some(b => b.level !== 'info')],
     ['announce', 'Объявление', c.announce ? (c.announce.preview ? 'предпросмотр: ' : '') + (c.announce.title || c.announce.text.slice(0, 40)) : 'нет', !c.announce],
     ['servers', 'Пометки серверов', marksN ? marksN + ' шт.' : 'нет', !marksN],
     ['servers', 'Советуем', c.servers.recommended || 'нет', !c.servers.recommended],
@@ -854,10 +878,22 @@ async function loadHistory() {
     if (!list.length) { host.innerHTML = '<p class="note">Пока ни одного сохранения.</p>'; return }
     host.innerHTML = list.map((c, i) => `<div class="hist"><div class="t"><b>${esc(c.commit.message.split('\n')[0])}</b>
       <span>${esc(c.commit.author?.name || '')}, ${new Date(c.commit.author?.date).toLocaleString('ru', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span></div>
-      ${i === 0 ? '<span class="st ok">сейчас</span>' : `<button class="btn quiet small" data-sha="${c.sha}">Вернуть</button>`}</div>`).join('')
+      <button class="btn quiet small" data-diff="${c.sha}">Что изменилось</button>
+      ${i === 0 ? '<span class="st ok">сейчас</span>' : `<button class="btn quiet small" data-sha="${c.sha}">Вернуть</button>`}</div><div class="diff" id="d_${c.sha}" hidden></div>`).join('')
   } catch (e) { host.innerHTML = '<p class="note">Не удалось загрузить: ' + esc(e.message) + '</p>' }
 }
 $('histList').onclick = e => {
+  const dbtn = e.target.closest('[data-diff]')
+  if (dbtn) {
+    const box = $('d_' + dbtn.dataset.diff); if (!box.hidden) { box.hidden = true; return }
+    guarded(dbtn, async () => {
+      const c = await api('/commits/' + dbtn.dataset.diff), f = (c.files || []).find(x => x.filename === APP)
+      const lines = (f?.patch || '').split('\n').filter(l => !l.startsWith('@@'))
+      box.innerHTML = lines.length ? lines.map(l => `<span class="${l[0] === '+' ? 'a' : l[0] === '-' ? 'd' : 'n'}">${esc(l)}</span>`).join('\n') : '<span class="n">Изменений в настройках нет</span>'
+      box.hidden = false
+    })
+    return
+  }
   const btn = e.target.closest('[data-sha]'); if (!btn) return
   guarded(btn, async () => { const d = await getFile(APP, btn.dataset.sha); fillApp(d); changed(); showTab('home'); toast('Загружена прошлая версия — проверьте и нажмите «Сохранить»') })
 }
@@ -956,7 +992,7 @@ $('addBanner').onclick = () => { banners.push(newBanner()); renderBanners(); cha
 $('addMark').onclick = () => { marks.push({ name: '', state: 'maintenance', note: '', until: 0, preview: false }); renderMarks(); changed(); document.querySelector('#marks .mark:last-child .n').focus() }
 $('app').addEventListener('input', e => { if (e.target.closest('[data-tab=servers],[data-tab=announce],[data-tab=links],[data-tab=update],[data-tab=features],[data-tab=preview]') && !e.target.closest('#marks')) changed() })
 $('aAgain').onclick = () => { annId = 'a' + Date.now().toString(36); changed(); toast('Окно покажется снова всем после сохранения') }
-$('aClear').onclick = () => { ['aTitle', 'aText', 'aImage', 'aButton', 'aUrl', 'aMin', 'aMax'].forEach(id => ($(id).value = '')); $('aPreview').checked = false; annId = ''; changed() }
+$('aClear').onclick = () => { ['aTitle', 'aText', 'aImage', 'aButton', 'aUrl', 'aMin', 'aMax', 'aFrom', 'aTo'].forEach(id => ($(id).value = '')); $('aPreview').checked = false; annId = ''; changed() }
 $('pGen').onclick = () => {
   const had = (files[APP]?.data?.previewCode || '').trim()
   $('pCode').value = String(crypto.getRandomValues(new Uint32Array(1))[0] % 900000 + 100000); changed()
@@ -973,6 +1009,30 @@ $('panicGo').onclick = () => {
   renderBanners(); renderMarks(); changed(); $('panic').close(); toast('Аварийный режим подготовлен — нажмите «Сохранить»')
 }
 $('runChecks').onclick = () => runChecks()
+$('exportBtn').onclick = () => {
+  let hide = null; try { hide = JSON.parse($('hideJson').value) } catch {}
+  let sub = files[SUB]?.data || null; try { sub = collectSub() } catch {}
+  const blob = new Blob([JSON.stringify({ apexPult: PANEL_VERSION, saved: new Date().toISOString(), app: collectApp(true), subscription: sub, hide }, null, 2)], { type: 'application/json' })
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'apex-pult-' + new Date().toISOString().slice(0, 10) + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000)
+  toast('Копия скачана')
+}
+$('importBtn').onclick = () => $('importFile').click()
+$('importFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return
+  try {
+    const d = JSON.parse(await f.text()); if (!d.app) throw new Error('это не копия пульта')
+    fillApp(d.app); if (d.subscription) fillSub(d.subscription); if (d.hide) $('hideJson').value = JSON.stringify(d.hide, null, 2)
+    changed(); toast('Копия загружена — проверьте и нажмите «Сохранить» (подписку и «Скрыть VPN» — на своих вкладках)')
+  } catch (err) { toast('Не удалось загрузить: ' + err.message, false) }
+}
+document.querySelector('[data-tab=servers]').addEventListener('click', e => {
+  const q = e.target.closest('[data-qs]')?.dataset.qs; if (!q) return
+  const name = $('qsName').value.trim(); if (!name) { $('qsName').focus(); return toast('Впишите часть названия сервера', false) }
+  const slow = q === 'slow', until = quickUntil(slow ? '2' : q)
+  const m = marks.find(x => x.name.toLowerCase() === name.toLowerCase())
+  if (m) { m.state = slow ? 'slow' : 'maintenance'; m.until = until } else marks.push({ name, state: slow ? 'slow' : 'maintenance', note: '', until, preview: false })
+  $('qsName').value = ''; renderMarks(); changed(); toast(name + ': до ' + fmt(until) + ' — нажмите «Сохранить»')
+})
 $('loginBtn').onclick = login
 $('newPin').onkeydown = e => { if (e.key === 'Enter') login() }
 $('unlockBtn').onclick = unlock
