@@ -61,6 +61,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
@@ -413,6 +414,43 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     UpdateDialog(viewModel)
+                    // 3.18.1. Объявление из пульта — большое окно один раз (с картинкой, если есть)
+                    val annCfg by com.apexvpn.client.data.AppConfig.state.collectAsStateWithLifecycle()
+                    var annSeen by remember { mutableStateOf(com.apexvpn.client.data.Prefs.announceSeen) }
+                    annCfg.announceNow()?.takeIf { it.id != annSeen && !splash }?.let { a ->
+                        val img by androidx.compose.runtime.produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, a.image) {
+                            if (a.image.isNotEmpty()) value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                runCatching {
+                                    val c = java.net.URL(a.image).openConnection() as java.net.HttpURLConnection
+                                    c.connectTimeout = 8000; c.readTimeout = 15000
+                                    try { android.graphics.BitmapFactory.decodeStream(c.inputStream)?.asImageBitmap() } finally { c.disconnect() }
+                                }.getOrNull()
+                            }
+                        }
+                        val close = { com.apexvpn.client.data.Prefs.announceSeen = a.id; annSeen = a.id }
+                        AlertDialog(
+                            onDismissRequest = close,
+                            containerColor = Apex.Dialog,
+                            title = { if (a.title.isNotEmpty()) Text(a.title, color = Apex.Text) },
+                            text = {
+                                Column(Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState())) {
+                                    img?.let {
+                                        androidx.compose.foundation.Image(it, null, Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp)),
+                                            contentScale = androidx.compose.ui.layout.ContentScale.FillWidth)
+                                        Spacer(Modifier.height(12.dp))
+                                    }
+                                    Text(a.text, color = Apex.TextDim, fontSize = 15.sp, lineHeight = 21.sp)
+                                }
+                            },
+                            confirmButton = {
+                                if (a.url.isNotEmpty()) TextButton(onClick = {
+                                    close(); runCatching { startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(a.url))) }
+                                }) { Text(a.button, color = Apex.Accent) }
+                                else TextButton(onClick = close) { Text("Понятно", color = Apex.Accent) }
+                            },
+                            dismissButton = if (a.url.isNotEmpty()) ({ TextButton(onClick = close) { Text("Закрыть", color = Apex.TextDim) } }) else null,
+                        )
+                    }
                     // 3.18. Админка отозвала эту версию — предложить вернуться на прошлую
                     val adminCfg by com.apexvpn.client.data.AppConfig.state.collectAsStateWithLifecycle()
                     var revokedShown by remember { mutableStateOf(false) }

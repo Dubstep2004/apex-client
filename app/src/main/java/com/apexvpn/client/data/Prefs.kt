@@ -67,6 +67,13 @@ object Prefs {
     var appConfigAt: Long
         get() = sp.getLong("app_config_at", 0)
         set(v) = sp.edit { putLong("app_config_at", v) }
+    /** 3.18.1: код предпросмотра (черновики из пульта видны только с ним) и показанное объявление */
+    var previewCode: String
+        get() = sp.getString("preview_code", "") ?: ""
+        set(v) = sp.edit { putString("preview_code", v) }
+    var announceSeen: String
+        get() = sp.getString("announce_seen", "") ?: ""
+        set(v) = sp.edit { putString("announce_seen", v) }
     var bannerDismissed: Int
         get() = sp.getInt("banner_dismissed", 0)
         set(v) = sp.edit { putInt("banner_dismissed", v) }

@@ -166,8 +166,13 @@ fun HomeScreen(
 
         // 3.18. Баннер из веб-админки: технические работы, сбой, новости
         val cfg by com.apexvpn.client.data.AppConfig.state.collectAsStateWithLifecycle()
-        var bannerHidden by remember(cfg.banner?.text) { mutableStateOf(false) }
-        cfg.banner?.takeIf { !bannerHidden && com.apexvpn.client.data.AppConfig.bannerVisible(it) }?.let { b ->
+        // Расписание баннера: пересчитываем раз в минуту (с 20:00 до 23:00 и т. п.)
+        var minute by remember { mutableStateOf(System.currentTimeMillis()) }
+        androidx.compose.runtime.LaunchedEffect(Unit) { while (true) { kotlinx.coroutines.delay(60_000); minute = System.currentTimeMillis() } }
+        val device = remember { if (com.apexvpn.client.data.AppConfig.isTv()) "tv" else "phone" }
+        val current = remember(cfg, minute) { cfg.bannerFor(device, minute) }
+        var bannerHidden by remember(current?.id, current?.text) { mutableStateOf(false) }
+        current?.takeIf { !bannerHidden && com.apexvpn.client.data.AppConfig.bannerVisible(it) }?.let { b ->
             Spacer(Modifier.height(10.dp))
             val (icon, color) = when (b.level) {
                 "alert" -> Icons.Rounded.WarningAmber to Apex.Bad
@@ -178,7 +183,7 @@ fun HomeScreen(
                 icon, color, null, b.text,
                 onClick = b.url.takeIf { it.startsWith("https://") }?.let { u -> { openUrl(context, u) } },
                 onClose = {
-                    com.apexvpn.client.data.Prefs.bannerDismissed = b.text.hashCode()
+                    com.apexvpn.client.data.Prefs.bannerDismissed = (b.id + b.text).hashCode()
                     bannerHidden = true
                 },
             )

@@ -25,10 +25,23 @@ object AppConfig {
         "https://cdn.jsdelivr.net/gh/${BuildConfig.GITHUB_REPO}@main/$PATH",
     )
 
-    data class Banner(val text: String, val level: String, val url: String, val until: Long)
-    data class ServerState(val state: String, val note: String) // state: maintenance | slow
+    /**
+     * Баннер. 3.18.1: расписание (from/to — время в мс), устройства (phone / tv / watch),
+     * страна оператора (RU…), версии, «предпросмотр» — только для телефонов с кодом.
+     */
+    data class Banner(
+        val id: String, val text: String, val level: String, val url: String,
+        val from: Long = 0, val to: Long = 0, val minCode: Int = 0, val maxCode: Int = 0,
+        val devices: Set<String> = emptySet(), val countries: Set<String> = emptySet(), val preview: Boolean = false,
+    )
+    data class ServerState(val state: String, val note: String, val until: Long = 0, val preview: Boolean = false) // maintenance | slow
+    /** Большое окно «Что нового» / объявление — показывается один раз. */
+    data class Announce(
+        val id: String, val title: String, val text: String, val image: String, val url: String, val button: String,
+        val minCode: Int = 0, val maxCode: Int = 0, val preview: Boolean = false,
+    )
     data class Config(
-        val banner: Banner? = null,
+        val banners: List<Banner> = emptyList(),
         val servers: Map<String, ServerState> = emptyMap(),
         val recommended: String = "",
         val hidden: Set<String> = emptySet(),
@@ -38,61 +51,120 @@ object AppConfig {
         val requiredCode: Int = 0,
         val revoked: Set<Int> = emptySet(),
         val features: Map<String, Boolean> = emptyMap(),
+        val announce: Announce? = null,
+        val previewCode: String = "",
+        val rev: Int = 0, // меняется, когда ввели код предпросмотра — чтобы экраны пересчитались
     ) {
         /** Функция включена (по умолчанию — да). */
         fun on(feature: String) = features[feature] != false
+        /** На этом телефоне введён код предпросмотра — видны черновики из пульта. */
+        val previewer get() = previewCode.isNotBlank() && Prefs.previewCode.trim() == previewCode.trim()
         // Сервер ищется по части названия без флага: «Германия» — все немецкие, «Обход №1» — один сервер
         private fun hit(title: String, key: String) = key.isNotBlank() && title.contains(key.trim(), ignoreCase = true)
-        fun stateOf(title: String) = servers.entries.firstOrNull { hit(title, it.key) }?.value
+        fun stateOf(title: String): ServerState? {
+            val now = System.currentTimeMillis()
+            return servers.entries.firstOrNull { (k, v) -> hit(title, k) && (v.until == 0L || now < v.until) && (!v.preview || previewer) }?.value
+        }
         fun isHidden(title: String) = hidden.any { hit(title, it) }
         fun isRecommended(title: String) = hit(title, recommended)
         /** Сервер не берёт автопилот: на обслуживании или скрыт. */
         fun blocked(title: String) = isHidden(title) || stateOf(title)?.state == "maintenance"
+
+        /** Баннер для этого устройства прямо сейчас (первый подходящий). */
+        fun bannerFor(device: String, now: Long = System.currentTimeMillis()): Banner? = banners.firstOrNull { b ->
+            val code = BuildConfig.VERSION_CODE
+            (b.from == 0L || now >= b.from) && (b.to == 0L || now < b.to) &&
+                (b.minCode == 0 || code >= b.minCode) && (b.maxCode == 0 || code <= b.maxCode) &&
+                (b.devices.isEmpty() || device in b.devices) &&
+                (b.countries.isEmpty() || country() in b.countries) &&
+                (!b.preview || previewer)
+        }
+
+        /** Объявление для этой версии (ещё не показанное — см. Prefs.announceSeen). */
+        fun announceNow(): Announce? = announce?.takeIf { a ->
+            val code = BuildConfig.VERSION_CODE
+            (a.minCode == 0 || code >= a.minCode) && (a.maxCode == 0 || code <= a.maxCode) && (!a.preview || previewer)
+        }
     }
+
+    /** Страна оператора связи (по сети, иначе по SIM, иначе по языку телефона): «RU», «KZ»… */
+    fun country(): String = runCatching {
+        val tm = com.apexvpn.client.ApexApp.instance.getSystemService(android.telephony.TelephonyManager::class.java)
+        listOf(tm?.networkCountryIso, tm?.simCountryIso).firstOrNull { !it.isNullOrBlank() }?.uppercase()
+    }.getOrNull() ?: Locale.getDefault().country.uppercase()
+
+    /** Это телевизор? (для баннеров «только для Android TV») */
+    fun isTv(): Boolean = runCatching {
+        com.apexvpn.client.ApexApp.instance.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_LEANBACK)
+    }.getOrDefault(false)
 
     private val _state = MutableStateFlow(parse(Prefs.appConfigJson) ?: Config())
     val state: StateFlow<Config> = _state.asStateFlow()
     val value get() = _state.value
 
+    /** Пересчитать экраны (сменили код предпросмотра). */
+    fun touch() { _state.value = _state.value.copy(rev = _state.value.rev + 1) }
+
+    private fun strings(a: org.json.JSONArray?) = a?.let { arr -> (0 until arr.length()).map { arr.optString(it).trim() }.filter { it.isNotEmpty() }.toSet() }.orEmpty()
+
+    private fun parseBanner(b: JSONObject, i: Int): Banner? {
+        val text = b.optString("text").trim().take(300)
+        if (text.isEmpty()) return null
+        // Старый формат: until = дата «до конца дня»
+        val oldUntil = b.optString("until").let { d -> runCatching { SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(d)!!.time + 24 * 3_600_000L }.getOrDefault(0L) }
+        return Banner(
+            id = b.optString("id").ifBlank { "b$i-" + text.hashCode() },
+            text = text, level = b.optString("level", "info"), url = b.optString("url").trim().takeIf { it.startsWith("https://") }.orEmpty(),
+            from = b.optLong("from", 0), to = b.optLong("to", 0).takeIf { it > 0 } ?: oldUntil,
+            minCode = b.optInt("minCode", 0), maxCode = b.optInt("maxCode", 0),
+            devices = strings(b.optJSONArray("devices")), countries = strings(b.optJSONArray("countries")).map { it.uppercase() }.toSet(),
+            preview = b.optBoolean("preview", false),
+        )
+    }
+
     fun parse(text: String): Config? = runCatching {
         if (text.isBlank()) return null
         val o = JSONObject(text)
-        val b = o.optJSONObject("banner")
-        val until = b?.optString("until").orEmpty().let { d ->
-            runCatching { SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(d)!!.time + 24 * 3_600_000L }.getOrDefault(0L)
+        val banners = buildList {
+            o.optJSONArray("banners")?.let { a -> for (i in 0 until a.length()) a.optJSONObject(i)?.let { parseBanner(it, i) }?.let(::add) }
+            o.optJSONObject("banner")?.let { parseBanner(it, 99) }?.let(::add)
         }
-        val minC = b?.optInt("minCode", 0) ?: 0
-        val maxC = b?.optInt("maxCode", 0) ?: 0
-        val code = BuildConfig.VERSION_CODE
-        val banner = b?.optString("text").orEmpty().trim().takeIf { t ->
-            t.isNotEmpty() && (minC == 0 || code >= minC) && (maxC == 0 || code <= maxC)
-        }?.let { Banner(it.take(300), b!!.optString("level", "info"), b.optString("url").trim(), until) }
         val srv = o.optJSONObject("servers")
         val status = srv?.optJSONObject("status")
         val servers = status?.keys()?.asSequence()?.mapNotNull { k ->
-            status.optJSONObject(k)?.let { s -> k to ServerState(s.optString("state"), s.optString("note").take(120)) }
+            status.optJSONObject(k)?.let { s -> k to ServerState(s.optString("state"), s.optString("note").take(120), s.optLong("until", 0), s.optBoolean("preview", false)) }
         }?.toMap().orEmpty()
-        val hidden = srv?.optJSONArray("hidden")?.let { a -> (0 until a.length()).map { a.optString(it) }.filter { it.isNotBlank() }.toSet() }.orEmpty()
         val links = o.optJSONObject("links")
         val upd = o.optJSONObject("update")
         val feats = o.optJSONObject("features")
+        val an = o.optJSONObject("announce")?.takeIf { it.optString("title").isNotBlank() || it.optString("text").isNotBlank() }?.let { a ->
+            Announce(
+                id = a.optString("id").ifBlank { (a.optString("title") + a.optString("text")).hashCode().toString() },
+                title = a.optString("title").take(80), text = a.optString("text").take(1500),
+                image = a.optString("image").trim().takeIf { it.startsWith("https://") }.orEmpty(),
+                url = a.optString("url").trim().takeIf { it.startsWith("https://") }.orEmpty(),
+                button = a.optString("button").ifBlank { "Подробнее" }.take(30),
+                minCode = a.optInt("minCode", 0), maxCode = a.optInt("maxCode", 0), preview = a.optBoolean("preview", false),
+            )
+        }
         Config(
-            banner = banner,
+            banners = banners,
             servers = servers,
             recommended = srv?.optString("recommended").orEmpty(),
-            hidden = hidden,
+            hidden = strings(srv?.optJSONArray("hidden")),
             support = links?.optString("support").orEmpty().takeIf { it.startsWith("https://") }.orEmpty(),
             channel = links?.optString("channel").orEmpty().takeIf { it.startsWith("https://") }.orEmpty(),
             site = links?.optString("site").orEmpty().takeIf { it.startsWith("https://") }.orEmpty(),
             requiredCode = upd?.optInt("required", 0) ?: 0,
             revoked = upd?.optJSONArray("revoked")?.let { a -> (0 until a.length()).map { a.optInt(it) }.toSet() }.orEmpty(),
             features = feats?.keys()?.asSequence()?.associate { it to feats.optBoolean(it, true) }.orEmpty(),
+            announce = an,
+            previewCode = o.optString("previewCode"),
         )
     }.getOrNull()
 
     /** Баннер ещё показывать: не просрочен и не закрыт пользователем. */
-    fun bannerVisible(b: Banner?): Boolean =
-        b != null && (b.until == 0L || System.currentTimeMillis() < b.until) && Prefs.bannerDismissed != b.text.hashCode()
+    fun bannerVisible(b: Banner?): Boolean = b != null && Prefs.bannerDismissed != (b.id + b.text).hashCode()
 
     /** Скачать свежий файл (не чаще раза в 5 минут, если не force). true — изменился. */
     suspend fun refresh(force: Boolean = false): Boolean = withContext(Dispatchers.IO) {

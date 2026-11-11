@@ -120,6 +120,17 @@ fun TvHomeScreen(viewModel: MainViewModel, onToggle: () -> Unit) {
                 Spacer(Modifier.height(8.dp))
                 Text("↓ ${formatSpeed(speed.first)}   ↑ ${formatSpeed(speed.second)}", color = Apex.Good, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
             }
+            // 3.18.1: баннер из пульта для телевизоров
+            val tvCfg by com.apexvpn.client.data.AppConfig.state.collectAsStateWithLifecycle()
+            tvCfg.bannerFor("tv")?.let { b ->
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    b.text, color = Apex.Text, fontSize = 16.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
+                        .background((when (b.level) { "alert" -> Apex.Bad; "warn" -> Apex.Warn; else -> Apex.Accent }).copy(alpha = 0.16f))
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                )
+            }
             Spacer(Modifier.height(10.dp))
             Text("OK на пульте — подключить · → страны", color = Apex.TextDim, fontSize = 14.sp)
         }

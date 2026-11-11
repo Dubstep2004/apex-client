@@ -54,6 +54,7 @@ import androidx.compose.material.icons.rounded.Code
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.ui.graphics.graphicsLayer
 import kotlinx.coroutines.launch
+import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.material.icons.rounded.Refresh
@@ -791,6 +792,42 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
                     }
                 },
             ) { Chevron() }
+            // 3.18.1. Код предпросмотра: черновики из пульта видны только на этом телефоне
+            GroupDivider()
+            var previewDialog by remember { mutableStateOf(false) }
+            val previewOn = com.apexvpn.client.data.Prefs.previewCode.isNotBlank()
+            ListRow(
+                "Код предпросмотра",
+                if (previewOn) "Введён — видны черновики из пульта" else "Для владельца: проверить баннер до публикации",
+                leading = { tile(Icons.Rounded.Visibility) },
+                onClick = { previewDialog = true },
+            ) { Chevron() }
+            if (previewDialog) {
+                var code by remember { mutableStateOf(com.apexvpn.client.data.Prefs.previewCode) }
+                androidx.compose.material3.AlertDialog(
+                    onDismissRequest = { previewDialog = false },
+                    containerColor = Apex.Dialog,
+                    title = { Text("Код предпросмотра", color = Apex.Text) },
+                    text = {
+                        Column {
+                            Text("Тот же код, что в пульте (раздел «Предпросмотр»). С ним на этом телефоне видны баннеры, объявления и пометки, отмеченные «только предпросмотр».",
+                                color = Apex.TextDim, fontSize = 14.sp)
+                            Spacer(Modifier.height(10.dp))
+                            PlainField(code, "Код") { code = it.trim() }
+                        }
+                    },
+                    confirmButton = {
+                        androidx.compose.material3.TextButton(onClick = {
+                            com.apexvpn.client.data.Prefs.previewCode = code
+                            previewDialog = false
+                            viewModel.showMessage(if (code.isBlank()) "Предпросмотр выключен" else "Код сохранён")
+                            com.apexvpn.client.data.AppConfig.touch()
+                            com.apexvpn.client.vpn.ApexVpnService.reload(context)
+                        }) { Text("Сохранить", color = Apex.Accent) }
+                    },
+                    dismissButton = { androidx.compose.material3.TextButton(onClick = { previewDialog = false }) { Text("Отмена", color = Apex.TextDim) } },
+                )
+            }
             if (com.apexvpn.client.data.Links.channel().isNotEmpty()) {
                 GroupDivider()
                 ListRow(

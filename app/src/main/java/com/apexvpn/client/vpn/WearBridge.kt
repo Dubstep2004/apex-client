@@ -63,7 +63,9 @@ object WearBridge {
                 sub.nodes.find { it.tag == sub.selectedTag }?.name?.let { ServerInfo.title(it) } ?: ""
             val ping = VpnState.ping.value
             val down = formatSpeed(VpnState.speed.value.first)
-            val payload = "$status|$server|$ping|$down"
+            // 3.18.1: баннер из пульта «только для часов»
+            val banner = com.apexvpn.client.data.AppConfig.value.bannerFor("watch")?.text.orEmpty()
+            val payload = "$status|$server|$ping|$down|$banner"
             if (payload == lastPayload) return
             lastPayload = payload
             val req = PutDataMapRequest.create("/apex/status").apply {
@@ -71,6 +73,7 @@ object WearBridge {
                 dataMap.putString("server", server)
                 dataMap.putInt("ping", ping)
                 dataMap.putString("down", down)
+                dataMap.putString("banner", banner)
                 dataMap.putLong("t", System.currentTimeMillis())
             }.asPutDataRequest().setUrgent()
             Wearable.getDataClient(context).putDataItem(req)

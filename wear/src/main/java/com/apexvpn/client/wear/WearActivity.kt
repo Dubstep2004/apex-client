@@ -45,7 +45,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 /** Состояние с телефона: путь /apex/status в Wearable Data Layer. */
-data class PhoneState(val status: String = "", val server: String = "", val ping: Int = 0, val down: String = "")
+data class PhoneState(val status: String = "", val server: String = "", val ping: Int = 0, val down: String = "", val banner: String = "")
 
 /** 408. Серверы с телефона: по одному на страну, плюс «Автопилот». */
 data class ServerItem(val tag: String, val title: String, val flag: String)
@@ -145,6 +145,7 @@ class WearActivity : ComponentActivity(), DataClient.OnDataChangedListener {
         server = m.getString("server", ""),
         ping = m.getInt("ping", 0),
         down = m.getString("down", ""),
+        banner = m.getString("banner", ""),
     )
 
     private fun parseServers(m: com.google.android.gms.wearable.DataMap): ServerList {
@@ -204,6 +205,14 @@ private fun WearScreen(s: PhoneState, linked: Boolean, onToggle: () -> Unit, onO
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         item { Text("APEX Watch", color = Color(0xFF8E8E9A), fontSize = 12.sp) }
+        // Объявление от владельца (из пульта, «только для часов»)
+        if (s.banner.isNotBlank()) item {
+            Text(
+                s.banner, color = Color.White, fontSize = 12.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
+                    .background(Color(0x33F5B759)).padding(horizontal = 10.dp, vertical = 6.dp),
+            )
+        }
         item {
             Button(
                 onClick = onToggle,
