@@ -55,8 +55,9 @@ class ApexApp : Application() {
             if (runCatching { com.apexvpn.client.data.AppConfig.refresh(force = true) }.getOrDefault(false) &&
                 VpnState.status.value == com.apexvpn.client.vpn.VpnStatus.Started
             ) com.apexvpn.client.vpn.ApexVpnService.reload(this@ApexApp)
+            // 3.18: раз в 15 минут (файл крошечный) — и при каждом открытии приложения (MainActivity)
             while (true) {
-                kotlinx.coroutines.delay(60 * 60_000L)
+                kotlinx.coroutines.delay(15 * 60_000L)
                 if (runCatching { com.apexvpn.client.data.AppConfig.refresh() }.getOrDefault(false) &&
                     VpnState.status.value == com.apexvpn.client.vpn.VpnStatus.Started
                 ) com.apexvpn.client.vpn.ApexVpnService.reload(this@ApexApp)

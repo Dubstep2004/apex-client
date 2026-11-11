@@ -62,7 +62,7 @@
 </head>
 <body>
 <h1>APEX VPN · админка</h1>
-<p class="sub">Изменения сохраняются в репозиторий <b>Dubstep2004/apex-vpn</b>, приложения подхватывают их в течение часа — без новой версии.</p>
+<p class="sub">Изменения сохраняются в репозиторий <b>Dubstep2004/apex-vpn</b>, приложения подхватывают их через 1–5 минут при открытии, а в фоне — в течение 15 минут. Новая версия не нужна.</p>
 
 <!-- Вход -->
 <section id="login" class="card">
@@ -141,7 +141,7 @@
   <section data-tab="features" class="card" hidden>
     <h2>⚙️ Функции — экстренное выключение</h2>
     <div id="feats"></div>
-    <p class="hint">Выключили — функция перестаёт работать у всех в течение часа. Включите обратно, когда исправите.</p>
+    <p class="hint">Выключили — функция перестаёт работать у всех в течение 15 минут. Включите обратно, когда исправите.</p>
   </section>
 
   <!-- Адрес подписки -->
@@ -378,7 +378,7 @@ $('logout').onclick = logout
 $('srvAdd').onclick = () => addSrv()
 ;['bText', 'bLevel'].forEach(id => $(id).addEventListener('input', preview))
 $('reload').onclick = () => guarded($('reload'), async () => { await loadAll(); toast('Обновлено') })
-$('saveApp').onclick = () => guarded($('saveApp'), async () => { await putFile(APP, collectApp(), 'Админка: настройки приложения'); toast('Сохранено ✓ Приложения подхватят в течение часа') })
+$('saveApp').onclick = () => guarded($('saveApp'), async () => { await putFile(APP, collectApp(), 'Админка: настройки приложения'); toast('Сохранено ✓ Приложения подхватят через несколько минут') })
 $('saveSub').onclick = () => guarded($('saveSub'), async () => { await putFile(SUB, collectSub(), 'Админка: адрес подписки'); toast('Адрес подписки сохранён ✓') })
 $('saveHide').onclick = () => guarded($('saveHide'), async () => {
   let d; try { d = JSON.parse($('hideJson').value) } catch (e) { throw new Error('Ошибка в JSON: ' + e.message) }

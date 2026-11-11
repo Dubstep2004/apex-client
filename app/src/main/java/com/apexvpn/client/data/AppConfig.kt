@@ -94,12 +94,12 @@ object AppConfig {
     fun bannerVisible(b: Banner?): Boolean =
         b != null && (b.until == 0L || System.currentTimeMillis() < b.until) && Prefs.bannerDismissed != b.text.hashCode()
 
-    /** Скачать свежий файл (не чаще раза в час, если не force). true — изменился. */
+    /** Скачать свежий файл (не чаще раза в 5 минут, если не force). true — изменился. */
     suspend fun refresh(force: Boolean = false): Boolean = withContext(Dispatchers.IO) {
-        if (!force && System.currentTimeMillis() - Prefs.appConfigAt < 3_600_000L) return@withContext false
+        if (!force && System.currentTimeMillis() - Prefs.appConfigAt < 5 * 60_000L) return@withContext false
         val text = sources.firstNotNullOfOrNull { src ->
             runCatching {
-                val c = URL(src + "?t=" + System.currentTimeMillis() / 600_000).openConnection() as HttpURLConnection
+                val c = URL(src + "?t=" + System.currentTimeMillis() / 60_000).openConnection() as HttpURLConnection
                 c.connectTimeout = 10_000; c.readTimeout = 15_000
                 try { if (c.responseCode == 200) c.inputStream.bufferedReader().readText() else null } finally { c.disconnect() }
             }.getOrNull()?.takeIf { parse(it) != null }

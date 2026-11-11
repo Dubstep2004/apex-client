@@ -433,6 +433,16 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        // 3.18: открыли приложение — свежие настройки из админки (не чаще раза в 5 минут)
+        lifecycleScope.launch {
+            if (runCatching { com.apexvpn.client.data.AppConfig.refresh() }.getOrDefault(false) &&
+                VpnState.status.value == VpnStatus.Started
+            ) ApexVpnService.reload(this@MainActivity)
+        }
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleIntent(intent)
