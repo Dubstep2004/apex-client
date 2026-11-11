@@ -2,6 +2,12 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.17.6 · 11 ноября 2026
+
+<img src="img/tags/fixed.svg" alt="Исправлено" height="22">
+
+- Список HaGeZi не скачивался («нет файла» в «Базах сайтов»), если остальные базы уже были свежими. Теперь он скачивается при проверке баз, а в новых сборках он ещё и встроен в приложение
+
 ## 3.17.5 · 11 ноября 2026
 
 <img src="img/tags/new.svg" alt="Новое" height="22">

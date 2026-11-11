@@ -284,7 +284,12 @@ object RulesUpdater {
             val want = files?.optJSONObject(name)?.optString("sha256").orEmpty()
             !local.exists() || local.length() == 0L || want.isEmpty() || sha256(local) != want
         }
-        if (need.isEmpty()) return Result.Fresh to manifest
+        if (need.isEmpty()) {
+            // 3.17.6: основные базы свежие — необязательные всё равно проверяем. Раньше здесь
+            // выходили сразу, и HaGeZi не скачивался никогда («нет файла»)
+            val extra = if (base == UPSTREAM) 0 else updateOptional(base, files, dir)
+            return (if (extra == 0) Result.Fresh else Result.Updated(extra)) to manifest
+        }
         val tmp = File(context.cacheDir, "rules-tmp").apply { deleteRecursively(); mkdirs() }
         try {
             for (name in need) {
