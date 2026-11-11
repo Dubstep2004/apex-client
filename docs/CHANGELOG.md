@@ -2,6 +2,16 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.17.0 · 11 ноября 2026
+
+<img src="img/tags/new.svg" alt="Новое" height="22">
+
+- Подписки в формате Xray JSON (как их получает Happ): серверы подключаются через Xray со всеми настройками из панели — XHTTP с extra, фрагментация (dialerProxy), подписи serverDescription
+
+<img src="img/tags/improved.svg" alt="Улучшено" height="22">
+
+- Если панель отдаёт Happ и APEX разные адреса серверов (например, «обход» через CDN только в JSON), теперь APEX может получать ту же подписку, что и Happ
+
 ## 3.16.3 · 11 ноября 2026
 
 <img src="img/tags/improved.svg" alt="Улучшено" height="22">

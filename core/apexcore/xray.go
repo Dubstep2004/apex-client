@@ -458,6 +458,40 @@ func (x *xrayPlan) add(n *Node) map[string]any {
 
 	ob := deepCopy(n.Xray).(map[string]any)
 	ob["tag"] = out
+	// Ступень из подписки Xray JSON (dialerProxy, например freedom с фрагментацией)
+	var hop map[string]any
+	if chain, _ := ob[xrayChainKey].([]any); len(chain) > 0 {
+		hop, _ = chain[0].(map[string]any)
+	}
+	delete(ob, xrayChainKey)
+	if hop != nil {
+		hop["tag"] = out + "-hop"
+		stream, _ := ob["streamSettings"].(map[string]any)
+		if stream == nil {
+			stream = map[string]any{}
+			ob["streamSettings"] = stream
+		}
+		so, _ := stream["sockopt"].(map[string]any)
+		if so == nil {
+			so = map[string]any{}
+			stream["sockopt"] = so
+		}
+		so["dialerProxy"] = out + "-hop"
+		if x.dialPort > 0 {
+			hs, _ := hop["streamSettings"].(map[string]any)
+			if hs == nil {
+				hs = map[string]any{}
+				hop["streamSettings"] = hs
+			}
+			hso, _ := hs["sockopt"].(map[string]any)
+			if hso == nil {
+				hso = map[string]any{}
+				hs["sockopt"] = hso
+			}
+			hso["dialerProxy"] = xrayDialTag
+		}
+		x.outbounds = append(x.outbounds, hop)
+	}
 	if x.dialPort > 0 {
 		stream, _ := ob["streamSettings"].(map[string]any)
 		if stream == nil {

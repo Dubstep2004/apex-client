@@ -71,7 +71,12 @@ func parse(content string) (*parseResult, error) {
 	}
 	res := &parseResult{Nodes: []Node{}, Skipped: []string{}}
 
-	if strings.HasPrefix(content, "{") {
+	if isXrayJSON(content) {
+		// Xray JSON (как у Happ): полные конфиги Xray
+		if err := parseXrayJSON(content, res); err != nil {
+			return nil, err
+		}
+	} else if strings.HasPrefix(content, "{") {
 		if err := parseSingBoxJSON(content, res); err != nil {
 			return nil, err
 		}
@@ -81,7 +86,11 @@ func parse(content string) (*parseResult, error) {
 				content = decoded
 			}
 		}
-		if strings.HasPrefix(strings.TrimSpace(content), "{") {
+		if isXrayJSON(content) {
+			if err := parseXrayJSON(content, res); err != nil {
+				return nil, err
+			}
+		} else if strings.HasPrefix(strings.TrimSpace(content), "{") {
 			if err := parseSingBoxJSON(content, res); err != nil {
 				return nil, err
 			}
