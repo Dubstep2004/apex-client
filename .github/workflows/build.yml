@@ -56,9 +56,11 @@ jobs:
               echo "::warning title=Базы::$f не скачался — оставлен старый"
             fi
           done
-          # HaGeZi — только из ветки «rules» (у SagerNet его нет); не скачался — без него
-          if curl -fsSL --retry 2 -o /tmp/ads-hagezi.srs "https://raw.githubusercontent.com/${{ github.repository }}/rules/ads-hagezi.srs" &&
-             [ "$(head -c 3 /tmp/ads-hagezi.srs)" = "SRS" ]; then cp /tmp/ads-hagezi.srs app/src/main/assets/rules/ads-hagezi.srs; fi
+          # HaGeZi и «только из России» — только из ветки «rules» (у SagerNet их нет); не скачались — без них
+          for f in ads-hagezi.srs ru-inside.srs; do
+            if curl -fsSL --retry 2 -o "/tmp/$f" "https://raw.githubusercontent.com/${{ github.repository }}/rules/$f" &&
+               [ "$(head -c 3 "/tmp/$f")" = "SRS" ]; then cp "/tmp/$f" "app/src/main/assets/rules/$f"; fi
+          done
           ls -la app/src/main/assets/rules
 
       - uses: actions/setup-java@v4

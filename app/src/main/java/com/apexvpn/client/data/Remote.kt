@@ -59,7 +59,7 @@ object RulesUpdater {
      * 3.17.5. Необязательные базы: есть только в ветке «rules» APEX VPN (у SagerNet их нет).
      * Не скачались — ядро работает без них, обновление при этом не считается неудачным.
      */
-    val OPTIONAL = listOf("ads-hagezi.srs")
+    val OPTIONAL = listOf("ads-hagezi.srs", "ru-inside.srs")
 
     /** Понятные названия баз для экрана «Маршрутизация». */
     val TITLES = mapOf(
@@ -67,6 +67,7 @@ object RulesUpdater {
         "geosite-category-ru.srs" to "Российские сайты",
         "geosite-category-ads-all.srs" to "Реклама и трекеры",
         "ads-hagezi.srs" to "Реклама и трекеры — HaGeZi Multi Normal",
+        "ru-inside.srs" to "Работают только из России (Госуслуги, банки, магазины)",
         "geosite-category-porn.srs" to "Сайты 18+ (семейный режим)",
         "geosite-category-betting-ru.srs" to "Букмекеры (семейный режим)",
     )

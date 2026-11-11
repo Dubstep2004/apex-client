@@ -53,6 +53,24 @@ jobs:
             echo "::warning title=HaGeZi::список не собран — остаётся основная база"
           fi
 
+      - name: Russia — only from inside
+        run: |
+          set -uo pipefail
+          # 3.17.6: сайты, которые работают только из России (Госуслуги, банки, магазины,
+          # в том числе не на .ru) — от runetfreedom. В «Умном» режиме идут напрямую.
+          ok=""
+          for u in \
+            "https://raw.githubusercontent.com/runetfreedom/russia-v2ray-rules-dat/release/sing-box/rule-set-geosite/geosite-ru-available-only-inside.srs" \
+            "https://raw.githubusercontent.com/runetfreedom/russia-v2ray-rules-dat/release/sing-box/geosite-ru-available-only-inside.srs"; do
+            if curl -fsSL --retry 3 -o out/ru-inside.srs "$u" && [ "$(head -c 3 out/ru-inside.srs)" = "SRS" ]; then ok="$u"; break; fi
+          done
+          if [ -n "$ok" ]; then
+            echo "::notice title=Россия::список «только из России» скачан ($ok)"
+          else
+            rm -f out/ru-inside.srs
+            echo "::warning title=Россия::список «только из России» не скачан — остаётся основная база"
+          fi
+
       - name: Count sites
         run: |
           set -uo pipefail

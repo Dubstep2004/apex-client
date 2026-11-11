@@ -27,6 +27,7 @@ const (
 	fileGeositeRU = "geosite-category-ru.srs"
 	fileAds       = "geosite-category-ads-all.srs"
 	fileAdsHagezi = "ads-hagezi.srs" // HaGeZi Multi Normal (необязательный: нет файла — без него)
+	fileRuInside  = "ru-inside.srs"  // сайты, работающие только из России (runetfreedom, необязательный)
 	filePorn      = "geosite-category-porn.srs"
 	fileBetting   = "geosite-category-betting-ru.srs"
 )
@@ -322,9 +323,10 @@ func buildAll(nodesJSON string, selectedTag string, optionsJSON string) (string,
 
 	// ── базы правил ──────────────────────────────────────────────────────
 	var ruleSets []any
-	geositeRU, geoipRU, ads, adsHagezi := "", "", "", ""
+	geositeRU, geoipRU, ads, adsHagezi, ruInside := "", "", "", "", ""
 	if opts.Mode == ModeSmart {
 		geositeRU, geoipRU = opts.rulesFile(fileGeositeRU), opts.rulesFile(fileGeoipRU)
+		ruInside = opts.rulesFile(fileRuInside)
 	}
 	if opts.AdBlock {
 		ads = opts.rulesFile(fileAds)
@@ -341,6 +343,7 @@ func buildAll(nodesJSON string, selectedTag string, optionsJSON string) (string,
 	}
 	addSet("geosite-ru", geositeRU)
 	addSet("geoip-ru", geoipRU)
+	addSet("ru-inside", ruInside)
 	addSet("ads", ads)
 	addSet("ads-hagezi", adsHagezi)
 	addSet("porn", porn)
@@ -442,6 +445,9 @@ func buildAll(nodesJSON string, selectedTag string, optionsJSON string) (string,
 		var sets []string
 		if geositeRU != "" {
 			sets = append(sets, "geosite-ru")
+		}
+		if ruInside != "" {
+			sets = append(sets, "ru-inside")
 		}
 		if geoipRU != "" {
 			sets = append(sets, "geoip-ru")
@@ -550,8 +556,15 @@ func buildAll(nodesJSON string, selectedTag string, optionsJSON string) (string,
 	}
 	if opts.Mode == ModeSmart {
 		dnsRules = append(dnsRules, map[string]any{"domain_suffix": ruDomainSuffixes, "server": directDNS})
+		var ruSets []string
 		if geositeRU != "" {
-			dnsRules = append(dnsRules, map[string]any{"rule_set": "geosite-ru", "server": directDNS})
+			ruSets = append(ruSets, "geosite-ru")
+		}
+		if ruInside != "" {
+			ruSets = append(ruSets, "ru-inside")
+		}
+		if len(ruSets) > 0 {
+			dnsRules = append(dnsRules, map[string]any{"rule_set": ruSets, "server": directDNS})
 		}
 	}
 	dnsFinal := "remote"
