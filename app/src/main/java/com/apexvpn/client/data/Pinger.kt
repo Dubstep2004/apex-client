@@ -162,11 +162,16 @@ object Pinger {
     private fun tcpPing(host: String, port: Int): Int {
         if (port !in 1..65535) return UNREACHABLE
         return runCatching {
+            val net = NetworkMonitor.defaultNetwork
+            // 3.16.1: адрес сервера узнаём тоже через реальную сеть. Раньше имя искалось через DNS
+            // туннеля: когда VPN включён, но не работает (белые списки), не находился ни один
+            // сервер с доменом вместо IP — в том числе LTE-обход, и белые списки не определялись
+            val addr = net?.let { n -> runCatching { n.getAllByName(host).let { a -> a.firstOrNull { it is java.net.Inet4Address } ?: a.first() } }.getOrNull() }
             Socket().use { socket ->
                 // Если VPN включён, привязываем сокет к реальной сети, иначе замер пойдёт через туннель
-                NetworkMonitor.defaultNetwork?.bindSocket(socket)
+                net?.bindSocket(socket)
                 val start = System.nanoTime()
-                socket.connect(InetSocketAddress(host, port), 3000)
+                socket.connect(if (addr != null) InetSocketAddress(addr, port) else InetSocketAddress(host, port), 3000)
                 ((System.nanoTime() - start) / 1_000_000).toInt().coerceAtLeast(1)
             }
         }.getOrDefault(UNREACHABLE)

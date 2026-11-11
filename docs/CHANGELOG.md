@@ -2,6 +2,16 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.16.2 · 11 ноября 2026
+
+<img src="img/tags/improved.svg" alt="Улучшено" height="22">
+
+- То же исправление касается TCP-пинга серверов и «Подобрать самый быстрый»: при неработающем VPN серверы с доменом больше не показываются «мёртвыми»
+
+<img src="img/tags/fixed.svg" alt="Исправлено" height="22">
+
+- Автопилот не включал LTE-обход при белых списках, если адрес сервера в подписке — домен, а не IP: при включённом, но не работающем VPN имя сервера искалось через сам туннель и не находилось, поэтому все серверы, включая LTE-обход, считались недоступными. Теперь адрес ищется через настоящую сеть (мобильную или Wi-Fi)
+
 ## 3.16.1 · 11 ноября 2026
 
 <img src="img/tags/improved.svg" alt="Улучшено" height="22">
