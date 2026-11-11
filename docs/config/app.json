@@ -14,19 +14,6 @@
       "preview": false
     },
     {
-      "id": "bmwcmyhc148p",
-      "text": "Вышла новая версия — обновите приложение в Настройках.",
-      "level": "info",
-      "url": "",
-      "from": 0,
-      "to": 0,
-      "minCode": 0,
-      "maxCode": 0,
-      "devices": [],
-      "countries": [],
-      "preview": false
-    },
-    {
       "id": "bmwcmyf6v6ho",
       "text": "Всё работает. Спасибо, что подождали!",
       "level": "info",
