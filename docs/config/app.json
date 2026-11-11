@@ -14,19 +14,6 @@
       "preview": false
     },
     {
-      "id": "bmwcmzky48w5",
-      "text": "Сегодня с 22:00 до 23:00 технические работы. Возможны короткие перерывы.",
-      "level": "warn",
-      "url": "",
-      "from": 0,
-      "to": 0,
-      "minCode": 0,
-      "maxCode": 0,
-      "devices": [],
-      "countries": [],
-      "preview": false
-    },
-    {
       "id": "bmwcmyhc148p",
       "text": "Вышла новая версия — обновите приложение в Настройках.",
       "level": "info",
