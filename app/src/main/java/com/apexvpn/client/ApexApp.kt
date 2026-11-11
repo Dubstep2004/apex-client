@@ -169,7 +169,10 @@ class ApexApp : Application() {
                 VpnState.status,
                 com.apexvpn.client.vpn.NetworkMonitor.transport,
                 AppSettings.state.map { it.autoWhitelist to it.dns },
-            ) { st, tr, set -> Triple(st, tr, set) }
+                // 3.17.8: выбрали автопилот при включённом VPN — проверяем белые списки сразу,
+                // а не через 5 минут по расписанию
+                com.apexvpn.client.data.Subscription.state.map { it.selectedTag == com.apexvpn.client.data.AUTO_TAG },
+            ) { st, tr, set, auto -> Triple(st, tr, set to auto) }
                 .distinctUntilChanged()
                 .collect { (st, tr, _) ->
                     job?.cancel()

@@ -17,7 +17,7 @@
 <p><b>Два ядра</b> · все популярные протоколы · <b>свои списки</b> с шаблонами · <b>3D-глобус</b> · <b>13 дизайнов</b>, палитры и <b>живое видео на фоне</b><br>
 автопилот с белыми списками · DNS «Авто» для каждой сети · базы сайтов каждый день · часы Wear OS</p>
 
-<sub>📱 Android — <b>3.17.7</b> (Android 7+) · sing-box 1.13 · Xray 26</sub><br>
+<sub>📱 Android — <b>3.17.8</b> (Android 7+) · sing-box 1.13 · Xray 26</sub><br>
 <sub>💬 Поддержка: <a href="https://t.me/Apexx_support">@Apexx_support</a></sub>
 
 </div>
@@ -860,7 +860,18 @@ core/apexcore/          Go: разбор подписки → конфиги sin
 
 <img src="docs/img/tags/new.svg" alt="Новое" height="22"> <img src="docs/img/tags/improved.svg" alt="Улучшено" height="22"> <img src="docs/img/tags/changed.svg" alt="Изменено" height="22"> <img src="docs/img/tags/fixed.svg" alt="Исправлено" height="22"> <img src="docs/img/tags/removed.svg" alt="Удалено" height="22">
 
-### 3.17.7 · 11 ноября 2026
+### 3.17.8 · 11 ноября 2026
+
+<img src="docs/img/tags/fixed.svg" alt="Исправлено" height="22">
+
+- Переключились с ручного сервера на «Автопилот» при включённом VPN — белые списки проверялись только через 5 минут. Теперь сразу
+
+#### 📚 Все версии (102)
+
+Каждая версия — отдельная вкладка.
+
+<details>
+<summary><b>3.17.7</b> · 11 ноября 2026</summary>
 
 <img src="docs/img/tags/improved.svg" alt="Улучшено" height="22">
 
@@ -869,9 +880,7 @@ core/apexcore/          Go: разбор подписки → конфиги sin
 - «Приложения» (выбор, что идёт через VPN): категории как в «Скрыть VPN» — банки, госуслуги, магазины и т. д., плюс «Выбрано», список по алфавиту
 - «Что нового»: фильтр — только новое, улучшения или исправления
 
-#### 📚 Все версии (101)
-
-Каждая версия — отдельная вкладка.
+</details>
 
 <details>
 <summary><b>3.17.6</b> · 11 ноября 2026</summary>

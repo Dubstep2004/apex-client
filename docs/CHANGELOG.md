@@ -2,6 +2,12 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.17.8 · 11 ноября 2026
+
+<img src="img/tags/fixed.svg" alt="Исправлено" height="22">
+
+- Переключились с ручного сервера на «Автопилот» при включённом VPN — белые списки проверялись только через 5 минут. Теперь сразу
+
 ## 3.17.7 · 11 ноября 2026
 
 <img src="img/tags/improved.svg" alt="Улучшено" height="22">
