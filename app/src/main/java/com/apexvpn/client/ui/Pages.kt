@@ -166,6 +166,7 @@ private fun AppsPage(viewModel: MainViewModel, onBack: () -> Unit) {
     val s by viewModel.settings.collectAsStateWithLifecycle()
     val appList by viewModel.apps.collectAsStateWithLifecycle()
     var query by rememberSaveable { mutableStateOf("") }
+    var appCat by rememberSaveable { mutableStateOf("all") }
     LaunchedEffect(Unit) { viewModel.loadApps() }
 
     PageScaffold("Приложения", onBack, scroll = false) {
@@ -185,8 +186,19 @@ private fun AppsPage(viewModel: MainViewModel, onBack: () -> Unit) {
                     CircularProgressIndicator(color = Apex.Accent)
                 }
             } else {
-                val filtered = list.filter { query.isBlank() || it.label.contains(query, true) || it.packageName.contains(query, true) }
-                    .sortedByDescending { it.packageName in s.apps }
+                // 3.17.7: категории, как в «Скрыть VPN от приложений»
+                val cats = remember(list) { list.associate { it.packageName to com.apexvpn.client.data.AppCategories.of(it) } }
+                val searched = list.filter { query.isBlank() || it.label.contains(query, true) || it.packageName.contains(query, true) }
+                val chips = listOf("all" to "Все · ${searched.size}", "on" to "Выбрано · ${searched.count { it.packageName in s.apps }}") +
+                    com.apexvpn.client.data.AppCategories.Cat.entries.mapNotNull { c ->
+                        val n = searched.count { cats[it.packageName] == c }
+                        if (n > 0) c.name to "${c.emoji} ${c.title} · $n" else null
+                    }
+                CategoryChips(chips, appCat) { appCat = it }
+                Spacer(Modifier.height(6.dp))
+                val filtered = searched.filter {
+                    when (appCat) { "all" -> true; "on" -> it.packageName in s.apps; else -> cats[it.packageName]?.name == appCat }
+                }.sortedWith(compareByDescending<com.apexvpn.client.data.AppInfo> { it.packageName in s.apps }.thenBy { it.label.lowercase() })
                 LazyColumn(
                     Modifier
                         .fillMaxWidth()
@@ -1835,8 +1847,22 @@ private fun ChangelogPage(onBack: () -> Unit) {
                 Text("Сборка ${com.apexvpn.client.BuildConfig.VERSION_CODE}", color = Apex.TextDim, fontSize = 14.sp)
             }
         }
+        // 3.17.7: показать только новое / улучшения / исправления
+        var kind by rememberSaveable { mutableStateOf("all") }
+        Spacer(Modifier.height(10.dp))
+        CategoryChips(
+            listOf("all" to "Все", "new" to "🟢 Новое", "imp" to "🟣 Улучшено", "fix" to "🔵 Исправлено"),
+            kind,
+        ) { kind = it }
+        val kinds = when (kind) {
+            "new" -> setOf(com.apexvpn.client.data.ChangeKind.New)
+            "imp" -> setOf(com.apexvpn.client.data.ChangeKind.Improved, com.apexvpn.client.data.ChangeKind.Changed)
+            "fix" -> setOf(com.apexvpn.client.data.ChangeKind.Fixed)
+            else -> null
+        }
         com.apexvpn.client.data.Changelog.releases.forEach { r ->
-            ReleaseCard(r, installed = r.code == com.apexvpn.client.BuildConfig.VERSION_CODE)
+            val shown = if (kinds == null) r else r.copy(changes = r.changes.filter { it.kind in kinds })
+            if (shown.changes.isNotEmpty()) ReleaseCard(shown, installed = r.code == com.apexvpn.client.BuildConfig.VERSION_CODE)
         }
         Spacer(Modifier.height(24.dp))
     }
@@ -1911,8 +1937,16 @@ private fun AdvancedPage(viewModel: MainViewModel, onBack: () -> Unit) {
     val context = LocalContext.current
     val updating by viewModel.rulesUpdating.collectAsStateWithLifecycle()
     var confirmReset by remember { mutableStateOf(false) }
+    var cat by rememberSaveable { mutableStateOf("all") }
     PageScaffold("Маршрутизация", onBack) {
         Caption("Для опытных. Неверные настройки могут сломать доступ к сайтам — тогда нажмите «Сбросить» внизу.")
+        // 3.17.7: категории — показать только нужный раздел
+        Spacer(Modifier.height(8.dp))
+        CategoryChips(
+            listOf("all" to "Все", "bases" to "Базы сайтов", "rules" to "Свои правила", "domains" to "Домены", "warp" to "WARP", "dns" to "DNS"),
+            cat,
+        ) { cat = it }
+        if (cat == "all" || cat == "bases") {
 
         // ── Базы сайтов (гео-файлы)
         SectionLabel("Базы сайтов")
@@ -1936,15 +1970,27 @@ private fun AdvancedPage(viewModel: MainViewModel, onBack: () -> Unit) {
             )
         }
         Spacer(Modifier.height(10.dp))
-        Group {
-            val dir = remember(updating) { com.apexvpn.client.data.RulesUpdater.activeDir(context)?.let { java.io.File(it) } }
-            (com.apexvpn.client.data.RulesUpdater.FILES + com.apexvpn.client.data.RulesUpdater.OPTIONAL).forEachIndexed { i, name ->
-                if (i > 0) GroupDivider()
-                val f = dir?.let { java.io.File(it, name) }
-                val count = ri?.counts?.get(name)?.let { "${"%,d".format(java.util.Locale("ru"), it)} записей · " } ?: ""
-                val info = if (f != null && f.exists()) "$count${formatBytes(f.length())} · ${formatDate(f.lastModified() / 1000)}" else "нет файла"
-                ListRow(com.apexvpn.client.data.RulesUpdater.TITLES[name] ?: name.removeSuffix(".srs"), info + "\n" + com.apexvpn.client.data.RulesUpdater.urlFor(name))
+        // 3.17.7: базы по группам — Россия, реклама, семейный режим
+        val dir = remember(updating) { com.apexvpn.client.data.RulesUpdater.activeDir(context)?.let { java.io.File(it) } }
+        val all = com.apexvpn.client.data.RulesUpdater.FILES + com.apexvpn.client.data.RulesUpdater.OPTIONAL
+        val baseGroups = listOf(
+            "Россия — напрямую" to listOf("geosite-category-ru.srs", "ru-inside.srs", "geoip-ru.srs"),
+            "Реклама и трекеры" to listOf("geosite-category-ads-all.srs", "ads-hagezi.srs"),
+            "Семейный режим" to listOf("geosite-category-porn.srs", "geosite-category-betting-ru.srs"),
+        ).let { g -> g + ("Другое" to all.filter { n -> g.none { n in it.second } }) }
+            .map { (t, names) -> t to names.filter { it in all } }.filter { it.second.isNotEmpty() }
+        baseGroups.forEach { (title, names) ->
+            Text(title, color = Apex.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 4.dp, top = 6.dp, bottom = 6.dp))
+            Group {
+                names.forEachIndexed { i, name ->
+                    if (i > 0) GroupDivider()
+                    val f = dir?.let { java.io.File(it, name) }
+                    val count = ri?.counts?.get(name)?.let { "${"%,d".format(java.util.Locale("ru"), it)} записей · " } ?: ""
+                    val info = if (f != null && f.exists()) "$count${formatBytes(f.length())} · ${formatDate(f.lastModified() / 1000)}" else "нет файла"
+                    ListRow(com.apexvpn.client.data.RulesUpdater.TITLES[name] ?: name.removeSuffix(".srs"), info + "\n" + com.apexvpn.client.data.RulesUpdater.urlFor(name))
+                }
             }
+            Spacer(Modifier.height(8.dp))
         }
         Spacer(Modifier.height(10.dp))
         PlainField(source, "Свой адрес баз (пусто — по умолчанию)") { source = it.trim() }
@@ -1967,6 +2013,8 @@ private fun AdvancedPage(viewModel: MainViewModel, onBack: () -> Unit) {
             else Text("Обновить базы", fontWeight = FontWeight.SemiBold)
         }
 
+        }
+        if (cat == "all" || cat == "rules") {
         // ── Свои правила
         SectionLabel("Свои правила", trailing = s.userRules.size.takeIf { it > 0 }?.toString())
         var value by rememberSaveable { mutableStateOf("") }
@@ -2001,6 +2049,8 @@ private fun AdvancedPage(viewModel: MainViewModel, onBack: () -> Unit) {
         ruleError?.let { Text(it, color = Apex.Bad, fontSize = 13.sp, modifier = Modifier.padding(start = 4.dp, top = 6.dp)) }
         Caption("Домен — вместе с поддоменами. full: — только этот домен, keyword: — по слову, regexp: — выражение, IP или подсеть. Порты: port:443, udp:27000-27100 (игры напрямую), tcp:25565. Свои правила важнее остальных.")
 
+        }
+        if (cat == "all" || cat == "domains") {
         // ── Настройки доменов
         SectionLabel("Настройки доменов")
         Group {
@@ -2016,6 +2066,8 @@ private fun AdvancedPage(viewModel: MainViewModel, onBack: () -> Unit) {
             }
         }
 
+        }
+        if (cat == "all" || cat == "warp") {
         // ── 31. WARP-цепочка
         SectionLabel("WARP-цепочка")
         val warpBusy by viewModel.warpBusy.collectAsStateWithLifecycle()
@@ -2038,10 +2090,13 @@ private fun AdvancedPage(viewModel: MainViewModel, onBack: () -> Unit) {
         }
         Caption("Помогает, когда сайт не открывается с IP сервера (капча, «недоступно в вашей стране»). Скорость может быть ниже. Нужен сервер с поддержкой UDP.")
 
+        }
+        if (cat == "all" || cat == "dns") {
         // ── DNS
         DnsEditor("Удалённый DNS (через VPN)", "https://dns.google/dns-query", s.remoteDns, viewModel) { d -> viewModel.change { copy(remoteDns = d) } }
         DnsEditor("Домашний DNS (напрямую)", "77.88.8.8", s.directDns, viewModel) { d -> viewModel.change { copy(directDns = d) } }
         Caption("Пусто — DNS из раздела «DNS». IP нужен, чтобы адрес сервера DNS не узнавать через другой DNS.")
+        }
 
         Spacer(Modifier.height(20.dp))
         androidx.compose.material3.OutlinedButton(
@@ -2193,3 +2248,22 @@ private val designGroups: List<Triple<String, String, List<Design>>> = listOf(
     Triple("premium", "Премиум", listOf(Design.Carbon, Design.Luxe)),
     Triple("custom", "Свой", listOf(Design.Custom)),
 )
+
+/** 3.17.7. Строка категорий-«таблеток» — как в Настройках; используется на длинных страницах. */
+@Composable
+internal fun CategoryChips(items: List<Pair<String, String>>, selected: String, onSelect: (String) -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items.forEach { (id, title) ->
+            val on = selected == id
+            Box(
+                Modifier.height(40.dp).clip(RoundedCornerShape(50))
+                    .background(if (on) Apex.Accent else Apex.Surface)
+                    .clickable { onSelect(id) }.padding(horizontal = 16.dp),
+                contentAlignment = Alignment.Center,
+            ) { Text(title, color = if (on) Apex.OnAccent else Apex.Text, fontSize = 15.sp, fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal) }
+        }
+    }
+}
