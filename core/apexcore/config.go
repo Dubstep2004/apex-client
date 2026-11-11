@@ -26,6 +26,7 @@ const (
 	fileGeoipRU   = "geoip-ru.srs"
 	fileGeositeRU = "geosite-category-ru.srs"
 	fileAds       = "geosite-category-ads-all.srs"
+	fileAdsHagezi = "ads-hagezi.srs" // HaGeZi Multi Normal (необязательный: нет файла — без него)
 	filePorn      = "geosite-category-porn.srs"
 	fileBetting   = "geosite-category-betting-ru.srs"
 )
@@ -321,12 +322,13 @@ func buildAll(nodesJSON string, selectedTag string, optionsJSON string) (string,
 
 	// ── базы правил ──────────────────────────────────────────────────────
 	var ruleSets []any
-	geositeRU, geoipRU, ads := "", "", ""
+	geositeRU, geoipRU, ads, adsHagezi := "", "", "", ""
 	if opts.Mode == ModeSmart {
 		geositeRU, geoipRU = opts.rulesFile(fileGeositeRU), opts.rulesFile(fileGeoipRU)
 	}
 	if opts.AdBlock {
 		ads = opts.rulesFile(fileAds)
+		adsHagezi = opts.rulesFile(fileAdsHagezi)
 	}
 	porn, betting := "", ""
 	if opts.Kids {
@@ -340,6 +342,7 @@ func buildAll(nodesJSON string, selectedTag string, optionsJSON string) (string,
 	addSet("geosite-ru", geositeRU)
 	addSet("geoip-ru", geoipRU)
 	addSet("ads", ads)
+	addSet("ads-hagezi", adsHagezi)
 	addSet("porn", porn)
 	addSet("betting", betting)
 
@@ -399,8 +402,8 @@ func buildAll(nodesJSON string, selectedTag string, optionsJSON string) (string,
 	rules = append(rules, userSets["block"].portRules(map[string]any{"action": "reject"})...)
 	rules = append(rules, userSets["proxy"].portRules(map[string]any{"outbound": "proxy"})...)
 	rules = append(rules, userSets["direct"].portRules(map[string]any{"outbound": "direct"})...)
-	if ads != "" {
-		rules = append(rules, map[string]any{"rule_set": "ads", "action": "reject"})
+	if sets := nonEmptyTags(map[string]string{"ads": ads, "ads-hagezi": adsHagezi}); len(sets) > 0 {
+		rules = append(rules, map[string]any{"rule_set": sets, "action": "reject"})
 	}
 	// 15. Семейный режим: сайты 18+ и азартные игры закрыты (плюс семейный DNS)
 	if opts.Kids {
@@ -515,15 +518,15 @@ func buildAll(nodesJSON string, selectedTag string, optionsJSON string) (string,
 		}
 	}
 	var dnsRules []any
-	if ads != "" {
+	if adSets := nonEmptyTags(map[string]string{"ads": ads, "ads-hagezi": adsHagezi}); len(adSets) > 0 {
 		if opts.AdsDNSPort > 1024 && opts.AdsDNSPort < 65536 {
 			// Счётчик заблокированной рекламы: запросы уходят в DNS приложения
 			servers = append(servers, map[string]any{
 				"type": "udp", "tag": "adblock", "server": "127.0.0.1", "server_port": opts.AdsDNSPort,
 			})
-			dnsRules = append(dnsRules, map[string]any{"rule_set": "ads", "server": "adblock"})
+			dnsRules = append(dnsRules, map[string]any{"rule_set": adSets, "server": "adblock"})
 		} else {
-			dnsRules = append(dnsRules, map[string]any{"rule_set": "ads", "action": "reject"})
+			dnsRules = append(dnsRules, map[string]any{"rule_set": adSets, "action": "reject"})
 		}
 	}
 	// Свои правила и в DNS: заблокированные не узнаём вовсе, остальные — нужным DNS
@@ -804,3 +807,14 @@ func urlTestOrDefault(u string) string {
 	return "https://www.gstatic.com/generate_204"
 }
 
+
+// nonEmptyTags — метки баз, файлы которых есть, в постоянном порядке.
+func nonEmptyTags(m map[string]string) []string {
+	var out []string
+	for _, t := range []string{"ads", "ads-hagezi"} {
+		if m[t] != "" {
+			out = append(out, t)
+		}
+	}
+	return out
+}

@@ -2,6 +2,12 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.17.5 · 11 ноября 2026
+
+<img src="img/tags/new.svg" alt="Новое" height="22">
+
+- Блокировка рекламы: к основной базе добавлен список HaGeZi Multi Normal — реклама, трекеры, аналитика и вредоносные сайты. Обновляется сам каждый день вместе с остальными базами, в «Маршрутизации → Базы сайтов» видно, сколько в нём записей
+
 ## 3.17.4 · 11 ноября 2026
 
 <img src="img/tags/new.svg" alt="Новое" height="22">

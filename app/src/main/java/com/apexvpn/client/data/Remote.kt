@@ -55,11 +55,18 @@ object RulesUpdater {
         "geosite-category-porn.srs", "geosite-category-betting-ru.srs",
     )
 
+    /**
+     * 3.17.5. Необязательные базы: есть только в ветке «rules» APEX VPN (у SagerNet их нет).
+     * Не скачались — ядро работает без них, обновление при этом не считается неудачным.
+     */
+    val OPTIONAL = listOf("ads-hagezi.srs")
+
     /** Понятные названия баз для экрана «Маршрутизация». */
     val TITLES = mapOf(
         "geoip-ru.srs" to "IP-адреса России",
         "geosite-category-ru.srs" to "Российские сайты",
         "geosite-category-ads-all.srs" to "Реклама и трекеры",
+        "ads-hagezi.srs" to "Реклама и трекеры — HaGeZi Multi Normal",
         "geosite-category-porn.srs" to "Сайты 18+ (семейный режим)",
         "geosite-category-betting-ru.srs" to "Букмекеры (семейный режим)",
     )
@@ -144,7 +151,18 @@ object RulesUpdater {
     /** Папка с базами для ядра: свежие скачанные, иначе встроенные в приложение. */
     fun activeDir(context: Context): String? {
         val remote = remoteDir(context)
-        if (FILES.all { File(remote, it).length() > 0 }) return remote.path
+        if (FILES.all { File(remote, it).length() > 0 }) {
+            // Необязательной базы ещё нет среди скачанных — берём встроенную в приложение
+            OPTIONAL.forEach { name ->
+                val f = File(remote, name)
+                if (f.length() == 0L) runCatching {
+                    val part = File(remote, "$name.part")
+                    context.assets.open("rules/$name").use { input -> part.outputStream().use { input.copyTo(it) } }
+                    part.renameTo(f)
+                }
+            }
+            return remote.path
+        }
         return installBundled(context)
     }
 
@@ -159,6 +177,12 @@ object RulesUpdater {
                 val tmp = File(dir, "$name.tmp")
                 context.assets.open("rules/$name").use { input -> tmp.outputStream().use { input.copyTo(it) } }
                 check(tmp.renameTo(File(dir, name))) { "не удалось записать $name" }
+            }
+            // Необязательные — если есть в этой сборке
+            for (name in OPTIONAL) runCatching {
+                val tmp = File(dir, "$name.tmp")
+                context.assets.open("rules/$name").use { input -> tmp.outputStream().use { input.copyTo(it) } }
+                tmp.renameTo(File(dir, name))
             }
             stamp.writeText(current)
         }
@@ -226,6 +250,29 @@ object RulesUpdater {
         Result.Failed(lastError)
     } }
 
+    /** Необязательные базы из ветки «rules»: сколько обновилось. Ошибки — не страшно. */
+    private fun updateOptional(base: String, files: JSONObject?, dir: File): Int {
+        var n = 0
+        for (name in OPTIONAL) runCatching {
+            val want = files?.optJSONObject(name)?.optString("sha256").orEmpty()
+            if (want.isEmpty()) return@runCatching // в ветке нет — пропускаем
+            val local = File(dir, name)
+            if (local.length() > 0 && sha256(local) == want) return@runCatching
+            val part = File(dir, "$name.part")
+            val c = Http.open(fileUrl(base, name), 60_000)
+            try {
+                if (c.responseCode != 200) error("$name: HTTP ${c.responseCode}")
+                c.inputStream.use { input -> part.outputStream().use { input.copyTo(it) } }
+            } finally {
+                c.disconnect()
+            }
+            val head = part.inputStream().use { st -> ByteArray(3).also { st.read(it) } }
+            if (String(head) != "SRS" || sha256(part) != want) { part.delete(); error("повреждён $name") }
+            if (part.renameTo(local)) n++
+        }
+        return n
+    }
+
     /** Обновление из одного источника. Ошибка — исключение, чтобы перейти к следующему. */
     private fun updateFrom(context: Context, base: String): Pair<Result, JSONObject?> {
         val manifest = if (base == UPSTREAM) null else runCatching { JSONObject(Http.getText("$base/rules.json")) }.getOrNull()
@@ -267,7 +314,9 @@ object RulesUpdater {
             }
             // Неизменённые файлы тоже должны быть на месте — иначе ядро возьмёт встроенные
             if (!FILES.all { File(dir, it).length() > 0 }) error("скачаны не все базы")
-            return (if (changed.isEmpty()) Result.Fresh else Result.Updated(changed.size)) to manifest
+            val extra = if (base == UPSTREAM) 0 else updateOptional(base, files, dir)
+            val total = changed.size + extra
+            return (if (total == 0) Result.Fresh else Result.Updated(total)) to manifest
         } finally {
             tmp.deleteRecursively()
         }

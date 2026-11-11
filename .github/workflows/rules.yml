@@ -33,6 +33,26 @@ jobs:
           done
           ls -la out
 
+      - name: HaGeZi Multi Normal
+        run: |
+          set -uo pipefail
+          # 3.17.5: второй список рекламы и трекеров — HaGeZi Multi Normal (формат AdGuard).
+          # sing-box переводит его в .srs. Не скачался или не собрался — просто нет файла,
+          # приложение работает с основной базой.
+          curl -fsSL --retry 3 "https://github.com/SagerNet/sing-box/releases/download/v${SING_BOX}/sing-box-${SING_BOX}-linux-amd64.tar.gz" | tar xz
+          SB=$(ls -d sing-box-*/)sing-box
+          mkdir -p json
+          if curl -fsSL --retry 3 -o hagezi.txt "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/multi.txt" &&
+             [ "$(grep -c '^||' hagezi.txt)" -gt 10000 ] &&
+             "$SB" rule-set convert --type adguard -o out/ads-hagezi.srs hagezi.txt &&
+             [ "$(head -c 3 out/ads-hagezi.srs)" = "SRS" ]; then
+            grep -c '^||' hagezi.txt > json/ads-hagezi.count
+            echo "::notice title=HaGeZi::$(cat json/ads-hagezi.count) доменов"
+          else
+            rm -f out/ads-hagezi.srs
+            echo "::warning title=HaGeZi::список не собран — остаётся основная база"
+          fi
+
       - name: Count sites
         run: |
           set -uo pipefail
@@ -58,7 +78,10 @@ jobs:
               data = open(f"out/{name}", "rb").read()
               entry = {"sha256": hashlib.sha256(data).hexdigest(), "size": len(data)}
               j = f"json/{name[:-4]}.json"
-              if os.path.exists(j):
+              cnt = f"json/{name[:-4]}.count"
+              if os.path.exists(cnt):
+                  entry["count"] = int(open(cnt).read().strip() or 0)
+              elif os.path.exists(j):
                   count = 0
                   for rule in json.load(open(j)).get("rules", []):
                       for key in ("domain", "domain_suffix", "domain_keyword", "domain_regex", "ip_cidr"):

@@ -1938,7 +1938,7 @@ private fun AdvancedPage(viewModel: MainViewModel, onBack: () -> Unit) {
         Spacer(Modifier.height(10.dp))
         Group {
             val dir = remember(updating) { com.apexvpn.client.data.RulesUpdater.activeDir(context)?.let { java.io.File(it) } }
-            com.apexvpn.client.data.RulesUpdater.FILES.forEachIndexed { i, name ->
+            (com.apexvpn.client.data.RulesUpdater.FILES + com.apexvpn.client.data.RulesUpdater.OPTIONAL).forEachIndexed { i, name ->
                 if (i > 0) GroupDivider()
                 val f = dir?.let { java.io.File(it, name) }
                 val count = ri?.counts?.get(name)?.let { "${"%,d".format(java.util.Locale("ru"), it)} записей · " } ?: ""
