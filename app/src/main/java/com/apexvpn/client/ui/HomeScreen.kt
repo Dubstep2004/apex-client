@@ -357,7 +357,10 @@ fun HomeScreen(
             GroupDivider()
             ListRow(
                 title = settings.mode.title,
-                subtitle = settings.mode.subtitle,
+                // LTE-обход: весь трафик через VPN (при белых списках напрямую открываются не все сайты)
+                subtitle = if (settings.mode != com.apexvpn.client.data.RouteMode.All &&
+                    ((whitelist && settings.autoWhitelist) || (!auto && ServerInfo.isLte(selected!!.name)))
+                ) "LTE-обход: сейчас весь трафик идёт через VPN" else settings.mode.subtitle,
                 leading = { IconTile(Apex.SurfaceHigh) { Icon(Icons.Rounded.Public, null, tint = Apex.Cyan) } },
                 onClick = onOpenMode,
             ) { Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = Apex.TextDim) }

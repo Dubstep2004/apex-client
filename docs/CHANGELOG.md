@@ -2,6 +2,12 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.17.2 · 11 ноября 2026
+
+<img src="img/tags/fixed.svg" alt="Исправлено" height="22">
+
+- При белых списках не открывались российские сайты (например, 2ip.ru): в «Умном» режиме они шли напрямую, а оператор пропускает напрямую только разрешённые. Теперь на LTE-обходе (выбранном вручную или включённом автопилотом) весь трафик идёт через VPN — на главном экране это подписано
+
 ## 3.17.1 · 11 ноября 2026
 
 <img src="img/tags/improved.svg" alt="Улучшено" height="22">

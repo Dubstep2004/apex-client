@@ -261,9 +261,21 @@ object AppSettings {
         else -> onMobile()
     }
 
+    /**
+     * 3.17.2. Белые списки: напрямую открываются только разрешённые сайты, остальные российские
+     * (2ip.ru и т. п.) оператор отклоняет. Поэтому, когда автопилот включил LTE-обход или
+     * LTE-обход выбран вручную, весь трафик идёт через VPN, какой бы режим ни был выбран.
+     */
+    fun whitelistAll(): Boolean {
+        if (WhiteList.active && _state.value.autoWhitelist) return true
+        val tag = Prefs.selectedTag
+        if (tag == AUTO_TAG) return false
+        return Subscription.state.value.nodes.find { it.tag == tag }?.let { ServerInfo.isLte(it.name) } == true
+    }
+
     fun coreOptions(rulesDir: String?): String = JSONObject().apply {
         val s = _state.value
-        put("mode", s.mode.id)
+        put("mode", (if (whitelistAll()) RouteMode.All else s.mode).id)
         put("services", JSONArray(s.services.toList()))
         put("customLists", JSONArray(s.customLists.filter { it.enabled && it.items.isNotEmpty() }.map {
             JSONObject().put("name", it.name).put("items", JSONArray(it.items))
