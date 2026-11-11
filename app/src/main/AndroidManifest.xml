@@ -457,6 +457,9 @@
 
         <!-- 3.4: ответ установщика обновлений и включение VPN после обновления -->
         <receiver
+            android:name=".data.BackToAutoReceiver"
+            android:exported="false" />
+        <receiver
             android:name=".update.UpdateReceiver"
             android:exported="false">
             <intent-filter>

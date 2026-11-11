@@ -94,16 +94,49 @@ object Diagnostics {
         b.appendLine("── Журнал ядра (последние строки)")
         val log = coreLog(context)
         if (log.exists()) {
-            log.readLines().takeLast(150).forEach { b.appendLine(mask(it, hosts)) }
+            compactLog(log.readLines().takeLast(400).map { mask(it, hosts) }).takeLast(60).forEach { b.appendLine(it) }
         } else {
             b.appendLine("пусто")
         }
         return b.toString()
     }
 
-    /** Отчёт в буфер обмена — вставить в любой чат. Telegram принимает до 4096 символов — берём хвост. */
+    /**
+     * 3.17.3: одинаковые ошибки (отличаются только временем, номером и длительностью) —
+     * одной строкой с числом повторов. Раньше 40 копий одной ошибки вытесняли из отчёта всё
+     * остальное. Порядок — по последнему появлению.
+     */
+    internal fun compactLog(lines: List<String>): List<String> {
+        val head = Regex("""^[+-]\d{4} \d{4}-\d\d-\d\d (\d\d:\d\d:\d\d) (\w+) (\[\d+ [^\]]*\] )?""")
+        val last = LinkedHashMap<String, Pair<String, Int>>()
+        for (l in lines) {
+            val m = head.find(l)
+            val body = if (m != null) l.substring(m.range.last + 1) else l
+            val key = (m?.groupValues?.get(2).orEmpty()) + " " + body.replace(Regex("""\d+(\.\d+)?(ms|s)\b"""), "#")
+            val n = (last.remove(key)?.second ?: 0) + 1
+            val shown = if (m != null) "${m.groupValues[1]} ${m.groupValues[2]} $body" else l
+            last[key] = shown to n
+        }
+        return last.values.map { (l, n) -> if (n > 1) "$l  (×$n)" else l }
+    }
+
+    /** Отчёт в буфер обмена — вставить в любой чат. Telegram принимает до 4096 символов. */
     fun copy(context: Context) {
-        val text = build(context).let { if (it.length > 4000) it.take(1500) + "\n…\n" + it.takeLast(2400) else it }
+        // Обрезаем по целым строкам: шапка целиком, из журнала — самые свежие строки, что влезут
+        val text = build(context).let { full ->
+            if (full.length <= 4000) return@let full
+            val cut = full.indexOf("── Журнал ядра")
+            val headPart = if (cut > 0) full.substring(0, cut) else ""
+            val logLines = (if (cut > 0) full.substring(cut) else full).lines()
+            val title = logLines.first()
+            val tail = ArrayList<String>()
+            var size = headPart.length + title.length + 1
+            for (l in logLines.drop(1).asReversed()) {
+                if (size + l.length + 1 > 4000) break
+                tail.add(0, l); size += l.length + 1
+            }
+            headPart + title + "\n" + tail.joinToString("\n")
+        }
         val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
         cm.setPrimaryClip(android.content.ClipData.newPlainText("APEX VPN — отчёт", text))
     }

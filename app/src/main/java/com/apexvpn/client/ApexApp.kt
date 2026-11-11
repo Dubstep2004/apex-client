@@ -151,6 +151,15 @@ class ApexApp : Application() {
                 }
         }
 
+        // 3.17.3: LTE-обход выбран вручную — раз в 5 минут смотрим, не заработали ли обычные серверы
+        appScope.launch {
+            while (true) {
+                kotlinx.coroutines.delay(5 * 60_000L)
+                if (VpnState.status.value == com.apexvpn.client.vpn.VpnStatus.Started) {
+                    runCatching { com.apexvpn.client.data.WhiteList.checkManualLte(this@ApexApp) }
+                }
+            }
+        }
         Prefs.initConnectCount()
         com.apexvpn.client.data.RulesUpdater.load(this)
         // DNS «Авто» (499/516) и белые списки (491): после подключения и при каждой смене сети
@@ -186,7 +195,10 @@ class ApexApp : Application() {
                         if (mobile && AppSettings.value.autoWhitelist &&
                             com.apexvpn.client.data.WhiteList.check(app)
                         ) com.apexvpn.client.vpn.ApexVpnService.reload(app)
-                        if (AppSettings.value.dns == com.apexvpn.client.data.DnsChoice.Auto && com.apexvpn.client.data.DnsAuto.measure()) {
+                        // 3.17.3: на LTE-обходе (белые списки) замер DNS пропускаем — 11 запросов через медленный
+                        // обход с лимитом трафика только задерживают интернет; DNS остаётся прежним
+                        if (AppSettings.value.dns == com.apexvpn.client.data.DnsChoice.Auto && !AppSettings.whitelistAll() &&
+                            com.apexvpn.client.data.DnsAuto.measure()) {
                             com.apexvpn.client.vpn.ApexVpnService.reload(app)
                         }
                         // Белые списки: на мобильной сети с автопилотом — проверка раз в 5 минут

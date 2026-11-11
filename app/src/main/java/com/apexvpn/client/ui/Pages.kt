@@ -1060,6 +1060,14 @@ private fun DnsPage(viewModel: MainViewModel, onBack: () -> Unit) {
                         Text(if (r.ms >= 0) "${r.ms} мс" else "нет ответа", color = if (r.ms >= 0) pingColor(r.ms) else Apex.Bad, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
+                if (com.apexvpn.client.data.AppSettings.whitelistAll()) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Сейчас LTE-обход (белые списки): автоматический замер DNS не идёт, чтобы не тратить время и трафик обхода — " +
+                            "используется последний лучший DNS. «Проверить сейчас» всё равно сработает.",
+                        color = Apex.TextDim, fontSize = 13.sp, lineHeight = 18.sp,
+                    )
+                }
                 if (!busy && com.apexvpn.client.data.DnsAuto.allFailed) {
                     Spacer(Modifier.height(8.dp))
                     Text(

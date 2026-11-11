@@ -66,13 +66,23 @@ object XrayCore {
             }
         }, "xray-log").apply { isDaemon = true }.start()
 
-        // Ждём, пока Xray откроет первый порт (или упадёт)
+        // Ждём, пока Xray откроет порты всех серверов (или упадёт). 3.17.3: раньше ждали только
+        // первый — и автопилот в первые секунды проверял остальные Xray-серверы, когда их порт
+        // ещё закрыт («connection refused»), и считал их мёртвыми до следующей проверки
+        val ports = runCatching {
+            val arr = org.json.JSONObject(config).optJSONArray("inbounds")
+            (0 until (arr?.length() ?: 0)).mapNotNull { arr!!.optJSONObject(it)?.optInt("port", 0)?.takeIf { p -> p > 0 } }
+        }.getOrDefault(emptyList()).ifEmpty { listOf(com.apexvpn.client.data.Prefs.xrayBasePort) }
         val deadline = System.currentTimeMillis() + 5_000
+        var firstUp = false
         while (System.currentTimeMillis() < deadline) {
             if (!p.isAlive) break
-            if (portOpen(com.apexvpn.client.data.Prefs.xrayBasePort)) return
+            if (!firstUp) firstUp = portOpen(ports.first())
+            if (firstUp && ports.all { portOpen(it) }) return
             Thread.sleep(100)
         }
+        // Xray жив и открыл хотя бы первый порт — работаем, остальные догонят
+        if (p.isAlive && firstUp) return
         val reason = lastError()
         stop()
         error(if (reason.isNotEmpty()) "Xray не запустился: $reason" else "Xray не запустился")

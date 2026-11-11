@@ -90,6 +90,51 @@ object WhiteList {
         return true
     }
 
+    private var manualNotifiedAt = 0L
+
+    /**
+     * 3.17.3. LTE-обход выбран вручную, а обычные серверы снова открывают сайты (белые списки
+     * сняли или телефон на Wi-Fi) — ручной выбор не трогаем, а предлагаем уведомлением
+     * вернуться на автопилот. Не чаще раза в 2 часа.
+     */
+    suspend fun checkManualLte(context: Context) {
+        val tag = Prefs.selectedTag
+        if (tag == AUTO_TAG) return
+        val nodes = Subscription.state.value.nodes
+        val sel = nodes.find { it.tag == tag } ?: return
+        if (!ServerInfo.isLte(sel.name)) return
+        if (System.currentTimeMillis() - manualNotifiedAt < 2 * 3600_000L) return
+        val normal = nodes.filter { !ServerInfo.isSpecial(it.name) }
+        if (normal.isEmpty()) return
+        val pings = Pinger.pingAll(normal, type = "tcp")
+        val alive = normal.filter { (pings[it.tag] ?: -1) > 0 }.sortedBy { pings[it.tag] }
+        if (alive.isEmpty() || !urlOk(alive.take(6))) return
+        manualNotifiedAt = System.currentTimeMillis()
+        runCatching {
+            val nm = context.getSystemService<NotificationManager>() ?: return@runCatching
+            val open = PendingIntent.getActivity(
+                context, 13, Intent(context, MainActivity::class.java),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+            val back = PendingIntent.getBroadcast(
+                context, 14, Intent(context, BackToAutoReceiver::class.java),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+            nm.notify(
+                8,
+                NotificationCompat.Builder(context, ApexApp.CHANNEL_ALERTS)
+                    .setSmallIcon(R.drawable.ic_stat_apex)
+                    .setContentTitle("Обычные серверы снова работают")
+                    .setContentText("Сейчас выбран LTE-обход (лимит трафика). Вернуться на автопилот?")
+                    .setStyle(NotificationCompat.BigTextStyle())
+                    .setContentIntent(open)
+                    .addAction(0, "На автопилот", back)
+                    .setAutoCancel(true)
+                    .build(),
+            )
+        }
+    }
+
     /** Хоть один сервер открыл сайт через себя (запрос внутри ядра, мимо правил). */
     private suspend fun urlOk(list: List<Node>): Boolean = kotlinx.coroutines.coroutineScope {
         if (list.isEmpty()) return@coroutineScope false
@@ -119,5 +164,14 @@ object WhiteList {
                 .setAutoCancel(true)
                 .build(),
         )
+    }
+}
+
+/** Кнопка «На автопилот» в уведомлении: выбрать автопилот и перезапустить ядро. */
+class BackToAutoReceiver : android.content.BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        Subscription.select(AUTO_TAG)
+        context.getSystemService<NotificationManager>()?.cancel(8)
+        if (VpnState.status.value == VpnStatus.Started) com.apexvpn.client.vpn.ApexVpnService.reload(context)
     }
 }
