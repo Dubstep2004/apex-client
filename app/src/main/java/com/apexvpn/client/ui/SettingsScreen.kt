@@ -804,6 +804,7 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
             ) { Chevron() }
             if (previewDialog) {
                 var code by remember { mutableStateOf(com.apexvpn.client.data.Prefs.previewCode) }
+                val previewScope = androidx.compose.runtime.rememberCoroutineScope()
                 androidx.compose.material3.AlertDialog(
                     onDismissRequest = { previewDialog = false },
                     containerColor = Apex.Dialog,
@@ -820,9 +821,21 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
                         androidx.compose.material3.TextButton(onClick = {
                             com.apexvpn.client.data.Prefs.previewCode = code
                             previewDialog = false
-                            viewModel.showMessage(if (code.isBlank()) "Предпросмотр выключен" else "Код сохранён")
-                            com.apexvpn.client.data.AppConfig.touch()
-                            com.apexvpn.client.vpn.ApexVpnService.reload(context)
+                            // 3.18.2: сразу скачать свежий файл из пульта (код там мог смениться) и сказать, подошёл ли код
+                            val entered = code
+                            previewScope.launch {
+                                com.apexvpn.client.data.AppConfig.refresh(force = true)
+                                com.apexvpn.client.data.Prefs.bannerDismissed = 0
+                                com.apexvpn.client.data.AppConfig.touch()
+                                val cfg = com.apexvpn.client.data.AppConfig.value
+                                viewModel.showMessage(when {
+                                    entered.isBlank() -> "Предпросмотр выключен"
+                                    cfg.previewer -> "Код подошёл — черновики из пульта видны"
+                                    cfg.previewCode.isBlank() -> "В пульте код не задан"
+                                    else -> "Код не совпадает с пультом — проверьте раздел «Предпросмотр»"
+                                })
+                                com.apexvpn.client.vpn.ApexVpnService.reload(context)
+                            }
                         }) { Text("Сохранить", color = Apex.Accent) }
                     },
                     dismissButton = { androidx.compose.material3.TextButton(onClick = { previewDialog = false }) { Text("Отмена", color = Apex.TextDim) } },
