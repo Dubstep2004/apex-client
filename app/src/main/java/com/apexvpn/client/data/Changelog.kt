@@ -25,6 +25,13 @@ private fun d(text: String) = Change(ChangeKind.Removed, text)  // Удален�
 object Changelog {
     val releases = listOf(
         Release(
+            "3.20.5", 127, "13 ноября 2026",
+            listOf(
+                f("Живые обои из интернета — только HD (от 720p): мутные GIF-ролики больше не попадают в выдачу"),
+                u("GIPHY (GIF-ролики) теперь ищется последним — сначала настоящие видео Pixabay, Pexels и Wikimedia Commons"),
+            ),
+        ),
+        Release(
             "3.20.4", 126, "12 ноября 2026",
             listOf(
                 u("Живые обои по темам ищутся в источниках в том порядке, который задан в пульте"),

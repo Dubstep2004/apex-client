@@ -1611,12 +1611,12 @@ function goHit(h) {
 const wallSrc = u => /^https:\/\//.test(u) ? u : (u ? '../' + u.replace(/^\/+/, '') : '')
 // 2.11: источники поиска живых обоев — порядок сохраняется в wallpapers.json → sources
 const SOURCES = {
-  giphy: { t: 'GIPHY', d: 'Много коротких роликов с аниме и играми. Ключ выдают сразу.', key: 'gpKey', ph: 'AbCdEf0123456789…', how: 'Откройте <a href="https://developers.giphy.com/dashboard/" target="_blank" rel="noopener">developers.giphy.com/dashboard</a> → войдите → «Create an API Key» → «API» → название «APEX CLIENT» → скопируйте ключ сюда.' },
+  giphy: { t: 'GIPHY', d: 'Это GIF-ролики: в приложение попадают только HD (от 720p), таких мало. Лучше держать последним.', key: 'gpKey', ph: 'AbCdEf0123456789…', how: 'Откройте <a href="https://developers.giphy.com/dashboard/" target="_blank" rel="noopener">developers.giphy.com/dashboard</a> → войдите → «Create an API Key» → «API» → название «APEX CLIENT» → скопируйте ключ сюда.' },
   pixabay: { t: 'Pixabay', d: 'Видео в хорошем качестве: природа, неон, абстракция.', key: 'pbKey', ph: '12345678-0123abcd4567ef89…', how: '<a href="https://pixabay.com/accounts/register/" target="_blank" rel="noopener">Зарегистрируйтесь</a> → откройте <a href="https://pixabay.com/api/docs/" target="_blank" rel="noopener">pixabay.com/api/docs</a> → раздел «Parameters», строка <code>key</code>. «Rate limit exceeded» — выключите VPN. <a href="pixabay-guide.jpg" target="_blank" rel="noopener">📷 Инструкция с картинками</a>' },
   pexels: { t: 'Pexels', d: 'Лучшие вертикальные видео. Сейчас Pexels не выдаёт новые ключи.', key: 'pxKey', ph: '563492ad6f9170000100000…', how: 'Если ключ уже есть: <a href="https://www.pexels.com/api/" target="_blank" rel="noopener">pexels.com/api</a> → «Your API key».' },
   commons: { t: 'Wikimedia Commons', d: 'Без ключа, работает всегда: космос, природа, океан, огонь.', key: null },
 }
-let srcOrder = ['giphy', 'pixabay', 'pexels', 'commons'], srcKeys = { gpKey: '', pbKey: '', pxKey: '' }
+let srcOrder = ['pixabay', 'pexels', 'commons', 'giphy'], srcKeys = { gpKey: '', pbKey: '', pxKey: '' }
 function renderSrcs() {
   let n = 0
   $('srcList').innerHTML = srcOrder.map((id, i) => {

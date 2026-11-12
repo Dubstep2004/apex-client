@@ -101,13 +101,16 @@ object Wallpapers {
     fun parseGiphyKey(text: String): String = runCatching { JSONObject(text).optString("giphyKey").trim().takeIf { it.matches(Regex("[A-Za-z0-9]{24,48}")) }.orEmpty() }.getOrDefault("")
     private val _giphyKey = MutableStateFlow("")
     /** 3.20.4. Порядок источников из пульта (перетаскиванием): giphy, pixabay, pexels, commons. */
-    val defaultSources = listOf("giphy", "pixabay", "pexels", "commons")
+    // 3.20.5: GIPHY — последним (это GIF-ролики, обычно 480p)
+    val defaultSources = listOf("pixabay", "pexels", "commons", "giphy")
+    /** Минимум для обоев на весь экран: длинная сторона от 1280 (HD 720p). Меньше — будет мыло. */
+    const val MIN_LONG_SIDE = 1280
     fun parseSources(text: String): List<String> = runCatching {
         val a = JSONObject(text).optJSONArray("sources") ?: return@runCatching defaultSources
         val given = (0 until a.length()).map { a.optString(it) }.filter { it in defaultSources }.distinct()
         given + defaultSources.filter { it !in given }
     }.getOrDefault(defaultSources)
-    @Volatile private var sources: List<String> = listOf("giphy", "pixabay", "pexels", "commons")
+    @Volatile private var sources: List<String> = listOf("pixabay", "pexels", "commons", "giphy")
 
     suspend fun loadCatalog(context: Context) = withContext(Dispatchers.IO) {
         val cache = File(context.filesDir, "wallpapers.json")
@@ -391,7 +394,7 @@ object Wallpapers {
             if (dur <= 0.0 || dur > 180.0) return@mapNotNull null // обои — короткие ролики
             val ders = vi.optJSONArray("derivatives") ?: return@mapNotNull null
             val best = (0 until ders.length()).mapNotNull { ders.optJSONObject(it) }
-                .filter { it.optString("type").startsWith("video/webm") && it.optString("src").startsWith("https://") && maxOf(it.optInt("width"), it.optInt("height")) in 640..1920 }
+                .filter { it.optString("type").startsWith("video/webm") && it.optString("src").startsWith("https://") && maxOf(it.optInt("width"), it.optInt("height")) in MIN_LONG_SIDE..1920 }
                 .maxByOrNull { maxOf(it.optInt("width"), it.optInt("height")) } ?: return@mapNotNull null
             val thumb = vi.optString("thumburl").takeIf { it.startsWith("https://") }.orEmpty()
             val artist = vi.optJSONObject("extmetadata")?.optJSONObject("Artist")?.optString("value").orEmpty().replace(Regex("<[^>]+>"), "").trim().take(40)
@@ -418,7 +421,8 @@ object Wallpapers {
             val mp4 = im.optJSONObject("original_mp4") ?: im.optJSONObject("original") ?: return@mapNotNull null
             val url = mp4.optString("mp4").takeIf { it.startsWith("https://") } ?: return@mapNotNull null
             val w = mp4.optString("width").toIntOrNull() ?: 0; val h = mp4.optString("height").toIntOrNull() ?: 0
-            if (maxOf(w, h) < 360) return@mapNotNull null // совсем мелкие ролики на весь экран не годятся
+            // 3.20.5: только HD (обычные GIF 480p на весь экран — мыло)
+            if (maxOf(w, h) < MIN_LONG_SIDE) return@mapNotNull null
             val thumb = (im.optJSONObject("fixed_width_still") ?: im.optJSONObject("original_still"))?.optString("url").orEmpty()
             (h > w) to Live("gp" + g.optString("id").filter { it.isLetterOrDigit() }.take(30), g.optString("title").take(30).ifBlank { "GIPHY" }, url, thumb, 0.0, "Ролик: GIPHY")
         }.sortedByDescending { it.first }.map { it.second }
@@ -429,7 +433,7 @@ object Wallpapers {
         (0 until a.length()).mapNotNull { a.optJSONObject(it) }.mapNotNull { h ->
             val vs = h.optJSONObject("videos") ?: return@mapNotNull null
             val files = listOf("large", "medium", "small").mapNotNull { vs.optJSONObject(it) }
-                .filter { it.optString("url").startsWith("https://") && maxOf(it.optInt("width"), it.optInt("height")) in 960..1920 }
+                .filter { it.optString("url").startsWith("https://") && maxOf(it.optInt("width"), it.optInt("height")) in MIN_LONG_SIDE..1920 }
             val best = files.maxByOrNull { maxOf(it.optInt("width"), it.optInt("height")) } ?: return@mapNotNull null
             val portrait = best.optInt("height") > best.optInt("width")
             val thumb = listOf("medium", "small", "large").mapNotNull { vs.optJSONObject(it)?.optString("thumbnail") }.firstOrNull { it.startsWith("https://") }.orEmpty()
@@ -447,7 +451,7 @@ object Wallpapers {
         (0 until a.length()).mapNotNull { a.optJSONObject(it) }.mapNotNull { v ->
             val files = v.optJSONArray("video_files") ?: return@mapNotNull null
             val best = (0 until files.length()).mapNotNull { files.optJSONObject(it) }
-                .filter { it.optString("file_type") == "video/mp4" && it.optString("link").startsWith("https://") && it.optInt("height") >= it.optInt("width") && it.optInt("height") in 960..1920 }
+                .filter { it.optString("file_type") == "video/mp4" && it.optString("link").startsWith("https://") && it.optInt("height") >= it.optInt("width") && it.optInt("height") in MIN_LONG_SIDE..1920 }
                 .maxByOrNull { it.optInt("height") } ?: return@mapNotNull null
             val thumb = v.optString("image").takeIf { it.startsWith("https://") }.orEmpty()
             val author = v.optJSONObject("user")?.optString("name").orEmpty().take(40)

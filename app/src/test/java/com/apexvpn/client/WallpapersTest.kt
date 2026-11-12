@@ -115,9 +115,9 @@ class WallpapersTest {
 
     @Test fun giphyOnlyRatedG() {
         val json = """{"data":[
-            {"id":"abc123","title":"Anime rain","rating":"g","images":{"original_mp4":{"mp4":"https://media.giphy.com/a.mp4","width":"480","height":"854"},"fixed_width_still":{"url":"https://media.giphy.com/a_s.gif"}}},
+            {"id":"abc123","title":"Anime rain","rating":"g","images":{"original_mp4":{"mp4":"https://media.giphy.com/a.mp4","width":"720","height":"1280"},"fixed_width_still":{"url":"https://media.giphy.com/a_s.gif"}}},
             {"id":"bad","rating":"r","images":{"original_mp4":{"mp4":"https://media.giphy.com/b.mp4","width":"480","height":"854"}}},
-            {"id":"tiny","rating":"g","images":{"original_mp4":{"mp4":"https://media.giphy.com/c.mp4","width":"200","height":"150"}}}]}"""
+            {"id":"tiny","rating":"g","images":{"original_mp4":{"mp4":"https://media.giphy.com/c.mp4","width":"480","height":"270"}}}]}"""
         val v = Wallpapers.parseGiphy(json)
         assertEquals(listOf("gpabc123"), v.map { it.id })
         assertEquals("https://media.giphy.com/a.mp4", v[0].url)
@@ -126,6 +126,7 @@ class WallpapersTest {
 
     @Test fun sourceOrderFromPult() {
         assertEquals(listOf("commons", "giphy", "pixabay", "pexels"), Wallpapers.parseSources("""{"sources":["commons","giphy","bad","giphy"]}"""))
+        assertEquals("giphy", Wallpapers.defaultSources.last())
         assertEquals(Wallpapers.defaultSources, Wallpapers.parseSources("""{"live":[]}"""))
     }
 }

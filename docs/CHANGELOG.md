@@ -2,6 +2,16 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.20.5 · 13 ноября 2026
+
+<img src="img/tags/improved.svg" alt="Улучшено" height="22">
+
+- GIPHY (GIF-ролики) теперь ищется последним — сначала настоящие видео Pixabay, Pexels и Wikimedia Commons
+
+<img src="img/tags/fixed.svg" alt="Исправлено" height="22">
+
+- Живые обои из интернета — только HD (от 720p): мутные GIF-ролики больше не попадают в выдачу
+
 ## 3.20.4 · 12 ноября 2026
 
 <img src="img/tags/improved.svg" alt="Улучшено" height="22">

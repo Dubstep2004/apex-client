@@ -1,4 +1,10 @@
 {
+  "sources": [
+    "pixabay",
+    "pexels",
+    "commons",
+    "giphy"
+  ],
   "giphyKey": "8F7IqXUqi4Dx8A84y40qOChQvrmL7d0h",
   "live": [
     {
