@@ -1,19 +1,5 @@
 {
-  "banners": [
-    {
-      "id": "bmwcmzmfzusn",
-      "text": "Сейчас есть сбой у части серверов. Мы уже чиним — автопилот переключит вас на рабочий.",
-      "level": "alert",
-      "url": "",
-      "from": 0,
-      "to": 0,
-      "minCode": 0,
-      "maxCode": 0,
-      "devices": [],
-      "countries": [],
-      "preview": true
-    }
-  ],
+  "banners": [],
   "servers": {
     "status": {},
     "recommended": "",
