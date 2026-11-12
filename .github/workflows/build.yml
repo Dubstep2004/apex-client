@@ -1,4 +1,4 @@
-name: Build APEX VPN
+name: Build APEX CLIENT
 
 on:
   push:
