@@ -159,6 +159,13 @@
   .src .wide input { width: 100%; min-width: 0; padding: 10px 12px; font-size: 14px; }
   .src .chip { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 99px; background: var(--line); color: var(--dim); white-space: nowrap; margin-top: 4px; }
   .src .chip.ok { background: #2fd38b26; color: var(--go1); }
+  .src.off { opacity: .55; } .src .tg { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--dim); }
+  .top { grid-template-columns: auto minmax(0, 1fr) auto; } .top .f2 { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 8px; }
+  .top .f2 input { width: 100%; min-width: 0; padding: 9px 12px; font-size: 14px; }
+  @media (max-width: 560px) { .top .f2 { grid-template-columns: minmax(0, 1fr); } }
+  .sites { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .sites a { display: block; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); color: var(--text); text-decoration: none; }
+  .sites a:hover { border-color: var(--go2); } .sites b { display: block; } .sites span { color: var(--dim); font-size: 12.5px; }
   .src .mv { display: grid; gap: 2px; } .src .mv button { border: 1px solid var(--line); background: var(--panel2); color: var(--text); border-radius: 9px; width: 34px; height: 30px; cursor: pointer; }
   .src .mv button:disabled { opacity: .3; cursor: default; }
   .src details, .howto { margin-top: 8px; } .src details summary, .howto summary { cursor: pointer; color: var(--go2); font-size: 13px; font-weight: 700; }
@@ -640,6 +647,25 @@
       <div class="block"><h2>Откуда искать живые обои</h2>
         <p class="note">Приложение ищет по темам (Аниме, Игры, Неон, Космос…) в источниках <b>сверху вниз</b>: не нашлось в первом — идёт во второй. Перетащите за ⠿ или двигайте стрелками. Без ключа источник пропускается.</p>
         <div class="srcs" id="srcList"></div>
+      </div>
+      <div class="block"><h2>Темы живых обоев</h2>
+        <p class="note">Кнопки над живыми обоями в приложении — в этом порядке. «Слова для поиска» — по-английски, так находится больше. Выключенные не показываются. Перетащите за ⠿.</p>
+        <div class="srcs" id="topList"></div>
+        <button class="add" id="topAdd">Добавить тему</button>
+        <button class="btn quiet small" id="topReset" style="margin-top:10px">Вернуть темы по умолчанию</button>
+      </div>
+      <div class="block"><h2>Сайты с бесплатными видео</h2>
+        <p class="note">Без поиска в приложении — с них берите отдельные видео для «Каталога» ниже: откройте видео → «Скачать» → скопируйте ссылку на файл .mp4 → «Добавить обои по ссылке». Ищите по-английски: vertical, anime, neon, lofi, loop.</p>
+        <div class="sites">
+          <a href="https://mixkit.co/free-vertical-videos/" target="_blank" rel="noopener"><b>Mixkit</b><span>вертикальные, без подписи</span></a>
+          <a href="https://coverr.co/" target="_blank" rel="noopener"><b>Coverr</b><span>фоны, аниме-арт</span></a>
+          <a href="https://pixabay.com/videos/search/vertical/" target="_blank" rel="noopener"><b>Pixabay</b><span>без подписи</span></a>
+          <a href="https://www.pexels.com/search/videos/vertical/" target="_blank" rel="noopener"><b>Pexels</b><span>без подписи</span></a>
+          <a href="https://svs.gsfc.nasa.gov/" target="_blank" rel="noopener"><b>NASA</b><span>космос, общественное достояние</span></a>
+          <a href="https://commons.wikimedia.org/wiki/Category:Videos" target="_blank" rel="noopener"><b>Wikimedia</b><span>нужна подпись автора</span></a>
+          <a href="https://www.videvo.net/free-stock-video-footage/" target="_blank" rel="noopener"><b>Videvo</b><span>только с пометкой Free</span></a>
+        </div>
+        <p class="help">Не берите видео с сайтов-сборников обоев (vsthemes, zamanilka, MoeWalls и т. п.) — там чужие кадры без разрешения авторов.</p>
       </div>
       <div class="block"><h2>Каталог</h2><p class="note">Свои живые обои — показываются первыми, в этом порядке. Перетащите за ⠿. Скрытые не видны новым пользователям, но у скачавших остаются.</p>
         <div class="sortbar"><span>Упорядочить:</span><button class="btn quiet small" data-sort="title">По названию</button><button class="btn quiet small" data-sort="size">Сначала лёгкие</button><button class="btn quiet small" data-sort="hidden">Скрытые в конец</button></div>
@@ -1616,21 +1642,21 @@ const SOURCES = {
   pexels: { t: 'Pexels', d: 'Лучшие вертикальные видео. Сейчас Pexels не выдаёт новые ключи.', key: 'pxKey', ph: '563492ad6f9170000100000…', how: 'Если ключ уже есть: <a href="https://www.pexels.com/api/" target="_blank" rel="noopener">pexels.com/api</a> → «Your API key».' },
   commons: { t: 'Wikimedia Commons', d: 'Без ключа, работает всегда: космос, природа, океан, огонь.', key: null },
 }
-let srcOrder = ['pixabay', 'pexels', 'commons', 'giphy'], srcKeys = { gpKey: '', pbKey: '', pxKey: '' }
+let srcOrder = ['pixabay', 'pexels', 'commons', 'giphy'], srcKeys = { gpKey: '', pbKey: '', pxKey: '' }, srcOff = new Set()
 function renderSrcs() {
   let n = 0
   $('srcList').innerHTML = srcOrder.map((id, i) => {
-    const m = SOURCES[id], v = m.key ? srcKeys[m.key] : '', on = !m.key || !!v.trim()
-    return `<div class="src" data-i="${i}"><span class="grip" title="Перетащить" aria-hidden="true">⠿</span><span class="num ${on ? '' : 'dim'}">${on ? ++n : '–'}</span>
-      <div class="body"><b>${m.t}</b><small>${m.d}</small></div>
-      <div style="display:grid;gap:6px;justify-items:end"><span class="chip ${on ? 'ok' : ''}">${m.key ? (on ? '✓ ключ есть' : 'нет ключа') : '✓ без ключа'}</span>
+    const m = SOURCES[id], v = m.key ? srcKeys[m.key] : '', off = srcOff.has(id), on = !off && (!m.key || !!v.trim())
+    return `<div class="src ${off ? 'off' : ''}" data-i="${i}"><span class="grip" title="Перетащить" aria-hidden="true">⠿</span><span class="num ${on ? '' : 'dim'}">${on ? ++n : '–'}</span>
+      <div class="body"><b>${m.t}</b><small>${m.d}</small><label class="tg"><input type="checkbox" data-off="${id}" ${off ? '' : 'checked'}> Использовать</label></div>
+      <div style="display:grid;gap:6px;justify-items:end"><span class="chip ${on ? 'ok' : ''}">${off ? 'выключен' : m.key ? (on ? '✓ ключ есть' : 'нет ключа') : '✓ без ключа'}</span>
         <div class="mv"><button data-mv="-1" ${i === 0 ? 'disabled' : ''} aria-label="Выше">↑</button><button data-mv="1" ${i === srcOrder.length - 1 ? 'disabled' : ''} aria-label="Ниже">↓</button></div></div>
       <div class="wide">${m.key ? `<input id="${m.key}" data-key="${m.key}" type="text" autocomplete="off" spellcheck="false" placeholder="${m.ph}" value="${esc(v)}" aria-label="Ключ ${m.t}"><details><summary>Как получить ключ</summary><p>${m.how}</p></details>` : ''}</div>
     </div>`
   }).join('')
 }
 $('srcList').addEventListener('input', e => { const k = e.target.dataset.key; if (!k) return; srcKeys[k] = e.target.value; const row = e.target.closest('.src'); const chip = row.querySelector('.chip'); const on = !!e.target.value.trim(); chip.className = 'chip ' + (on ? 'ok' : ''); chip.textContent = on ? '✓ ключ есть' : 'нет ключа'; changedDots() })
-$('srcList').addEventListener('change', e => { if (e.target.dataset.key) renderSrcs() })
+$('srcList').addEventListener('change', e => { const o = e.target.dataset.off; if (o) { e.target.checked ? srcOff.delete(o) : srcOff.add(o); renderSrcs(); changedDots(); return } if (e.target.dataset.key) renderSrcs() })
 $('srcList').addEventListener('click', e => {
   const b = e.target.closest('[data-mv]'); if (!b) return
   const i = +b.closest('.src').dataset.i, j = i + +b.dataset.mv; if (j < 0 || j >= srcOrder.length) return
@@ -1651,6 +1677,26 @@ function dragSort(list, rowSel, arr, render) {
   })
 }
 dragSort($('srcList'), '.src', () => srcOrder, renderSrcs)
+// 2.11: темы живых обоев — как в приложении 3.20.6
+const TOPICS_DEFAULT = [['anime','Аниме','anime'],['games','Игры','video game'],['cyberpunk','Киберпанк','cyberpunk'],['neon','Неон','neon lights'],['pixel','Пиксель-арт','pixel art animation'],['space','Космос','space galaxy'],['city','Город ночью','city night'],['rain','Дождь','rain window'],['ocean','Океан','ocean waves'],['nature','Природа','nature'],['forest','Лес','forest'],['fire','Огонь','fire flames'],['snow','Зима','snow falling'],['abstract','Абстракция','abstract background'],['aquarium','Рыбки','fish aquarium'],['sunset','Закат','sunset'],['cars','Машины','car night'],['cats','Котики','cat']].map(([id, title, query]) => ({ id, title, query, on: true }))
+let topics = TOPICS_DEFAULT.map(t => ({ ...t }))
+function renderTopics() {
+  $('topList').innerHTML = topics.map((t, i) => `<div class="src top ${t.on ? '' : 'off'}" data-i="${i}"><span class="grip" title="Перетащить" aria-hidden="true">⠿</span>
+    <div><div class="f2"><input data-tk="title" maxlength="24" value="${esc(t.title)}" placeholder="Название" aria-label="Название темы"><input data-tk="query" maxlength="80" value="${esc(t.query)}" placeholder="Слова для поиска (англ.)" aria-label="Слова для поиска"></div>
+      <label class="tg" style="margin-top:6px"><input type="checkbox" data-tk="on" ${t.on ? 'checked' : ''}> Показывать</label></div>
+    <div class="mv"><button data-mv="-1" ${i === 0 ? 'disabled' : ''} aria-label="Выше">↑</button><button data-mv="1" ${i === topics.length - 1 ? 'disabled' : ''} aria-label="Ниже">↓</button><button data-tdel aria-label="Удалить тему">×</button></div>
+  </div>`).join('')
+}
+$('topList').addEventListener('input', e => { const k = e.target.dataset.tk; if (!k) return; const i = +e.target.closest('.src').dataset.i; topics[i][k] = e.target.type === 'checkbox' ? e.target.checked : e.target.value; if (k === 'on') renderTopics(); changedDots() })
+$('topList').addEventListener('click', e => {
+  const row = e.target.closest('.src'); if (!row) return; const i = +row.dataset.i
+  if (e.target.closest('[data-tdel]')) { topics.splice(i, 1); renderTopics(); changedDots(); return }
+  const b = e.target.closest('[data-mv]'); if (!b) return; const j = i + +b.dataset.mv; if (j < 0 || j >= topics.length) return
+  ;[topics[i], topics[j]] = [topics[j], topics[i]]; renderTopics(); changedDots()
+})
+dragSort($('topList'), '.src', () => topics, renderTopics)
+$('topAdd').onclick = () => { topics.push({ id: 't' + Date.now().toString(36), title: '', query: '', on: true }); renderTopics(); changedDots(); $('topList').lastElementChild.querySelector('input').focus() }
+$('topReset').onclick = () => { if (!confirm('Вернуть 18 тем по умолчанию? Ваши темы удалятся.')) return; topics = TOPICS_DEFAULT.map(t => ({ ...t })); renderTopics(); changedDots() }
 dragSort($('wallList'), '.wall', () => walls, renderWalls)
 document.querySelector('.sortbar').addEventListener('click', e => {
   const k = e.target.closest('[data-sort]')?.dataset.sort; if (!k) return
@@ -1660,8 +1706,8 @@ document.querySelector('.sortbar').addEventListener('click', e => {
   renderWalls(); changedDots(); toast('Порядок изменён — нажмите «Сохранить обои»')
 })
 
-function fillWalls(c) { walls = (c?.live || []).map(w => ({ ...w })); srcKeys = { pxKey: c?.pexelsKey || '', pbKey: c?.pixabayKey || '', gpKey: c?.giphyKey || '' }; const so = (c?.sources || []).filter(x => SOURCES[x]); srcOrder = [...so, ...Object.keys(SOURCES).filter(x => !so.includes(x))]; renderSrcs(); wallsSaved = JSON.stringify(collectWalls()); renderWalls() }
-function collectWalls() { const k = srcKeys.pxKey.trim(), pb = srcKeys.pbKey.trim(), gp = srcKeys.gpKey.trim(); return { sources: [...srcOrder], ...(k ? { pexelsKey: k } : {}), ...(pb ? { pixabayKey: pb } : {}), ...(gp ? { giphyKey: gp } : {}), live: walls.map(w => { const o = { id: w.id, title: w.title || w.id, url: w.url }; if (w.thumb) o.thumb = w.thumb; if (w.sizeMb) o.sizeMb = w.sizeMb; if (w.hidden) o.hidden = true; return o }) } }
+function fillWalls(c) { walls = (c?.live || []).map(w => ({ ...w })); srcKeys = { pxKey: c?.pexelsKey || '', pbKey: c?.pixabayKey || '', gpKey: c?.giphyKey || '' }; const so = (c?.sources || []).filter(x => SOURCES[x]); srcOrder = [...so, ...Object.keys(SOURCES).filter(x => !so.includes(x))]; srcOff = new Set(c?.sourcesOff || []); renderSrcs(); topics = (c?.topics?.length ? c.topics : TOPICS_DEFAULT).map(t => ({ id: t.id, title: t.title || '', query: t.query || '', on: t.on !== false })); renderTopics(); wallsSaved = JSON.stringify(collectWalls()); renderWalls() }
+function collectWalls() { const k = srcKeys.pxKey.trim(), pb = srcKeys.pbKey.trim(), gp = srcKeys.gpKey.trim(); return { sources: [...srcOrder], ...(srcOff.size ? { sourcesOff: [...srcOff] } : {}), topics: topics.map(t => ({ id: t.id, title: t.title.trim(), query: t.query.trim(), ...(t.on ? {} : { on: false }) })), ...(k ? { pexelsKey: k } : {}), ...(pb ? { pixabayKey: pb } : {}), ...(gp ? { giphyKey: gp } : {}), live: walls.map(w => { const o = { id: w.id, title: w.title || w.id, url: w.url }; if (w.thumb) o.thumb = w.thumb; if (w.sizeMb) o.sizeMb = w.sizeMb; if (w.hidden) o.hidden = true; return o }) } }
 function renderWalls() {
   $('wallList').innerHTML = walls.length ? walls.map((w, i) => `<div class="item wall ${w.hidden ? 'off' : ''}" data-i="${i}"><span class="grip" title="Перетащить" aria-hidden="true">⠿</span>
     ${w.thumb ? `<img src="${esc(wallSrc(w.thumb))}" alt="" loading="lazy">` : '<span class="noimg"></span>'}
@@ -1687,6 +1733,7 @@ $('wallAdd').onclick = () => {
 $('saveWalls').onclick = () => guarded($('saveWalls'), async () => {
   const c = collectWalls()
   if (c.pexelsKey && !/^[A-Za-z0-9]{20,80}$/.test(c.pexelsKey)) throw new Error('Ключ Pexels — только латинские буквы и цифры, без пробелов')
+  const badT = c.topics.find(t => t.on !== false && (!t.title || !t.query)); if (badT) throw new Error('У темы нужны название и слова для поиска — заполните или удалите пустую тему')
   if (c.giphyKey && !/^[A-Za-z0-9]{24,48}$/.test(c.giphyKey)) throw new Error('Ключ GIPHY — только латинские буквы и цифры, без пробелов')
   if (c.pixabayKey && !/^[0-9]{4,12}-[a-f0-9]{16,40}$/.test(c.pixabayKey)) throw new Error('Ключ Pixabay выглядит как 12345678-abcdef… — скопируйте его целиком, без пробелов')
   const bad = c.live.find(w => !w.url || (/^[a-z]+:/i.test(w.url) && !/^https:\/\//.test(w.url)) || w.url.includes('..'))

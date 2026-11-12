@@ -148,7 +148,10 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
     if (pxKey.isBlank()) {
         Caption("Поиск живых обоев по темам (аниме, игры, неон, космос…) скоро появится. Пока есть каталог выше и «Видео по ссылке».")
     } else {
-        var topic by rememberSaveable { mutableStateOf(Wallpapers.liveTopics.first().id) }
+        val topicList by Wallpapers.topics.collectAsState()
+        var topic by rememberSaveable { mutableStateOf("") }
+        // Тема по умолчанию — первая из пульта; если выбранную убрали в пульте — тоже первая
+        if (topicList.none { it.id == topic }) topic = topicList.firstOrNull()?.id.orEmpty()
         var query by rememberSaveable { mutableStateOf("") }
         var searched by rememberSaveable { mutableStateOf("") }
         var page by rememberSaveable { mutableIntStateOf(0) }
@@ -160,7 +163,7 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
             keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = { searched = query.trim(); page = 0 }),
         )
         Spacer(Modifier.height(6.dp))
-        CategoryChips(Wallpapers.liveTopics.map { it.id to it.title }, if (searched.isBlank()) topic else "") { topic = it; searched = ""; query = ""; page = 0 }
+        CategoryChips(topicList.map { it.id to it.title }, if (searched.isBlank()) topic else "") { topic = it; searched = ""; query = ""; page = 0 }
         val vids by produceState<List<Wallpapers.Live>?>(null, topic, searched, page, pxKey) {
             value = null
             value = if (searched.isNotBlank()) Wallpapers.liveSearch(searched, page) else Wallpapers.liveTopic(topic, page)
@@ -218,7 +221,7 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
     Spacer(Modifier.height(14.dp))
     Text("Обои дня", color = Apex.TextDim, fontSize = 14.sp, modifier = Modifier.padding(start = 4.dp, bottom = 6.dp))
     val autoItems = listOf("off" to "Выключено", "fav" to "Из избранного", "live" to "Скачанные по кругу") +
-        (if (Wallpapers.pexelsKey.collectAsState().value.isNotBlank()) Wallpapers.liveTopics.map { "px:" + it.id to it.title } else emptyList())
+        (if (Wallpapers.pexelsKey.collectAsState().value.isNotBlank()) Wallpapers.topics.collectAsState().value.map { "px:" + it.id to it.title } else emptyList())
     CategoryChips(autoItems, s.wallAuto) { mode ->
         viewModel.change(reload = false) { copy(wallAuto = mode) }
         if (mode != "off") scope.launch {

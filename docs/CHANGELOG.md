@@ -2,6 +2,12 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.20.6 · 13 ноября 2026
+
+<img src="img/tags/improved.svg" alt="Улучшено" height="22">
+
+- Темы живых обоев и источники поиска настраиваются в пульте: свои темы, порядок, включить или выключить источник
+
 ## 3.20.5 · 13 ноября 2026
 
 <img src="img/tags/improved.svg" alt="Улучшено" height="22">

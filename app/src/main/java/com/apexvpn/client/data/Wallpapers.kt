@@ -106,16 +106,33 @@ object Wallpapers {
     /** Минимум для обоев на весь экран: длинная сторона от 1280 (HD 720p). Меньше — будет мыло. */
     const val MIN_LONG_SIDE = 1280
     fun parseSources(text: String): List<String> = runCatching {
-        val a = JSONObject(text).optJSONArray("sources") ?: return@runCatching defaultSources
-        val given = (0 until a.length()).map { a.optString(it) }.filter { it in defaultSources }.distinct()
-        given + defaultSources.filter { it !in given }
+        val o = JSONObject(text)
+        // 3.20.6: выключенные в пульте источники не используются совсем
+        val off = o.optJSONArray("sourcesOff")?.let { a -> (0 until a.length()).map { a.optString(it) }.toSet() }.orEmpty()
+        val a = o.optJSONArray("sources")
+        val given = if (a == null) defaultSources else (0 until a.length()).map { a.optString(it) }.filter { it in defaultSources }.distinct()
+        (given + defaultSources.filter { it !in given }).filter { it !in off }
     }.getOrDefault(defaultSources)
+
+    /** 3.20.6. Темы живых обоев из пульта (название, слова для поиска, порядок, вкл/выкл). Пусто — темы по умолчанию. */
+    fun parseTopics(text: String): List<PxTopic> = runCatching {
+        val a = JSONObject(text).optJSONArray("topics") ?: return@runCatching liveTopics
+        val list = (0 until a.length()).mapNotNull { a.optJSONObject(it) }.filter { it.optBoolean("on", true) }.mapNotNull { t ->
+            val id = t.optString("id").trim().takeIf { it.matches(Regex("[a-z0-9_-]{1,30}")) } ?: return@mapNotNull null
+            val q = t.optString("query").trim().take(80).takeIf { it.isNotEmpty() } ?: return@mapNotNull null
+            PxTopic(id, t.optString("title").trim().take(24).ifBlank { q }, q)
+        }.distinctBy { it.id }
+        list.ifEmpty { liveTopics }
+    }.getOrDefault(liveTopics)
+    /** Темы для экрана: из пульта или по умолчанию. lazy — liveTopics объявлены ниже в этом объекте. */
+    val topics: StateFlow<List<PxTopic>> get() = _topicsView
+    private val _topicsView by lazy { MutableStateFlow(liveTopics) }
     @Volatile private var sources: List<String> = listOf("pixabay", "pexels", "commons", "giphy")
 
     suspend fun loadCatalog(context: Context) = withContext(Dispatchers.IO) {
         val cache = File(context.filesDir, "wallpapers.json")
         loadOwnKey()
-        if (_catalog.value.isEmpty() && cache.exists()) { val t = cache.readText(); _catalog.value = parseCatalog(t); _pexelsKey.value = parseKey(t); _pixabayKey.value = parsePixabayKey(t); _giphyKey.value = parseGiphyKey(t); sources = parseSources(t) }
+        if (_catalog.value.isEmpty() && cache.exists()) { val t = cache.readText(); _catalog.value = parseCatalog(t); _pexelsKey.value = parseKey(t); _pixabayKey.value = parsePixabayKey(t); _giphyKey.value = parseGiphyKey(t); sources = parseSources(t); _topicsView.value = parseTopics(t) }
         recalcKey()
         val text = sources("config/wallpapers.json").firstNotNullOfOrNull { u ->
             runCatching { open(u + "?t=" + System.currentTimeMillis() / 600_000).use { it.bufferedReader().readText() } }.getOrNull()
@@ -127,6 +144,7 @@ object Wallpapers {
         _pixabayKey.value = parsePixabayKey(text)
         _giphyKey.value = parseGiphyKey(text)
         sources = parseSources(text)
+        _topicsView.value = parseTopics(text)
         recalcKey()
     }
 
@@ -443,7 +461,7 @@ object Wallpapers {
     }.getOrDefault(emptyList())
 
     suspend fun liveTopic(topicId: String, page: Int = 0): List<Live> =
-        liveSearch(liveTopics.firstOrNull { it.id == topicId }?.query ?: topicId, page)
+        liveSearch((_topicsView.value + liveTopics).firstOrNull { it.id == topicId }?.query ?: topicId, page)
 
     /** Ответ Pexels: вертикальный mp4 ближе всего к 1080×1920, не больше 1920 по высоте. */
     fun parsePexels(json: String): List<Live> = runCatching {

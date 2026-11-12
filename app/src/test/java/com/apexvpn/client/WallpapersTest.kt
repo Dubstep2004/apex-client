@@ -129,4 +129,12 @@ class WallpapersTest {
         assertEquals("giphy", Wallpapers.defaultSources.last())
         assertEquals(Wallpapers.defaultSources, Wallpapers.parseSources("""{"live":[]}"""))
     }
+
+    @Test fun topicsAndSourcesFromPult() {
+        val t = Wallpapers.parseTopics("""{"topics":[{"id":"lofi","title":"Лоу-фай","query":"lofi anime"},{"id":"off","title":"x","query":"y","on":false},{"id":"BAD ID","query":"z"}]}""")
+        assertEquals(listOf("lofi"), t.map { it.id })
+        assertEquals("lofi anime", t[0].query)
+        assertEquals(Wallpapers.liveTopics, Wallpapers.parseTopics("""{"topics":[]}"""))
+        assertEquals(listOf("pixabay", "commons"), Wallpapers.parseSources("""{"sources":["pixabay","commons","giphy","pexels"],"sourcesOff":["giphy","pexels"]}"""))
+    }
 }
