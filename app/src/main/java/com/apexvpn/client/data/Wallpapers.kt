@@ -73,12 +73,30 @@ object Wallpapers {
 
     /** 3.20. Ключ Pexels из каталога (вкладка «Обои» в пульте): без него поиска живых обоев нет. */
     private val _pexelsKey = MutableStateFlow("")
-    val pexelsKey: StateFlow<String> = _pexelsKey.asStateFlow()
+    /** Ключ из пульта. */
+    val pultKey: StateFlow<String> = _pexelsKey.asStateFlow()
+    /** Свой ключ из приложения (важнее ключа из пульта). */
+    private val _ownKey = MutableStateFlow<String?>(null)
+    val ownKey: StateFlow<String?> = _ownKey.asStateFlow()
+    fun loadOwnKey() { if (_ownKey.value == null) _ownKey.value = Prefs.pexelsOwnKey }
+    fun validKey(k: String) = k.trim().matches(Regex("[A-Za-z0-9]{20,80}"))
+    /** Сохранить свой ключ (пусто — убрать). false — ключ неправильного вида. */
+    fun setOwnKey(k: String): Boolean {
+        val t = k.trim()
+        if (t.isNotEmpty() && !validKey(t)) return false
+        Prefs.pexelsOwnKey = t; _ownKey.value = t; recalcKey(); return true
+    }
+    /** Ключ, которым ищем: свой, иначе из пульта. */
+    val pexelsKey: StateFlow<String> get() = _effective
+    private val _effective = MutableStateFlow("")
+    private fun recalcKey() { _effective.value = _ownKey.value?.takeIf { it.isNotBlank() } ?: _pexelsKey.value }
     fun parseKey(text: String): String = runCatching { JSONObject(text).optString("pexelsKey").trim().takeIf { it.matches(Regex("[A-Za-z0-9]{20,80}")) }.orEmpty() }.getOrDefault("")
 
     suspend fun loadCatalog(context: Context) = withContext(Dispatchers.IO) {
         val cache = File(context.filesDir, "wallpapers.json")
+        loadOwnKey()
         if (_catalog.value.isEmpty() && cache.exists()) { val t = cache.readText(); _catalog.value = parseCatalog(t); _pexelsKey.value = parseKey(t) }
+        recalcKey()
         val text = sources("config/wallpapers.json").firstNotNullOfOrNull { u ->
             runCatching { open(u + "?t=" + System.currentTimeMillis() / 600_000).use { it.bufferedReader().readText() } }.getOrNull()
                 ?.takeIf { parseCatalog(it).isNotEmpty() }
@@ -86,6 +104,7 @@ object Wallpapers {
         cache.writeText(text)
         _catalog.value = parseCatalog(text)
         _pexelsKey.value = parseKey(text)
+        recalcKey()
     }
 
     /** Скачанные обои: из каталога и по ссылке. */
@@ -294,7 +313,8 @@ object Wallpapers {
     )
 
     suspend fun liveSearch(query: String, page: Int = 0): List<Live> = withContext(Dispatchers.IO) {
-        val key = _pexelsKey.value
+        loadOwnKey(); recalcKey()
+        val key = _effective.value
         if (key.isBlank() || query.isBlank()) return@withContext emptyList()
         runCatching {
             val c = URL("https://api.pexels.com/videos/search?orientation=portrait&size=medium&per_page=24&page=${page + 1}&query=" + URLEncoder.encode(query.trim().take(80), "UTF-8"))

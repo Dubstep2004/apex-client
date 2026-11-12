@@ -76,6 +76,10 @@ object Prefs {
     var wallAutoLast: String
         get() = sp.getString("wall_auto_last", "") ?: ""
         set(v) = sp.edit { putString("wall_auto_last", v) }
+    /** 3.20. Свой ключ Pexels (вводится в приложении; важнее ключа из пульта) */
+    var pexelsOwnKey: String
+        get() = sp.getString("pexels_own_key", "") ?: ""
+        set(v) = sp.edit { putString("pexels_own_key", v) }
     var appConfigAt: Long
         get() = sp.getLong("app_config_at", 0)
         set(v) = sp.edit { putLong("app_config_at", v) }
