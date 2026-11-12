@@ -1,5 +1,6 @@
 package com.apexvpn.client.ui
 
+import androidx.compose.animation.core.animateFloat
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.Canvas
