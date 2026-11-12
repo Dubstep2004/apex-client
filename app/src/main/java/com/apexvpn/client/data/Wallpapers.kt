@@ -22,7 +22,14 @@ import java.net.URLEncoder
  * Фото-обои — лучшие фото Wikimedia Commons (свободные лицензии) по темам.
  */
 object Wallpapers {
-    data class Live(val id: String, val title: String, val url: String, val thumb: String, val sizeMb: Double = 0.0, val credit: String = "")
+    data class Live(val id: String, val title: String, val url: String, val thumb: String, val sizeMb: Double = 0.0, val credit: String = "", val cat: String = "")
+
+    /** 3.20.7. Разделы каталога. */
+    private val catTitles = mapOf(
+        "anime" to "Аниме-стиль", "city" to "Город", "nature" to "Природа", "space" to "Космос",
+        "pixel" to "Пиксель-арт", "cozy" to "Уют", "abstract" to "Абстракция", "games" to "Игры",
+    )
+    fun catTitle(id: String) = catTitles[id] ?: id.replaceFirstChar { it.uppercase() }
     data class Photo(val title: String, val thumb: String, val full: String, val author: String)
 
     /** Где лежат файлы каталога: сайт, затем зеркала (если github.io недоступен). */
@@ -60,7 +67,7 @@ object Wallpapers {
             val id = o.optString("id").trim().takeIf { it.matches(Regex("[a-z0-9_-]{1,40}")) } ?: return@mapNotNull null
             val url = o.optString("url").trim().takeIf { it.isNotEmpty() } ?: return@mapNotNull null
             if (o.optBoolean("hidden", false)) return@mapNotNull null
-            Live(id, o.optString("title").ifBlank { id }.take(30), url, o.optString("thumb").trim(), o.optDouble("sizeMb", 0.0))
+            Live(id, o.optString("title").ifBlank { id }.take(30), url, o.optString("thumb").trim(), o.optDouble("sizeMb", 0.0), cat = o.optString("cat").trim().take(20))
         }.distinctBy { it.id }
     }.getOrDefault(emptyList())
 

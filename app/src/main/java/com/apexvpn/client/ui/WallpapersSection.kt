@@ -81,10 +81,19 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
         if (err == null) { select(item.id); viewModel.showMessage("«${item.title}» скачано и стоит на главном экране") } else viewModel.showMessage(err)
     }
 
+    // 3.20.7. Всё про живые обои из интернета — вкладками, по одной ленте за раз
+    Spacer(Modifier.height(14.dp))
+    Text("Живые обои из интернета", color = Apex.TextDim, fontSize = 14.sp, modifier = Modifier.padding(start = 4.dp, bottom = 6.dp))
+    var tab by rememberSaveable { mutableStateOf("cat") }
+    CategoryChips(
+        listOf("cat" to "Каталог", "topics" to "По темам", "dl" to "Скачанные · ${downloaded.size}", "fav" to "Избранное · ${favs.size}"),
+        tab,
+    ) { tab = it }
+    Spacer(Modifier.height(8.dp))
+
     // 3.19.9. Избранное — живые обои и картинки вместе
-    if (favs.isNotEmpty()) {
-        Spacer(Modifier.height(14.dp))
-        Text("Избранное · ${favs.size}", color = Apex.TextDim, fontSize = 14.sp, modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
+    if (tab == "fav" && favs.isEmpty()) Caption("Пока пусто. Нажмите ☆ на обоях в «Каталоге» или «По темам» — они появятся здесь.")
+    if (tab == "fav" && favs.isNotEmpty()) {
         val favList = favs
         LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             items(favList.size, key = { favList[it].type + favList[it].id }) { i ->
@@ -104,12 +113,14 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
         Caption("☆ на обоях — добавить в избранное, ★ — убрать.")
     }
 
-    Spacer(Modifier.height(14.dp))
-    Text("Живые обои из интернета", color = Apex.TextDim, fontSize = 14.sp, modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
-    if (catalog.isEmpty()) {
+    if (tab == "cat" && catalog.isEmpty()) {
         Caption("Загружаем каталог… Если не появляется — проверьте интернет.")
-    } else {
-        val catList = catalog
+    } else if (tab == "cat") {
+        // Разделы каталога (из пульта): Аниме-стиль, Город, Природа…
+        val cats = remember(catalog) { listOf("" to "Все") + catalog.map { it.cat }.filter { it.isNotBlank() }.distinct().map { it to Wallpapers.catTitle(it) } }
+        var cat by rememberSaveable { mutableStateOf("") }
+        if (cats.size > 2) { CategoryChips(cats, cat) { cat = it }; Spacer(Modifier.height(8.dp)) }
+        val catList = catalog.filter { cat.isBlank() || it.cat == cat }
         LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             items(catList.size) { i ->
                 val item = catList[i]
@@ -128,8 +139,7 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
         }
         Caption("Нажмите — обои скачаются (2–6 МБ) и встанут на главный экран. Работают без интернета.")
     }
-    Spacer(Modifier.height(8.dp))
-    Group {
+    if (tab == "dl") Group {
         ListRow("Видео по ссылке", "Прямая ссылка https://…/файл.mp4, до 150 МБ", onClick = { askLink = true }) { Chevron() }
         downloaded.forEach { d ->
             GroupDivider()
@@ -139,13 +149,11 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
             }
         }
     }
-    if (downloaded.isNotEmpty()) Caption("Скачанные обои хранятся в телефоне. «Удалить» освобождает место, скачать снова можно в любой момент.")
+    if (tab == "dl" && downloaded.isNotEmpty()) Caption("Скачанные обои хранятся в телефоне. «Удалить» освобождает место, скачать снова можно в любой момент.")
 
-    // 3.20. Живые обои из интернета по темам и поиску (Pexels) — вместо картинок
-    Spacer(Modifier.height(14.dp))
-    Text("Живые обои по темам", color = Apex.TextDim, fontSize = 14.sp, modifier = Modifier.padding(start = 4.dp, bottom = 6.dp))
+    // 3.20. Живые обои из интернета по темам и поиску
     val pxKey by Wallpapers.pexelsKey.collectAsState()
-    if (pxKey.isBlank()) {
+    if (tab != "topics") Unit else if (pxKey.isBlank()) {
         Caption("Поиск живых обоев по темам (аниме, игры, неон, космос…) скоро появится. Пока есть каталог выше и «Видео по ссылке».")
     } else {
         val topicList by Wallpapers.topics.collectAsState()
@@ -200,11 +208,12 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
                 }
             }
         }
-        Caption("Видео из интернета: Pixabay, Pexels, GIPHY (Powered by GIPHY) или Wikimedia Commons. Нажмите — скачаются (2–10 МБ) и встанут на главный экран; ★ — в избранное. Скачанные — в списке выше, там же «Удалить».")
+        Caption("Видео из интернета: Pixabay, Pexels, Wikimedia Commons или GIPHY (Powered by GIPHY). Нажмите — скачаются (2–10 МБ) и встанут на главный экран; ☆ — в избранное. Удалить — во вкладке «Скачанные».")
     }
 
     // 3.20. Эффект поверх любых обоев и «Живое фото»
     Spacer(Modifier.height(14.dp))
+    SectionLabel("Настройка обоев")
     Text("Эффект поверх обоев", color = Apex.TextDim, fontSize = 14.sp, modifier = Modifier.padding(start = 4.dp, bottom = 6.dp))
     CategoryChips(com.apexvpn.client.ui.theme.WallFx.all, s.wallFx) { fx -> viewModel.change(reload = false) { copy(wallFx = fx) } }
     Caption("Снег, дождь, сакура и другие — поверх картинки, живых обоев или дизайна. В «Плавном режиме» эффект не показывается.")

@@ -172,7 +172,7 @@
   .src details p, .howto p { color: var(--dim); font-size: 13px; margin: 6px 0 0; } .src details a { color: var(--go2); }
   @media (max-width: 560px) { .src { grid-template-columns: auto minmax(0, 1fr) auto; } .src .num { display: none; } }
   .wall img, .wall .noimg { width: 54px; height: 81px; object-fit: cover; border-radius: 10px; background: var(--panel2); display: block; }
-  .wall > * { min-width: 0; } .wall .f2 { display: grid; gap: 6px; } .wall .f2 input { padding: 9px 12px; min-width: 0; width: 100%; }
+  .wall > * { min-width: 0; } .wall .f2 select { padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--field); color: var(--text); font: inherit; font-size: 14px; } .wall .f2 { display: grid; gap: 6px; } .wall .f2 input { padding: 9px 12px; min-width: 0; width: 100%; }
   .wall .ctl { display: grid; gap: 2px; justify-items: center; }
   .wall label.hid { display: flex; gap: 6px; align-items: center; color: var(--dim); font-size: 13px; }
   .item-head { display: flex; align-items: center; gap: 10px; margin: 0 0 4px; }
@@ -668,7 +668,7 @@
         <p class="help">Не берите видео с сайтов-сборников обоев (vsthemes, zamanilka, MoeWalls и т. п.) — там чужие кадры без разрешения авторов.</p>
       </div>
       <div class="block"><h2>Каталог</h2><p class="note">Свои живые обои — показываются первыми, в этом порядке. Перетащите за ⠿. Скрытые не видны новым пользователям, но у скачавших остаются.</p>
-        <div class="sortbar"><span>Упорядочить:</span><button class="btn quiet small" data-sort="title">По названию</button><button class="btn quiet small" data-sort="size">Сначала лёгкие</button><button class="btn quiet small" data-sort="hidden">Скрытые в конец</button></div>
+        <div class="sortbar"><span>Упорядочить:</span><button class="btn quiet small" data-sort="title">По названию</button><button class="btn quiet small" data-sort="size">Сначала лёгкие</button><button class="btn quiet small" data-sort="hidden">Скрытые в конец</button><button class="btn quiet small" data-sort="cat">По разделам</button></div>
         <div id="wallList"></div>
         <button class="add" id="wallAdd">Добавить обои по ссылке</button>
         <details class="howto"><summary>Где брать видео для каталога</summary><p>Нужна прямая ссылка https://…/файл.mp4 (не страница сайта), вертикальное видео 1080×1920, 5–15 секунд, до 20 МБ. Или положите файл в репозиторий в <code>docs/wallpapers/</code> и укажите путь <code>wallpapers/имя.mp4</code>.</p></details>
@@ -1702,17 +1702,21 @@ document.querySelector('.sortbar').addEventListener('click', e => {
   const k = e.target.closest('[data-sort]')?.dataset.sort; if (!k) return
   if (k === 'title') walls.sort((a, b) => (a.title || a.id).localeCompare(b.title || b.id, 'ru'))
   else if (k === 'size') walls.sort((a, b) => (a.sizeMb || 99) - (b.sizeMb || 99))
+  else if (k === 'cat') walls.sort((a, b) => WALL_CATS.findIndex(c => c[0] === (a.cat || '')) - WALL_CATS.findIndex(c => c[0] === (b.cat || '')))
   else walls.sort((a, b) => (a.hidden ? 1 : 0) - (b.hidden ? 1 : 0))
   renderWalls(); changedDots(); toast('Порядок изменён — нажмите «Сохранить обои»')
 })
 
 function fillWalls(c) { walls = (c?.live || []).map(w => ({ ...w })); srcKeys = { pxKey: c?.pexelsKey || '', pbKey: c?.pixabayKey || '', gpKey: c?.giphyKey || '' }; const so = (c?.sources || []).filter(x => SOURCES[x]); srcOrder = [...so, ...Object.keys(SOURCES).filter(x => !so.includes(x))]; srcOff = new Set(c?.sourcesOff || []); renderSrcs(); topics = (c?.topics?.length ? c.topics : TOPICS_DEFAULT).map(t => ({ id: t.id, title: t.title || '', query: t.query || '', on: t.on !== false })); renderTopics(); wallsSaved = JSON.stringify(collectWalls()); renderWalls() }
-function collectWalls() { const k = srcKeys.pxKey.trim(), pb = srcKeys.pbKey.trim(), gp = srcKeys.gpKey.trim(); return { sources: [...srcOrder], ...(srcOff.size ? { sourcesOff: [...srcOff] } : {}), topics: topics.map(t => ({ id: t.id, title: t.title.trim(), query: t.query.trim(), ...(t.on ? {} : { on: false }) })), ...(k ? { pexelsKey: k } : {}), ...(pb ? { pixabayKey: pb } : {}), ...(gp ? { giphyKey: gp } : {}), live: walls.map(w => { const o = { id: w.id, title: w.title || w.id, url: w.url }; if (w.thumb) o.thumb = w.thumb; if (w.sizeMb) o.sizeMb = w.sizeMb; if (w.hidden) o.hidden = true; return o }) } }
+function collectWalls() { const k = srcKeys.pxKey.trim(), pb = srcKeys.pbKey.trim(), gp = srcKeys.gpKey.trim(); return { sources: [...srcOrder], ...(srcOff.size ? { sourcesOff: [...srcOff] } : {}), topics: topics.map(t => ({ id: t.id, title: t.title.trim(), query: t.query.trim(), ...(t.on ? {} : { on: false }) })), ...(k ? { pexelsKey: k } : {}), ...(pb ? { pixabayKey: pb } : {}), ...(gp ? { giphyKey: gp } : {}), live: walls.map(w => { const o = { id: w.id, title: w.title || w.id, url: w.url }; if (w.thumb) o.thumb = w.thumb; if (w.sizeMb) o.sizeMb = w.sizeMb; if (w.hidden) o.hidden = true; if (w.cat) o.cat = w.cat; return o }) } }
+// 2.11: разделы каталога — кнопки над каталогом в приложении (3.20.7+)
+const WALL_CATS = [['', 'Без раздела'], ['anime', 'Аниме-стиль'], ['city', 'Город'], ['nature', 'Природа'], ['space', 'Космос'], ['pixel', 'Пиксель-арт'], ['cozy', 'Уют'], ['abstract', 'Абстракция'], ['games', 'Игры']]
 function renderWalls() {
   $('wallList').innerHTML = walls.length ? walls.map((w, i) => `<div class="item wall ${w.hidden ? 'off' : ''}" data-i="${i}"><span class="grip" title="Перетащить" aria-hidden="true">⠿</span>
     ${w.thumb ? `<img src="${esc(wallSrc(w.thumb))}" alt="" loading="lazy">` : '<span class="noimg"></span>'}
     <div class="f2"><input data-k="title" maxlength="30" value="${esc(w.title)}" placeholder="Название" aria-label="Название обоев">
       <input data-k="url" value="${esc(w.url)}" placeholder="https://…/video.mp4 или wallpapers/имя.mp4" aria-label="Ссылка на видео">
+      <select data-k="cat" aria-label="Раздел каталога">${WALL_CATS.map(([id, t]) => `<option value="${id}" ${(w.cat || '') === id ? 'selected' : ''}>${t}</option>`).join('')}</select>
       <label class="hid"><input type="checkbox" data-k="hidden" ${w.hidden ? 'checked' : ''}> Скрыть в приложении</label></div>
     <div class="ctl"><button class="x" data-up title="Выше" aria-label="Выше">↑</button><button class="x" data-down title="Ниже" aria-label="Ниже">↓</button><button class="x" data-del title="Удалить" aria-label="Удалить обои">×</button></div>
   </div>`).join('') : '<p class="help">Каталог пуст — в приложении будут только встроенные живые видео.</p>'
