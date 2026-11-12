@@ -143,7 +143,8 @@ object Wallpapers {
         recalcKey()
         val text = sources("config/wallpapers.json").firstNotNullOfOrNull { u ->
             runCatching { open(u + "?t=" + System.currentTimeMillis() / 600_000).use { it.bufferedReader().readText() } }.getOrNull()
-                ?.takeIf { parseCatalog(it).isNotEmpty() }
+                // 3.20.9: принимаем любой правильный JSON — даже пустой каталог (раньше ключи и темы из пульта не доходили, если каталог пуст)
+                ?.takeIf { t -> runCatching { JSONObject(t); true }.getOrDefault(false) }
         } ?: return@withContext
         cache.writeText(text)
         _catalog.value = parseCatalog(text)
@@ -539,6 +540,8 @@ object Wallpapers {
         if (mode == "off") return@withLock false
         val day = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US).format(java.util.Date())
         if (!force && Prefs.wallAutoDay == day) return@withLock false
+        // 3.20.9: в фоне (после перезапуска) ключи, темы и порядок источников ещё не загружены — берём из каталога (раз в день)
+        if (mode.startsWith("px:") || mode == "fav") runCatching { loadCatalog(context) }
         val doy = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_YEAR) + (if (force) (System.currentTimeMillis() / 1000 % 997).toInt() else 0)
         val ok = when {
             mode == "live" -> {
