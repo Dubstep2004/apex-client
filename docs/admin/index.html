@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#0e1220">
-<title>APEX · пульт</title>
+<title>APEX CLIENT · пульт</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="icon" href="icon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="apple-mobile-web-app-title" content="APEX пульт">
+<meta name="apple-mobile-web-app-title" content="APEX CLIENT пульт">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -357,7 +357,7 @@
 <!-- Пульт -->
 <div class="shell" id="app" hidden>
   <aside class="rail">
-    <div class="brand"><img src="icon.svg" alt=""><div><b>APEX пульт</b><span id="railVer">Пульт —</span></div>
+    <div class="brand"><img src="icon.svg" alt=""><div><b>APEX CLIENT</b><span id="railVer">Пульт —</span></div>
       <button class="icon-btn" id="designBtn" title="Оформление" aria-label="Оформление пульта" aria-expanded="false">🎨</button>
       <div class="designs" id="designs" hidden></div>
     </div>
@@ -589,7 +589,7 @@
       <div class="block"><details><summary>🔑 Новый токен (срок вышел или ошибка 403)</summary>
         <ol>
           <li>Откройте <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a></li>
-          <li>Token name: <b>APEX admin</b>, Expiration: <b>90 дней</b>.</li>
+          <li>Token name: <b>APEX CLIENT admin</b>, Expiration: <b>90 дней</b>.</li>
           <li><b>Repository access → Only select repositories → Dubstep2004/apex-client.</b> «Public repositories» (по умолчанию) — только чтение, будет 403.</li>
           <li><b>Permissions → «+ Add permissions» → Contents → Read and write.</b></li>
           <li><b>Generate token</b> → скопируйте → здесь «Выйти и стереть токен» → войдите с новым.</li>
@@ -701,7 +701,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.7', PANEL_DATE = '12 ноября 2026'
+const PANEL_VERSION = '2.8', PANEL_DATE = '12 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json'
 const DESIGNS = [
