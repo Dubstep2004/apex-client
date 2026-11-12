@@ -622,6 +622,11 @@
         <div id="wallList"></div>
         <button class="add" id="wallAdd">Добавить обои по ссылке</button>
       </div>
+      <div class="block"><h2>Поиск живых обоев по темам</h2><p class="note">Аниме, игры, неон, космос, дождь и ещё 14 тем — бесплатные вертикальные видео Pexels прямо в приложении (с 3.20). Нужен бесплатный ключ: <a href="https://www.pexels.com/api/" target="_blank" rel="noopener">pexels.com/api</a> → «Get started» → войти → «Your API key» → скопировать сюда. Пусто — поиска в приложении нет.</p>
+        <label class="f" for="pxKey">Ключ Pexels API</label>
+        <input id="pxKey" type="text" autocomplete="off" spellcheck="false" placeholder="563492ad6f9170000100000…">
+        <p class="help">Ключ хранится в открытом файле каталога — так приложения его получают. Это не пароль: им можно только искать видео (лимит Pexels — 200 запросов в час на всех). Если начнут злоупотреблять — создайте новый на pexels.com и вставьте сюда.</p>
+      </div>
       <div class="block"><h2>Где брать видео</h2>
         <p class="note">Нужна прямая ссылка https://…/файл.mp4 (не страница сайта), вертикальное видео 1080×1920, 5–15 секунд, до 20 МБ. Подойдут бесплатные видео без обязательной подписи автора — Pexels, Pixabay, Mixkit: «Скачать» → правой кнопкой «Копировать адрес ссылки». Или положите файл в репозиторий в <code>docs/wallpapers/</code> и укажите путь <code>wallpapers/имя.mp4</code>.</p>
       </div>
@@ -676,7 +681,7 @@
           <tr><td>Функции</td><td>Экстренно выключить LTE-автопереход, HaGeZi, защиту от мошенников, автоустановку обновлений</td></tr>
           <tr><td>Предпросмотр</td><td>Черновики видны только на вашем телефоне</td></tr>
           <tr><td>История</td><td>Все сохранения, «Что изменилось» (было/стало), «Вернуть» прошлую версию, резервная копия в файл и загрузка из файла</td></tr>
-          <tr><td>Обои</td><td>Каталог живых обоев в приложении (с 3.19.7): добавить по ссылке на .mp4, порядок, скрыть, убрать. Картинки (аниме, игры, природа и ещё 20 тем) пользователь ищет в приложении сам. С 3.19.8 — «Обои дня»: раз в день новые обои автоматически</td></tr>
+          <tr><td>Обои</td><td>Каталог живых обоев в приложении (с 3.19.7): добавить по ссылке на .mp4, порядок, скрыть, убрать. С 3.20 — ключ Pexels: в приложении поиск живых обоев по 18 темам (аниме, игры, неон…). «Обои дня» — раз в день новые обои автоматически</td></tr>
           <tr><td>Визитка</td><td>Заголовок сайта, своя кнопка («Купить подписку»), счётчик и статус, какие блоки показывать и в каком порядке (перетаскиванием), свои вопросы и ответы</td></tr>
           <tr><td>Проверка</td><td>Открываются ли подписка и поддержка, дошёл ли файл до GitHub и зеркала. «Серверы» — грубая проверка адресов, список только в этом браузере</td></tr>
         </table></div>
@@ -1587,8 +1592,8 @@ function goHit(h) {
 
 // ── 2.11: каталог живых обоев (docs/config/wallpapers.json)
 const wallSrc = u => /^https:\/\//.test(u) ? u : (u ? '../' + u.replace(/^\/+/, '') : '')
-function fillWalls(c) { walls = (c?.live || []).map(w => ({ ...w })); wallsSaved = JSON.stringify(collectWalls()); renderWalls() }
-function collectWalls() { return { live: walls.map(w => { const o = { id: w.id, title: w.title || w.id, url: w.url }; if (w.thumb) o.thumb = w.thumb; if (w.sizeMb) o.sizeMb = w.sizeMb; if (w.hidden) o.hidden = true; return o }) } }
+function fillWalls(c) { walls = (c?.live || []).map(w => ({ ...w })); $('pxKey').value = c?.pexelsKey || ''; wallsSaved = JSON.stringify(collectWalls()); renderWalls() }
+function collectWalls() { const k = $('pxKey').value.trim(); return { ...(k ? { pexelsKey: k } : {}), live: walls.map(w => { const o = { id: w.id, title: w.title || w.id, url: w.url }; if (w.thumb) o.thumb = w.thumb; if (w.sizeMb) o.sizeMb = w.sizeMb; if (w.hidden) o.hidden = true; return o }) } }
 function renderWalls() {
   $('wallList').innerHTML = walls.length ? walls.map((w, i) => `<div class="item wall" data-i="${i}">
     ${w.thumb ? `<img src="${esc(wallSrc(w.thumb))}" alt="" loading="lazy">` : '<span class="noimg"></span>'}
@@ -1607,12 +1612,14 @@ $('wallList').addEventListener('click', e => {
   else return
   renderWalls(); changedDots()
 })
+$('pxKey').addEventListener('input', changedDots)
 $('wallAdd').onclick = () => {
   let id = 'w' + Date.now().toString(36); walls.push({ id, title: 'Новые обои', url: '' }); renderWalls(); changedDots()
   $('wallList').lastElementChild.querySelector('[data-k=url]').focus()
 }
 $('saveWalls').onclick = () => guarded($('saveWalls'), async () => {
   const c = collectWalls()
+  if (c.pexelsKey && !/^[A-Za-z0-9]{20,80}$/.test(c.pexelsKey)) throw new Error('Ключ Pexels — только латинские буквы и цифры, без пробелов')
   const bad = c.live.find(w => !w.url || (/^[a-z]+:/i.test(w.url) && !/^https:\/\//.test(w.url)) || w.url.includes('..'))
   if (bad) throw new Error('У «' + bad.title + '» нужна ссылка https://…/файл.mp4 или путь wallpapers/имя.mp4')
   await putFile(WALLS, c, 'Пульт: обои'); wallsSaved = JSON.stringify(c); changedDots(); toast('Обои сохранены — приложения увидят их при открытии «Оформления»')

@@ -22,7 +22,7 @@ import java.net.URLEncoder
  * Фото-обои — лучшие фото Wikimedia Commons (свободные лицензии) по темам.
  */
 object Wallpapers {
-    data class Live(val id: String, val title: String, val url: String, val thumb: String, val sizeMb: Double = 0.0)
+    data class Live(val id: String, val title: String, val url: String, val thumb: String, val sizeMb: Double = 0.0, val credit: String = "")
     data class Photo(val title: String, val thumb: String, val full: String, val author: String)
 
     /** Где лежат файлы каталога: сайт, затем зеркала (если github.io недоступен). */
@@ -71,15 +71,21 @@ object Wallpapers {
         else -> bases.map { it + path.trimStart('/') }
     }
 
+    /** 3.20. Ключ Pexels из каталога (вкладка «Обои» в пульте): без него поиска живых обоев нет. */
+    private val _pexelsKey = MutableStateFlow("")
+    val pexelsKey: StateFlow<String> = _pexelsKey.asStateFlow()
+    fun parseKey(text: String): String = runCatching { JSONObject(text).optString("pexelsKey").trim().takeIf { it.matches(Regex("[A-Za-z0-9]{20,80}")) }.orEmpty() }.getOrDefault("")
+
     suspend fun loadCatalog(context: Context) = withContext(Dispatchers.IO) {
         val cache = File(context.filesDir, "wallpapers.json")
-        if (_catalog.value.isEmpty() && cache.exists()) _catalog.value = parseCatalog(cache.readText())
+        if (_catalog.value.isEmpty() && cache.exists()) { val t = cache.readText(); _catalog.value = parseCatalog(t); _pexelsKey.value = parseKey(t) }
         val text = sources("config/wallpapers.json").firstNotNullOfOrNull { u ->
             runCatching { open(u + "?t=" + System.currentTimeMillis() / 600_000).use { it.bufferedReader().readText() } }.getOrNull()
                 ?.takeIf { parseCatalog(it).isNotEmpty() }
         } ?: return@withContext
         cache.writeText(text)
         _catalog.value = parseCatalog(text)
+        _pexelsKey.value = parseKey(text)
     }
 
     /** Скачанные обои: из каталога и по ссылке. */
@@ -263,6 +269,60 @@ object Wallpapers {
         ok
     }
 
+    // ── 3.20. Живые обои из интернета по темам и поиску — бесплатные вертикальные видео Pexels ──
+    data class PxTopic(val id: String, val title: String, val query: String)
+    val liveTopics = listOf(
+        PxTopic("anime", "Аниме", "anime"),
+        PxTopic("games", "Игры", "video game"),
+        PxTopic("cyberpunk", "Киберпанк", "cyberpunk"),
+        PxTopic("neon", "Неон", "neon lights"),
+        PxTopic("pixel", "Пиксель-арт", "pixel art animation"),
+        PxTopic("space", "Космос", "space galaxy"),
+        PxTopic("city", "Город ночью", "city night"),
+        PxTopic("rain", "Дождь", "rain window"),
+        PxTopic("ocean", "Океан", "ocean waves"),
+        PxTopic("nature", "Природа", "nature"),
+        PxTopic("forest", "Лес", "forest"),
+        PxTopic("fire", "Огонь", "fire flames"),
+        PxTopic("snow", "Зима", "snow falling"),
+        PxTopic("abstract", "Абстракция", "abstract background"),
+        PxTopic("aquarium", "Рыбки", "fish aquarium"),
+        PxTopic("sunset", "Закат", "sunset"),
+        PxTopic("cars", "Машины", "car night"),
+        PxTopic("cats", "Котики", "cat"),
+    )
+
+    suspend fun liveSearch(query: String, page: Int = 0): List<Live> = withContext(Dispatchers.IO) {
+        val key = _pexelsKey.value
+        if (key.isBlank() || query.isBlank()) return@withContext emptyList()
+        runCatching {
+            val c = URL("https://api.pexels.com/videos/search?orientation=portrait&size=medium&per_page=24&page=${page + 1}&query=" + URLEncoder.encode(query.trim().take(80), "UTF-8"))
+                .openConnection() as HttpURLConnection
+            c.connectTimeout = 12_000; c.readTimeout = 20_000
+            c.setRequestProperty("Authorization", key)
+            c.setRequestProperty("User-Agent", "APEX VPN/${BuildConfig.VERSION_NAME} (Android; $UA_SITE)")
+            check(c.responseCode == 200) { "HTTP ${c.responseCode}" }
+            parsePexels(c.inputStream.use { it.bufferedReader().readText() })
+        }.getOrDefault(emptyList())
+    }
+
+    suspend fun liveTopic(topicId: String, page: Int = 0): List<Live> =
+        liveSearch(liveTopics.firstOrNull { it.id == topicId }?.query ?: topicId, page)
+
+    /** Ответ Pexels: вертикальный mp4 ближе всего к 1080×1920, не больше 1920 по высоте. */
+    fun parsePexels(json: String): List<Live> = runCatching {
+        val a = JSONObject(json).optJSONArray("videos") ?: return@runCatching emptyList()
+        (0 until a.length()).mapNotNull { a.optJSONObject(it) }.mapNotNull { v ->
+            val files = v.optJSONArray("video_files") ?: return@mapNotNull null
+            val best = (0 until files.length()).mapNotNull { files.optJSONObject(it) }
+                .filter { it.optString("file_type") == "video/mp4" && it.optString("link").startsWith("https://") && it.optInt("height") >= it.optInt("width") && it.optInt("height") in 960..1920 }
+                .maxByOrNull { it.optInt("height") } ?: return@mapNotNull null
+            val thumb = v.optString("image").takeIf { it.startsWith("https://") }.orEmpty()
+            val author = v.optJSONObject("user")?.optString("name").orEmpty().take(40)
+            Live("px" + v.optLong("id"), author.ifBlank { "Pexels" }, best.optString("link"), thumb, 0.0, "Видео: ${author.ifBlank { "автор" }} · Pexels")
+        }
+    }.getOrDefault(emptyList())
+
     // ── 3.19.9. Избранное: живые обои и картинки ──
     /** type = live | pic; id — id из каталога или ссылка на картинку; full — откуда скачать. */
     data class Fav(val type: String, val id: String, val title: String, val thumb: String, val full: String)
@@ -329,6 +389,18 @@ object Wallpapers {
                 loadFavs()
                 val pick = pickForDay(_favs.value, doy) ?: return@withLock false
                 applyFav(context, pick) == null
+            }
+            mode.startsWith("px:") -> {
+                // Каждый день новые живые обои темы (~2–8 МБ в день); вчерашние удаляем, если они не в избранном
+                val list = liveTopic(mode.removePrefix("px:"), page = (doy / 20) % 5)
+                val pick = pickForDay(list, doy) ?: return@withLock false
+                val prev = idOf(AppSettings.value.shieldBackdrop)
+                val ok = download(context, pick) == null
+                if (ok) {
+                    AppSettings.update { copy(shieldBackdrop = key(pick.id), backdropStamp = System.currentTimeMillis()) }
+                    if (prev != null && prev.startsWith("px") && prev != pick.id && !isFav("live", prev)) delete(context, prev)
+                }
+                ok
             }
             mode.startsWith("pics:") -> {
                 val list = photos(mode.removePrefix("pics:"), page = (doy / 30) % 3)

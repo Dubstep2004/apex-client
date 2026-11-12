@@ -139,86 +139,60 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
     }
     if (downloaded.isNotEmpty()) Caption("Скачанные обои хранятся в телефоне. «Удалить» освобождает место, скачать снова можно в любой момент.")
 
-    // Обои-картинки: поиск, подборки, скачанные
+    // 3.20. Живые обои из интернета по темам и поиску (Pexels) — вместо картинок
     Spacer(Modifier.height(14.dp))
-    Text("Обои-картинки из интернета", color = Apex.TextDim, fontSize = 14.sp, modifier = Modifier.padding(start = 4.dp, bottom = 6.dp))
-    var topic by rememberSaveable { mutableStateOf(Wallpapers.photoTopics.first().id) }
-    var query by rememberSaveable { mutableStateOf("") }
-    var searched by rememberSaveable { mutableStateOf("") }
-    var page by rememberSaveable { mutableIntStateOf(0) }
-    var busy by remember { mutableStateOf<String?>(null) }
-    OutlinedTextField(
-        query, { query = it }, singleLine = true, modifier = Modifier.fillMaxWidth(),
-        placeholder = { Text("Поиск: аниме, игра, персонаж…") },
-        trailingIcon = { TextButton(onClick = { searched = query.trim(); page = 0 }, enabled = query.isNotBlank()) { Text("Найти") } },
-        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Search),
-        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = { searched = query.trim(); page = 0 }),
-    )
-    Spacer(Modifier.height(6.dp))
-    CategoryChips(Wallpapers.photoTopics.map { it.id to it.title }, if (searched.isBlank()) topic else "") { topic = it; searched = ""; query = ""; page = 0 }
-    val photos by produceState<List<Wallpapers.Photo>?>(null, topic, searched, page) {
-        value = null
-        value = if (searched.isNotBlank()) Wallpapers.search(searched, page) else Wallpapers.photos(topic, page)
-    }
-    Spacer(Modifier.height(6.dp))
-    when {
-        photos == null -> Box(Modifier.fillMaxWidth().height(132.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Apex.Accent) }
-        photos!!.isEmpty() -> Caption(if (searched.isNotBlank()) "По запросу «$searched» ничего не нашлось. Попробуйте по-английски, например «naruto» или «genshin»." else "Не удалось загрузить — проверьте интернет.")
-        else -> LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            val list = photos!!
-            items(list.size) { i ->
-                val ph = list[i]
-                WallTile(ph.title, "", ph.thumb, false, if (busy == ph.full) -1f else null, false, favs.any { it.type == "pic" && it.id == ph.full }, { star(Wallpapers.favOf(ph)) }) {
-                    if (busy != null) return@WallTile
-                    busy = ph.full
-                    scope.launch {
-                        val ok = Wallpapers.setPhoto(context, ph)
-                        busy = null
-                        if (ok) {
-                            // 3.20. Картинка сразу «оживает» (медленно плывёт); выключить — «Живое фото»
-                            viewModel.change(reload = false) { copy(shieldBackdrop = "photo", backdropStamp = System.currentTimeMillis(), photoMotion = true) }
-                            viewModel.showMessage("Обои на главном экране и уже живые — выключить: «Живое фото»")
-                        } else viewModel.showMessage("Не удалось скачать картинку")
-                    }
-                }
-            }
-            item {
-                Box(
-                    Modifier.size(88.dp, 132.dp).clip(RoundedCornerShape(16.dp)).background(Apex.Surface).clickable { page++ },
-                    contentAlignment = Alignment.Center,
-                ) { Text("Ещё", color = Apex.Accent, fontWeight = FontWeight.SemiBold) }
-            }
+    Text("Живые обои по темам", color = Apex.TextDim, fontSize = 14.sp, modifier = Modifier.padding(start = 4.dp, bottom = 6.dp))
+    val pxKey by Wallpapers.pexelsKey.collectAsState()
+    if (pxKey.isBlank()) {
+        Caption("Поиск живых обоев по темам скоро появится — его включают в пульте. Пока есть каталог выше и «Видео по ссылке».")
+    } else {
+        var topic by rememberSaveable { mutableStateOf(Wallpapers.liveTopics.first().id) }
+        var query by rememberSaveable { mutableStateOf("") }
+        var searched by rememberSaveable { mutableStateOf("") }
+        var page by rememberSaveable { mutableIntStateOf(0) }
+        OutlinedTextField(
+            query, { query = it }, singleLine = true, modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text("Поиск: неон, аниме, дождь, космос…") },
+            trailingIcon = { TextButton(onClick = { searched = query.trim(); page = 0 }, enabled = query.isNotBlank()) { Text("Найти") } },
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Search),
+            keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = { searched = query.trim(); page = 0 }),
+        )
+        Spacer(Modifier.height(6.dp))
+        CategoryChips(Wallpapers.liveTopics.map { it.id to it.title }, if (searched.isBlank()) topic else "") { topic = it; searched = ""; query = ""; page = 0 }
+        val vids by produceState<List<Wallpapers.Live>?>(null, topic, searched, page, pxKey) {
+            value = null
+            value = if (searched.isNotBlank()) Wallpapers.liveSearch(searched, page) else Wallpapers.liveTopic(topic, page)
         }
-    }
-    Caption("Аниме, игры и другие темы — с wallhaven.cc (только безопасные картинки), природа — лучшие фото Wikimedia Commons. Права на картинки у их авторов: ставьте их для себя.")
-
-    val pics = remember(rev) { Wallpapers.pics(context) }
-    if (pics.isNotEmpty()) {
-        Spacer(Modifier.height(8.dp))
-        Text("Скачанные картинки · ${pics.size}", color = Apex.TextDim, fontSize = 14.sp, modifier = Modifier.padding(start = 4.dp, bottom = 6.dp))
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            items(pics.size) { i ->
-                val f = pics[i]
-                val bmp by produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, f.path) {
-                    value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                        android.graphics.BitmapFactory.decodeFile(f.path, android.graphics.BitmapFactory.Options().apply { inSampleSize = 4 })?.asImageBitmap()
+        Spacer(Modifier.height(6.dp))
+        when {
+            vids == null -> Box(Modifier.fillMaxWidth().height(132.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Apex.Accent) }
+            vids!!.isEmpty() -> Caption(if (searched.isNotBlank()) "По запросу «$searched» ничего не нашлось. Попробуйте по-английски: «neon», «anime», «rain»." else "Не удалось загрузить — проверьте интернет.")
+            else -> LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                val list = vids!!
+                items(list.size) { i ->
+                    val v = list[i]
+                    val have = remember(rev, v.id) { Wallpapers.isDownloaded(context, v.id) }
+                    val on = s.shieldBackdrop == Wallpapers.key(v.id)
+                    WallTile("", "", v.thumb, on, progress[v.id], !have, favs.any { it.type == "live" && it.id == v.id }, { star(Wallpapers.favOf(v)) }) {
+                        when {
+                            progress[v.id] != null -> Unit
+                            have -> viewModel.change(reload = false) { copy(shieldBackdrop = if (on) "none" else Wallpapers.key(v.id)) }
+                            else -> scope.launch {
+                                val err = Wallpapers.download(context, v)
+                                if (err == null) { select(v.id); viewModel.showMessage("Живые обои на главном экране · ${v.credit}") } else viewModel.showMessage(err)
+                            }
+                        }
                     }
                 }
-                Column(Modifier.width(88.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                item {
                     Box(
-                        Modifier.size(88.dp, 132.dp).clip(RoundedCornerShape(16.dp)).background(Apex.Surface)
-                            .border(2.dp, Apex.Outline, RoundedCornerShape(16.dp))
-                            .clickable {
-                                scope.launch {
-                                    val ok = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { Wallpapers.usePic(context, f) }
-                                    if (ok) viewModel.change(reload = false) { copy(shieldBackdrop = "photo", backdropStamp = System.currentTimeMillis()) }
-                                }
-                            },
-                    ) { bmp?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) } }
-                    TextButton(onClick = { Wallpapers.deletePic(context, f) }) { Text("Удалить", color = Apex.Bad, fontSize = 12.sp) }
+                        Modifier.size(88.dp, 132.dp).clip(RoundedCornerShape(16.dp)).background(Apex.Surface).clickable { page++ },
+                        contentAlignment = Alignment.Center,
+                    ) { Text("Ещё", color = Apex.Accent, fontWeight = FontWeight.SemiBold) }
                 }
             }
         }
+        Caption("Бесплатные вертикальные видео с Pexels. Нажмите — скачаются (2–10 МБ) и встанут на главный экран; ★ — в избранное. Скачанные — в списке выше, там же «Удалить».")
     }
 
     // 3.20. Эффект поверх любых обоев и «Живое фото»
@@ -238,7 +212,8 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
     // 3.19.8. Обои дня
     Spacer(Modifier.height(14.dp))
     Text("Обои дня", color = Apex.TextDim, fontSize = 14.sp, modifier = Modifier.padding(start = 4.dp, bottom = 6.dp))
-    val autoItems = listOf("off" to "Выключено", "fav" to "Из избранного", "live" to "Живые по кругу") + Wallpapers.photoTopics.map { "pics:" + it.id to it.title }
+    val autoItems = listOf("off" to "Выключено", "fav" to "Из избранного", "live" to "Скачанные по кругу") +
+        (if (Wallpapers.pexelsKey.collectAsState().value.isNotBlank()) Wallpapers.liveTopics.map { "px:" + it.id to it.title } else emptyList())
     CategoryChips(autoItems, s.wallAuto) { mode ->
         viewModel.change(reload = false) { copy(wallAuto = mode) }
         if (mode != "off") scope.launch {
@@ -252,10 +227,11 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
     }
     Caption(
         when {
-            s.wallAuto == "off" -> "Каждый день новые обои на главном экране: картинка выбранной темы или следующие скачанные живые обои."
+            s.wallAuto == "off" -> "Каждый день новые живые обои на главном экране: из избранного, из скачанных или новые по теме."
             s.wallAuto == "live" -> "Каждый день — следующие из скачанных живых обоев. Интернет не нужен."
             s.wallAuto == "fav" -> if (favs.isEmpty()) "Избранное пусто — нажмите ☆ на обоях, которые нравятся." else "Каждый день — следующие из избранного (${favs.size})."
-            else -> "Каждый день новая картинка темы «${autoItems.firstOrNull { it.first == s.wallAuto }?.second.orEmpty()}». Меняется при первом открытии за день, нужен интернет."
+            s.wallAuto.startsWith("pics:") -> "Картинки заменены живыми обоями — выберите тему заново."
+            else -> "Каждый день новые живые обои темы «${autoItems.firstOrNull { it.first == s.wallAuto }?.second.orEmpty()}» (2–10 МБ в день). Вчерашние удаляются, если не в избранном."
         },
     )
     if (s.wallAuto != "off") {

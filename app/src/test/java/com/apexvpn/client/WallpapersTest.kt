@@ -71,4 +71,21 @@ class WallpapersTest {
         assertEquals(emptyList<Wallpapers.Fav>(), Wallpapers.decodeFavs("битое"))
         assertEquals(1, Wallpapers.decodeFavs("""[{"type":"live","id":"a"},{"type":"live","id":"a"},{"type":"x","id":"b"}]""").size)
     }
+
+    @Test fun pexelsPicksPortraitHd() {
+        val json = """{"videos":[{"id":42,"image":"https://images.pexels.com/42.jpg","user":{"name":"Ann"},"video_files":[
+            {"file_type":"video/mp4","width":1920,"height":1080,"link":"https://videos.pexels.com/land.mp4"},
+            {"file_type":"video/mp4","width":540,"height":960,"link":"https://videos.pexels.com/sd.mp4"},
+            {"file_type":"video/mp4","width":1080,"height":1920,"link":"https://videos.pexels.com/hd.mp4"},
+            {"file_type":"video/mp4","width":2160,"height":3840,"link":"https://videos.pexels.com/4k.mp4"}]},
+            {"id":7,"video_files":[{"file_type":"video/mp4","width":1920,"height":1080,"link":"https://x/land.mp4"}]}]}"""
+        val v = Wallpapers.parsePexels(json)
+        assertEquals(1, v.size)
+        assertEquals("px42", v[0].id)
+        assertEquals("https://videos.pexels.com/hd.mp4", v[0].url)
+        assertEquals("Видео: Ann · Pexels", v[0].credit)
+        assertEquals("abcDEF1234567890abcdef12", Wallpapers.parseKey("""{"pexelsKey":"abcDEF1234567890abcdef12","live":[]}"""))
+        assertEquals("", Wallpapers.parseKey("""{"pexelsKey":"bad key!"}"""))
+        assertTrue(Wallpapers.liveTopics.any { it.title == "Аниме" })
+    }
 }
