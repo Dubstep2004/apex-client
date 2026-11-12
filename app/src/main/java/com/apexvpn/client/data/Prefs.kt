@@ -72,6 +72,10 @@ object Prefs {
     var wallFavs: String
         get() = sp.getString("wall_favs", "") ?: ""
         set(v) = sp.edit { putString("wall_favs", v) }
+    /** 3.20. Какие живые обои последними скачали сами «Обои дня» — их можно удалить на следующий день. */
+    var wallAutoLast: String
+        get() = sp.getString("wall_auto_last", "") ?: ""
+        set(v) = sp.edit { putString("wall_auto_last", v) }
     var appConfigAt: Long
         get() = sp.getLong("app_config_at", 0)
         set(v) = sp.edit { putLong("app_config_at", v) }

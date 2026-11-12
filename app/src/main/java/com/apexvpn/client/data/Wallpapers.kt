@@ -103,6 +103,7 @@ object Wallpapers {
     /** Скачать видео. Ошибка — текст для пользователя, null — получилось. */
     suspend fun download(context: Context, item: Live): String? = withContext(Dispatchers.IO) {
         if (_progress.value.containsKey(item.id)) return@withContext "Уже скачивается"
+        if (isDownloaded(context, item.id)) return@withContext null
         _progress.value = _progress.value + (item.id to 0f)
         val tmp = File(dir(context), item.id + ".part")
         try {
@@ -395,10 +396,13 @@ object Wallpapers {
                 val list = liveTopic(mode.removePrefix("px:"), page = (doy / 20) % 5)
                 val pick = pickForDay(list, doy) ?: return@withLock false
                 val prev = idOf(AppSettings.value.shieldBackdrop)
+                val isDownloadedBefore = isDownloaded(context, pick.id)
                 val ok = download(context, pick) == null
                 if (ok) {
                     AppSettings.update { copy(shieldBackdrop = key(pick.id), backdropStamp = System.currentTimeMillis()) }
-                    if (prev != null && prev.startsWith("px") && prev != pick.id && !isFav("live", prev)) delete(context, prev)
+                    // Удаляем только то, что вчера скачали сами «Обои дня» (не то, что пользователь скачал руками)
+                    if (prev != null && prev == Prefs.wallAutoLast && prev != pick.id && !isFav("live", prev)) delete(context, prev)
+                    if (!isDownloadedBefore) Prefs.wallAutoLast = pick.id
                 }
                 ok
             }
@@ -421,7 +425,12 @@ object Wallpapers {
             if (!f.exists() || f.length() == 0L) {
                 sources(url).firstNotNullOfOrNull { u -> runCatching { open(u).use { i -> f.outputStream().use { i.copyTo(it) } }; true }.getOrNull() }
             }
-            android.graphics.BitmapFactory.decodeFile(f.path, android.graphics.BitmapFactory.Options().apply { inSampleSize = 1 })
+            // Миниатюра 88×132 dp: уменьшаем при чтении (превью Pexels бывают 1080×1920 — 24 штуки в полном размере не влезли бы в память)
+            val b = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            android.graphics.BitmapFactory.decodeFile(f.path, b)
+            var sample = 1
+            while (b.outWidth / (sample * 2) >= 300) sample *= 2
+            android.graphics.BitmapFactory.decodeFile(f.path, android.graphics.BitmapFactory.Options().apply { inSampleSize = sample })
         }.getOrNull()
     }
 

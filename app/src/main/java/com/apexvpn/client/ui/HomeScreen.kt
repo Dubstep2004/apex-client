@@ -119,8 +119,6 @@ fun HomeScreen(
     // Живое видео на фоне: шаблон или своё
     if (LiveVideos.isVideo(settings.shieldBackdrop)) VideoBackdrop(settings.shieldBackdrop, settings.backdropStamp, settings.photoDim, settings.liveSpeed)
     if (settings.shieldBackdrop == "photo") PhotoBackdrop(settings.backdropStamp, settings.photoBlur, settings.photoDim, settings.photoParallax, settings.photoMotion)
-    // 3.20. Эффект поверх любых обоев: снег, дождь, сакура, светлячки, звёзды, листья
-    if (settings.wallFx != "none") com.apexvpn.client.ui.theme.WallFxOverlay(settings.wallFx)
     // 354. Фото дня страны сервера (автопилот — ваша страна)
     if (settings.shieldBackdrop == "country") {
         val sel = sub.nodes.find { it.tag == sub.selectedTag }
@@ -128,6 +126,8 @@ fun HomeScreen(
             ?: userCountry(context)
         CountryPhotoBackdrop(code)
     }
+    // 3.20. Эффект поверх любых обоев: снег, дождь, сакура, светлячки, звёзды, листья
+    if (settings.wallFx != "none") com.apexvpn.client.ui.theme.WallFxOverlay(settings.wallFx)
 
     Column(
         Modifier
