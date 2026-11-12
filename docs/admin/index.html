@@ -68,8 +68,33 @@
     --text: #f6ebdd; --dim: #b09a85; --faint: #7a6654; --go1: #d9a066; --go2: #f0d2a8; --go-ink: #24160a;
     --glow1: #d9a06622; --glow2: #f0d2a812;
   }
+  /* 2.13: Неон */
+  :root[data-design="neon"] {
+    --ink: #07060d; --panel: #110f1d; --panel2: #191630; --line: #2a2548; --field: #05040a;
+    --text: #f4f2ff; --dim: #9d97c4; --faint: #615b8a; --go1: #00f0ff; --go2: #ff2bd6; --go-ink: #07060d;
+    --glow1: #ff2bd62a; --glow2: #00f0ff22;
+  }
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
+  /* 2.13: календарь, быстрые действия, итоги скачиваний */
+  .cal { display: grid; gap: 6px; font-size: 13.5px; }
+  .cal .days { display: grid; grid-template-columns: repeat(14, 1fr); margin-left: 34%; color: var(--faint); font-size: 11px; text-align: center; }
+  .cal .days span.today { color: var(--go1); font-weight: 800; }
+  .cal .row { display: grid; grid-template-columns: 34% 1fr; gap: 8px; align-items: center; cursor: pointer; border-radius: 10px; padding: 2px 0; }
+  .cal .row:hover { background: var(--panel2); }
+  .cal .row b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cal .track { position: relative; height: 16px; background: repeating-linear-gradient(90deg, var(--field) 0 calc(100% / 14 - 1px), var(--line) calc(100% / 14 - 1px) calc(100% / 14)); border-radius: 6px; overflow: hidden; }
+  .cal .track i { position: absolute; top: 2px; bottom: 2px; border-radius: 5px; background: var(--info); min-width: 4px; }
+  .cal .track i.warn { background: var(--warn); } .cal .track i.alert { background: var(--alert); } .cal .track i.m { background: var(--warn); } .cal .track i.s { background: #8c93b0; } .cal .track i.ann { background: linear-gradient(90deg, var(--go1), var(--go2)); }
+  .cal .track i.open { opacity: .55; }
+  .cal .now { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--go1); }
+  .cal small { color: var(--dim); display: block; font-weight: 500; white-space: normal; }
+  .qact { display: flex; flex-wrap: wrap; gap: 8px; }
+  .relsum { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+  .relsum div { background: var(--field); border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px 12px; }
+  .relsum b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; } .relsum span { color: var(--dim); font-size: 12.5px; }
+  .warnlist { margin: 0; padding-left: 18px; } .warnlist li { margin: 6px 0; } .warnlist li.crit { color: var(--alert); font-weight: 700; }
+  @media (max-width: 560px) { .cal .row { grid-template-columns: 1fr; gap: 2px; } .cal .days { margin-left: 0; } .relsum { grid-template-columns: 1fr 1fr; } }
   body {
     margin: 0; min-height: 100vh; color: var(--text); background: var(--ink);
     font: 15px/1.5 "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -447,6 +472,7 @@
     </div>
     <div class="navtools" style="position:relative"><input id="q" type="search" placeholder="Поиск" aria-label="Поиск по пульту" autocomplete="off"><button id="navEdit" title="Настроить меню" aria-label="Настроить меню" aria-pressed="false">✏️</button><div class="sres" id="qres" hidden></div></div>
     <nav class="nav" id="nav"></nav>
+    <button class="out" id="installBtn" hidden>📲 Установить пульт как приложение</button>
     <button class="out" id="lock">Заблокировать пульт</button>
     <button class="out" id="logout">Выйти и стереть токен</button>
   </aside>
@@ -469,9 +495,12 @@
         <textarea id="crashIn" rows="4" placeholder="APEX CLIENT — отчёт для поддержки…" style="width:100%"></textarea>
         <div id="crashOut" class="note"></div></div>
       <div class="block"><h2>Сейчас действует</h2><p class="note">Нажмите на строку, чтобы изменить.</p><dl class="live" id="liveList"></dl></div>
+      <div class="block"><h2>Быстрые действия</h2><p class="note">Меняют настройки в пульте — проверьте и нажмите «Сохранить». Передумали — ↶ или «Отменить».</p>
+        <div class="qact"><button class="btn quiet small" data-qa="banners">Убрать все баннеры</button><button class="btn quiet small" data-qa="marks">Снять все пометки серверов</button><button class="btn quiet small" data-qa="feats">Включить все функции</button><button class="btn quiet small" data-qa="ann">Убрать объявление</button><button class="btn quiet small" data-qa="expired">Удалить закончившееся</button><button class="btn quiet small" data-qa="back">Вернуть как до последнего сохранения</button></div></div>
+      <div class="block"><h2>Календарь на 2 недели</h2><p class="note">Баннеры, техработы и объявление по датам. Полупрозрачные — без срока. Нажмите на строку, чтобы изменить.</p><div class="cal" id="calList"></div></div>
       <div class="block danger"><h2>Всё сломано?</h2><p class="note">Одной кнопкой: аварийный баннер всем, остановка автообновления и пометка «Обслуживание» на проблемные серверы. Перед сохранением всё можно проверить.</p>
         <button class="btn red" id="panicBtn">Включить аварийный режим</button></div>
-      <div class="block relblock" data-go="update"><h2>Скачивания по версиям</h2><p class="note" id="relNote">Загружаем…</p><div class="rel" id="relList"></div></div>
+      <div class="block relblock" data-go="update"><h2>Скачивания по версиям</h2><div class="relsum" id="relSum"></div><p class="note" id="relNote">Загружаем…</p><div class="rel" id="relList"></div></div>
     </section>
 
     <!-- Баннеры -->
@@ -504,6 +533,7 @@
       <h1>Объявление</h1>
       <p class="lead">Большое окно при открытии приложения — один раз на каждого. Подходит для «Что нового», акций и важных новостей.</p>
       <div class="phone-inline" data-preview></div>
+      <div class="tpls" id="aTpls"></div>
       <div class="block">
         <label class="f" for="aTitle">Заголовок</label><input id="aTitle" type="text" maxlength="80" placeholder="Вышла версия 3.18">
         <label class="f" for="aText">Текст</label><textarea id="aText" maxlength="1500" placeholder="Что нового и зачем обновиться"></textarea>
@@ -878,6 +908,7 @@
 
       <div class="block"><details><summary>🆕 Что нового в пульте</summary>
         <div class="tbl"><table>
+          <tr><td>2.13</td><td>«Обзор»: календарь на 2 недели, быстрые действия (убрать все баннеры, снять пометки, удалить закончившееся, вернуть как до последнего сохранения), итоги скачиваний за всё время. Проверка перед сохранением — предупредит о закончившихся баннерах, техработах без срока и опасном «обязательном обновлении». Поиск находит тексты баннеров, серверы и обои. Шаблоны объявления. Оформления «Неон» и «Авто» (днём светлое, вечером тёмное). Пульт можно установить как приложение и открыть без интернета</td></tr>
           <tr><td>2.12</td><td>Резервная копия всех настроек пульта, разбор отчёта о сбое на «Обзоре», предпросмотр каталога обоев, разделы каталога, новогоднее оформление визитки</td></tr>
           <tr><td>2.11</td><td>Новые оформления: Закат, Лес, Арктика, Мокко (🎨 в шапке) — такие же есть в приложении с 3.19.7. Вкладка «Обои» — каталог живых обоев приложения. Карточка «Состояние» на «Обзоре» и красная полоса, если сборка или проверка упала. В справке: поиск, «Развернуть/Свернуть всё», готовые ответы пользователям, раздел про автопроверки, схемы, кнопки перехода на вкладки, шпаргалка для печати. Иконка 🏠 у «Обзора», поле поиска в цвет пульта</td></tr>
           <tr><td>2.10</td><td>Название APEX CLIENT, своя иконка пульта, кнопка «Переименовать все версии», вкладка «Визитка», описание версии, проверка серверов</td></tr>
@@ -917,6 +948,11 @@
 </div>
 
 
+<dialog id="warnDlg">
+  <h2>Проверьте перед сохранением</h2>
+  <ul class="warnlist" id="warnList"></ul>
+  <div class="acts"><button class="btn quiet" id="warnNo">Вернуться и исправить</button><button class="btn go" id="warnOk">Сохранить всё равно</button></div>
+</dialog>
 <dialog id="panic">
   <h2>Аварийный режим</h2>
   <p>Будет: баннер «Авария» всем, автоустановка обновлений выключена, серверы ниже — «Обслуживание». Потом нажмите «Сохранить».</p>
@@ -941,7 +977,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.12', PANEL_DATE = '12 ноября 2026'
+const PANEL_VERSION = '2.13', PANEL_DATE = '13 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -955,6 +991,15 @@ const DESIGNS = [
   ['forest', 'Лес', 'Хвоя и янтарь', 'linear-gradient(135deg,#163024,#5cc98a 60%,#e9b44c)'],
   ['arctic', 'Арктика', 'Светлый лёд и синий', 'linear-gradient(135deg,#ffffff,#5fd0f5 60%,#2f7bef)'],
   ['mocha', 'Мокко', 'Кофе и карамель', 'linear-gradient(135deg,#2d2119,#d9a066 60%,#f0d2a8)'],
+  ['neon', 'Неон', 'Чёрный, голубой и розовый', 'linear-gradient(135deg,#07060d,#00f0ff 55%,#ff2bd6)'],
+  ['auto', 'Авто', 'День с 7 до 20, вечером Ночь', 'linear-gradient(90deg,#ffffff 50%,#0e1220 50%)'],
+]
+// 2.13: шаблоны объявления
+const ANN_TEMPLATES = [
+  ['🆕 Новая версия', { title: 'Вышла новая версия', text: 'Обновите приложение: стало быстрее и стабильнее. Подробности — в «Что нового».', button: 'Подробнее', url: 'https://dubstep2004.github.io/' }],
+  ['🔧 Техработы', { title: 'Плановые технические работы', text: 'Сегодня с 22:00 до 23:00 возможны короткие перерывы. Автопилот сам переключит вас на рабочий сервер.', button: '', url: '' }],
+  ['🎉 Праздник', { title: 'С праздником!', text: 'Спасибо, что вы с APEX CLIENT. Хорошего настроения и быстрого интернета!', button: '', url: '' }],
+  ['📣 Наш канал', { title: 'Новости в Telegram', text: 'Подпишитесь на канал — там первыми появляются новости о серверах и версиях.', button: 'Открыть канал', url: '' }],
 ]
 const FEATURES = [
   ['whitelistAuto', 'Белые списки', 'Автопереход на LTE-обход, когда оператор включает белые списки'],
@@ -1010,10 +1055,13 @@ function toast(msg, ok = true) { const t = $('toast'); t.textContent = msg; t.cl
 // ── Оформление пульта
 function applyDesign(id) {
   if (!id) id = matchMedia('(prefers-color-scheme: light)').matches ? 'day' : 'night'
+  const pick = id, h = new Date().getHours()
+  if (id === 'auto') id = h >= 7 && h < 20 ? 'day' : 'night'
   if (id === 'night') delete document.documentElement.dataset.design; else document.documentElement.dataset.design = id
   document.querySelector('meta[name=theme-color]').content = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim()
-  document.querySelectorAll('#designs button').forEach(b => b.classList.toggle('on', b.dataset.d === id))
+  document.querySelectorAll('#designs button').forEach(b => b.classList.toggle('on', b.dataset.d === pick))
 }
+setInterval(() => { if (load('apex_admin_design') === 'auto') applyDesign('auto') }, 10 * 60000)
 $('designs').innerHTML = DESIGNS.map(([id, t, s, g]) => `<button data-d="${id}"><i style="background:${g}"></i><span>${t}<small>${s}</small></span></button>`).join('')
 $('designBtn').onclick = e => { e.stopPropagation(); const d = $('designs'); d.hidden = !d.hidden; $('designBtn').setAttribute('aria-expanded', String(!d.hidden)) }
 $('designs').onclick = e => { const id = e.target.closest('[data-d]')?.dataset.d; if (!id) return; store('apex_admin_design', id); applyDesign(id); $('designs').hidden = true }
@@ -1292,6 +1340,58 @@ function overview(c) {
     ['preview', 'Код предпросмотра', c.previewCode ? 'задан' : 'нет', !c.previewCode],
   ]
   $('liveList').innerHTML = rows.map(([tab, k, v, dim, hot]) => `<div data-go="${tab}"><dt>${k}</dt><dd class="${dim ? 'off' : hot ? 'hot' : ''}">${esc(v)}</dd></div>`).join('')
+  renderCal(c)
+}
+// 2.13: календарь на 14 дней — всё, что запланировано или идёт сейчас
+function renderCal(c) {
+  const host = $('calList'); if (!host) return
+  const d0 = new Date(); d0.setHours(0, 0, 0, 0); const start = d0.getTime(), span = 14 * 864e5, end = start + span, now = Date.now()
+  const items = []
+  c.banners.forEach(b => items.push({ tab: 'banner', name: (b.preview ? '👁 ' : '') + lv(b.level)[0] + ' ' + (b.name || b.text), cls: b.level, from: b.from, to: b.to }))
+  Object.entries(c.servers.status).forEach(([n, v]) => items.push({ tab: 'servers', name: (v.state === 'maintenance' ? '🔧 ' : '🐢 ') + n, cls: v.state === 'maintenance' ? 'm' : 's', from: v.from, to: v.until }))
+  if (c.announce) items.push({ tab: 'announce', name: '🪧 ' + (c.announce.title || c.announce.text), cls: 'ann', from: c.announce.from, to: c.announce.to })
+  const vis = items.filter(x => (!x.to || x.to > start) && (!x.from || x.from < end))
+  const pct = t => Math.min(100, Math.max(0, (t - start) / span * 100))
+  const when = x => (x.from && x.from > now ? 'с ' + fmt(x.from) : 'сейчас') + (x.to ? ' до ' + fmt(x.to) : ', без срока')
+  const days = Array.from({ length: 14 }, (_, i) => { const d = new Date(start + i * 864e5); return `<span class="${i ? '' : 'today'}">${d.getDate()}</span>` }).join('')
+  host.innerHTML = vis.length ? `<div class="days">${days}</div>` + vis.map(x => {
+    const l = x.from ? pct(x.from) : 0, r = x.to ? pct(x.to) : 100
+    return `<div class="row" data-go="${x.tab}"><b title="${esc(x.name)}">${esc(x.name)}<small>${esc(when(x))}</small></b><div class="track"><span class="now" style="left:${pct(now)}%"></span><i class="${x.cls}${x.to ? '' : ' open'}" style="left:${l}%;width:${Math.max(.6, r - l)}%"></i></div></div>`
+  }).join('') : '<p class="note">На ближайшие 2 недели ничего не запланировано.</p>'
+}
+// 2.13: проверка перед сохранением — то, что почти наверняка ошибка
+let latestCode = 0
+async function fetchLatestCode() {
+  if (latestCode) return latestCode
+  try { const t = b64dec((await api('/contents/app/build.gradle.kts?ref=' + BRANCH)).content); latestCode = parseInt((t.match(/versionCode\s*=\s*(\d+)/) || [])[1], 10) || 0 } catch {}
+  return latestCode
+}
+function saveWarnings(c, code) {
+  const out = [], now = Date.now(), name = b => '«' + (b.name || b.text).slice(0, 40) + '»'
+  if (code && c.update.required > code + 1) out.push(['crit', 'Обязательное обновление для версий ниже ' + c.update.required + ', а последняя сборка — ' + code + '. У всех появится окно, которое нельзя закрыть, а обновиться будет не на что'])
+  if (code && c.update.revoked.includes(code)) out.push(['crit', 'Отозвана последняя версия (' + code + ') — приложение предложит всем откатиться'])
+  c.banners.forEach(b => { if (b.to && b.to < now) out.push(['', 'Баннер ' + name(b) + ' уже закончился — его никто не увидит']) })
+  c.banners.forEach(b => { if (b.level === 'alert' && !b.to) out.push(['', 'Аварийный баннер ' + name(b) + ' без срока — не забудьте убрать, когда всё починят']) })
+  Object.entries(c.servers.status).forEach(([n, v]) => {
+    if (v.until && v.until < now) out.push(['', 'Пометка «' + n + '» уже закончилась'])
+    else if (v.state === 'maintenance' && !v.until) out.push(['', '«' + n + '» на обслуживании без срока — автопилот не будет его выбирать, пока не снимете'])
+  })
+  c.servers.hidden.forEach(h => { if (h.length < 3) out.push(['crit', 'Скрыть у всех «' + h + '» — слишком коротко, скроются все серверы, где есть эти буквы']) })
+  const rec = c.servers.recommended
+  if (rec && (c.servers.hidden.some(h => rec.toLowerCase().includes(h.toLowerCase())) || Object.entries(c.servers.status).some(([n, v]) => v.state === 'maintenance' && rec.toLowerCase().includes(n.toLowerCase())))) out.push(['', '«Советуем» ' + rec + ' сейчас скрыт или на обслуживании'])
+  const a = c.announce
+  if (a && a.to && a.to < now) out.push(['', 'Объявление уже закончилось — его никто не увидит'])
+  if (a && a.button && !a.url) out.push(['', 'У объявления есть текст кнопки, но нет ссылки — кнопка будет «Понятно»'])
+  if (a && !a.title) out.push(['', 'У объявления нет заголовка'])
+  if (FEATURES.every(([id]) => c.features[id] === false)) out.push(['', 'Выключены все функции'])
+  return out
+}
+function askWarnings(list) {
+  return new Promise(res => {
+    const d = $('warnDlg'); $('warnList').innerHTML = list.map(([k, t]) => `<li class="${k}">${esc(t)}</li>`).join('')
+    $('warnOk').onclick = () => { d.close(); res(true) }; $('warnNo').onclick = () => { d.close(); res(false) }
+    d.oncancel = () => res(false); d.showModal()
+  })
 }
 function renderVersions() {
   const stable = releases.find(r => !r.prerelease && !r.draft), beta = releases.find(r => r.prerelease && !r.draft)
@@ -1309,7 +1409,9 @@ function renderVersions() {
 }
 async function loadReleases() {
   try {
-    releases = await api('/releases?per_page=30')
+    releases = await api('/releases?per_page=100')
+    // 2.13: итоги за всё время — догружаем старые версии (до 300)
+    for (let pg = 2; releases.length === (pg - 1) * 100 && pg <= 3; pg++) releases = releases.concat(await api('/releases?per_page=100&page=' + pg))
     const latest = releases.find(r => !r.prerelease && !r.draft)
     if (latest) $('latest').textContent = 'Последняя версия — ' + latest.tag_name + ', вышла ' + new Date(latest.published_at).toLocaleDateString('ru', { day: 'numeric', month: 'long' }) + '.'
     const cnt = (r, pre) => r.assets.filter(a => a.name.startsWith(pre) && a.name.endsWith('.apk')).reduce((s, a) => s + a.download_count, 0)
@@ -1317,7 +1419,10 @@ async function loadReleases() {
     const rows = releases.slice(0, 10).map(r => [r.tag_name + (r.prerelease ? ' бета' : ''), apk(r), cnt(r, 'apex-watch-'), r.published_at])
     const total = releases.reduce((s, r) => s + apk(r), 0), watch = releases.reduce((s, r) => s + cnt(r, 'apex-watch-'), 0), max = Math.max(1, ...rows.map(r => r[1]))
     const week = releases.filter(r => Date.now() - new Date(r.published_at) < 7 * 864e5).reduce((s, r) => s + apk(r), 0)
-    $('relNote').textContent = 'Всего: телефон ' + total.toLocaleString('ru') + ', часы ' + watch.toLocaleString('ru') + ' (последние 30 версий). Версии этой недели скачали ' + week.toLocaleString('ru') + ' раз.'
+    const top = releases.reduce((b, r) => apk(r) > apk(b || r) ? r : (b || r), null)
+    const month = releases.filter(r => Date.now() - new Date(r.published_at) < 30 * 864e5).reduce((s, r) => s + apk(r) + cnt(r, 'apex-watch-'), 0)
+    $('relSum').innerHTML = [[total, 'телефон за всё время'], [watch, 'часы за всё время'], [month, 'версии этого месяца']].map(([n, t]) => `<div><b>${n.toLocaleString('ru')}</b><span>${t}</span></div>`).join('')
+    $('relNote').textContent = (top ? 'Самая скачиваемая — ' + top.tag_name + ' (' + apk(top).toLocaleString('ru') + '). ' : '') + 'Часы — ' + (total + watch ? Math.round(watch / (total + watch) * 100) : 0) + '% скачиваний. Версии этой недели скачали ' + week.toLocaleString('ru') + ' раз.'
     $('relList').innerHTML = rows.map(([n, c, w, at]) => {
       const days = Math.max(1, (Date.now() - new Date(at)) / 864e5)
       return `<span>${esc(n)}<small>${new Date(at).toLocaleDateString('ru', { day: 'numeric', month: 'short' })} · ~${Math.round(c / days)}/день${w ? ' · ⌚ ' + w : ''}</small></span><b>${c.toLocaleString('ru')}</b><div class="bar"><i style="width:${Math.max(2, c / max * 100)}%"></i></div>`
@@ -1636,11 +1741,26 @@ function buildIndex() {
   document.querySelectorAll('section[data-tab=help] > .block').forEach(b => { const h = b.querySelector('summary, h2'); if (h) out.push({ id: 'help', text: h.textContent.trim(), where: 'Справка', el: h, words: b.textContent.replace(/\s+/g, ' ') }) })
   return out
 }
+// 2.13: поиск по содержимому — тексты баннеров, пометки серверов, объявление, каталог обоев
+function contentIndex() {
+  const out = [], cut = s => (s || '').replace(/\s+/g, ' ').trim().slice(0, 70)
+  try {
+    const c = collectApp(true)
+    c.banners.forEach(b => out.push({ id: 'banner', text: cut(b.name || b.text), where: 'Баннер', words: b.text }))
+    Object.entries(c.servers.status).forEach(([n, v]) => out.push({ id: 'servers', text: n, where: v.state === 'maintenance' ? 'Обслуживание' : 'Медленно', words: v.note }))
+    if (c.servers.recommended) out.push({ id: 'servers', text: c.servers.recommended, where: 'Советуем' })
+    c.servers.hidden.forEach(h => out.push({ id: 'servers', text: h, where: 'Скрыто у всех' }))
+    if (c.announce) out.push({ id: 'announce', text: cut(c.announce.title || c.announce.text), where: 'Объявление', words: c.announce.text })
+    c.update.revoked.forEach(v => out.push({ id: 'update', text: 'Сборка ' + v, where: 'Отозвана' }))
+  } catch {}
+  try { (collectWalls().live || []).forEach(w => out.push({ id: 'walls', text: cut(w.title), where: 'Живые обои', words: w.cat })) } catch {}
+  return out
+}
 let qSel = 0
 function runSearch() {
   const q = $('q').value.trim().toLowerCase(); if (!q) { $('qres').hidden = true; return }
   qIndex = qIndex || buildIndex()
-  const seen = new Set(), hits = qIndex.filter(x => (x.text + ' ' + (x.words || '')).toLowerCase().includes(q)).filter(x => { const k = x.id + x.text; if (seen.has(k)) return false; seen.add(k); return true }).slice(0, 12)
+  const seen = new Set(), hits = [...contentIndex(), ...qIndex].filter(x => (x.text + ' ' + (x.words || '')).toLowerCase().includes(q)).filter(x => { const k = x.id + x.text; if (seen.has(k)) return false; seen.add(k); return true }).slice(0, 14)
   qSel = 0
   $('qres').innerHTML = hits.length ? hits.map((h, i) => `<button data-i="${i}" class="${i ? '' : 'sel'}">${esc(h.text)}<span>${esc(h.where)}</span></button>`).join('') : '<p>Ничего не нашлось</p>'
   $('qres').hidden = false; $('qres')._hits = hits
@@ -1895,6 +2015,44 @@ $('tpls').onclick = e => { const i = e.target.closest('[data-tpl]')?.dataset.tpl
 $('addBanner').onclick = () => { banners.push(newBanner()); renderBanners(); changed() }
 $('addMark').onclick = () => { marks.push({ name: '', state: 'maintenance', note: '', until: 0, preview: false }); renderMarks(); changed(); document.querySelector('#marks .mark:last-child .n').focus() }
 $('app').addEventListener('input', e => { if (e.target.closest('[data-tab=servers],[data-tab=announce],[data-tab=links],[data-tab=update],[data-tab=features],[data-tab=preview]') && !e.target.closest('#marks')) changed() })
+// 2.13: шаблоны объявления, быстрые действия, календарь, установка пульта
+$('aTpls').innerHTML = ANN_TEMPLATES.map(([t], i) => `<button class="pill" data-atpl="${i}">${t}</button>`).join('')
+$('aTpls').onclick = e => {
+  const i = e.target.closest('[data-atpl]')?.dataset.atpl; if (i == null) return
+  const t = ANN_TEMPLATES[i][1], link = collectApp(true).links
+  $('aTitle').value = t.title; $('aText').value = t.text; $('aButton').value = t.button
+  $('aUrl').value = t.url || (t.button ? link.channel || link.site || '' : '')
+  annId = 'a' + Date.now().toString(36); changed(); toast('Шаблон подставлен — поправьте текст и нажмите «Сохранить»')
+}
+document.querySelector('.qact').onclick = e => {
+  const b = e.target.closest('[data-qa]'); if (!b) return
+  const q = b.dataset.qa, now = Date.now()
+  if (q === 'banners') { if (!banners.length) return toast('Баннеров нет', false); banners = []; renderBanners() }
+  else if (q === 'marks') { if (!marks.length) return toast('Пометок нет', false); marks = []; renderMarks() }
+  else if (q === 'feats') FEATURES.forEach(([id]) => { const x = $('f_' + id); if (x) x.checked = true })
+  else if (q === 'ann') { $('aClear').click(); return toast('Объявление убрано — нажмите «Сохранить»') }
+  else if (q === 'expired') {
+    const nb = banners.length, nm = marks.length
+    banners = banners.filter(x => !x.to || x.to > now); marks = marks.filter(x => !x.until || x.until > now)
+    const a = collectApp(true).announce, gone = a && a.to && a.to < now
+    if (gone) $('aClear').click()
+    const n = nb - banners.length + nm - marks.length + (gone ? 1 : 0)
+    if (!n) return toast('Закончившегося нет', false)
+    renderBanners(); renderMarks(); changed(); return toast('Удалено: ' + n + ' — нажмите «Сохранить»')
+  }
+  else if (q === 'back') return guarded(b, async () => {
+    const list = await api('/commits?path=' + APP + '&per_page=2')
+    if (list.length < 2) return toast('Нет прошлого сохранения', false)
+    fillApp(await getFile(APP, list[1].sha)); changed(); toast('Загружено как было до последнего сохранения — проверьте и нажмите «Сохранить»')
+  })
+  changed(); toast('Готово — нажмите «Сохранить»')
+}
+$('calList').onclick = e => { const id = e.target.closest('[data-go]')?.dataset.go; if (id) showTab(id) }
+let installEv = null
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEv = e; $('installBtn').hidden = false })
+window.addEventListener('appinstalled', () => { $('installBtn').hidden = true; toast('Пульт установлен — ищите иконку на рабочем столе') })
+$('installBtn').onclick = async () => { if (!installEv) return; installEv.prompt(); await installEv.userChoice.catch(() => {}); installEv = null; $('installBtn').hidden = true }
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {})
 $('aAgain').onclick = () => { annId = 'a' + Date.now().toString(36); changed(); toast('Окно покажется снова всем после сохранения') }
 $('aClear').onclick = () => { ['aTitle', 'aText', 'aImage', 'aButton', 'aUrl', 'aMin', 'aMax', 'aFrom', 'aTo'].forEach(id => ($(id).value = '')); $('aPreview').checked = false; annId = ''; changed() }
 $('pGen').onclick = () => {
@@ -1980,7 +2138,10 @@ document.addEventListener('keydown', e => {
 })
 $('saveApp').onclick = () => guarded($('saveApp'), async () => {
   if (annId === '' && ($('aTitle').value.trim() || $('aText').value.trim())) annId = 'a' + Date.now().toString(36)
-  const data = collectApp(); await putFile(APP, data, 'Пульт: ' + $('saveWhat').textContent.toLowerCase())
+  const data = collectApp()
+  const warns = saveWarnings(data, await fetchLatestCode())
+  if (warns.length && !(await askWarnings(warns))) return
+  await putFile(APP, data, 'Пульт: ' + $('saveWhat').textContent.toLowerCase())
   saved = JSON.stringify(collectApp(true)); store('apex_admin_draft', null); changed(); renderVersions(); toast('Сохранено — приложения получат изменения за несколько минут')
 })
 $('saveSub').onclick = () => guarded($('saveSub'), async () => { await putFile(SUB, collectSub(), 'Пульт: адрес подписки'); toast('Адрес подписки сохранён') })
