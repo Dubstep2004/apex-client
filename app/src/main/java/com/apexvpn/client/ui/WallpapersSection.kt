@@ -85,9 +85,10 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
     if (favs.isNotEmpty()) {
         Spacer(Modifier.height(14.dp))
         Text("Избранное · ${favs.size}", color = Apex.TextDim, fontSize = 14.sp, modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
+        val favList = favs
         LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            items(favs.size) { i ->
-                val f = favs[i]
+            items(favList.size, key = { favList[it].type + favList[it].id }) { i ->
+                val f = favList[i]
                 val on = if (f.type == "live") s.shieldBackdrop == Wallpapers.key(f.id) else false
                 WallTile(f.title, if (f.type == "live") "живые" else "картинка", f.thumb, on, if (favBusy == f.type + f.id) -1f else progress[f.id], false, true, { star(f) }) {
                     if (favBusy != null) return@WallTile
@@ -108,9 +109,10 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
     if (catalog.isEmpty()) {
         Caption("Загружаем каталог… Если не появляется — проверьте интернет.")
     } else {
+        val catList = catalog
         LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            items(catalog.size) { i ->
-                val item = catalog[i]
+            items(catList.size) { i ->
+                val item = catList[i]
                 val have = remember(rev, item.id) { Wallpapers.isDownloaded(context, item.id) }
                 val on = s.shieldBackdrop == Wallpapers.key(item.id)
                 val p = progress[item.id]
@@ -164,11 +166,14 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
             value = if (searched.isNotBlank()) Wallpapers.liveSearch(searched, page) else Wallpapers.liveTopic(topic, page)
         }
         Spacer(Modifier.height(6.dp))
+        // 3.20.3: снимок списка. LazyRow строит элементы позже (при раскладке) — если к тому времени
+        // начался новый поиск, vids уже null, и vids!! ронял приложение (NullPointerException)
+        val vidList = vids
         when {
-            vids == null -> Box(Modifier.fillMaxWidth().height(132.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Apex.Accent) }
-            vids!!.isEmpty() -> Caption(if (searched.isNotBlank()) "По запросу «$searched» ничего не нашлось. Попробуйте по-английски: «neon», «anime», «rain»." else "Не удалось загрузить — проверьте интернет.")
+            vidList == null -> Box(Modifier.fillMaxWidth().height(132.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Apex.Accent) }
+            vidList.isEmpty() -> Caption(if (searched.isNotBlank()) "По запросу «$searched» ничего не нашлось. Попробуйте по-английски: «neon», «anime», «rain»." else "Не удалось загрузить — проверьте интернет.")
             else -> LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                val list = vids!!
+                val list = vidList
                 items(list.size) { i ->
                     val v = list[i]
                     val have = remember(rev, v.id) { Wallpapers.isDownloaded(context, v.id) }
