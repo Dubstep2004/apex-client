@@ -464,6 +464,11 @@
         <label class="f" for="relBody">Текст</label><textarea id="relBody" rows="10" placeholder="- Что нового"></textarea>
         <button class="btn go" id="relSave" style="margin-top:12px;width:100%">Сохранить описание</button>
       </div>
+      <div class="block"><h2>Новое название во всех версиях</h2>
+        <p class="note">Заменит «APEX VPN» на «APEX CLIENT» в названиях и описаниях всех релизов на GitHub. Файлы APK не трогаются — обновления и откат на старые версии работают как раньше. Метки «APEX VPN/…» для панели не меняются.</p>
+        <button class="btn quiet" id="relRename" style="width:100%">Переименовать все версии</button>
+        <p class="help" id="relRenameLog"></p>
+      </div>
     </section>
 
     <!-- Функции -->
@@ -696,7 +701,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.6', PANEL_DATE = '12 ноября 2026'
+const PANEL_VERSION = '2.7', PANEL_DATE = '12 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json'
 const DESIGNS = [
@@ -1185,6 +1190,22 @@ $('saveSite').onclick = () => guarded($('saveSite'), async () => {
   const c = collectSite()
   if (c.cta && !/^https:\/\//.test(c.cta.url)) throw new Error('Ссылка кнопки должна начинаться с https://')
   await putFile(SITE, c, 'Пульт: визитка'); siteSaved = JSON.stringify(c); toast('Визитка сохранена — на сайте через 1–5 минут')
+})
+
+$('relRename').onclick = () => guarded($('relRename'), async () => {
+  const all = []
+  for (let page = 1; page <= 5; page++) { const part = await api('/releases?per_page=100&page=' + page); all.push(...part); if (part.length < 100) break }
+  const fix = t => (t || '').split('\n').map(l => /APEX VPN\/|User-Agent|\^APEX VPN/.test(l) ? l : l.replace(/APEX VPN/g, 'APEX CLIENT')).join('\n')
+  const todo = all.filter(r => fix(r.name) !== (r.name || '') || fix(r.body) !== (r.body || ''))
+  if (!todo.length) { $('relRenameLog').textContent = 'Все ' + all.length + ' версий уже называются APEX CLIENT.'; return toast('Переименовывать нечего') }
+  if (!confirm('Переименовать ' + todo.length + ' версий на GitHub в APEX CLIENT?')) return
+  let done = 0
+  for (const r of todo) {
+    const upd = await api('/releases/' + r.id, { method: 'PATCH', body: JSON.stringify({ name: fix(r.name), body: fix(r.body) }) })
+    const i = releases.findIndex(x => x.id === r.id); if (i >= 0) releases[i] = upd
+    done++; $('relRenameLog').textContent = 'Готово ' + done + ' из ' + todo.length + '…'
+  }
+  $('relRenameLog').textContent = 'Переименовано ' + done + ' версий.'; renderNotes(); toast('Все версии теперь APEX CLIENT')
 })
 
 // ── История
