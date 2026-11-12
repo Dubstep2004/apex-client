@@ -175,8 +175,9 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
                         val ok = Wallpapers.setPhoto(context, ph)
                         busy = null
                         if (ok) {
-                            viewModel.change(reload = false) { copy(shieldBackdrop = "photo", backdropStamp = System.currentTimeMillis()) }
-                            viewModel.showMessage("Обои на главном экране" + if (ph.author.isNotBlank()) " · ${ph.author}" else "")
+                            // 3.20. Картинка сразу «оживает» (медленно плывёт); выключить — «Живое фото»
+                            viewModel.change(reload = false) { copy(shieldBackdrop = "photo", backdropStamp = System.currentTimeMillis(), photoMotion = true) }
+                            viewModel.showMessage("Обои на главном экране и уже живые — выключить: «Живое фото»")
                         } else viewModel.showMessage("Не удалось скачать картинку")
                     }
                 }

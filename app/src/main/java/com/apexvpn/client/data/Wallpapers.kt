@@ -195,13 +195,18 @@ object Wallpapers {
 
     private suspend fun wallhaven(q: String, page: Int, toplist: Boolean): List<Photo> = withContext(Dispatchers.IO) {
         if (q.isBlank()) return@withContext emptyList()
+        // 3.20: «безопасные» на Wallhaven бывают откровенными — убираем такие теги из выдачи
+        val clean = "$q $NOT_TAGS"
         fun url(portrait: Boolean) = "https://wallhaven.cc/api/v1/search?purity=100&categories=111&page=${page + 1}" +
             (if (portrait) "&ratios=portrait" else "") +
-            (if (toplist) "&sorting=toplist&topRange=1y" else "&sorting=relevance") + "&q=" + URLEncoder.encode(q, "UTF-8")
+            (if (toplist) "&sorting=toplist&topRange=1y" else "&sorting=relevance") + "&q=" + URLEncoder.encode(clean, "UTF-8")
         val portrait = runCatching { parseWallhaven(open(url(true)).use { it.bufferedReader().readText() }) }.getOrDefault(emptyList())
         if (portrait.size >= 6) portrait
         else portrait + runCatching { parseWallhaven(open(url(false)).use { it.bufferedReader().readText() }) }.getOrDefault(emptyList()).filter { p -> portrait.none { it.full == p.full } }
     }
+
+    /** Теги, которые исключаются из поиска картинок. */
+    const val NOT_TAGS = "-ecchi -bikini -swimwear -swimsuit -lingerie -underwear -panties -cleavage -thighs -feet -nude -sideboob -underboob -bunny_girl -in_bed -fan_service"
 
     /** Ответ Wallhaven: только purity = sfw (на всякий случай проверяем и здесь). */
     fun parseWallhaven(json: String): List<Photo> = runCatching {
@@ -209,7 +214,7 @@ object Wallpapers {
         (0 until a.length()).mapNotNull { a.optJSONObject(it) }.filter { it.optString("purity") == "sfw" }.mapNotNull { o ->
             val full = o.optString("path").takeIf { it.startsWith("https://") } ?: return@mapNotNull null
             val th = o.optJSONObject("thumbs")?.let { t -> t.optString("original").ifBlank { t.optString("large") } }?.takeIf { it.startsWith("https://") } ?: full
-            Photo(o.optString("resolution").ifBlank { "Обои" }, th, full, "wallhaven.cc")
+            Photo("", th, full, "wallhaven.cc")
         }
     }.getOrDefault(emptyList())
 
@@ -287,7 +292,7 @@ object Wallpapers {
         return !had
     }
     fun favOf(item: Live) = Fav("live", item.id, item.title, item.thumb, item.url)
-    fun favOf(p: Photo) = Fav("pic", p.full, p.title, p.thumb, p.full)
+    fun favOf(p: Photo) = Fav("pic", p.full, p.title.ifBlank { "Картинка" }, p.thumb, p.full)
 
     /** Поставить избранное на главный экран (живые — скачать, если ещё нет). Ошибка — текст, null — получилось. */
     suspend fun applyFav(context: Context, f: Fav): String? = when (f.type) {
