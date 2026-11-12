@@ -1,6 +1,7 @@
 name: Download stats
 
-# 211. Раз в день и после выпуска версии обновляет docs/stats.svg — картинку со скачиваниями в README
+# 211. Раз в день и после выпуска версии обновляет docs/stats.svg — картинку со скачиваниями в README,
+# и (пульт 2.15) записывает итог дня в docs/stats/downloads.json для графика «По дням»
 on:
   schedule:
     - cron: "41 2 * * *"
@@ -20,10 +21,27 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh api "repos/${{ github.repository }}/releases" --paginate --slurp | python3 scripts/download-stats.py > docs/stats.svg
+          gh api "repos/${{ github.repository }}/releases" --paginate --slurp > /tmp/releases.json
+          python3 scripts/download-stats.py < /tmp/releases.json > docs/stats.svg
+      - name: Daily snapshot for the pult chart
+        # Пульт 2.15: «Скачивания по дням» — итог раз в сутки в docs/stats/downloads.json (до 400 дней)
+        run: |
+          python3 - <<'PY'
+          import json, os, datetime
+          pages = json.load(open('/tmp/releases.json'))
+          rel = [r for p in pages for r in p]
+          cnt = lambda pre: sum(a['download_count'] for r in rel for a in r['assets'] if a['name'].startswith(pre) and a['name'].endswith('.apk'))
+          phone, watch = cnt('apex-client-') + cnt('apex-vpn-'), cnt('apex-watch-')
+          P = 'docs/stats/downloads.json'; os.makedirs('docs/stats', exist_ok=True)
+          d = json.load(open(P)) if os.path.exists(P) else {'days': []}
+          today = datetime.datetime.utcnow().strftime('%Y-%m-%d')
+          d['days'] = [x for x in d['days'] if x['d'] != today] + [{'d': today, 'phone': phone, 'watch': watch}]
+          d['days'] = d['days'][-400:]
+          open(P, 'w').write(json.dumps(d, indent=1) + '\n')
+          PY
       - name: Commit if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/stats.svg
+          git add docs/stats.svg docs/stats/downloads.json
           git diff --cached --quiet || { git commit -m "Статистика скачиваний"; git push; }

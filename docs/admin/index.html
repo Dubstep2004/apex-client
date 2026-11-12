@@ -116,6 +116,41 @@
   .relsum { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
   .relsum div { background: var(--field); border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px 12px; }
   .relsum b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; } .relsum span { color: var(--dim); font-size: 12.5px; }
+  .dchart { display: flex; align-items: flex-end; gap: 3px; height: 120px; margin-top: 8px; }
+  .dchart i { flex: 1; min-width: 3px; border-radius: 4px 4px 0 0; background: linear-gradient(var(--go2), var(--go1)); position: relative; }
+  .dchart i:hover::after { content: attr(data-t); position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); white-space: nowrap; font: 600 12px/1.2 Manrope, sans-serif; background: var(--panel2); color: var(--text); padding: 4px 7px; border-radius: 8px; z-index: 2; }
+  .journal > div { border-top: 1px solid var(--line); padding: 9px 0; display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; font-size: 14px; }
+  .journal small, .journal time { color: var(--dim); font-size: 12.5px; } .journal mark { background: #f5b75955; color: inherit; border-radius: 4px; }
+  .cmpt { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 12px; table-layout: fixed; } .cmpt td, .cmpt th { border-top: 1px solid var(--line); padding: 7px 6px; vertical-align: top; word-break: break-word; text-align: left; }
+  .cmpt th { color: var(--dim); font-weight: 700; } .cmpt .a { color: var(--alert); } .cmpt .b { color: #2fd38b; }
+  .liveframe { margin-top: 12px; border: 1px solid var(--line); border-radius: var(--r-md); overflow: auto; background: #fff; max-width: 100%; }
+  .liveframe iframe { display: block; border: 0; height: 640px; width: 390px; max-width: none; }
+  .ansi { border-top: 1px solid var(--line); padding: 12px 0; } .ansi:first-child { border-top: 0; } .ansi p { margin: 4px 0 8px; color: var(--dim); white-space: pre-line; }
+  .ansi .rowx { gap: 6px; }
+  .keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 14px; } .keys kbd { font: 700 12.5px/1 ui-monospace, monospace; background: var(--field); border: 1px solid var(--line); border-radius: 6px; padding: 4px 7px; justify-self: start; }
+  .big { position: fixed; inset: 0; z-index: 60; background: var(--ink); background-image: radial-gradient(70vw 60vh at 85% -10%, var(--glow1), transparent 60%), radial-gradient(60vw 60vh at -10% 110%, var(--glow2), transparent 60%); padding: 4vh 4vw; overflow: auto; }
+  .big-x { position: absolute; top: 16px; right: 16px; }
+  .big-in { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2.4vw; }
+  .big h3 { margin: 0 0 1vh; color: var(--dim); font-size: clamp(14px, 1.5vw, 22px); font-weight: 600; }
+  .big .card { background: var(--panel); border: 1px solid var(--line); border-radius: 28px; padding: 3vh 2vw; }
+  .big .n { font-family: var(--display); font-size: clamp(36px, 5vw, 88px); line-height: 1.05; font-variant-numeric: tabular-nums; }
+  .big .s { color: var(--dim); font-size: clamp(14px, 1.3vw, 20px); margin-top: 1vh; }
+  .big .clock { grid-column: 1 / -1; font-family: var(--display); font-size: clamp(44px, 8vw, 140px); letter-spacing: -.02em; }
+  .mycol { display: flex; gap: 8px; align-items: center; padding: 8px 10px; border-top: 1px solid var(--line); margin-top: 6px; font-size: 13px; font-weight: 700; flex-wrap: wrap; }
+  .mycol input[type=color] { width: 34px; height: 28px; border: 1px solid var(--line); border-radius: 8px; padding: 0; background: none; cursor: pointer; }
+  .mycol button { width: auto !important; padding: 5px 9px !important; font-size: 12.5px; }
+  /* 30. Анимации: плавное появление вкладок и «живой» фон у стекла */
+  @media (prefers-reduced-motion: no-preference) {
+    :root:not(.nomotion) section[data-tab].enter { animation: tabin .32s cubic-bezier(.2,.8,.2,1); }
+    :root:not(.nomotion) .block, :root:not(.nomotion) .nav button, :root:not(.nomotion) .btn { transition: background-color .2s, border-color .2s, transform .15s, box-shadow .2s; }
+    :root:not(.nomotion) .btn:active { transform: scale(.97); }
+    :root:not(.nomotion)[data-design^="glass"] body::before { content: ""; position: fixed; inset: -20%; z-index: -1; pointer-events: none;
+      background: radial-gradient(30% 30% at 30% 30%, var(--glow1), transparent 70%), radial-gradient(28% 28% at 70% 60%, var(--glow3), transparent 70%), radial-gradient(25% 25% at 50% 80%, var(--glow2), transparent 70%);
+      animation: drift 28s ease-in-out infinite alternate; }
+  }
+  @keyframes tabin { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes drift { 0% { transform: translate(0, 0) rotate(0); } 50% { transform: translate(4%, -3%) rotate(8deg); } 100% { transform: translate(-4%, 3%) rotate(-6deg); } }
+  @media (max-width: 560px) { .savebar .btn#discard { font-size: 0; padding: 10px 12px; } .savebar .btn#discard::before { content: '✕'; font-size: 15px; } .savebar .btn#saveLater { padding: 10px; } .savebar p { min-width: 0; flex: 1; } }
   .warnlist { margin: 0; padding-left: 18px; } .warnlist li { margin: 6px 0; } .warnlist li.crit { color: var(--alert); font-weight: 700; }
   @media (max-width: 560px) { .cal .row { grid-template-columns: 1fr; gap: 2px; } .cal .days { margin-left: 0; } .relsum { grid-template-columns: 1fr 1fr; } }
   body {
@@ -511,7 +546,10 @@
       <p class="lead">Изменения доходят до приложений за 1–5 минут при открытии и за 15 минут в фоне.</p>
       <div class="phone-inline" data-preview></div>
       <div class="block"><h2>Версии</h2><p class="note">Пульт обновляется сам вместе с репозиторием, приложение — через релизы.</p><div class="vers" id="vers"></div></div>
-      <div class="block"><h2>Состояние</h2><p class="note" id="ciNote">Проверяем сборки и автопроверки…</p><ul class="ci" id="ciList"></ul></div>
+      <div class="block" id="pendBlock" hidden><h2>⏰ Отложенное сохранение</h2><p class="note" id="pendText"></p><button class="btn quiet small" id="pendCancel">Отменить</button></div>
+      <div class="block"><h2>Состояние</h2><p class="note" id="ciNote">Проверяем сборки и автопроверки…</p><ul class="ci" id="ciList"></ul>
+        <div class="qact" style="margin-top:10px"><button class="btn quiet small" id="notifyBtn">🔔 Уведомлять, если сборка упала</button><button class="btn quiet small" id="bigBtn">📺 Большой экран</button></div></div>
+      <div class="block"><h2>Неделя</h2><div class="relsum" id="weekSum"></div><p class="note" id="weekNote">Считаем…</p></div>
       <div class="block"><h2>Резервная копия</h2><p class="note">Все настройки пульта одним файлом: баннеры, серверы, подписка, скрытые сайты, визитка, обои. Сохраните на компьютер — если что-то сломается, верните одной кнопкой.</p>
         <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn quiet small" id="bkSave" type="button">Скачать копию</button><button class="btn quiet small" id="bkLoad" type="button">Восстановить из файла</button><input type="file" id="bkFile" accept=".json,application/json" hidden></div>
         <p class="help" id="bkMsg"></p></div>
@@ -520,11 +558,12 @@
         <div id="crashOut" class="note"></div></div>
       <div class="block"><h2>Сейчас действует</h2><p class="note">Нажмите на строку, чтобы изменить.</p><dl class="live" id="liveList"></dl></div>
       <div class="block"><h2>Быстрые действия</h2><p class="note">Меняют настройки в пульте — проверьте и нажмите «Сохранить». Передумали — ↶ или «Отменить».</p>
-        <div class="qact"><button class="btn quiet small" data-qa="banners">Убрать все баннеры</button><button class="btn quiet small" data-qa="marks">Снять все пометки серверов</button><button class="btn quiet small" data-qa="feats">Включить все функции</button><button class="btn quiet small" data-qa="ann">Убрать объявление</button><button class="btn quiet small" data-qa="expired">Удалить закончившееся</button><button class="btn quiet small" data-qa="back">Вернуть как до последнего сохранения</button></div></div>
+        <div class="qact" id="qact"><button class="btn quiet small" data-qa="banners">Убрать все баннеры</button><button class="btn quiet small" data-qa="marks">Снять все пометки серверов</button><button class="btn quiet small" data-qa="feats">Включить все функции</button><button class="btn quiet small" data-qa="ann">Убрать объявление</button><button class="btn quiet small" data-qa="expired">Удалить закончившееся</button><button class="btn quiet small" data-qa="back">Вернуть как до последнего сохранения</button></div></div>
       <div class="block"><h2>Календарь на 2 недели</h2><p class="note">Баннеры, техработы и объявление по датам. Полупрозрачные — без срока. Нажмите на строку, чтобы изменить.</p><div class="cal" id="calList"></div></div>
       <div class="block danger"><h2>Всё сломано?</h2><p class="note">Одной кнопкой: аварийный баннер всем, остановка автообновления и пометка «Обслуживание» на проблемные серверы. Перед сохранением всё можно проверить.</p>
         <button class="btn red" id="panicBtn">Включить аварийный режим</button></div>
-      <div class="block relblock" data-go="update"><h2>Скачивания по версиям</h2><div class="relsum" id="relSum"></div><p class="note" id="relNote">Загружаем…</p><div class="rel" id="relList"></div></div>
+      <div class="block relblock" data-go="update"><h2>Скачивания по версиям</h2><div class="relsum" id="relSum"></div><p class="note" id="relNote">Загружаем…</p><div class="rel" id="relList"></div>
+        <h2 style="margin-top:18px">По дням</h2><p class="note" id="dayNote">Загружаем…</p><div class="dchart" id="dayChart"></div></div>
     </section>
 
     <!-- Баннеры -->
@@ -533,6 +572,7 @@
       <p class="lead">Показывается первый подходящий по времени, устройству, стране и версии. Пользователь может закрыть баннер — новый текст покажется снова.</p>
       <div class="phone-inline" data-preview></div>
       <div class="tpls" id="tpls"></div>
+      <div class="qact" style="margin:-4px 0 14px"><button class="btn quiet small" id="oldVerBtn">⏳ Баннер «обновитесь» для старых версий</button></div>
       <div id="banners"></div>
       <button class="add" id="addBanner">Добавить баннер</button>
     </section>
@@ -640,8 +680,47 @@
       <h1>История изменений</h1>
       <p class="lead">Каждое сохранение пульта — отдельная запись на GitHub. «Вернуть» загружает ту версию в пульт, дальше нажмите «Сохранить».</p>
       <div class="block" id="histList"><p class="note">Загружаем…</p></div>
+      <div class="block"><h2>Сравнить два сохранения</h2><p class="note">Выберите две версии настроек — пульт покажет, чем они отличаются.</p>
+        <div class="two"><div><label class="f" for="cmpA">Было</label><select id="cmpA"></select></div><div><label class="f" for="cmpB">Стало</label><select id="cmpB"></select></div></div>
+        <button class="btn quiet" id="cmpGo" style="margin-top:12px;width:100%">Сравнить</button><div id="cmpOut"></div></div>
+      <div class="block"><h2>Журнал всех изменений</h2><p class="note">Баннеры, серверы, подписка, визитка, обои, «Скрыть VPN» и отложенные сохранения — одной лентой.</p>
+        <input id="jq" type="search" placeholder="Поиск: «Германия», «обои», «баннер»…" style="width:100%"><div id="journal" class="journal"><p class="note">Загружаем…</p></div></div>
       <div class="block"><h2>Резервная копия</h2><p class="note">Все настройки пульта (баннеры, серверы, объявление, ссылки, функции, адрес подписки, «Скрыть VPN») — одним файлом. Загрузили копию — проверьте и нажмите «Сохранить».</p>
         <div class="rowx"><button class="btn quiet small" id="exportBtn">⬇ Скачать копию</button><button class="btn quiet small" id="importBtn">⬆ Загрузить из файла</button><input type="file" id="importFile" accept="application/json,.json" hidden></div></div>
+    </section>
+
+    <!-- Telegram -->
+    <section data-tab="tg" hidden>
+      <h1>Telegram-канал</h1>
+      <p class="lead">Новости и опросы в ваш канал прямо из пульта. Нужен свой бот, добавленный в канал администратором с правом публиковать.</p>
+      <div class="block"><h2>Бот</h2>
+        <label class="f" for="tgTok">Токен бота</label><input id="tgTok" type="password" autocomplete="off" placeholder="123456789:AA…">
+        <label class="f" for="tgChat">Канал</label><input id="tgChat" type="text" placeholder="@apex_news или -100…">
+        <p class="help">Токен хранится только в этом браузере, зашифрованный вашим входом в пульт, и на GitHub не попадает. Где взять: в Telegram откройте @BotFather → /newbot → скопируйте токен. Затем в канале: Управление → Администраторы → добавить бота.</p>
+        <div class="rowx" style="margin-top:10px"><button class="btn quiet small" id="tgSave">Запомнить</button><button class="btn quiet small" id="tgTest">Проверить</button><button class="btn quiet small" id="tgForget">Забыть</button></div>
+        <label class="sw" style="margin-top:12px"><div class="t"><b>Предлагать отправить новый баннер</b><span>После «Сохранить» пульт спросит, отправить ли новые баннеры в канал</span></div><span class="tog"><input type="checkbox" id="tgAuto"><i></i></span></label>
+      </div>
+      <div class="block"><h2>Сообщение</h2>
+        <div class="tpls" id="tgPick"></div>
+        <label class="f" for="tgText">Текст</label><textarea id="tgText" rows="5" maxlength="4000" placeholder="Сегодня с 22:00 до 23:00 техработы…"></textarea>
+        <button class="btn go" id="tgSend" style="margin-top:12px;width:100%">Отправить в канал</button></div>
+      <div class="block"><h2>Опрос</h2><p class="note">Ответы видны в самом Telegram — у опроса будут проценты. Анонимный.</p>
+        <label class="f" for="tgQ">Вопрос</label><input id="tgQ" type="text" maxlength="300" placeholder="Какой сервер добавить?">
+        <label class="f" for="tgOpts">Варианты — по одному в строке (2–10)</label><textarea id="tgOpts" rows="4" placeholder="Япония&#10;США&#10;Турция"></textarea>
+        <label class="sw" style="margin-top:8px"><div class="t"><b>Можно выбрать несколько</b></div><span class="tog"><input type="checkbox" id="tgMulti"><i></i></span></label>
+        <button class="btn go" id="tgPoll" style="margin-top:12px;width:100%">Отправить опрос</button></div>
+    </section>
+
+    <!-- Ответы -->
+    <section data-tab="answers" hidden>
+      <h1>Ответы пользователям</h1>
+      <p class="lead">Частые вопросы из поддержки. «Скопировать» — и вставьте в чат. Ответы про техработы и версию сами подставляют то, что сейчас в пульте.</p>
+      <input id="ansQ" type="search" placeholder="Поиск по ответам" style="width:100%;margin-bottom:14px">
+      <div class="block" id="ansList"></div>
+      <div class="block"><h2>Свой ответ</h2><p class="note">Хранится только в этом браузере.</p>
+        <label class="f" for="ansT">Вопрос</label><input id="ansT" type="text" maxlength="80" placeholder="Как сменить сервер">
+        <label class="f" for="ansX">Ответ</label><textarea id="ansX" rows="3" maxlength="1500"></textarea>
+        <button class="btn quiet" id="ansAdd" style="margin-top:10px;width:100%">Добавить</button></div>
     </section>
 
     <!-- Проверка -->
@@ -649,6 +728,8 @@
       <h1>Проверка</h1>
       <p class="lead">Проверяется из вашего браузера и вашей сети. Если у вас включён VPN, результат может отличаться от того, что видят пользователи без него.</p>
       <div class="block"><div id="checkList"></div><button class="btn go" id="runChecks" style="margin-top:12px;width:100%">Проверить</button></div>
+      <div class="block"><h2>Ссылки в пульте</h2><p class="note">Все ссылки из баннеров, объявления, «Ссылок» и визитки: правильно ли написаны и открываются ли. Из браузера видно только «сайт отвечает или нет» — страницу «не найдено» на живом сайте так не поймать.</p>
+        <div id="linkList"></div><button class="btn quiet" id="linkCheck" style="margin-top:12px;width:100%">Проверить ссылки</button></div>
       <div class="block"><h2>Серверы</h2>
         <p class="note">Грубая проверка из браузера: отвечает ли адрес и за сколько. Список хранится <b>только в этом браузере</b> и никуда не отправляется — адреса серверов не попадают на GitHub. Строка: <code>Название = адрес:порт</code>.</p>
         <textarea id="srvList" rows="5" placeholder="Нидерланды = nl.example.com:443&#10;Германия = 1.2.3.4:443"></textarea>
@@ -683,6 +764,9 @@
       <h1>Визитка</h1>
       <p class="lead">Что показывать на <a href="https://dubstep2004.github.io" target="_blank" rel="noopener">dubstep2004.github.io</a> и в каком порядке. Баннер и статус серверов сайт берёт из «Баннеров» и «Серверов».</p>
       <div class="block"><h2>Как будет выглядеть</h2><div class="siteprev" id="sPrev"></div></div>
+      <div class="block"><h2>Живая визитка</h2><p class="note">Настоящий сайт, как его видят люди сейчас. Несохранённые правки здесь не видны — сначала «Сохранить», через 1–2 минуты «Обновить».</p>
+        <div class="qact"><button class="btn quiet small" data-live="390">📱 Телефон</button><button class="btn quiet small" data-live="1100">🖥 Компьютер</button><button class="btn quiet small" data-live="0">Скрыть</button></div>
+        <div class="liveframe" id="liveFrame" hidden><iframe title="Визитка" loading="lazy"></iframe></div></div>
       <div class="block"><h2>Главный экран</h2>
         <label class="f" for="sTitle">Заголовок</label><input id="sTitle" type="text" maxlength="70" placeholder="VPN, который сам находит дорогу">
         <label class="f" for="sSub">Подзаголовок</label><textarea id="sSub" maxlength="220" placeholder="Автопилот выбирает лучший сервер, обходит белые списки оператора и убирает рекламу. Вы просто нажимаете на щит."></textarea>
@@ -932,6 +1016,7 @@
 
       <div class="block"><details><summary>🆕 Что нового в пульте</summary>
         <div class="tbl"><table>
+          <tr><td>2.15</td><td>Вкладки «Telegram» (сообщения и опросы в ваш канал) и «Ответы» (живые ответы пользователям). «⏰ Сохранить позже» — изменения выйдут сами в нужное время. На «Обзоре»: неделя, скачивания по дням, большой экран для ТВ (клавиша B), уведомления браузера о красной сборке и сроке токена. «История»: журнал всех изменений с поиском и сравнение двух сохранений. Проверка всех ссылок. Баннер «обновитесь» только для старых версий. Живая визитка во вкладке «Визитка». Свои цвета и анимации в 🎨. Горячие клавиши 1–9 и «?»</td></tr>
           <tr><td>2.14</td><td>Оформления 2026 года: «Стекло 2026» (тёмное) и «Облако 2026» (светлое) — полупрозрачные карточки с размытием поверх яркого цветного фона (🎨 в шапке)</td></tr>
           <tr><td>2.13</td><td>«Обзор»: календарь на 2 недели, быстрые действия (убрать все баннеры, снять пометки, удалить закончившееся, вернуть как до последнего сохранения), итоги скачиваний за всё время. Проверка перед сохранением — предупредит о закончившихся баннерах, техработах без срока и опасном «обязательном обновлении». Поиск находит тексты баннеров, серверы и обои. Шаблоны объявления. Оформления «Неон» и «Авто» (днём светлое, вечером тёмное). Пульт можно установить как приложение и открыть без интернета</td></tr>
           <tr><td>2.12</td><td>Резервная копия всех настроек пульта, разбор отчёта о сбое на «Обзоре», предпросмотр каталога обоев, разделы каталога, новогоднее оформление визитки</td></tr>
@@ -956,6 +1041,7 @@
   <p>Есть несохранённые изменения<small id="saveWhat"></small></p>
   <button class="btn quiet" id="undoBtn" title="Отменить последнее изменение (Ctrl+Z)" aria-label="Отменить последнее изменение">↶</button>
   <button class="btn quiet" id="discard">Сбросить</button>
+  <button class="btn quiet" id="saveLater" title="Сохранить в выбранное время">⏰</button>
   <button class="btn go" id="saveApp">Сохранить</button>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -973,6 +1059,19 @@
 </div>
 
 
+<dialog id="laterDlg">
+  <h2>Сохранить позже</h2>
+  <p>Изменения сохранятся сами в выбранное время (робот GitHub проверяет каждые 10 минут, возможна задержка до 15 минут). Пульт можно закрыть.</p>
+  <label class="f" for="laterAt">Когда</label><input id="laterAt" type="datetime-local" style="width:100%">
+  <div class="quick"><button class="pill" data-lq="1">через час</button><button class="pill" data-lq="22">сегодня в 22:00</button><button class="pill" data-lq="9">завтра в 9:00</button></div>
+  <div class="acts"><button class="btn quiet" id="laterNo">Отмена</button><button class="btn go" id="laterOk">Запланировать</button></div>
+</dialog>
+<dialog id="keysDlg">
+  <h2>Горячие клавиши</h2>
+  <div class="keys" id="keysList"></div>
+  <div class="acts"><button class="btn go" id="keysOk">Понятно</button></div>
+</dialog>
+<div class="big" id="big" hidden><button class="btn quiet small big-x" id="bigX">Закрыть · Esc</button><div class="big-in" id="bigIn"></div></div>
 <dialog id="warnDlg">
   <h2>Проверьте перед сохранением</h2>
   <ul class="warnlist" id="warnList"></ul>
@@ -1002,7 +1101,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.14', PANEL_DATE = '13 ноября 2026'
+const PANEL_VERSION = '2.15', PANEL_DATE = '13 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -1036,14 +1135,14 @@ const FEATURES = [
 ]
 const TABS = [['home', '🏠', 'Обзор'], ['banner', '📢', 'Баннеры'], ['servers', '🖥', 'Серверы'], ['announce', '🪧', 'Объявление'],
   ['links', '🔗', 'Ссылки'], ['update', '📦', 'Обновления'], ['features', '⚙️', 'Функции'], ['preview', '👁', 'Предпросмотр'],
-  ['history', '🕘', 'История'], ['checks', '🩺', 'Проверка'], ['sub', '🔐', 'Подписка'], ['hide', '🧩', 'Скрыть VPN'], ['site', '🌐', 'Визитка'], ['walls', '🖼', 'Обои'], ['help', '📖', 'Справка']]
+  ['history', '🕘', 'История'], ['checks', '🩺', 'Проверка'], ['sub', '🔐', 'Подписка'], ['hide', '🧩', 'Скрыть VPN'], ['site', '🌐', 'Визитка'], ['walls', '🖼', 'Обои'], ['tg', '📣', 'Telegram'], ['answers', '💬', 'Ответы'], ['help', '📖', 'Справка']]
 // 2.6: группы меню (и нижнее меню на телефоне)
 const GROUPS = [
   ['main', '🏠', 'Обзор', ['home']],
-  ['users', '📣', 'Пользователям', ['banner', 'announce', 'walls', 'site']],
+  ['users', '📣', 'Пользователям', ['banner', 'announce', 'tg', 'walls', 'site']],
   ['srv', '🖥', 'Серверы', ['servers', 'checks']],
   ['app', '📦', 'Приложение', ['update', 'features', 'links', 'preview', 'sub', 'hide']],
-  ['more', '☰', 'Сервис', ['history', 'help']],
+  ['more', '☰', 'Сервис', ['history', 'answers', 'help']],
 ]
 const tabInfo = id => TABS.find(t => t[0] === id)
 const groupOf = id => GROUPS.find(g => g[3].includes(id)) || GROUPS[0]
@@ -1073,6 +1172,7 @@ function tokenExpiry(s) {
   const date = new Date(t).toLocaleDateString('ru', { day: 'numeric', month: 'long' })
   el.hidden = days > 7
   if (days <= 7) el.innerHTML = (days < 0 ? '⛔ Токен истёк ' : '⏳ Токен истекает ' + (days === 0 ? 'сегодня' : 'через ' + days + ' дн.') + ' — ') + date + '. Сделайте новый: <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">создать токен</a> (Only select repositories → apex-client, Contents: Read and write), затем «Выйти и стереть токен» и войдите с ним.'
+  tokenAlert(days, date)
   const rv = $('railVer'); if (rv && !rv.dataset.tok) { rv.dataset.tok = '1'; rv.title = 'Токен действует до ' + date }
 }
 function store(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v) } catch {} }
@@ -1664,6 +1764,10 @@ function showTab(id) {
   document.querySelectorAll('[data-tab]').forEach(s => (s.hidden = s.dataset.tab !== id))
   renderNav()
   store('apex_admin_tab', id); window.scrollTo({ top: 0 })
+  const sec = document.querySelector('section[data-tab="' + id + '"]'); if (sec) { sec.classList.remove('enter'); void sec.offsetWidth; sec.classList.add('enter') }
+  if (id === 'history') { loadJournal(); loadCompare() }
+  if (id === 'tg') { tgFill(); renderTgPick() }
+  if (id === 'answers') renderAnswers()
   if (id === 'history') loadHistory()
   if (id === 'checks' && !$('checkList').innerHTML) runChecks()
   preview(collectApp(true))
@@ -1672,7 +1776,7 @@ async function loadAll() {
   const [app, sub, hide, site, wl] = await Promise.all([getFile(APP), getFile(SUB), getFile(HIDE), getFile(SITE), getFile(WALLS)])
   fillApp(app); saved = JSON.stringify(collectApp(true)); undoStack = [saved]; offerDraft(); changed()
   fillSub(sub); $('hideJson').value = hide ? JSON.stringify(hide, null, 2) : ''; fillSite(site); fillWalls(wl)
-  renderVersions(); loadReleases(); loadCI()
+  renderVersions(); loadReleases().then(loadDays); loadCI(); loadPending()
 }
 let retryBtn = null
 window.addEventListener('offline', () => toast('Интернет пропал. Изменения не потеряются — сохраните, когда сеть вернётся', false))
@@ -2017,13 +2121,13 @@ async function loadCI() {
     $('ciList').innerHTML = rows.join('')
     $('ciNote').textContent = fails.length ? 'Есть ошибки — нажмите на красную строку, внизу проверки «Annotations» написано, что не так.' : 'Всё зелёное. Нажмите на строку — откроется на GitHub.'
     const w = $('ciwarn')
-    w.hidden = !fails.length
+    w.hidden = !fails.length; ciAlert(fails)
     if (fails.length) w.innerHTML = '🔴 ' + fails.map(([l, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(l)}</a>`).join(', ') + ' — упала. Пользователи этого не видят; откройте, чтобы узнать причину. Подробнее — «Справка» → «Автопроверки».'
   } catch (e) {
     $('ciNote').textContent = 'Не удалось узнать состояние сборок' + (e === 403 ? ' — GitHub ограничил запросы, попробуйте через час.' : ' — проверьте интернет.')
   }
 }
-setInterval(() => { if (!$('app').hidden && document.visibilityState === 'visible') loadCI() }, 5 * 60e3)
+setInterval(() => { if (!$('app').hidden && (document.visibilityState === 'visible' || load('apex_admin_notify') === 'on')) loadCI() }, 5 * 60e3)
 
 $('q').addEventListener('input', runSearch)
 if (matchMedia('(hover: hover)').matches) $('q').placeholder = 'Поиск   Ctrl+K' 
@@ -2051,7 +2155,7 @@ $('aTpls').onclick = e => {
   $('aUrl').value = t.url || (t.button ? link.channel || link.site || '' : '')
   annId = 'a' + Date.now().toString(36); changed(); toast('Шаблон подставлен — поправьте текст и нажмите «Сохранить»')
 }
-document.querySelector('.qact').onclick = e => {
+$('qact').onclick = e => {
   const b = e.target.closest('[data-qa]'); if (!b) return
   const q = b.dataset.qa, now = Date.now()
   if (q === 'banners') { if (!banners.length) return toast('Баннеров нет', false); banners = []; renderBanners() }
@@ -2168,7 +2272,9 @@ $('saveApp').onclick = () => guarded($('saveApp'), async () => {
   const data = collectApp()
   const warns = saveWarnings(data, await fetchLatestCode())
   if (warns.length && !(await askWarnings(warns))) return
+  const before = files[APP]?.data
   await putFile(APP, data, 'Пульт: ' + $('saveWhat').textContent.toLowerCase())
+  setTimeout(() => tgAfterSave(before, data), 300)
   saved = JSON.stringify(collectApp(true)); store('apex_admin_draft', null); changed(); renderVersions(); toast('Сохранено — приложения получат изменения за несколько минут')
 })
 $('saveSub').onclick = () => guarded($('saveSub'), async () => { await putFile(SUB, collectSub(), 'Пульт: адрес подписки'); toast('Адрес подписки сохранён') })
@@ -2178,6 +2284,311 @@ $('saveHide').onclick = () => guarded($('saveHide'), async () => {
   await putFile(HIDE, d, 'Пульт: шаблон «Скрыть VPN»'); toast('Шаблон сохранён')
 })
 window.addEventListener('beforeunload', e => { if ($('savebar').classList.contains('show')) { e.preventDefault(); e.returnValue = '' } })
+
+// ══ 2.15 ══════════════════════════════════════════════════════════════════
+// 14. Свои цвета и 30. анимации — в меню 🎨
+;(() => {
+  const box = document.createElement('div'); box.className = 'mycol'
+  box.innerHTML = '<span>Свои цвета</span><input type="color" id="myC1" aria-label="Цвет 1"><input type="color" id="myC2" aria-label="Цвет 2"><button class="btn quiet small" id="myCOff" type="button">Сбросить</button>'
+  const mo = document.createElement('label'); mo.className = 'mycol'; mo.innerHTML = '<input type="checkbox" id="motionOn"> Анимации и живой фон'
+  $('designs').append(box, mo)
+})()
+function applyColors() {
+  let c = null; try { c = JSON.parse(load('apex_admin_colors') || 'null') } catch {}
+  const st = document.documentElement.style
+  if (c && c[0] && c[1]) { st.setProperty('--go1', c[0]); st.setProperty('--go2', c[1]); st.setProperty('--glow1', c[1] + '33'); st.setProperty('--glow2', c[0] + '26') }
+  else ['--go1', '--go2', '--glow1', '--glow2'].forEach(k => st.removeProperty(k))
+  const cs = getComputedStyle(document.documentElement)
+  $('myC1').value = (c && c[0]) || cs.getPropertyValue('--go1').trim().slice(0, 7) || '#2fd38b'
+  $('myC2').value = (c && c[1]) || cs.getPropertyValue('--go2').trim().slice(0, 7) || '#18b6c9'
+}
+const saveColors = () => { store('apex_admin_colors', JSON.stringify([$('myC1').value, $('myC2').value])); applyColors() }
+$('myC1').oninput = saveColors; $('myC2').oninput = saveColors
+$('myCOff').onclick = e => { e.stopPropagation(); store('apex_admin_colors', null); applyColors(); toast('Цвета оформления вернулись') }
+$('motionOn').checked = load('apex_admin_motion') !== 'off'
+const applyMotion = () => document.documentElement.classList.toggle('nomotion', load('apex_admin_motion') === 'off')
+$('motionOn').onchange = () => { store('apex_admin_motion', $('motionOn').checked ? null : 'off'); applyMotion() }
+applyColors(); applyMotion()
+$('designs').addEventListener('click', () => setTimeout(applyColors, 0))
+
+// 12 и 24. Уведомления браузера: упала сборка, кончается токен
+const canNotify = () => 'Notification' in window && Notification.permission === 'granted' && load('apex_admin_notify') === 'on'
+function notifyOnce(key, title, body) {
+  if (!canNotify() || load('apex_admin_n_' + key)) return
+  store('apex_admin_n_' + key, String(Date.now()))
+  try { new Notification(title, { body, icon: 'icon-192.png', tag: key }) } catch {}
+  try { const a = new AudioContext(), o = a.createOscillator(), g = a.createGain(); o.frequency.value = 660; g.gain.setValueAtTime(.15, a.currentTime); g.gain.exponentialRampToValueAtTime(.001, a.currentTime + .5); o.connect(g).connect(a.destination); o.start(); o.stop(a.currentTime + .5) } catch {}
+  try { navigator.vibrate?.([120, 60, 120]) } catch {}
+}
+function renderNotifyBtn() { $('notifyBtn').textContent = load('apex_admin_notify') === 'on' && 'Notification' in window && Notification.permission === 'granted' ? '🔕 Не уведомлять' : '🔔 Уведомлять, если сборка упала' }
+$('notifyBtn').onclick = async () => {
+  if (!('Notification' in window)) return toast('Этот браузер не умеет уведомления', false)
+  if (load('apex_admin_notify') === 'on' && Notification.permission === 'granted') { store('apex_admin_notify', null); renderNotifyBtn(); return toast('Уведомления выключены') }
+  const p = await Notification.requestPermission()
+  if (p !== 'granted') return toast('Браузер не разрешил уведомления — разрешите в настройках сайта', false)
+  store('apex_admin_notify', 'on'); renderNotifyBtn(); toast('Готово: пока пульт открыт (даже в фоне), он сообщит о красной сборке и о сроке токена')
+}
+renderNotifyBtn()
+function ciAlert(fails) { fails.forEach(([label, url]) => notifyOnce('ci_' + url.split('/').pop(), '🔴 ' + label + ' — ошибка', 'Откройте пульт → «Обзор» → «Состояние»')) }
+function tokenAlert(days, date) { if (days <= 7) notifyOnce('tok_' + new Date().toISOString().slice(0, 10), days < 0 ? '⛔ Токен пульта истёк' : '⏳ Токен пульта истекает ' + date, 'Сделайте новый токен на GitHub и войдите с ним') }
+
+// 26. Скачивания по дням — робот GitHub раз в день записывает итог в docs/stats/downloads.json
+let dayStats = null
+async function loadDays() {
+  try { dayStats = await getFile('docs/stats/downloads.json') } catch { dayStats = null }
+  const d = (dayStats && dayStats.days) || []
+  if (d.length < 2) { $('dayNote').textContent = 'График появится через 1–2 дня: робот GitHub записывает итог скачиваний раз в сутки' + (d.length ? ' (первая запись — ' + d[0].d + ').' : '.'); $('dayChart').innerHTML = ''; renderWeek(); return }
+  const rows = d.slice(-31).map((x, i, a) => i ? [x.d, Math.max(0, x.phone - a[i - 1].phone), Math.max(0, x.watch - a[i - 1].watch)] : null).filter(Boolean)
+  const max = Math.max(1, ...rows.map(r => r[1] + r[2])), sum = rows.reduce((s, r) => s + r[1] + r[2], 0)
+  const day = s => new Date(s + 'T12:00').toLocaleDateString('ru', { day: 'numeric', month: 'short' })
+  $('dayChart').innerHTML = rows.map(([dd, ph, w]) => `<i style="height:${Math.max(2, (ph + w) / max * 100)}%" data-t="${day(dd)}: ${ph + w}${w ? ' (⌚ ' + w + ')' : ''}" title="${day(dd)}: ${ph + w}"></i>`).join('')
+  $('dayNote').textContent = 'За ' + rows.length + ' дн.: ' + sum.toLocaleString('ru') + ' скачиваний, в среднем ' + Math.round(sum / rows.length) + ' в день. Наведите на столбик.'
+  renderWeek()
+}
+// 10. Неделя на «Обзоре»
+let weekCommits = null
+async function renderWeek() {
+  const since = Date.now() - 7 * 864e5
+  if (weekCommits === null) { try { weekCommits = await api('/commits?path=docs/config&since=' + new Date(since).toISOString() + '&per_page=100') } catch { weekCommits = [] } }
+  const d = (dayStats && dayStats.days) || [], last = d[d.length - 1], wk = d.find(x => new Date(x.d + 'T12:00') >= since - 864e5)
+  const dl = last && wk && last !== wk ? (last.phone + last.watch) - (wk.phone + wk.watch) : null
+  const rel = releases.filter(r => !r.draft && new Date(r.published_at) >= since)
+  const saves = weekCommits.filter(c => /^Пульт/.test(c.commit.message)).length
+  $('weekSum').innerHTML = [[dl === null ? '—' : dl.toLocaleString('ru'), 'скачиваний за 7 дней'], [rel.length, rel.length === 1 ? 'новая версия' : 'новых версий'], [saves, 'сохранений в пульте']].map(([n, t]) => `<div><b>${n}</b><span>${t}</span></div>`).join('')
+  const c = collectApp(true), now = Date.now(), active = Object.values(c.servers.status).filter(v => !v.until || now < v.until).length
+  $('weekNote').textContent = (rel.length ? 'Вышли: ' + rel.map(r => r.tag_name).join(', ') + '. ' : 'Новых версий не было. ') + (active ? 'Сейчас пометок серверов: ' + active + '.' : 'Все серверы без пометок.') + (dl === null ? ' Скачивания за неделю появятся, когда накопится статистика по дням.' : '')
+}
+
+// 5. Отложенное сохранение: файл docs/config/pending.json, применяет робот GitHub (каждые 10 минут)
+const PEND = 'docs/config/pending.json'
+async function loadPending() {
+  let p = null; try { p = await getFile(PEND) } catch {}
+  $('pendBlock').hidden = !(p && p.at)
+  if (p && p.at) $('pendText').textContent = (p.error === 'conflict' ? '⚠️ Не применено: настройки поменяли после того, как запланировали. Проверьте и сохраните заново. ' : '') + 'Запланировано на ' + fmt(p.at) + ': ' + (p.what || 'изменения настроек') + '.'
+}
+$('saveLater').onclick = () => {
+  const d = new Date(Date.now() + 3600e3); d.setMinutes(0, 0, 0); $('laterAt').value = toLocal(d.getTime()); $('laterDlg').showModal()
+}
+$('laterDlg').addEventListener('click', e => {
+  const q = e.target.closest('[data-lq]')?.dataset.lq; if (!q) return
+  const d = new Date(); if (q === '1') d.setTime(Date.now() + 3600e3); else { if (q === '9' || d.getHours() >= Number(q)) d.setDate(d.getDate() + (q === '9' ? 1 : 0)); d.setHours(Number(q), 0, 0, 0) }
+  $('laterAt').value = toLocal(d.getTime())
+})
+$('laterNo').onclick = () => $('laterDlg').close()
+$('laterOk').onclick = () => guarded($('laterOk'), async () => {
+  const at = fromLocal($('laterAt').value)
+  if (!at || at < Date.now() + 60e3) throw new Error('Выберите время хотя бы через минуту')
+  const data = collectApp()
+  const warns = saveWarnings(data, await fetchLatestCode())
+  if (warns.length) { $('laterDlg').close(); if (!(await askWarnings(warns))) return }
+  await getFile(PEND)
+  await putFile(PEND, { at, what: $('saveWhat').textContent.toLowerCase(), base: files[APP]?.data || null, app: data }, 'Пульт: отложенное сохранение на ' + fmt(at))
+  $('laterDlg').open && $('laterDlg').close()
+  fillApp(files[APP]?.data); changed(); store('apex_admin_draft', null); loadPending()
+  toast('Запланировано на ' + fmt(at) + ' — пульт можно закрыть')
+})
+$('pendCancel').onclick = () => guarded($('pendCancel'), async () => {
+  await getFile(PEND); const sha = files[PEND]?.sha; if (!sha) return loadPending()
+  await api('/contents/' + PEND, { method: 'DELETE', body: JSON.stringify({ message: 'Пульт: отложенное сохранение отменено', sha, branch: BRANCH }) })
+  files[PEND] = { sha: undefined, data: null }; $('pendBlock').hidden = true; toast('Отложенное сохранение отменено')
+})
+
+// 20. Баннер «обновитесь» только для старых версий
+$('oldVerBtn').onclick = () => guarded($('oldVerBtn'), async () => {
+  const code = await fetchLatestCode(), st = releases.find(r => !r.prerelease && !r.draft)
+  if (!code || !st) throw new Error('Не удалось узнать последнюю версию — попробуйте ещё раз')
+  const v = st.tag_name.replace(/^v/, '')
+  banners.unshift(newBanner({ name: 'Обновитесь до ' + v, text: 'Вышла версия ' + v + ' — обновитесь: Настройки → Обновления → «Проверить сейчас». Настройки и подписка сохранятся.', level: 'warn', url: 'https://dubstep2004.github.io/update/', maxCode: code - 1, devices: ['phone', 'tv'] }))
+  renderBanners(); changed(); toast('Баннер увидят только версии ниже ' + v + ' — нажмите «Сохранить»')
+})
+
+// 17. Проверка ссылок
+function allLinks() {
+  const c = collectApp(true), out = []
+  c.banners.forEach(b => b.url && out.push(['Баннер «' + (b.name || b.text).slice(0, 30) + '»', b.url, 'banner']))
+  if (c.announce) { c.announce.url && out.push(['Кнопка объявления', c.announce.url, 'announce']); c.announce.image && out.push(['Картинка объявления', c.announce.image, 'announce']) }
+  ;[['Поддержка', c.links.support], ['Канал', c.links.channel], ['Сайт', c.links.site]].forEach(([n, u]) => u && out.push([n, u, 'links']))
+  try { const s = collectSite(); JSON.stringify(s).match(/https?:\/\/[^"\s\\]+/g)?.forEach(u => out.push(['Визитка', u, 'site'])) } catch {}
+  return out
+}
+$('linkCheck').onclick = () => guarded($('linkCheck'), async () => {
+  const list = allLinks(); if (!list.length) { $('linkList').innerHTML = '<p class="note">Ссылок нет.</p>'; return }
+  $('linkList').innerHTML = '<p class="note">Проверяем ' + list.length + '…</p>'
+  const res = await Promise.all(list.map(async ([n, u, tab]) => {
+    if (!/^https:\/\/[^\s/]+\.[^\s/]+/.test(u)) return [n, u, tab, 'bad', 'неправильная ссылка — нужна https://…']
+    const [st, t] = await probe(u); return [n, u, tab, st, st === 'ok' ? 'открывается · ' + t : t]
+  }))
+  const bad = res.filter(r => r[3] !== 'ok').length
+  $('linkList').innerHTML = `<p class="note">${bad ? '🔴 Проблем: ' + bad : '🟢 Все ' + res.length + ' открываются'}</p>` + res.map(([n, u, tab, st, t]) => `<div class="check" data-go="${tab}" style="cursor:pointer"><div class="t"><b>${esc(n)}</b><span>${esc(u)}</span></div><span class="st ${st}">${esc(t)}</span></div>`).join('')
+})
+$('linkList').onclick = e => { const id = e.target.closest('[data-go]')?.dataset.go; if (id) showTab(id) }
+
+// 4. Журнал всех изменений и 9. сравнение двух сохранений
+let journal = []
+async function loadJournal() {
+  try {
+    const [a, b] = await Promise.all([api('/commits?path=docs/config&per_page=80'), api('/commits?path=docs/templates&per_page=20').catch(() => [])])
+    const seen = new Set(); journal = [...a, ...b].filter(c => !seen.has(c.sha) && seen.add(c.sha)).sort((x, y) => new Date(y.commit.author?.date) - new Date(x.commit.author?.date))
+  } catch (e) { $('journal').innerHTML = '<p class="note">Не удалось загрузить: ' + esc(e.message) + '</p>'; return }
+  renderJournal()
+}
+function renderJournal() {
+  const q = $('jq').value.trim().toLowerCase(), re = q ? new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi') : null
+  const list = journal.filter(c => !q || c.commit.message.toLowerCase().includes(q)).slice(0, 60)
+  $('journal').innerHTML = list.length ? list.map(c => { const m = esc(c.commit.message.split('\n')[0]); return `<div><span>${re ? m.replace(re, '<mark>$1</mark>') : m}<small> · ${esc(c.commit.author?.name || '')}</small></span><time>${fmt(new Date(c.commit.author?.date).getTime())}</time></div>` }).join('') : '<p class="note">Ничего не нашлось.</p>'
+}
+$('jq').oninput = renderJournal
+async function loadCompare() {
+  try {
+    const list = await api('/commits?path=' + APP + '&per_page=30')
+    const opt = list.map((c, i) => `<option value="${c.sha}">${esc(fmt(new Date(c.commit.author?.date).getTime()) + ' — ' + c.commit.message.split('\n')[0].replace(/^Пульт: /, '').slice(0, 50))}${i ? '' : ' (сейчас)'}</option>`).join('')
+    $('cmpA').innerHTML = opt; $('cmpB').innerHTML = opt
+    if (list[1]) $('cmpA').value = list[1].sha
+  } catch {}
+}
+function flat(o, pre = '', out = {}) {
+  if (o && typeof o === 'object' && !Array.isArray(o)) { Object.entries(o).forEach(([k, v]) => flat(v, pre ? pre + '.' + k : k, out)); return out }
+  if (Array.isArray(o) && o.some(x => x && typeof x === 'object')) { o.forEach((v, i) => flat(v, pre + '[' + (v?.name || v?.id || i) + ']', out)); return out }
+  out[pre] = Array.isArray(o) ? o.join(', ') : o; return out
+}
+const NAMES = { banners: 'Баннер', servers: 'Серверы', 'servers.status': 'Пометка', announce: 'Объявление', links: 'Ссылки', update: 'Обновления', features: 'Функция', previewCode: 'Код предпросмотра' }
+const human = k => { const top = Object.keys(NAMES).filter(n => k === n || k.startsWith(n + '.') || k.startsWith(n + '[')).sort((a, b) => b.length - a.length)[0]; return top ? NAMES[top] + ' ' + k.slice(top.length).replace(/^[.]/, '') : k }
+const showV = (k, v) => v === undefined ? '—' : /(^|\.)(from|to|until|at)$/.test(k) && v > 1e12 ? fmt(v) : v === true ? 'да' : v === false ? 'нет' : String(v)
+$('cmpGo').onclick = () => guarded($('cmpGo'), async () => {
+  const [a, b] = await Promise.all([getFile(APP, $('cmpA').value), getFile(APP, $('cmpB').value)])
+  const fa = flat(a || {}), fb = flat(b || {}), keys = [...new Set([...Object.keys(fa), ...Object.keys(fb)])].filter(k => JSON.stringify(fa[k]) !== JSON.stringify(fb[k]) && !/\.id$|^announce\.id$/.test(k))
+  $('cmpOut').innerHTML = keys.length ? `<table class="cmpt"><tr><th>Что</th><th>Было</th><th>Стало</th></tr>${keys.map(k => `<tr><td>${esc(human(k))}</td><td class="a">${esc(showV(k, fa[k]))}</td><td class="b">${esc(showV(k, fb[k]))}</td></tr>`).join('')}</table>` : '<p class="note" style="margin-top:12px">Версии одинаковые.</p>'
+})
+
+// 8. Живая визитка
+document.querySelector('[data-tab=site]').addEventListener('click', e => {
+  const w = e.target.closest('[data-live]')?.dataset.live; if (w == null) return
+  const box = $('liveFrame'), f = box.querySelector('iframe')
+  if (w === '0') { box.hidden = true; f.removeAttribute('src'); return }
+  f.style.width = w + 'px'; f.src = 'https://dubstep2004.github.io/?t=' + Date.now(); box.hidden = false
+})
+
+// 1 и 2. Telegram: сообщение и опрос в канал. Токен бота шифруется ключом из токена GitHub (без входа в пульт не прочитать)
+async function tgKey() { return crypto.subtle.importKey('raw', await crypto.subtle.digest('SHA-256', te.encode('apex-tg:' + token)), 'AES-GCM', false, ['encrypt', 'decrypt']) }
+async function tgSaveCfg(tok, chat) {
+  const iv = crypto.getRandomValues(new Uint8Array(12)), ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await tgKey(), te.encode(tok))
+  store('apex_admin_tg', JSON.stringify({ i: b2s(iv), c: b2s(ct), chat }))
+}
+async function tgCfg() {
+  try { const v = JSON.parse(load('apex_admin_tg') || 'null'); if (!v) return null; return { tok: td.decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: s2b(v.i) }, await tgKey(), s2b(v.c))), chat: v.chat } } catch { return null }
+}
+async function tg(method, body) {
+  const c = await tgCfg(); if (!c) throw new Error('Сначала впишите токен бота и канал и нажмите «Запомнить»')
+  let r; try { r = await fetch('https://api.telegram.org/bot' + c.tok + '/' + method, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: c.chat, ...body }) }).then(x => x.json()) }
+  catch { throw new Error('Нет связи с Telegram — проверьте интернет или включите VPN') }
+  if (!r.ok) throw new Error({ 401: 'Telegram не узнал токен бота', 400: 'Telegram: ' + (r.description || 'ошибка'), 403: 'Бот не может писать в канал — сделайте его администратором' }[r.error_code] || 'Telegram: ' + (r.description || 'ошибка'))
+  return r.result
+}
+async function tgFill() { const c = await tgCfg(); $('tgChat').value = c?.chat || ''; $('tgTok').value = ''; $('tgTok').placeholder = c ? 'Токен сохранён — впишите новый, чтобы заменить' : '123456789:AA…'; $('tgAuto').checked = load('apex_admin_tg_auto') === 'on' }
+$('tgSave').onclick = () => guarded($('tgSave'), async () => {
+  const old = await tgCfg(), tok = $('tgTok').value.trim() || old?.tok || '', chat = $('tgChat').value.trim()
+  if (!/^\d+:[\w-]{20,}$/.test(tok)) throw new Error('Токен бота выглядит как 123456789:AA… — скопируйте у @BotFather целиком')
+  if (!/^(@[\w]{4,}|-?\d{5,})$/.test(chat)) throw new Error('Канал: @имя_канала или числовой id')
+  await tgSaveCfg(tok, chat); tgFill(); toast('Бот запомнен в этом браузере')
+})
+$('tgTest').onclick = () => guarded($('tgTest'), async () => { const me = await tg('getChat', {}); toast('Канал найден: ' + (me.title || me.username || me.id)) })
+$('tgForget').onclick = () => { store('apex_admin_tg', null); tgFill(); toast('Токен бота стёрт из этого браузера') }
+$('tgAuto').onchange = () => store('apex_admin_tg_auto', $('tgAuto').checked ? 'on' : null)
+function renderTgPick() {
+  const c = collectApp(true), items = [...c.banners.map(b => ['📢 ' + (b.name || b.text).slice(0, 28), b.text + (b.url ? '\n' + b.url : '')]), ...(c.announce ? [['🪧 Объявление', [c.announce.title, c.announce.text, c.announce.url].filter(Boolean).join('\n\n')]] : [])]
+  const st = releases.find(r => !r.prerelease && !r.draft)
+  if (st) items.push(['🆕 Новая версия', 'Вышла версия ' + st.tag_name.replace(/^v/, '') + ' APEX CLIENT.\n\n' + (st.body || '').split(/\n---/)[0].trim() + '\n\nОбновление придёт само, или: https://dubstep2004.github.io/update/'])
+  $('tgPick').innerHTML = items.map(([t], i) => `<button class="pill" data-tp="${i}">${esc(t)}</button>`).join(''); $('tgPick')._items = items
+}
+$('tgPick').onclick = e => { const i = e.target.closest('[data-tp]')?.dataset.tp; if (i != null) $('tgText').value = $('tgPick')._items[i][1] }
+$('tgSend').onclick = () => guarded($('tgSend'), async () => {
+  const t = $('tgText').value.trim(); if (!t) throw new Error('Напишите текст')
+  if (!confirm('Отправить в канал?\n\n' + t.slice(0, 300))) return
+  await tg('sendMessage', { text: t, link_preview_options: { is_disabled: true } }); toast('Отправлено в канал')
+})
+$('tgPoll').onclick = () => guarded($('tgPoll'), async () => {
+  const q = $('tgQ').value.trim(), opts = $('tgOpts').value.split('\n').map(x => x.trim()).filter(Boolean)
+  if (!q) throw new Error('Напишите вопрос'); if (opts.length < 2 || opts.length > 10) throw new Error('Нужно от 2 до 10 вариантов')
+  if (opts.some(o => o.length > 100)) throw new Error('Вариант длиннее 100 символов')
+  await tg('sendPoll', { question: q, options: opts.map(text => ({ text })), is_anonymous: true, allows_multiple_answers: $('tgMulti').checked }); toast('Опрос отправлен в канал')
+})
+async function tgAfterSave(before, after) {
+  if (load('apex_admin_tg_auto') !== 'on' || !(await tgCfg())) return
+  const old = new Set((before?.banners || []).map(b => b.text)), fresh = after.banners.filter(b => !b.preview && !old.has(b.text))
+  for (const b of fresh) if (confirm('Отправить новый баннер в Telegram-канал?\n\n' + b.text)) { try { await tg('sendMessage', { text: b.text + (b.url ? '\n' + b.url : ''), link_preview_options: { is_disabled: true } }); toast('Баннер отправлен в канал') } catch (e) { toast(e.message, false) } }
+}
+
+// 16. Ответы пользователям — живые: техработы и версия берутся из пульта
+const ANSWERS = [
+  ['Не подключается', () => 'Откройте APEX CLIENT, нажмите ↻ «Обновить подписку» на главном экране и выберите «Автопилот». Если не помогло — выключите и включите VPN. Не заработает — пришлите скриншот главного экрана.'],
+  ['Медленно работает', () => 'Включите «Автопилот» — он сам выбирает самый быстрый сервер. На мобильном интернете попробуйте сервер с пометкой 📶 LTE или «Обход».'],
+  ['Техработы / не работает сервер', () => {
+    const c = collectApp(true), now = Date.now(), m = Object.entries(c.servers.status).filter(([, v]) => v.state === 'maintenance' && (!v.from || now >= v.from) && (!v.until || now < v.until))
+    return m.length ? 'Сейчас техработы: ' + m.map(([n, v]) => n + (v.until ? ' до ' + fmt(v.until) : '')).join(', ') + '. Автопилот уже переключил вас на рабочий сервер. Если выбирали сервер вручную — нажмите «На автопилот» в уведомлении. Статус: https://dubstep2004.github.io/status/'
+      : 'Сейчас все серверы работают без техработ. Попробуйте «Автопилот» и ↻ «Обновить подписку». Статус серверов: https://dubstep2004.github.io/status/'
+  }],
+  ['Как обновить приложение', () => { const st = releases.find(r => !r.prerelease && !r.draft); return (st ? 'Последняя версия — ' + st.tag_name.replace(/^v/, '') + '. ' : '') + 'Обновление приходит само: окно «Доступна версия» или плашка вверху главного экрана — нажмите «Обновить». Вручную: Настройки → Обновления → «Проверить сейчас». По шагам: https://dubstep2004.github.io/update/' }],
+  ['Как добавить подписку', () => 'Скопируйте ссылку подписки, откройте APEX CLIENT и в поле «Ссылка на подписку» нажмите значок «Вставить». Или «Сканировать QR-код».'],
+  ['Где скачать', () => 'Сайт dubstep2004.github.io — кнопка «Скачать». Файл для телефона и ТВ — apex-client-….apk, для часов — apex-watch-….apk.'],
+  ['Банк или Госуслуги не открываются', () => 'В APEX CLIENT: Настройки → «Скрыть VPN» → включите шаблон для банков. Или добавьте приложение банка в исключения. Подробно: https://dubstep2004.github.io/help/#banks'],
+  ['Приложение называется по-другому', () => 'APEX VPN теперь называется APEX CLIENT — это то же приложение, подписка и настройки на месте.'],
+]
+function ownAnswers() { try { return JSON.parse(load('apex_admin_answers') || '[]') } catch { return [] } }
+function renderAnswers() {
+  const q = $('ansQ').value.trim().toLowerCase(), own = ownAnswers()
+  const all = [...ANSWERS.map(([t, f]) => [t, f(), -1]), ...own.map(([t, x], i) => [t, x, i])].filter(([t, x]) => !q || (t + ' ' + x).toLowerCase().includes(q))
+  $('ansList').innerHTML = all.length ? all.map(([t, x, i]) => `<div class="ansi"><b>${esc(t)}</b><p>${esc(x)}</p><div class="rowx"><button class="btn quiet small" data-acopy>Скопировать</button>${i >= 0 ? `<button class="btn quiet small" data-adel="${i}">Удалить</button>` : ''}</div></div>`).join('') : '<p class="note">Ничего не нашлось.</p>'
+}
+$('ansQ').oninput = renderAnswers
+$('ansList').onclick = e => {
+  const c = e.target.closest('[data-acopy]')
+  if (c) { const t = c.closest('.ansi').querySelector('p').textContent; navigator.clipboard?.writeText(t).then(() => toast('Ответ скопирован — вставьте в чат'), () => toast(t, false)); return }
+  const d = e.target.closest('[data-adel]'); if (!d) return
+  const own = ownAnswers(); own.splice(Number(d.dataset.adel), 1); store('apex_admin_answers', JSON.stringify(own)); renderAnswers()
+}
+$('ansAdd').onclick = () => {
+  const t = $('ansT').value.trim(), x = $('ansX').value.trim(); if (!t || !x) return toast('Впишите вопрос и ответ', false)
+  const own = ownAnswers(); own.push([t, x]); store('apex_admin_answers', JSON.stringify(own)); $('ansT').value = $('ansX').value = ''; renderAnswers(); toast('Ответ добавлен')
+}
+
+// 15. Большой экран для ТВ или монитора
+let bigTimer = 0
+function renderBig() {
+  const c = collectApp(true), now = Date.now(), st = releases.find(r => !r.prerelease && !r.draft)
+  const marks = Object.entries(c.servers.status).filter(([, v]) => (!v.from || now >= v.from) && (!v.until || now < v.until))
+  const live = c.banners.filter(b => !b.preview && (!b.from || now >= b.from) && (!b.to || now < b.to))
+  const cnt = (r, pre) => r.assets.filter(a => a.name.startsWith(pre) && a.name.endsWith('.apk')).reduce((s, a) => s + a.download_count, 0)
+  const total = releases.reduce((s, r) => s + cnt(r, 'apex-client-') + cnt(r, 'apex-vpn-') + cnt(r, 'apex-watch-'), 0)
+  const d = (dayStats && dayStats.days) || [], today = d.length ? total - (d[d.length - 1].phone + d[d.length - 1].watch) : null
+  const fails = $('ciList').querySelectorAll('li.fail').length
+  const card = (h, n, s) => `<div class="card"><h3>${h}</h3><div class="n">${n}</div><div class="s">${s}</div></div>`
+  $('bigIn').innerHTML = `<div class="clock">${new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })}</div>`
+    + card('Серверы', marks.length ? '🔧 ' + marks.length : '🟢', esc(marks.length ? marks.map(([n, v]) => n + (v.until ? ' до ' + fmt(v.until) : '')).join(', ') : 'Все работают'))
+    + card('Приложение', esc(st ? st.tag_name.replace(/^v/, '') : '—'), st ? 'вышла ' + new Date(st.published_at).toLocaleDateString('ru', { day: 'numeric', month: 'long' }) : '')
+    + card('Скачивания', total.toLocaleString('ru'), today !== null && today >= 0 ? 'сегодня +' + today.toLocaleString('ru') : 'за всё время')
+    + card('Баннеры', live.length || '—', esc(live.length ? live.map(b => b.name || b.text).join(' / ').slice(0, 140) : 'Сейчас не показываются'))
+    + card('Сборки', fails ? '🔴 ' + fails : '🟢', fails ? 'Есть ошибки — «Обзор» → «Состояние»' : 'Всё зелёное')
+}
+function openBig() { renderBig(); $('big').hidden = false; document.documentElement.requestFullscreen?.().catch(() => {}); clearInterval(bigTimer); bigTimer = setInterval(() => { if (!$('big').hidden) { loadCI(); renderBig() } }, 30e3) }
+function closeBig() { $('big').hidden = true; clearInterval(bigTimer); if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {}) }
+$('bigBtn').onclick = openBig; $('bigX').onclick = closeBig
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && !$('big').hidden) closeBig() })
+
+// 29. Горячие клавиши: 1–9 — вкладки по порядку меню, ? — список
+const keyTabs = () => GROUPS.flatMap(g => groupTabs(g)).filter(id => !(navPrefs().hidden || []).includes(id) || id === 'home').slice(0, 9)
+$('keysOk').onclick = () => $('keysDlg').close()
+document.addEventListener('keydown', e => {
+  if ($('app').hidden || e.ctrlKey || e.metaKey || e.altKey || e.target.closest('input, textarea, select, [contenteditable]') || document.querySelector('dialog[open]')) return
+  if (e.key === 'Escape' && !$('big').hidden) return closeBig()
+  if (/^[1-9]$/.test(e.key)) { const id = keyTabs()[Number(e.key) - 1]; if (id) { e.preventDefault(); showTab(id) } return }
+  if (e.key === '?' || e.key === ',' && e.shiftKey) {
+    e.preventDefault()
+    $('keysList').innerHTML = keyTabs().map((id, i) => `<kbd>${i + 1}</kbd><span>${tabInfo(id)[1]} ${tabInfo(id)[2]}</span>`).join('')
+      + [['Ctrl+K', 'Поиск'], ['Ctrl+S', 'Сохранить'], ['Ctrl+Z', 'Отменить последнее изменение'], ['B', 'Большой экран'], ['Esc', 'Закрыть окно']].map(([k, t]) => `<kbd>${k}</kbd><span>${t}</span>`).join('')
+    $('keysDlg').showModal(); return
+  }
+  if (e.key === 'b' || e.key === 'и') { e.preventDefault(); $('big').hidden ? openBig() : closeBig() }
+})
 
 // Старт: зашифрованный токен — экран PIN; старый незашифрованный — подставить и попросить PIN
 if (load('apex_admin_vault')) { $('unlock').hidden = false } else { $('login').hidden = false; const old = load('apex_admin_token'); if (old) $('token').value = old }
