@@ -100,11 +100,19 @@ object Wallpapers {
     /** 3.20.2. Ключ GIPHY — выдают сразу на developers.giphy.com; там много аниме и игр (короткие ролики). */
     fun parseGiphyKey(text: String): String = runCatching { JSONObject(text).optString("giphyKey").trim().takeIf { it.matches(Regex("[A-Za-z0-9]{24,48}")) }.orEmpty() }.getOrDefault("")
     private val _giphyKey = MutableStateFlow("")
+    /** 3.20.4. Порядок источников из пульта (перетаскиванием): giphy, pixabay, pexels, commons. */
+    val defaultSources = listOf("giphy", "pixabay", "pexels", "commons")
+    fun parseSources(text: String): List<String> = runCatching {
+        val a = JSONObject(text).optJSONArray("sources") ?: return@runCatching defaultSources
+        val given = (0 until a.length()).map { a.optString(it) }.filter { it in defaultSources }.distinct()
+        given + defaultSources.filter { it !in given }
+    }.getOrDefault(defaultSources)
+    @Volatile private var sources: List<String> = listOf("giphy", "pixabay", "pexels", "commons")
 
     suspend fun loadCatalog(context: Context) = withContext(Dispatchers.IO) {
         val cache = File(context.filesDir, "wallpapers.json")
         loadOwnKey()
-        if (_catalog.value.isEmpty() && cache.exists()) { val t = cache.readText(); _catalog.value = parseCatalog(t); _pexelsKey.value = parseKey(t); _pixabayKey.value = parsePixabayKey(t); _giphyKey.value = parseGiphyKey(t) }
+        if (_catalog.value.isEmpty() && cache.exists()) { val t = cache.readText(); _catalog.value = parseCatalog(t); _pexelsKey.value = parseKey(t); _pixabayKey.value = parsePixabayKey(t); _giphyKey.value = parseGiphyKey(t); sources = parseSources(t) }
         recalcKey()
         val text = sources("config/wallpapers.json").firstNotNullOfOrNull { u ->
             runCatching { open(u + "?t=" + System.currentTimeMillis() / 600_000).use { it.bufferedReader().readText() } }.getOrNull()
@@ -115,6 +123,7 @@ object Wallpapers {
         _pexelsKey.value = parseKey(text)
         _pixabayKey.value = parsePixabayKey(text)
         _giphyKey.value = parseGiphyKey(text)
+        sources = parseSources(text)
         recalcKey()
     }
 
@@ -327,9 +336,24 @@ object Wallpapers {
     suspend fun liveSearch(query: String, page: Int = 0): List<Live> = withContext(Dispatchers.IO) {
         recalcKey()
         if (query.isBlank()) return@withContext emptyList()
+        // Источники по порядку из пульта; без ключа — пропускаются, пусто — следующий
+        for (src in sources) {
+            val found = when (src) {
+                "pexels" -> pexels(query, page)
+                "pixabay" -> pixabay(query, page)
+                "giphy" -> giphy(query, page)
+                "commons" -> commonsVideos(query, page)
+                else -> emptyList()
+            }
+            if (found.isNotEmpty()) return@withContext found
+        }
+        emptyList()
+    }
+
+    private fun pexels(query: String, page: Int): List<Live> {
         val key = _pexelsKey.value
-        if (key.isBlank()) return@withContext pixabay(query, page).ifEmpty { giphy(query, page) }.ifEmpty { commonsVideos(query, page) }
-        runCatching {
+        if (key.isBlank()) return emptyList()
+        return runCatching {
             val c = URL("https://api.pexels.com/videos/search?orientation=portrait&size=medium&per_page=24&page=${page + 1}&query=" + URLEncoder.encode(query.trim().take(80), "UTF-8"))
                 .openConnection() as HttpURLConnection
             c.connectTimeout = 12_000; c.readTimeout = 20_000

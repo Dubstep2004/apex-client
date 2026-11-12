@@ -123,4 +123,9 @@ class WallpapersTest {
         assertEquals("https://media.giphy.com/a.mp4", v[0].url)
         assertEquals("abcdefghijklmnopqrstuvwxyz012345", Wallpapers.parseGiphyKey("""{"giphyKey":"abcdefghijklmnopqrstuvwxyz012345"}"""))
     }
+
+    @Test fun sourceOrderFromPult() {
+        assertEquals(listOf("commons", "giphy", "pixabay", "pexels"), Wallpapers.parseSources("""{"sources":["commons","giphy","bad","giphy"]}"""))
+        assertEquals(Wallpapers.defaultSources, Wallpapers.parseSources("""{"live":[]}"""))
+    }
 }
