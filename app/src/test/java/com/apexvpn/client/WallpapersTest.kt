@@ -54,4 +54,11 @@ class WallpapersTest {
         assertEquals("https://th.wallhaven.cc/orig/ab/ab.jpg", p[0].thumb)
         assertTrue(Wallpapers.photoTopics.any { it.title == "Аниме" } && Wallpapers.photoTopics.any { it.title == "Игры" })
     }
+
+    @Test fun wallpaperOfTheDay() {
+        assertEquals(null, Wallpapers.pickForDay(emptyList<String>(), 5))
+        assertEquals("b", Wallpapers.pickForDay(listOf("a", "b", "c"), 4))
+        assertEquals("c", Wallpapers.pickForDay(listOf("a", "b", "c"), -1))
+        assertEquals(Wallpapers.photoTopics.size, Wallpapers.photoTopics.map { it.id }.toSet().size)
+    }
 }

@@ -2,6 +2,13 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.19.8 · 12 ноября 2026
+
+<img src="img/tags/new.svg" alt="Новое" height="22">
+
+- Обои дня: каждый день новые обои на главном экране — картинка выбранной темы или следующие скачанные живые обои. «Сменить сейчас» — не дожидаясь завтра
+- 15 новых тем обоев: Фэнтези, Неон, Тёмные AMOLED, Абстракция, Япония, Города, Животные, Милые, Мотоциклы, Авиация, Футбол, Фантастика, Ретро, Цветы, Зима
+
 ## 3.19.7 · 12 ноября 2026
 
 <img src="img/tags/new.svg" alt="Новое" height="22">

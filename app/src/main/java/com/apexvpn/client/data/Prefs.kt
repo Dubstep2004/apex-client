@@ -64,6 +64,10 @@ object Prefs {
     var appConfigJson: String
         get() = sp.getString("app_config", "") ?: ""
         set(v) = sp.edit { putString("app_config", v) }
+    /** 3.19.8. День, когда «Обои дня» последний раз сменили обои (yyyyMMdd). */
+    var wallAutoDay: String
+        get() = sp.getString("wall_auto_day", "") ?: ""
+        set(v) = sp.edit { putString("wall_auto_day", v) }
     var appConfigAt: Long
         get() = sp.getLong("app_config_at", 0)
         set(v) = sp.edit { putLong("app_config_at", v) }

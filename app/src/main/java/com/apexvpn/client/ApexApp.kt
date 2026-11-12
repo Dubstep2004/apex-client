@@ -70,6 +70,8 @@ class ApexApp : Application() {
             com.apexvpn.client.data.AppConfig.appliedActive = com.apexvpn.client.data.AppConfig.value.activeKey()
             while (true) {
                 com.apexvpn.client.data.Maintenance.check(this@ApexApp)
+                // 3.19.8. Обои дня — раз в сутки (проверка дешёвая: дата в настройках)
+                runCatching { com.apexvpn.client.data.Wallpapers.autoTick(this@ApexApp) }
                 val now = com.apexvpn.client.data.AppConfig.value.activeKey()
                 if (now != com.apexvpn.client.data.AppConfig.appliedActive) {
                     com.apexvpn.client.data.AppConfig.appliedActive = now

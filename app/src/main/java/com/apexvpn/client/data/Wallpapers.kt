@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -162,6 +163,22 @@ object Wallpapers {
         Topic("space", "Космос", false, "space"),
         Topic("cars", "Машины", false, "cars"),
         Topic("minimal", "Минимализм", false, "minimalism"),
+        // 3.19.8. Ещё темы
+        Topic("fantasy", "Фэнтези", false, "fantasy art"),
+        Topic("neon", "Неон", false, "neon"),
+        Topic("amoled", "Тёмные AMOLED", false, "amoled dark"),
+        Topic("abstract", "Абстракция", false, "abstract"),
+        Topic("japan", "Япония", false, "japan"),
+        Topic("cities", "Города", false, "city"),
+        Topic("animals", "Животные", false, "animals"),
+        Topic("cute", "Милые", false, "cute"),
+        Topic("moto", "Мотоциклы", false, "motorcycle"),
+        Topic("planes", "Авиация", false, "aircraft"),
+        Topic("football", "Футбол", false, "football"),
+        Topic("sci-fi", "Фантастика", false, "science fiction"),
+        Topic("retro", "Ретро", false, "retro"),
+        Topic("flowers", "Цветы", true, "flower"),
+        Topic("winter", "Зима", true, "winter snow"),
         Topic("nature", "Природа", true, "landscape"),
         Topic("mountains", "Горы", true, "mountain"),
         Topic("sea", "Море", true, "sea OR ocean OR coast"),
@@ -238,6 +255,36 @@ object Wallpapers {
         tmp.delete()
         if (ok) runCatching { Backdrop.file(context).copyTo(File(picsDir(context), Integer.toHexString(photo.full.hashCode()) + ".jpg"), overwrite = true) }
         _rev.value++
+        ok
+    }
+
+    // ── 3.19.8. Обои дня: раз в день новая картинка выбранной темы или следующие скачанные живые обои ──
+    private val autoLock = kotlinx.coroutines.sync.Mutex()
+
+    /** Выбор на сегодня (чистая функция — для автотестов): день года → элемент списка по кругу. */
+    fun <T> pickForDay(list: List<T>, dayOfYear: Int): T? = if (list.isEmpty()) null else list[Math.floorMod(dayOfYear, list.size)]
+
+    /** Сменить обои, если сегодня ещё не меняли (force — сейчас). true — сменили. */
+    suspend fun autoTick(context: Context, force: Boolean = false): Boolean = autoLock.withLock {
+        val mode = AppSettings.value.wallAuto
+        if (mode == "off") return@withLock false
+        val day = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US).format(java.util.Date())
+        if (!force && Prefs.wallAutoDay == day) return@withLock false
+        val doy = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_YEAR) + (if (force) (System.currentTimeMillis() / 1000 % 997).toInt() else 0)
+        val ok = when {
+            mode == "live" -> {
+                val pick = pickForDay(downloaded(context).sortedBy { it.id }, doy) ?: return@withLock false
+                AppSettings.update { copy(shieldBackdrop = key(pick.id), backdropStamp = System.currentTimeMillis()) }
+                true
+            }
+            mode.startsWith("pics:") -> {
+                val list = photos(mode.removePrefix("pics:"), page = (doy / 30) % 3)
+                val pick = pickForDay(list, doy) ?: return@withLock false
+                setPhoto(context, pick).also { if (it) AppSettings.update { copy(shieldBackdrop = "photo", backdropStamp = System.currentTimeMillis()) } }
+            }
+            else -> false
+        }
+        if (ok) Prefs.wallAutoDay = day
         ok
     }
 

@@ -190,6 +190,31 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
         }
     }
 
+    // 3.19.8. Обои дня
+    Spacer(Modifier.height(14.dp))
+    Text("Обои дня", color = Apex.TextDim, fontSize = 14.sp, modifier = Modifier.padding(start = 4.dp, bottom = 6.dp))
+    val autoItems = listOf("off" to "Выключено", "live" to "Живые по кругу") + Wallpapers.photoTopics.map { "pics:" + it.id to it.title }
+    CategoryChips(autoItems, s.wallAuto) { mode ->
+        viewModel.change(reload = false) { copy(wallAuto = mode) }
+        if (mode != "off") scope.launch {
+            if (mode == "live" && Wallpapers.downloaded(context).isEmpty()) { viewModel.showMessage("Сначала скачайте живые обои — они будут меняться по кругу"); return@launch }
+            viewModel.showMessage("Ставим обои на сегодня…")
+            // Настройка сохраняется асинхронно — даём ей примениться
+            kotlinx.coroutines.delay(300)
+            if (!Wallpapers.autoTick(context, force = true)) viewModel.showMessage("Не удалось сменить обои — проверьте интернет")
+        }
+    }
+    Caption(
+        when {
+            s.wallAuto == "off" -> "Каждый день новые обои на главном экране: картинка выбранной темы или следующие скачанные живые обои."
+            s.wallAuto == "live" -> "Каждый день — следующие из скачанных живых обоев. Интернет не нужен."
+            else -> "Каждый день новая картинка темы «${autoItems.firstOrNull { it.first == s.wallAuto }?.second.orEmpty()}». Меняется при первом открытии за день, нужен интернет."
+        },
+    )
+    if (s.wallAuto != "off") {
+        TextButton(onClick = { scope.launch { if (!Wallpapers.autoTick(context, force = true)) viewModel.showMessage("Не удалось сменить обои — проверьте интернет") } }) { Text("Сменить сейчас", color = Apex.Accent) }
+    }
+
     if (askLink) {
         var url by remember { mutableStateOf("") }
         AlertDialog(
