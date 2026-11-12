@@ -74,6 +74,29 @@
     --text: #f4f2ff; --dim: #9d97c4; --faint: #615b8a; --go1: #00f0ff; --go2: #ff2bd6; --go-ink: #07060d;
     --glow1: #ff2bd62a; --glow2: #00f0ff22;
   }
+  /* 2.14: оформления 2026 — «жидкое стекло»: полупрозрачные карточки с размытием поверх яркого цветного фона */
+  :root[data-design="glass"] {
+    --ink: #0b0a1a; --panel: rgba(255,255,255,.065); --panel2: rgba(255,255,255,.11); --line: rgba(255,255,255,.13); --field: rgba(8,6,24,.42);
+    --text: #f6f5ff; --dim: #b4b1d8; --faint: #7d79a6; --go1: #8b6cff; --go2: #2de2e6; --go-ink: #0b0a1a;
+    --glow1: #8b6cff55; --glow2: #2de2e640; --glow3: #ff4fa83a; --glow4: #ffb34722; --shadow: #0008; --r-lg: 28px; --r-md: 16px;
+  }
+  :root[data-design="glasslight"] {
+    --ink: #e9ecf6; --panel: rgba(255,255,255,.58); --panel2: rgba(255,255,255,.78); --line: rgba(255,255,255,.85); --field: rgba(255,255,255,.62);
+    --text: #15142b; --dim: #555377; --faint: #8b89a8; --go1: #5d5bff; --go2: #ff5fa2; --go-ink: #ffffff; --warn-text: #a8660a;
+    --glow1: #5d5bff40; --glow2: #ff5fa238; --glow3: #2de2e638; --glow4: #ffcf5c33; --shadow: #2a2a6a26; --r-lg: 28px; --r-md: 16px; color-scheme: light;
+  }
+  :root[data-design^="glass"] body {
+    background-image: radial-gradient(60vw 50vh at 85% -5%, var(--glow1), transparent 62%), radial-gradient(55vw 45vh at -5% 25%, var(--glow2), transparent 60%),
+      radial-gradient(50vw 45vh at 70% 105%, var(--glow3), transparent 60%), radial-gradient(40vw 35vh at 20% 95%, var(--glow4), transparent 60%);
+  }
+  :root[data-design^="glass"] :is(.block, dialog, .designs, .login .card, .draftbar, .savebar, .bnav, .item, .src, .live) {
+    -webkit-backdrop-filter: blur(22px) saturate(170%); backdrop-filter: blur(22px) saturate(170%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.22), inset 0 -1px 0 rgba(255,255,255,.04), 0 18px 50px var(--shadow);
+  }
+  :root[data-design="glasslight"] :is(.block, dialog, .designs, .login .card, .savebar, .bnav) { box-shadow: inset 0 1px 0 #fff, 0 18px 50px var(--shadow); }
+  :root[data-design^="glass"] .live { background: var(--line); }
+  :root[data-design^="glass"] .btn.go { box-shadow: 0 10px 30px var(--glow1), inset 0 1px 0 rgba(255,255,255,.35); }
+  :root[data-design^="glass"] dialog::backdrop { background: rgba(10,8,30,.35); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
   /* 2.13: календарь, быстрые действия, итоги скачиваний */
@@ -344,6 +367,7 @@
   @media (max-width: 760px) {
     .shell { display: block; padding: 16px 16px 120px; }
     .rail { position: sticky; top: 0; z-index: 10; margin: -16px -16px 18px; padding: 12px 16px 10px; background: var(--ink); border-bottom: 1px solid var(--line); }
+    :root[data-design^="glass"] .rail { background: color-mix(in srgb, var(--ink) 55%, transparent); -webkit-backdrop-filter: blur(22px) saturate(170%); backdrop-filter: blur(22px) saturate(170%); }
     .brand { margin: 0 0 10px; } .brand img { width: 32px; height: 32px; border-radius: 10px; }
     .nav { flex-direction: row; overflow-x: auto; scrollbar-width: none; gap: 6px; } .nav::-webkit-scrollbar { display: none; }
     .nav button { flex: 0 0 auto; width: auto; padding: 8px 12px; background: var(--panel); border-radius: 99px; } .nav .sep { display: none; }
@@ -908,6 +932,7 @@
 
       <div class="block"><details><summary>🆕 Что нового в пульте</summary>
         <div class="tbl"><table>
+          <tr><td>2.14</td><td>Оформления 2026 года: «Стекло 2026» (тёмное) и «Облако 2026» (светлое) — полупрозрачные карточки с размытием поверх яркого цветного фона (🎨 в шапке)</td></tr>
           <tr><td>2.13</td><td>«Обзор»: календарь на 2 недели, быстрые действия (убрать все баннеры, снять пометки, удалить закончившееся, вернуть как до последнего сохранения), итоги скачиваний за всё время. Проверка перед сохранением — предупредит о закончившихся баннерах, техработах без срока и опасном «обязательном обновлении». Поиск находит тексты баннеров, серверы и обои. Шаблоны объявления. Оформления «Неон» и «Авто» (днём светлое, вечером тёмное). Пульт можно установить как приложение и открыть без интернета</td></tr>
           <tr><td>2.12</td><td>Резервная копия всех настроек пульта, разбор отчёта о сбое на «Обзоре», предпросмотр каталога обоев, разделы каталога, новогоднее оформление визитки</td></tr>
           <tr><td>2.11</td><td>Новые оформления: Закат, Лес, Арктика, Мокко (🎨 в шапке) — такие же есть в приложении с 3.19.7. Вкладка «Обои» — каталог живых обоев приложения. Карточка «Состояние» на «Обзоре» и красная полоса, если сборка или проверка упала. В справке: поиск, «Развернуть/Свернуть всё», готовые ответы пользователям, раздел про автопроверки, схемы, кнопки перехода на вкладки, шпаргалка для печати. Иконка 🏠 у «Обзора», поле поиска в цвет пульта</td></tr>
@@ -977,7 +1002,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.13', PANEL_DATE = '13 ноября 2026'
+const PANEL_VERSION = '2.14', PANEL_DATE = '13 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -992,6 +1017,8 @@ const DESIGNS = [
   ['arctic', 'Арктика', 'Светлый лёд и синий', 'linear-gradient(135deg,#ffffff,#5fd0f5 60%,#2f7bef)'],
   ['mocha', 'Мокко', 'Кофе и карамель', 'linear-gradient(135deg,#2d2119,#d9a066 60%,#f0d2a8)'],
   ['neon', 'Неон', 'Чёрный, голубой и розовый', 'linear-gradient(135deg,#07060d,#00f0ff 55%,#ff2bd6)'],
+  ['glass', 'Стекло 2026', 'Прозрачные карточки на цветном фоне', 'linear-gradient(135deg,#8b6cff,#2de2e6 50%,#ff4fa8)'],
+  ['glasslight', 'Облако 2026', 'Светлое стекло, мягкие цвета', 'linear-gradient(135deg,#ffffff,#c9c8ff 50%,#ffc2dc)'],
   ['auto', 'Авто', 'День с 7 до 20, вечером Ночь', 'linear-gradient(90deg,#ffffff 50%,#0e1220 50%)'],
 ]
 // 2.13: шаблоны объявления
