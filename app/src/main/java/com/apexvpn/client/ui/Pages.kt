@@ -1413,10 +1413,10 @@ private fun AppearancePage(viewModel: MainViewModel, onBack: () -> Unit) {
             Spacer(Modifier.height(10.dp))
             Column(Modifier.fillMaxWidth().apexCard().padding(16.dp)) {
                 // 3.20. Яркость (раньше «Затемнение») и скорость живых обоев
-                Text("Яркость · ${100 - s.photoDim}%", color = Apex.Text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                Text("Яркость · ${100 - s.photoDim.coerceAtLeast(MIN_DIM)}%", color = Apex.Text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                 androidx.compose.material3.Slider(
-                    value = (100 - s.photoDim).toFloat(), onValueChange = { v -> viewModel.change(reload = false) { copy(photoDim = 100 - v.toInt()) } },
-                    valueRange = 10f..100f,
+                    value = (100 - s.photoDim.coerceAtLeast(MIN_DIM)).toFloat(), onValueChange = { v -> viewModel.change(reload = false) { copy(photoDim = 100 - v.toInt()) } },
+                    valueRange = 10f..(100f - MIN_DIM),
                 )
                 Text("Скорость · ${"%.2f".format(s.liveSpeed / 100f).trimEnd('0').trimEnd(',', '.')}×", color = Apex.Text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                 androidx.compose.material3.Slider(

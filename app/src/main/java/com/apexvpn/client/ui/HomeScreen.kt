@@ -117,8 +117,10 @@ fun HomeScreen(
 
     // 157. Своё фото за щитом (из галереи)
     // Живое видео на фоне: шаблон или своё
-    if (LiveVideos.isVideo(settings.shieldBackdrop)) VideoBackdrop(settings.shieldBackdrop, settings.backdropStamp, settings.photoDim, settings.liveSpeed)
-    if (settings.shieldBackdrop == "photo") PhotoBackdrop(settings.backdropStamp, settings.photoBlur, settings.photoDim, settings.photoParallax, settings.photoMotion)
+    // 3.20.5: обои затемняются минимум на 30% — иначе на яркой картинке не видно щит, текст и карточки
+    val dimSafe = settings.photoDim.coerceAtLeast(MIN_DIM)
+    if (LiveVideos.isVideo(settings.shieldBackdrop)) VideoBackdrop(settings.shieldBackdrop, settings.backdropStamp, dimSafe, settings.liveSpeed)
+    if (settings.shieldBackdrop == "photo") PhotoBackdrop(settings.backdropStamp, settings.photoBlur, dimSafe, settings.photoParallax, settings.photoMotion)
     // 354. Фото дня страны сервера (автопилот — ваша страна)
     if (settings.shieldBackdrop == "country") {
         val sel = sub.nodes.find { it.tag == sub.selectedTag }
@@ -991,3 +993,6 @@ private fun greeting(): String = when (java.util.Calendar.getInstance().get(java
     in 18..22 -> "🌆 Добрый вечер!"
     else -> "🌙 Доброй ночи!"
 }
+
+/** 3.20.5. Минимальное затемнение обоев (фото и видео) на главном экране — чтобы щит и текст было видно. */
+const val MIN_DIM = 30
