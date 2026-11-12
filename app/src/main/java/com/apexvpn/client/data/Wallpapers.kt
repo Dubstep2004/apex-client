@@ -97,11 +97,14 @@ object Wallpapers {
     /** 3.20. Ключ Pixabay (Pexels перестал выдавать ключи) — вида 12345678-0123abcd… */
     fun parsePixabayKey(text: String): String = runCatching { JSONObject(text).optString("pixabayKey").trim().takeIf { it.matches(Regex("[0-9]{4,12}-[a-f0-9]{16,40}")) }.orEmpty() }.getOrDefault("")
     private val _pixabayKey = MutableStateFlow("")
+    /** 3.20.2. Ключ GIPHY — выдают сразу на developers.giphy.com; там много аниме и игр (короткие ролики). */
+    fun parseGiphyKey(text: String): String = runCatching { JSONObject(text).optString("giphyKey").trim().takeIf { it.matches(Regex("[A-Za-z0-9]{24,48}")) }.orEmpty() }.getOrDefault("")
+    private val _giphyKey = MutableStateFlow("")
 
     suspend fun loadCatalog(context: Context) = withContext(Dispatchers.IO) {
         val cache = File(context.filesDir, "wallpapers.json")
         loadOwnKey()
-        if (_catalog.value.isEmpty() && cache.exists()) { val t = cache.readText(); _catalog.value = parseCatalog(t); _pexelsKey.value = parseKey(t); _pixabayKey.value = parsePixabayKey(t) }
+        if (_catalog.value.isEmpty() && cache.exists()) { val t = cache.readText(); _catalog.value = parseCatalog(t); _pexelsKey.value = parseKey(t); _pixabayKey.value = parsePixabayKey(t); _giphyKey.value = parseGiphyKey(t) }
         recalcKey()
         val text = sources("config/wallpapers.json").firstNotNullOfOrNull { u ->
             runCatching { open(u + "?t=" + System.currentTimeMillis() / 600_000).use { it.bufferedReader().readText() } }.getOrNull()
@@ -111,6 +114,7 @@ object Wallpapers {
         _catalog.value = parseCatalog(text)
         _pexelsKey.value = parseKey(text)
         _pixabayKey.value = parsePixabayKey(text)
+        _giphyKey.value = parseGiphyKey(text)
         recalcKey()
     }
 
@@ -324,7 +328,7 @@ object Wallpapers {
         recalcKey()
         if (query.isBlank()) return@withContext emptyList()
         val key = _pexelsKey.value
-        if (key.isBlank()) return@withContext pixabay(query, page).ifEmpty { commonsVideos(query, page) }
+        if (key.isBlank()) return@withContext pixabay(query, page).ifEmpty { giphy(query, page) }.ifEmpty { commonsVideos(query, page) }
         runCatching {
             val c = URL("https://api.pexels.com/videos/search?orientation=portrait&size=medium&per_page=24&page=${page + 1}&query=" + URLEncoder.encode(query.trim().take(80), "UTF-8"))
                 .openConnection() as HttpURLConnection
@@ -371,6 +375,29 @@ object Wallpapers {
             portrait to Live("wc" + p.optLong("pageid"), p.optString("title").removePrefix("File:").substringBeforeLast('.').take(30), best.optString("src"), thumb, 0.0,
                 "Видео: ${artist.ifBlank { "автор" }} · Wikimedia Commons")
         }.toList().sortedByDescending { it.first }.map { it.second }
+    }.getOrDefault(emptyList())
+
+    /** GIPHY: ролики mp4 (оригинальный размер), только рейтинг G. */
+    private fun giphy(query: String, page: Int): List<Live> {
+        val key = _giphyKey.value
+        if (key.isBlank()) return emptyList()
+        return runCatching {
+            val u = "https://api.giphy.com/v1/gifs/search?rating=g&limit=30&offset=${page * 30}&api_key=$key&q=" + URLEncoder.encode(query.trim().take(50), "UTF-8")
+            parseGiphy(open(u).use { it.bufferedReader().readText() })
+        }.getOrDefault(emptyList())
+    }
+
+    fun parseGiphy(json: String): List<Live> = runCatching {
+        val a = JSONObject(json).optJSONArray("data") ?: return@runCatching emptyList()
+        (0 until a.length()).mapNotNull { a.optJSONObject(it) }.filter { it.optString("rating").ifBlank { "g" } == "g" }.mapNotNull { g ->
+            val im = g.optJSONObject("images") ?: return@mapNotNull null
+            val mp4 = im.optJSONObject("original_mp4") ?: im.optJSONObject("original") ?: return@mapNotNull null
+            val url = mp4.optString("mp4").takeIf { it.startsWith("https://") } ?: return@mapNotNull null
+            val w = mp4.optString("width").toIntOrNull() ?: 0; val h = mp4.optString("height").toIntOrNull() ?: 0
+            if (maxOf(w, h) < 360) return@mapNotNull null // совсем мелкие ролики на весь экран не годятся
+            val thumb = (im.optJSONObject("fixed_width_still") ?: im.optJSONObject("original_still"))?.optString("url").orEmpty()
+            (h > w) to Live("gp" + g.optString("id").filter { it.isLetterOrDigit() }.take(30), g.optString("title").take(30).ifBlank { "GIPHY" }, url, thumb, 0.0, "Ролик: GIPHY")
+        }.sortedByDescending { it.first }.map { it.second }
     }.getOrDefault(emptyList())
 
     fun parsePixabay(json: String): List<Live> = runCatching {

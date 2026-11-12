@@ -627,6 +627,9 @@
         <p class="note">📷 <a href="pixabay-guide.jpg" target="_blank" rel="noopener">Инструкция с картинками: как получить ключ Pixabay</a></p>
         <label class="f" for="pbKey">Ключ Pixabay API</label>
         <input id="pbKey" type="text" autocomplete="off" spellcheck="false" placeholder="12345678-0123abcd4567ef89…">
+        <p class="note"><b>Pixabay не открывается?</b> Возьмите ключ <b>GIPHY</b> — там много коротких роликов с аниме и играми, ключ выдают сразу: <a href="https://developers.giphy.com/dashboard/" target="_blank" rel="noopener">developers.giphy.com/dashboard</a> → войти → «Create an API Key» → «API» → название «APEX CLIENT» → скопировать ключ сюда. Ролики там короче и меньше по размеру, чем на Pixabay.</p>
+        <label class="f" for="gpKey">Ключ GIPHY API</label>
+        <input id="gpKey" type="text" autocomplete="off" spellcheck="false" placeholder="AbCdEf0123456789…">
         <label class="f" for="pxKey">Ключ Pexels API (если уже есть)</label>
         <input id="pxKey" type="text" autocomplete="off" spellcheck="false" placeholder="563492ad6f9170000100000…">
         <p class="help">Ключ хранится в открытом файле каталога — так приложения его получают. Это не пароль: им можно только искать видео (лимит Pexels — 200 запросов в час на всех). Если начнут злоупотреблять — создайте новый на pexels.com и вставьте сюда.</p>
@@ -1596,8 +1599,8 @@ function goHit(h) {
 
 // ── 2.11: каталог живых обоев (docs/config/wallpapers.json)
 const wallSrc = u => /^https:\/\//.test(u) ? u : (u ? '../' + u.replace(/^\/+/, '') : '')
-function fillWalls(c) { walls = (c?.live || []).map(w => ({ ...w })); $('pxKey').value = c?.pexelsKey || ''; $('pbKey').value = c?.pixabayKey || ''; wallsSaved = JSON.stringify(collectWalls()); renderWalls() }
-function collectWalls() { const k = $('pxKey').value.trim(), pb = $('pbKey').value.trim(); return { ...(k ? { pexelsKey: k } : {}), ...(pb ? { pixabayKey: pb } : {}), live: walls.map(w => { const o = { id: w.id, title: w.title || w.id, url: w.url }; if (w.thumb) o.thumb = w.thumb; if (w.sizeMb) o.sizeMb = w.sizeMb; if (w.hidden) o.hidden = true; return o }) } }
+function fillWalls(c) { walls = (c?.live || []).map(w => ({ ...w })); $('pxKey').value = c?.pexelsKey || ''; $('pbKey').value = c?.pixabayKey || ''; $('gpKey').value = c?.giphyKey || ''; wallsSaved = JSON.stringify(collectWalls()); renderWalls() }
+function collectWalls() { const k = $('pxKey').value.trim(), pb = $('pbKey').value.trim(), gp = $('gpKey').value.trim(); return { ...(k ? { pexelsKey: k } : {}), ...(pb ? { pixabayKey: pb } : {}), ...(gp ? { giphyKey: gp } : {}), live: walls.map(w => { const o = { id: w.id, title: w.title || w.id, url: w.url }; if (w.thumb) o.thumb = w.thumb; if (w.sizeMb) o.sizeMb = w.sizeMb; if (w.hidden) o.hidden = true; return o }) } }
 function renderWalls() {
   $('wallList').innerHTML = walls.length ? walls.map((w, i) => `<div class="item wall" data-i="${i}">
     ${w.thumb ? `<img src="${esc(wallSrc(w.thumb))}" alt="" loading="lazy">` : '<span class="noimg"></span>'}
@@ -1616,7 +1619,7 @@ $('wallList').addEventListener('click', e => {
   else return
   renderWalls(); changedDots()
 })
-$('pxKey').addEventListener('input', changedDots); $('pbKey').addEventListener('input', changedDots)
+$('pxKey').addEventListener('input', changedDots); $('pbKey').addEventListener('input', changedDots); $('gpKey').addEventListener('input', changedDots)
 $('wallAdd').onclick = () => {
   let id = 'w' + Date.now().toString(36); walls.push({ id, title: 'Новые обои', url: '' }); renderWalls(); changedDots()
   $('wallList').lastElementChild.querySelector('[data-k=url]').focus()
@@ -1624,6 +1627,7 @@ $('wallAdd').onclick = () => {
 $('saveWalls').onclick = () => guarded($('saveWalls'), async () => {
   const c = collectWalls()
   if (c.pexelsKey && !/^[A-Za-z0-9]{20,80}$/.test(c.pexelsKey)) throw new Error('Ключ Pexels — только латинские буквы и цифры, без пробелов')
+  if (c.giphyKey && !/^[A-Za-z0-9]{24,48}$/.test(c.giphyKey)) throw new Error('Ключ GIPHY — только латинские буквы и цифры, без пробелов')
   if (c.pixabayKey && !/^[0-9]{4,12}-[a-f0-9]{16,40}$/.test(c.pixabayKey)) throw new Error('Ключ Pixabay выглядит как 12345678-abcdef… — скопируйте его целиком, без пробелов')
   const bad = c.live.find(w => !w.url || (/^[a-z]+:/i.test(w.url) && !/^https:\/\//.test(w.url)) || w.url.includes('..'))
   if (bad) throw new Error('У «' + bad.title + '» нужна ссылка https://…/файл.mp4 или путь wallpapers/имя.mp4')

@@ -112,4 +112,15 @@ class WallpapersTest {
         assertEquals("https://upload.wikimedia.org/a.webm.1080p.vp9.webm", v[0].url)
         assertEquals("Aurora timelapse", v[0].title)
     }
+
+    @Test fun giphyOnlyRatedG() {
+        val json = """{"data":[
+            {"id":"abc123","title":"Anime rain","rating":"g","images":{"original_mp4":{"mp4":"https://media.giphy.com/a.mp4","width":"480","height":"854"},"fixed_width_still":{"url":"https://media.giphy.com/a_s.gif"}}},
+            {"id":"bad","rating":"r","images":{"original_mp4":{"mp4":"https://media.giphy.com/b.mp4","width":"480","height":"854"}}},
+            {"id":"tiny","rating":"g","images":{"original_mp4":{"mp4":"https://media.giphy.com/c.mp4","width":"200","height":"150"}}}]}"""
+        val v = Wallpapers.parseGiphy(json)
+        assertEquals(listOf("gpabc123"), v.map { it.id })
+        assertEquals("https://media.giphy.com/a.mp4", v[0].url)
+        assertEquals("abcdefghijklmnopqrstuvwxyz012345", Wallpapers.parseGiphyKey("""{"giphyKey":"abcdefghijklmnopqrstuvwxyz012345"}"""))
+    }
 }

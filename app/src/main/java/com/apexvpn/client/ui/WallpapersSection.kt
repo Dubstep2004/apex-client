@@ -192,7 +192,7 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
                 }
             }
         }
-        Caption("Бесплатные видео из интернета (Pixabay, Pexels или Wikimedia Commons). Нажмите — скачаются (2–10 МБ) и встанут на главный экран; ★ — в избранное. Скачанные — в списке выше, там же «Удалить».")
+        Caption("Видео из интернета: Pixabay, Pexels, GIPHY (Powered by GIPHY) или Wikimedia Commons. Нажмите — скачаются (2–10 МБ) и встанут на главный экран; ★ — в избранное. Скачанные — в списке выше, там же «Удалить».")
     }
 
     // 3.20. Эффект поверх любых обоев и «Живое фото»

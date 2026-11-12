@@ -2,6 +2,12 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.20.2 · 12 ноября 2026
+
+<img src="img/tags/new.svg" alt="Новое" height="22">
+
+- Живые обои из GIPHY: короткие ролики с аниме, играми и не только (если владелец добавил ключ в пульте)
+
 ## 3.20.1 · 12 ноября 2026
 
 <img src="img/tags/new.svg" alt="Новое" height="22">
