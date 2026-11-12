@@ -1,0 +1,27 @@
+name: Проверка пульта и страниц
+
+# После каждого изменения пульта (docs/admin) и страницы-приглашения (docs/invite) — и раз в день —
+# открывает их в настоящем браузере и ищет ошибки JavaScript, битые ссылки и вылезание за край экрана.
+on:
+  push:
+    branches: [main]
+    paths: ['docs/**', 'tests/check-pages.js', '.github/workflows/pages-check.yml']
+  schedule:
+    - cron: '41 4 * * *'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Браузер для проверки
+        run: |
+          npm i --no-save --no-audit --no-fund playwright@1.48.2
+          npx playwright install --with-deps chromium
+      - name: Проверить пульт и приглашение
+        run: node tests/check-pages.js

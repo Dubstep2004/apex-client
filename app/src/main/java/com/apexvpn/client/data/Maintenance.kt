@@ -23,6 +23,8 @@ object Maintenance {
     private const val AHEAD = 20 * 60_000L
 
     fun check(context: Context) = runCatching {
+        // 3.19.6: только когда VPN включён — иначе техработы пользователя не касаются
+        if (com.apexvpn.client.vpn.VpnState.status.value != com.apexvpn.client.vpn.VpnStatus.Started) return@runCatching
         val tag = Prefs.selectedTag
         if (tag == AUTO_TAG) return@runCatching
         val node = Subscription.state.value.nodes.find { it.tag == tag } ?: return@runCatching

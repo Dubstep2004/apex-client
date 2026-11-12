@@ -67,12 +67,12 @@ class ApexApp : Application() {
         // 3.19. Раз в 5 минут: предупредить о техработах на выбранном сервере и перестроить ядро,
         // когда техработы по расписанию начались или закончились (без скачивания — по уже полученному файлу)
         appScope.launch {
-            var active = com.apexvpn.client.data.AppConfig.value.activeKey()
+            com.apexvpn.client.data.AppConfig.appliedActive = com.apexvpn.client.data.AppConfig.value.activeKey()
             while (true) {
                 com.apexvpn.client.data.Maintenance.check(this@ApexApp)
                 val now = com.apexvpn.client.data.AppConfig.value.activeKey()
-                if (now != active) {
-                    active = now
+                if (now != com.apexvpn.client.data.AppConfig.appliedActive) {
+                    com.apexvpn.client.data.AppConfig.appliedActive = now
                     if (VpnState.status.value == com.apexvpn.client.vpn.VpnStatus.Started) com.apexvpn.client.vpn.ApexVpnService.reload(this@ApexApp)
                 }
                 kotlinx.coroutines.delay(5 * 60_000L)

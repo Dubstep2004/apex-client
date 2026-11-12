@@ -123,6 +123,11 @@
   if (sub && valid(sub)) {
     document.getElementById("invite").hidden = false;
     document.getElementById("dl").href = "https://github.com/" + REPO + "/releases/latest";
+    // Прямая ссылка на APK последней версии (не страница релиза) — скачивание сразу
+    fetch("https://api.github.com/repos/" + REPO + "/releases/latest").then(function (r) { return r.ok ? r.json() : null; }).then(function (rel) {
+      var apk = rel && (rel.assets || []).filter(function (a) { return /^apex-(client|vpn)-.*\.apk$/.test(a.name); })[0];
+      if (apk) document.getElementById("dl").href = apk.browser_download_url;
+    }).catch(function () {});
     document.getElementById("open").href = "apexvpn://import?url=" + encodeURIComponent(sub);
     document.getElementById("copySub").onclick = function () {
       copy(sub, document.getElementById("msg1"), "Скопировано — вставьте в APEX CLIENT");

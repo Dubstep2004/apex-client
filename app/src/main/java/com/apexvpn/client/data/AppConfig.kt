@@ -112,6 +112,8 @@ object AppConfig {
     }.getOrDefault(false)
 
     private val _state = MutableStateFlow(parse(Prefs.appConfigJson) ?: Config())
+    /** 3.19.6: какие пометки серверов ядро уже учло — чтобы не перезапускать VPN дважды (после скачивания и по таймеру). */
+    @Volatile var appliedActive: String = ""
     val state: StateFlow<Config> = _state.asStateFlow()
     val value get() = _state.value
 
@@ -206,6 +208,8 @@ object AppConfig {
         Prefs.appConfigJson = text
         val before = coreKey(_state.value)
         _state.value = parse(text) ?: Config()
-        before != coreKey(_state.value)
+        val changed = before != coreKey(_state.value)
+        if (changed) appliedActive = _state.value.activeKey()
+        changed
     }
 }
