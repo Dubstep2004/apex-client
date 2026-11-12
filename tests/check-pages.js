@@ -22,6 +22,7 @@ async function github(page) {
     if (u.includes('/contents/docs/config/app.json')) return J({ sha: 's1', content: b64(app) })
     if (u.includes('/contents/')) { const f = path.join(__dirname, '..', u.split('/contents/')[1].split('?')[0]); return fs.existsSync(f) ? J({ sha: 's', content: b64(fs.readFileSync(f, 'utf8')) }) : J({ message: 'Not Found' }, 404) }
     if (u.includes('/releases')) return J(u.includes('page=2') ? [] : u.includes('/latest') ? releases[0] : releases)
+    if (u.includes('/actions/runs')) return J({ workflow_runs: (globalThis.CI_FAIL ? ['Build APEX CLIENT', 'Проверка пульта и страниц'] : ['Build APEX CLIENT']).map((name, i) => ({ name, status: 'completed', conclusion: i ? 'failure' : 'success', updated_at: new Date().toISOString(), html_url: 'https://github.com/run/' + i })) })
     if (u.includes('/commits/')) return J({ files: [] })
     if (u.includes('/commits')) return J([{ sha: 'a', commit: { message: 'Пульт: проверка', author: { name: 'ci', date: new Date().toISOString() } } }])
     return J({})
@@ -55,7 +56,24 @@ async function edges(page, where) {
     await p.evaluate(() => showTab('banner')); await p.click('#addBanner'); await p.fill('#banners .item:last-child textarea', 'Проверка')
     await p.click('#saveApp'); await p.waitForTimeout(400)
     if (!(await p.textContent('#toast')).includes('Сохранено')) bad(W, 'не сохраняет баннер')
+    // Обзор: карточка «Состояние»
+    if (!(await p.$$('#ciList li')).length) bad(W, 'пустая карточка «Состояние»')
+    if (await p.isVisible('#ciwarn')) bad(W, 'красная полоса при зелёных сборках')
+    // Справка: поиск, развернуть, переход на вкладку
+    await p.evaluate(() => showTab('help')); await p.fill('#hq', 'техработы'); await p.waitForTimeout(100)
+    if (!(await p.$$('section[data-tab=help] mark.hit')).length) bad(W, 'поиск по справке ничего не находит')
+    await p.fill('#hq', 'ъъъъ'); if (await p.isHidden('#hNo')) bad(W, 'поиск по справке: нет сообщения «ничего не нашлось»')
+    await p.fill('#hq', ''); await p.click('#hOpen')
+    if (await p.evaluate(() => [...document.querySelectorAll('section[data-tab=help] details')].some(d => !d.open))) bad(W, '«Развернуть всё» не раскрыло разделы')
+    await edges(p, W + ' → справка раскрыта')
+    await p.click('[data-open=servers], [data-open=update]'); if (await p.evaluate(() => curTab === 'help')) bad(W, 'кнопка «Открыть вкладку» не переключает')
     await p.close()
+    // Упавшая проверка → красная полоса
+    globalThis.CI_FAIL = true
+    const f = await b.newPage({ viewport: { width, height: 900 } }); watch(f, W + ' (сборка упала)'); await github(f)
+    await f.goto('http://localhost:8199/admin/'); await f.fill('#token', 'github_pat_test'); await f.fill('#newPin', '1234'); await f.click('#loginBtn'); await f.waitForTimeout(1500)
+    if (await f.isHidden('#ciwarn')) bad(W, 'нет красной полосы, когда проверка упала')
+    globalThis.CI_FAIL = false; await f.close()
     // Приглашение: без подписки и с подпиской
     for (const u of ['/invite/', '/invite/#https%3A%2F%2Fsub.knownhosts.xyz%2Ftest']) {
       const q = await b.newPage({ viewport: { width, height: 900 } }); const Q = 'Приглашение ' + width + (u.includes('#') ? ' (с подпиской)' : '')

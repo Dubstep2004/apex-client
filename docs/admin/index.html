@@ -92,7 +92,7 @@
   .block.danger { border-color: #f0616d55; background: linear-gradient(180deg, #f0616d12, transparent 70%), var(--panel); }
 
   label.f { display: block; color: var(--dim); font-size: 13px; font-weight: 600; margin: 14px 0 7px; }
-  input[type=text], input[type=url], input[type=number], input[type=datetime-local], input[type=password], select, textarea {
+  input[type=text], input[type=search], input[type=url], input[type=number], input[type=datetime-local], input[type=password], select, textarea {
     width: 100%; background: var(--field); border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; outline: none;
   }
   input:focus, select:focus, textarea:focus { border-color: var(--go2); }
@@ -290,6 +290,33 @@
   .live div::after { content: "›"; margin-left: auto; color: var(--faint); font-size: 18px; line-height: 1; }
   .tokwarn { border: 1px solid #f5b75966; background: #f5b7591a; border-radius: var(--r-md); padding: 12px 14px; margin: 0 0 16px; font-weight: 600; }
   .tokwarn a { color: var(--go2); }
+  /* 2.11: состояние сборок, справка */
+  .ciwarn { border: 1px solid #f0616d77; background: #f0616d1a; border-radius: var(--r-md); padding: 12px 14px; margin: 0 0 16px; font-weight: 600; }
+  .ciwarn a { color: var(--go2); }
+  .ci { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+  .ci li { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .ci li:first-child { border-top: 0; }
+  .ci .dotc { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--faint); }
+  .ci .ok .dotc { background: var(--go1); } .ci .fail .dotc { background: var(--alert); } .ci .run .dotc { background: var(--warn); }
+  .ci b { flex: 1; font-weight: 600; } .ci small { color: var(--dim); text-align: right; }
+  .ci a { color: inherit; text-decoration: none; display: contents; }
+  .helptools { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 0; margin: 0 0 8px; background: var(--bg); }
+  .helptools input { flex: 1 1 220px; min-width: 0; padding: 10px 12px; }
+  .helpdoc .hit { background: #f5b75944; color: var(--text); border-radius: 3px; }
+  .helpdoc .gobtn { margin-top: 10px; }
+  .helpdoc .ans { border-top: 1px solid var(--line); padding: 10px 0; }
+  .helpdoc .ans p { margin: 4px 0 8px; }
+  .helpdoc figure { margin: 10px 0 4px; } .helpdoc figure svg { display: block; width: 100%; height: auto; max-width: 560px; }
+  .helpdoc figcaption { color: var(--faint); font-size: 12.5px; margin-top: 4px; }
+  .helpdoc .nores { color: var(--faint); }
+  #cheat { display: none; }
+  @media print {
+    body.printing > *:not(#cheat) { display: none !important; }
+    body.printing #cheat { display: block !important; color: #000; background: #fff; font: 11pt/1.4 system-ui, sans-serif; }
+    #cheat h1 { font-size: 16pt; margin: 0 0 4pt; } #cheat h2 { font-size: 12pt; margin: 10pt 0 3pt; }
+    #cheat ul { margin: 0; padding-left: 14pt; } #cheat li { margin: 1pt 0; } #cheat p { margin: 0 0 6pt; }
+    #cheat .cols { columns: 2; column-gap: 18pt; } #cheat section { break-inside: avoid; }
+  }
   .devsw { display: inline-flex; gap: 4px; margin: 0 0 12px 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 3px; }
   .devsw button { border: 0; background: none; color: var(--dim); border-radius: 9px; padding: 6px 10px; cursor: pointer; font: inherit; font-size: 13px; font-weight: 700; }
   .devsw button[aria-pressed=true] { background: var(--panel2); color: var(--text); }
@@ -361,7 +388,7 @@
       <button class="icon-btn" id="designBtn" title="Оформление" aria-label="Оформление пульта" aria-expanded="false">🎨</button>
       <div class="designs" id="designs" hidden></div>
     </div>
-    <div class="navtools" style="position:relative"><input id="q" type="search" placeholder="Поиск   Ctrl+K" aria-label="Поиск по пульту" autocomplete="off"><button id="navEdit" title="Настроить меню" aria-label="Настроить меню" aria-pressed="false">✏️</button><div class="sres" id="qres" hidden></div></div>
+    <div class="navtools" style="position:relative"><input id="q" type="search" placeholder="Поиск" aria-label="Поиск по пульту" autocomplete="off"><button id="navEdit" title="Настроить меню" aria-label="Настроить меню" aria-pressed="false">✏️</button><div class="sres" id="qres" hidden></div></div>
     <nav class="nav" id="nav"></nav>
     <button class="out" id="lock">Заблокировать пульт</button>
     <button class="out" id="logout">Выйти и стереть токен</button>
@@ -370,12 +397,14 @@
   <main class="work">
     <div class="draftbar" id="draftbar" hidden><p id="draftText">Есть несохранённый черновик</p><button class="btn quiet small" id="draftDrop">Удалить</button><button class="btn go small" id="draftUse">Восстановить</button></div>
     <div class="tokwarn" id="tokwarn" hidden></div>
+    <div class="ciwarn" id="ciwarn" hidden></div>
     <!-- Обзор -->
     <section data-tab="home">
       <h1>Что сейчас видят пользователи</h1>
       <p class="lead">Изменения доходят до приложений за 1–5 минут при открытии и за 15 минут в фоне.</p>
       <div class="phone-inline" data-preview></div>
       <div class="block"><h2>Версии</h2><p class="note">Пульт обновляется сам вместе с репозиторием, приложение — через релизы.</p><div class="vers" id="vers"></div></div>
+      <div class="block"><h2>Состояние</h2><p class="note" id="ciNote">Проверяем сборки и автопроверки…</p><ul class="ci" id="ciList"></ul></div>
       <div class="block"><h2>Сейчас действует</h2><p class="note">Нажмите на строку, чтобы изменить.</p><dl class="live" id="liveList"></dl></div>
       <div class="block danger"><h2>Всё сломано?</h2><p class="note">Одной кнопкой: аварийный баннер всем, остановка автообновления и пометка «Обслуживание» на проблемные серверы. Перед сохранением всё можно проверить.</p>
         <button class="btn red" id="panicBtn">Включить аварийный режим</button></div>
@@ -563,7 +592,14 @@
     <!-- Справка -->
     <section data-tab="help" hidden class="helpdoc">
       <h1>Справка для владельца</h1>
-      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 12 ноября 2026 · приложение 3.19.4 · пульт 2.9.</p>
+      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 12 ноября 2026 · приложение 3.19.6 · пульт 2.11.</p>
+      <div class="helptools">
+        <input id="hq" type="search" placeholder="Найти в справке, например «техработы»" aria-label="Найти в справке" autocomplete="off">
+        <button class="btn quiet small" id="hOpen" type="button">Развернуть всё</button>
+        <button class="btn quiet small" id="hClose" type="button">Свернуть всё</button>
+        <button class="btn quiet small" id="hPrint" type="button">Шпаргалка для печати</button>
+      </div>
+      <p class="nores" id="hNo" hidden>В справке ничего не нашлось. Попробуйте другое слово или поиск вверху — он ищет и по вкладкам.</p>
 
       <div class="block"><h2>🏷 Новое название: APEX CLIENT</h2>
         <p>С версии <b>3.19.1</b> приложение называется <b>APEX CLIENT</b> (было APEX VPN), с 3.19.2 репозиторий — <b>github.com/Dubstep2004/apex-client</b> (был apex-vpn), с 3.19.3 файлы — <code>apex-client-&lt;версия&gt;.apk</code>.</p>
@@ -578,6 +614,15 @@
 
       <div class="block"><h2>🎛 Как работает пульт</h2>
         <p>Пульт меняет файл <code>docs/config/app.json</code> на GitHub. Приложения забирают его при запуске, при открытии (не чаще раза в 5 минут) и раз в 15 минут в фоне — <b>изменения доходят за 1–15 минут</b>. Новую версию приложения выпускать не нужно.</p>
+<figure><svg viewBox="0 0 560 120" role="img" aria-label="Пульт сохраняет файл на GitHub, приложения забирают его за 1–15 минут">
+          <g font-family="system-ui,sans-serif" font-size="13" text-anchor="middle">
+            <rect x="6" y="30" width="140" height="56" rx="14" fill="var(--panel2)" stroke="var(--go2)"/><text x="76" y="56" fill="var(--text)" font-weight="700">Пульт</text><text x="76" y="74" fill="var(--dim)" font-size="11.5">«Сохранить»</text>
+            <rect x="210" y="30" width="140" height="56" rx="14" fill="var(--panel2)" stroke="var(--line)"/><text x="280" y="56" fill="var(--text)" font-weight="700">GitHub</text><text x="280" y="74" fill="var(--dim)" font-size="11.5">config/app.json</text>
+            <rect x="414" y="30" width="140" height="56" rx="14" fill="var(--panel2)" stroke="var(--go1)"/><text x="484" y="56" fill="var(--text)" font-weight="700">Приложения</text><text x="484" y="74" fill="var(--dim)" font-size="11.5">телефон · ТВ · часы</text>
+            <path d="M150 58h54M354 58h54" stroke="var(--dim)" stroke-width="2" marker-end="url(#ar)"/>
+            <text x="381" y="22" fill="var(--warn)" font-size="11.5">1–15 минут</text>
+          </g><defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--dim)"/></marker></defs>
+        </svg><figcaption>Новую версию приложения для этого выпускать не нужно.</figcaption></figure>
         <p><b>Вход:</b> первый раз — токен GitHub и PIN из 4–8 цифр, дальше только PIN. Токен хранится только в этом браузере, зашифрованный PIN-ом.</p>
         <div class="tbl"><table>
           <tr><td>Название</td><td>В шапке — APEX CLIENT, версия пульта и приложения. Иконка «щит с ползунками» — на вкладке браузера и на главном экране телефона (Chrome → ⋮ → «Добавить на главный экран»)</td></tr>
@@ -617,6 +662,7 @@
           <li>Проверили — снимите галочку и сохраните: увидят все.</li>
         </ol>
         <div class="callout warn">Каждое «Придумать» делает <b>новый</b> код — старый на телефоне перестаёт работать.</div>
+        <button class="btn quiet small gobtn" type="button" data-open="preview">Открыть вкладку «Предпросмотр»</button>
       </details></div>
 
       <div class="block"><details><summary>🌐 Сайты</summary>
@@ -632,6 +678,7 @@
           <li>Pages: apex-client → main, папка /docs; Dubstep2004.github.io → main, папка / (root).</li>
           <li>Изменения на сайтах — через 1–3 минуты. Не видно — Ctrl+F5.</li>
         </ul>
+        <button class="btn quiet small gobtn" type="button" data-open="site">Открыть вкладку «Визитка»</button>
       </details></div>
 
       <div class="block"><details><summary>🛠 Выпуск новой версии и беты</summary>
@@ -640,9 +687,20 @@
           <li><code>Changelog.kt</code> — добавьте запись: это описание релиза и окна обновления.</li>
           <li>Запушьте в main (или Actions → Build APEX CLIENT → Run workflow). Сборка ~25 минут, потом релиз <b>APEX CLIENT &lt;версия&gt;</b> с файлами <code>apex-client-&lt;версия&gt;.apk</code> (телефон, ТВ) и <code>apex-watch-&lt;версия&gt;.apk</code> (часы), и окно «Доступна версия».</li>
         </ol>
+        <figure><svg viewBox="0 0 560 104" role="img" aria-label="Выпуск: изменить версию, запушить, сборка около 25 минут, релиз, обновление у пользователей">
+          <g font-family="system-ui,sans-serif" font-size="12" text-anchor="middle">
+            <rect x="4" y="24" width="100" height="52" rx="12" fill="var(--panel2)" stroke="var(--line)"/><text x="54" y="47" fill="var(--text)" font-weight="700">Версия</text><text x="54" y="63" fill="var(--dim)" font-size="11">gradle + Changelog</text>
+            <rect x="118" y="24" width="100" height="52" rx="12" fill="var(--panel2)" stroke="var(--line)"/><text x="168" y="47" fill="var(--text)" font-weight="700">Push в main</text><text x="168" y="63" fill="var(--dim)" font-size="11">или Run workflow</text>
+            <rect x="232" y="24" width="100" height="52" rx="12" fill="var(--panel2)" stroke="var(--warn)"/><text x="282" y="47" fill="var(--text)" font-weight="700">Сборка</text><text x="282" y="63" fill="var(--dim)" font-size="11">~25 минут</text>
+            <rect x="346" y="24" width="100" height="52" rx="12" fill="var(--panel2)" stroke="var(--go2)"/><text x="396" y="47" fill="var(--text)" font-weight="700">Релиз</text><text x="396" y="63" fill="var(--dim)" font-size="11">apex-client-….apk</text>
+            <rect x="460" y="24" width="96" height="52" rx="12" fill="var(--panel2)" stroke="var(--go1)"/><text x="508" y="47" fill="var(--text)" font-weight="700">Телефоны</text><text x="508" y="63" fill="var(--dim)" font-size="11">«Доступна версия»</text>
+            <path d="M106 50h10M220 50h10M334 50h10M448 50h10" stroke="var(--dim)" stroke-width="2"/>
+            <text x="282" y="96" fill="var(--alert)" font-size="11">тесты не прошли — релиза не будет</text>
+          </g></svg></figure>
         <p><b>Бета:</b> имя со словом beta (<code>3.19.0-beta1</code>) — выйдет как Pre-release, получат только с «Настройки → Обновления → Бета-версии».</p>
         <p><b>Плохая версия:</b> «Функции» → выключить автоустановку обновлений, номер сборки — в «Отозванные версии».</p>
         <div class="callout warn">Все версии подписываются одним ключом (секреты APEX_KEYSTORE_BASE64 / APEX_KEYSTORE_PASSWORD). Не удаляйте их и храните копию ключа — иначе обновления не встанут поверх.</div>
+        <button class="btn quiet small gobtn" type="button" data-open="update">Открыть вкладку «Обновления»</button>
       </details></div>
 
       <div class="block"><details><summary>📢 Объявление в карточке подписки (Remnawave)</summary>
@@ -655,12 +713,20 @@
       </details></div>
 
       <div class="block"><details><summary>📶 Подписка, Xray JSON и LTE-обход</summary>
+        <figure><svg viewBox="0 0 560 100" role="img" aria-label="Подписка: приложение запрашивает ссылку с меткой APEX VPN, Remnawave отдаёт серверы и объявление">
+          <g font-family="system-ui,sans-serif" font-size="12" text-anchor="middle">
+            <rect x="6" y="22" width="150" height="56" rx="14" fill="var(--panel2)" stroke="var(--go1)"/><text x="81" y="46" fill="var(--text)" font-weight="700">APEX CLIENT</text><text x="81" y="63" fill="var(--dim)" font-size="11">User-Agent: APEX VPN/…</text>
+            <rect x="404" y="22" width="150" height="56" rx="14" fill="var(--panel2)" stroke="var(--go2)"/><text x="479" y="46" fill="var(--text)" font-weight="700">Remnawave</text><text x="479" y="63" fill="var(--dim)" font-size="11">sub.knownhosts.xyz</text>
+            <path d="M160 40h238" stroke="var(--dim)" stroke-width="2" marker-end="url(#ar)"/><text x="280" y="33" fill="var(--dim)" font-size="11">ссылка подписки</text>
+            <path d="M400 62h-238" stroke="var(--dim)" stroke-width="2" marker-end="url(#ar)"/><text x="280" y="80" fill="var(--dim)" font-size="11">серверы · объявление · Xray JSON</text>
+          </g></svg></figure>
         <ul>
           <li>Понимает base64-список, обычный список, JSON sing-box и Xray JSON. User-Agent: <code>APEX VPN/версия</code>.</li>
           <li>LTE-обход узнаётся по названию: LTE, 📶, Обход, Bypass, Белые списки.</li>
           <li>Если у обхода особые настройки (XHTTP, CDN) — Response Rules → «User-Agent содержит APEX VPN» → тип ответа <b>XRAY_JSON</b>.</li>
           <li>Сменили домен подписки — вкладка «Подписка»: новый адрес первым + строка переезда «старый = новый».</li>
         </ul>
+        <button class="btn quiet small gobtn" type="button" data-open="sub">Открыть вкладку «Подписка»</button>
       </details></div>
 
       <div class="block"><details><summary>🩺 GitHub не собирает или сайт не открывается</summary>
@@ -671,7 +737,47 @@
           <li>Сайт показывает 404 — проверьте, прошёл ли pages-build-deployment, и Settings → Pages.</li>
           <li>Красный ✗ у коммита бывает, когда лишнюю сборку отменили вручную — это не ошибка, следующая версия будет зелёной.</li>
           <li>Картинка в README не обновилась — Ctrl+F5 или подождите 5–10 минут: GitHub держит картинки в кэше.</li>
+          <li>Красная полоса «Сборка упала» в пульте — см. раздел «Автопроверки» выше.</li>
         </ul>
+        <button class="btn quiet small gobtn" type="button" data-open="checks">Открыть вкладку «Проверка»</button>
+      </details></div>
+
+      <div class="block"><details><summary>💬 Готовые ответы пользователям</summary>
+        <p>Частые вопросы в Telegram. «Скопировать ответ» — и вставьте в чат.</p>
+        <div class="ans"><b>Не подключается</b><p>Откройте APEX CLIENT, нажмите ↻ «Обновить подписку» на главном экране и выберите «Автопилот». Если не помогло — выключите и включите VPN. Не заработает — пришлите скриншот главного экрана.</p><button class="btn quiet small" type="button" data-copy>Скопировать ответ</button></div>
+        <div class="ans"><b>Медленно работает</b><p>Включите «Автопилот» — он сам выбирает самый быстрый сервер. На мобильном интернете попробуйте сервер с пометкой 📶 LTE или «Обход».</p><button class="btn quiet small" type="button" data-copy>Скопировать ответ</button></div>
+        <div class="ans"><b>Как обновить приложение</b><p>Обновление приходит само: появится окно «Доступна версия» — нажмите «Обновить». Можно проверить вручную: Настройки → Обновления → «Проверить сейчас». Версии до 3.19.3 обновите один раз вручную: скачайте файл apex-client-….apk с сайта dubstep2004.github.io.</p><button class="btn quiet small" type="button" data-copy>Скопировать ответ</button></div>
+        <div class="ans"><b>Как добавить подписку</b><p>Скопируйте ссылку подписки, откройте APEX CLIENT и в поле «Ссылка на подписку» нажмите значок «Вставить». Или «Сканировать QR-код».</p><button class="btn quiet small" type="button" data-copy>Скопировать ответ</button></div>
+        <div class="ans"><b>Где скачать</b><p>Сайт dubstep2004.github.io — кнопка «Скачать». Файл для телефона и ТВ — apex-client-….apk, для часов — apex-watch-….apk.</p><button class="btn quiet small" type="button" data-copy>Скопировать ответ</button></div>
+        <div class="ans"><b>Приложение называется по-другому</b><p>APEX VPN теперь называется APEX CLIENT — это то же приложение, подписка и настройки на месте.</p><button class="btn quiet small" type="button" data-copy>Скопировать ответ</button></div>
+        <div class="ans"><b>Техработы на сервере</b><p>На сервере сейчас техработы. Автопилот уже переключил вас на рабочий. Если выбирали сервер вручную — нажмите «На автопилот» в уведомлении.</p><button class="btn quiet small" type="button" data-copy>Скопировать ответ</button></div>
+      </details></div>
+
+      <div class="block"><details><summary>✅ Автопроверки: галочка и крестик</summary>
+        <p>Робот GitHub сам открывает пульт, страницу-приглашение и визитку в браузере и ищет ошибки: ошибки в коде страницы, битые ссылки, вылезание за экран на телефоне и компьютере, работает ли сохранение и ведёт ли «Скачать» на APK. Перед каждой сборкой приложения запускаются автотесты логики (версии, техработы, настройки из пульта). Состояние видно на «Обзоре» — карточка «Состояние».</p>
+        <div class="tbl"><table>
+          <tr><td>Когда</td><td>При каждом изменении пульта, визитки или приложения и раз в день утром</td></tr>
+          <tr><td>🟢 Галочка</td><td>Всё в порядке</td></tr>
+          <tr><td>🟡 Кружок</td><td>Идёт проверка или сборка — подождите</td></tr>
+          <tr><td>🔴 Крестик</td><td>Найдена ошибка. Пульт покажет красную полосу сверху, GitHub пришлёт письмо. Откройте проверку → внизу «Annotations» — там по-русски написано, что не так. Перешлите текст разработчику</td></tr>
+          <tr><td>⚪ Отменена</td><td>Лишнюю сборку остановили вручную или пришёл новый коммит — это не ошибка</td></tr>
+        </table></div>
+        <ul>
+          <li>Проверки пульта: <a href="https://github.com/Dubstep2004/apex-client/actions/workflows/pages-check.yml" target="_blank" rel="noopener">«Проверка пульта и страниц»</a></li>
+          <li>Проверки визитки: <a href="https://github.com/Dubstep2004/dubstep2004.github.io/actions" target="_blank" rel="noopener">«Проверка визитки»</a></li>
+          <li>Сборки: <a href="https://github.com/Dubstep2004/apex-client/actions/workflows/build.yml" target="_blank" rel="noopener">«Build APEX CLIENT»</a> — если упали автотесты, релиз не выйдет, у пользователей остаётся прежняя версия</li>
+        </ul>
+        <div class="callout">Робот не проверяет VPN на настоящем телефоне, часах и ТВ — это только руками.</div>
+        <button class="btn quiet small gobtn" type="button" data-open="home">Открыть «Обзор» → «Состояние»</button>
+      </details></div>
+
+      <div class="block"><details><summary>🆕 Что нового в пульте</summary>
+        <div class="tbl"><table>
+          <tr><td>2.11</td><td>Карточка «Состояние» на «Обзоре» и красная полоса, если сборка или проверка упала. В справке: поиск, «Развернуть/Свернуть всё», готовые ответы пользователям, раздел про автопроверки, схемы, кнопки перехода на вкладки, шпаргалка для печати. Иконка 🏠 у «Обзора», поле поиска в цвет пульта</td></tr>
+          <tr><td>2.10</td><td>Название APEX CLIENT, своя иконка пульта, кнопка «Переименовать все версии», вкладка «Визитка», описание версии, проверка серверов</td></tr>
+          <tr><td>2.6–2.9</td><td>Меню по группам и нижнее меню на телефоне, свой порядок вкладок, поиск, Ctrl+S и Ctrl+Z, черновики, предупреждение о сроке токена, предпросмотр на телефоне, ТВ и часах, пометки серверов по расписанию</td></tr>
+          <tr><td>2.0–2.5</td><td>Вход по PIN, баннеры, объявление, серверы, обновления, функции, история с откатом</td></tr>
+        </table></div>
       </details></div>
     </section>
 
@@ -691,6 +797,19 @@
   <button class="btn go" id="saveApp">Сохранить</button>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div id="cheat" aria-hidden="true">
+  <h1>APEX CLIENT · шпаргалка владельца</h1>
+  <p>Пульт: dubstep2004.github.io/apex-client/admin/ · Сайт: dubstep2004.github.io · Пульт 2.11</p>
+  <div class="cols">
+    <section><h2>Пульт</h2><ul><li>Изменения доходят до приложений за 1–15 минут</li><li>Не забудьте «Сохранить» (Ctrl+S), отменить — ↶ или Ctrl+Z</li><li>«История» — вернуть прошлую версию</li><li>VPN перезапускается только из-за серверов, функций и кода предпросмотра</li></ul></section>
+    <section><h2>Если всё сломалось</h2><ul><li>«Обзор» → «Включить аварийный режим» → Сохранить</li><li>Сервер сбоит — «Серверы» → 🔧 Обслуживание на 1–4 часа</li><li>Плохая версия — «Функции» → выключить автоустановку, номер — в «Отозванные версии»</li></ul></section>
+    <section><h2>Выпуск версии</h2><ul><li>build.gradle.kts: versionCode +1, versionName</li><li>Changelog.kt — запись</li><li>Push в main → сборка ~25 минут → релиз</li><li>Бета — в имени слово beta</li></ul></section>
+    <section><h2>Токен (403)</h2><ul><li>github.com/settings/personal-access-tokens/new</li><li>Only select repositories → apex-client</li><li>Contents → Read and write, 90 дней</li><li>Токен никому не присылать</li></ul></section>
+    <section><h2>Автопроверки</h2><ul><li>🟢 всё хорошо · 🟡 идёт · 🔴 ошибка · ⚪ отменена</li><li>Красная полоса в пульте → открыть проверку → Annotations</li></ul></section>
+    <section><h2>Нельзя менять</h2><ul><li>Метку APEX VPN/версия в Remnawave</li><li>Пакет com.apexvpn.client и ключ подписи</li><li>Не создавать репозиторий apex-vpn</li></ul></section>
+  </div>
+</div>
+
 
 <dialog id="panic">
   <h2>Аварийный режим</h2>
@@ -716,7 +835,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.10', PANEL_DATE = '12 ноября 2026'
+const PANEL_VERSION = '2.11', PANEL_DATE = '12 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json'
 const DESIGNS = [
@@ -732,12 +851,12 @@ const FEATURES = [
   ['threats', 'Защита от мошенников', 'База опасных сайтов HaGeZi Threat Intelligence'],
   ['autoUpdate', 'Автоустановка обновлений', 'Остановите, если выпущенная версия оказалась плохой'],
 ]
-const TABS = [['home', '◎', 'Обзор'], ['banner', '📢', 'Баннеры'], ['servers', '🖥', 'Серверы'], ['announce', '🪧', 'Объявление'],
+const TABS = [['home', '🏠', 'Обзор'], ['banner', '📢', 'Баннеры'], ['servers', '🖥', 'Серверы'], ['announce', '🪧', 'Объявление'],
   ['links', '🔗', 'Ссылки'], ['update', '📦', 'Обновления'], ['features', '⚙️', 'Функции'], ['preview', '👁', 'Предпросмотр'],
   ['history', '🕘', 'История'], ['checks', '🩺', 'Проверка'], ['sub', '🔐', 'Подписка'], ['hide', '🧩', 'Скрыть VPN'], ['site', '🌐', 'Визитка'], ['help', '📖', 'Справка']]
 // 2.6: группы меню (и нижнее меню на телефоне)
 const GROUPS = [
-  ['main', '◎', 'Обзор', ['home']],
+  ['main', '🏠', 'Обзор', ['home']],
   ['users', '📣', 'Пользователям', ['banner', 'announce', 'site']],
   ['srv', '🖥', 'Серверы', ['servers', 'checks']],
   ['app', '📦', 'Приложение', ['update', 'features', 'links', 'preview', 'sub', 'hide']],
@@ -1309,7 +1428,7 @@ async function loadAll() {
   const [app, sub, hide, site] = await Promise.all([getFile(APP), getFile(SUB), getFile(HIDE), getFile(SITE)])
   fillApp(app); saved = JSON.stringify(collectApp(true)); undoStack = [saved]; offerDraft(); changed()
   fillSub(sub); $('hideJson').value = hide ? JSON.stringify(hide, null, 2) : ''; fillSite(site)
-  renderVersions(); loadReleases()
+  renderVersions(); loadReleases(); loadCI()
 }
 let retryBtn = null
 window.addEventListener('offline', () => toast('Интернет пропал. Изменения не потеряются — сохраните, когда сеть вернётся', false))
@@ -1401,6 +1520,8 @@ function buildIndex() {
     ['features', 'экстренно выключить hagezi реклама мошенники автообновление'], ['banner', 'авария баннер шаблон расписание страна'], ['site', 'сайт визитка порядок блоки вопросы faq кнопка'],
     ['checks', 'проверка серверы пинг доступность'], ['history', 'история вернуть копия экспорт импорт что изменилось'], ['sub', 'домен подписка адрес переезд'], ['hide', 'скрыть vpn банки приложения шаблон']]
   extra.forEach(([id, words]) => out.push({ id, text: tabInfo(id)[2], where: groupOf(id)[2], el: null, words }))
+  // 2.11: разделы справки ищутся по всему тексту («техработы» → нужный раздел)
+  document.querySelectorAll('section[data-tab=help] > .block').forEach(b => { const h = b.querySelector('summary, h2'); if (h) out.push({ id: 'help', text: h.textContent.trim(), where: 'Справка', el: h, words: b.textContent.replace(/\s+/g, ' ') }) })
   return out
 }
 let qSel = 0
@@ -1414,9 +1535,81 @@ function runSearch() {
 }
 function goHit(h) {
   if (!h) return; $('qres').hidden = true; $('q').value = ''; showTab(h.id)
-  if (h.el) { const box = h.el.closest('.block') || h.el; box.scrollIntoView({ behavior: 'smooth', block: 'center' }); box.classList.remove('flash'); void box.offsetWidth; box.classList.add('flash'); const inp = h.el.matches('label.f') ? $(h.el.getAttribute('for')) : null; if (inp) setTimeout(() => inp.focus({ preventScroll: true }), 400) }
+  if (h.el) { const d = h.el.closest('details'); if (d) d.open = true; const box = h.el.closest('.block') || h.el; box.scrollIntoView({ behavior: 'smooth', block: 'center' }); box.classList.remove('flash'); void box.offsetWidth; box.classList.add('flash'); const inp = h.el.matches('label.f') ? $(h.el.getAttribute('for')) : null; if (inp) setTimeout(() => inp.focus({ preventScroll: true }), 400) }
 }
+
+// ── 2.11: справка — поиск, развернуть/свернуть, копирование ответов, переходы, шпаргалка
+const helpSec = document.querySelector('section[data-tab=help]')
+function clearHits() { helpSec.querySelectorAll('mark.hit').forEach(m => m.replaceWith(document.createTextNode(m.textContent))); helpSec.normalize() }
+function helpFind() {
+  clearHits()
+  const q = $('hq').value.trim().toLowerCase(), blocks = [...helpSec.querySelectorAll(':scope > .block')]
+  if (!q) { blocks.forEach(b => (b.hidden = false)); $('hNo').hidden = true; return }
+  let any = false
+  blocks.forEach(b => {
+    const ok = b.textContent.toLowerCase().includes(q); b.hidden = !ok; any = any || ok
+    if (!ok) return
+    const d = b.querySelector('details'); if (d) d.open = true
+    const walk = document.createTreeWalker(b, NodeFilter.SHOW_TEXT), nodes = []
+    while (walk.nextNode()) if (walk.currentNode.nodeValue.toLowerCase().includes(q) && !walk.currentNode.parentElement.closest('svg, button')) nodes.push(walk.currentNode)
+    nodes.forEach(n => { const i = n.nodeValue.toLowerCase().indexOf(q), r = n.splitText(i); r.splitText(q.length); const m = document.createElement('mark'); m.className = 'hit'; r.replaceWith(m); m.textContent = r.nodeValue })
+  })
+  $('hNo').hidden = any
+}
+$('hq').addEventListener('input', helpFind)
+$('hOpen').onclick = () => helpSec.querySelectorAll('details').forEach(d => (d.open = true))
+$('hClose').onclick = () => helpSec.querySelectorAll('details').forEach(d => (d.open = false))
+$('hPrint').onclick = () => { document.body.classList.add('printing'); setTimeout(() => { window.print(); document.body.classList.remove('printing') }, 50) }
+helpSec.addEventListener('click', e => {
+  const c = e.target.closest('[data-copy]')
+  if (c) {
+    const t = c.parentElement.querySelector('p').textContent.trim()
+    const ok = () => toast('Ответ скопирован — вставьте в чат')
+    if (navigator.clipboard) navigator.clipboard.writeText(t).then(ok, () => toast(t, false)); else toast(t, false)
+    return
+  }
+  const g = e.target.closest('[data-open]'); if (g) showTab(g.dataset.open)
+})
+
+// ── 2.11: состояние сборок и автопроверок (публичные данные GitHub Actions, без токена)
+const CI = [
+  ['Dubstep2004/apex-client', 'Build APEX CLIENT', 'Сборка приложения'],
+  ['Dubstep2004/apex-client', 'Проверка пульта и страниц', 'Автопроверка пульта'],
+  ['Dubstep2004/apex-client', 'Config check', 'Проверка настроек'],
+  ['Dubstep2004/apex-client', 'pages build and deployment', 'Публикация пульта'],
+  ['Dubstep2004/dubstep2004.github.io', 'Проверка визитки', 'Автопроверка визитки'],
+  ['Dubstep2004/dubstep2004.github.io', 'pages build and deployment', 'Публикация визитки'],
+]
+async function loadCI() {
+  try {
+    const repos = [...new Set(CI.map(c => c[0]))]
+    const data = await Promise.all(repos.map(r => fetch('https://api.github.com/repos/' + r + '/actions/runs?per_page=40', { headers: { Accept: 'application/vnd.github+json' } }).then(x => (x.ok ? x.json() : Promise.reject(x.status)))))
+    const runs = Object.fromEntries(repos.map((r, i) => [r, data[i].workflow_runs || []]))
+    const fails = []
+    const rows = CI.map(([repo, wf, label]) => {
+      const list = runs[repo].filter(x => x.name === wf)
+      const live = list.find(x => x.status !== 'completed')
+      const last = list.find(x => x.status === 'completed' && x.conclusion !== 'cancelled' && x.conclusion !== 'skipped')
+      if (!list.length) return null
+      const when = x => new Date(x.updated_at).toLocaleString('ru', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+      let cls = 'ok', txt = last ? 'в порядке · ' + when(last) : 'нет данных', url = (last || list[0]).html_url
+      if (last && last.conclusion !== 'success') { cls = 'fail'; txt = 'ошибка · ' + when(last); fails.push([label, last.html_url]) }
+      if (live) { cls = cls === 'fail' ? 'fail' : 'run'; txt = (live.status === 'queued' ? 'в очереди' : 'идёт сейчас') + (cls === 'fail' ? ' · прошлая с ошибкой' : ''); url = live.html_url }
+      return `<li class="${cls}"><a href="${esc(url)}" target="_blank" rel="noopener"><span class="dotc"></span><b>${esc(label)}</b><small>${esc(txt)}</small></a></li>`
+    }).filter(Boolean)
+    $('ciList').innerHTML = rows.join('')
+    $('ciNote').textContent = fails.length ? 'Есть ошибки — нажмите на красную строку, внизу проверки «Annotations» написано, что не так.' : 'Всё зелёное. Нажмите на строку — откроется на GitHub.'
+    const w = $('ciwarn')
+    w.hidden = !fails.length
+    if (fails.length) w.innerHTML = '🔴 ' + fails.map(([l, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(l)}</a>`).join(', ') + ' — упала. Пользователи этого не видят; откройте, чтобы узнать причину. Подробнее — «Справка» → «Автопроверки».'
+  } catch (e) {
+    $('ciNote').textContent = 'Не удалось узнать состояние сборок' + (e === 403 ? ' — GitHub ограничил запросы, попробуйте через час.' : ' — проверьте интернет.')
+  }
+}
+setInterval(() => { if (!$('app').hidden && document.visibilityState === 'visible') loadCI() }, 5 * 60e3)
+
 $('q').addEventListener('input', runSearch)
+if (matchMedia('(hover: hover)').matches) $('q').placeholder = 'Поиск   Ctrl+K' 
 $('q').addEventListener('keydown', e => {
   const hits = $('qres')._hits || []
   if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); qSel = (qSel + (e.key === 'ArrowDown' ? 1 : -1) + hits.length) % Math.max(1, hits.length); $('qres').querySelectorAll('button').forEach((b, i) => b.classList.toggle('sel', i === qSel)) }
