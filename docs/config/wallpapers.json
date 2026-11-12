@@ -5,6 +5,102 @@
     "commons",
     "giphy"
   ],
+  "sourcesOff": [
+    "pexels",
+    "pixabay"
+  ],
+  "topics": [
+    {
+      "id": "anime",
+      "title": "Аниме",
+      "query": "anime"
+    },
+    {
+      "id": "games",
+      "title": "Игры",
+      "query": "video game"
+    },
+    {
+      "id": "cyberpunk",
+      "title": "Киберпанк",
+      "query": "cyberpunk"
+    },
+    {
+      "id": "neon",
+      "title": "Неон",
+      "query": "neon lights"
+    },
+    {
+      "id": "pixel",
+      "title": "Пиксель-арт",
+      "query": "pixel art animation"
+    },
+    {
+      "id": "space",
+      "title": "Космос",
+      "query": "space galaxy"
+    },
+    {
+      "id": "city",
+      "title": "Город ночью",
+      "query": "city night"
+    },
+    {
+      "id": "rain",
+      "title": "Дождь",
+      "query": "rain window"
+    },
+    {
+      "id": "ocean",
+      "title": "Океан",
+      "query": "ocean waves"
+    },
+    {
+      "id": "nature",
+      "title": "Природа",
+      "query": "nature"
+    },
+    {
+      "id": "forest",
+      "title": "Лес",
+      "query": "forest"
+    },
+    {
+      "id": "fire",
+      "title": "Огонь",
+      "query": "fire flames"
+    },
+    {
+      "id": "snow",
+      "title": "Зима",
+      "query": "snow falling"
+    },
+    {
+      "id": "abstract",
+      "title": "Абстракция",
+      "query": "abstract background"
+    },
+    {
+      "id": "aquarium",
+      "title": "Рыбки",
+      "query": "fish aquarium"
+    },
+    {
+      "id": "sunset",
+      "title": "Закат",
+      "query": "sunset"
+    },
+    {
+      "id": "cars",
+      "title": "Машины",
+      "query": "car night"
+    },
+    {
+      "id": "cats",
+      "title": "Котики",
+      "query": "cat"
+    }
+  ],
   "giphyKey": "8F7IqXUqi4Dx8A84y40qOChQvrmL7d0h",
   "live": [
     {
