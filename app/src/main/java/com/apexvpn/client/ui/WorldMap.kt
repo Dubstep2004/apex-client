@@ -91,7 +91,7 @@ fun WorldMapCard(status: VpnStatus, serverCountry: String?, serverTitle: String,
                 val b = to?.let { project(it) }
                 if (b != null && (a - b).getDistance() > 4f) {
                     val ctrl = Offset((a.x + b.x) / 2, minOf(a.y, b.y) - (a - b).getDistance() * 0.35f)
-                    val path = Path().apply { moveTo(a.x, a.y); quadraticBezierTo(ctrl.x, ctrl.y, b.x, b.y) }
+                    val path = Path().apply { moveTo(a.x, a.y); quadraticTo(ctrl.x, ctrl.y, b.x, b.y) }
                     if (connected) {
                         drawPath(path, Brush.linearGradient(listOf(accent, accent2), a, b), style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round))
                     } else {

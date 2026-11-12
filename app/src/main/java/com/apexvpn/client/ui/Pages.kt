@@ -2274,7 +2274,7 @@ private fun HomeStylePreview(map: Boolean) {
             }
             val a = androidx.compose.ui.geometry.Offset(size.width * 0.6f, size.height * 0.32f)
             val b = androidx.compose.ui.geometry.Offset(size.width * 0.5f, size.height * 0.38f)
-            val path = androidx.compose.ui.graphics.Path().apply { moveTo(a.x, a.y); quadraticBezierTo((a.x + b.x) / 2, a.y - 20f, b.x - 30f, b.y) }
+            val path = androidx.compose.ui.graphics.Path().apply { moveTo(a.x, a.y); quadraticTo((a.x + b.x) / 2, a.y - 20f, b.x - 30f, b.y) }
             drawPath(path, accent, style = androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx()))
             drawCircle(accent, 3.dp.toPx(), a)
             drawCircle(accent2, 3.dp.toPx(), androidx.compose.ui.geometry.Offset(b.x - 30f, b.y))

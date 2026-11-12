@@ -4,10 +4,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -37,21 +35,23 @@ fun WallFxOverlay(fx: String) {
     }
 }
 
+/** Время анимации в секундах. Читается внутри Canvas — перерисовка без лишней перекомпоновки (меньше батареи). */
 @Composable
-private fun frameTime(): Float {
-    var time by remember { mutableLongStateOf(0L) }
+private fun frameTime(): androidx.compose.runtime.State<Long> {
+    val time = remember { mutableLongStateOf(0L) }
     LaunchedEffect(Unit) {
         val start = withFrameNanos { it }
-        while (true) withFrameNanos { time = it - start }
+        while (true) withFrameNanos { time.longValue = it - start }
     }
-    return time / 1_000_000_000f
+    return time
 }
 
 @Composable
 private fun RainOverlay() {
     val drops = remember { val r = Random(3); List(70) { floatArrayOf(r.nextFloat(), r.nextFloat(), 0.6f + r.nextFloat() * 0.8f, 0.5f + r.nextFloat() * 0.5f) } }
-    val t = frameTime()
+    val clock = frameTime()
     Canvas(Modifier.fillMaxSize()) {
+        val t = clock.value / 1_000_000_000f
         val len = size.height * 0.035f
         drops.forEach { (x0, y0, sp, a) ->
             val y = ((y0 + t * sp) % 1f) * (size.height + len) - len
@@ -64,8 +64,9 @@ private fun RainOverlay() {
 @Composable
 private fun StarsOverlay() {
     val stars = remember { val r = Random(8); List(90) { floatArrayOf(r.nextFloat(), r.nextFloat(), 0.8f + r.nextFloat() * 1.8f, r.nextFloat() * 6.28f) } }
-    val t = frameTime()
+    val clock = frameTime()
     Canvas(Modifier.fillMaxSize()) {
+        val t = clock.value / 1_000_000_000f
         stars.forEach { (x, y, s, ph) ->
             val a = (0.25f + 0.45f * (0.5f + 0.5f * sin(t * 1.6f + ph))).coerceIn(0f, 1f)
             drawCircle(Color.White.copy(alpha = a), s, Offset(x * size.width, y * size.height * 0.85f))
