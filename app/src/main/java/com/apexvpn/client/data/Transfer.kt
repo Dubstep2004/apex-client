@@ -35,7 +35,7 @@ object Transfer {
 
     fun isTransfer(text: String?) = text?.trim()?.startsWith(PREFIX) == true
 
-    /** null — QR повреждён или это не перенос APEX VPN. */
+    /** null — QR повреждён или это не перенос APEX CLIENT (внутренняя метка в QR осталась «APEX VPN» — для совместимости). */
     fun decode(text: String): JSONObject? = runCatching {
         val raw = Base64.decode(text.trim().removePrefix(PREFIX), Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
         JSONObject(inflate(raw).toString(Charsets.UTF_8)).takeIf { it.optString("app") == "APEX VPN" }

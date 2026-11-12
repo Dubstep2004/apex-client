@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Собирает ядро APEX VPN (sing-box libbox + парсер подписки apexcore) в app/libs/libbox.aar
+# Собирает ядро APEX CLIENT (sing-box libbox + парсер подписки apexcore) в app/libs/libbox.aar
 #
 # Требуется: Go 1.25+, JDK 17, Android SDK (ANDROID_HOME) и NDK 28 (ANDROID_NDK_HOME).
 # Запуск из корня проекта:  ./core/build-core.sh
