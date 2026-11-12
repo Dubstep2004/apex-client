@@ -1412,11 +1412,18 @@ private fun AppearancePage(viewModel: MainViewModel, onBack: () -> Unit) {
         if (LiveVideos.isVideo(s.shieldBackdrop)) {
             Spacer(Modifier.height(10.dp))
             Column(Modifier.fillMaxWidth().apexCard().padding(16.dp)) {
-                Text("Затемнение · ${s.photoDim}%", color = Apex.Text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                // 3.20. Яркость (раньше «Затемнение») и скорость живых обоев
+                Text("Яркость · ${100 - s.photoDim}%", color = Apex.Text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                 androidx.compose.material3.Slider(
-                    value = s.photoDim.toFloat(), onValueChange = { v -> viewModel.change(reload = false) { copy(photoDim = v.toInt()) } },
-                    valueRange = 0f..90f,
+                    value = (100 - s.photoDim).toFloat(), onValueChange = { v -> viewModel.change(reload = false) { copy(photoDim = 100 - v.toInt()) } },
+                    valueRange = 10f..100f,
                 )
+                Text("Скорость · ${"%.2f".format(s.liveSpeed / 100f).trimEnd('0').trimEnd(',', '.')}×", color = Apex.Text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                androidx.compose.material3.Slider(
+                    value = s.liveSpeed.toFloat(), onValueChange = { v -> viewModel.change(reload = false) { copy(liveSpeed = (v / 25).toInt() * 25) } },
+                    valueRange = 50f..200f, steps = 5,
+                )
+                if (android.os.Build.VERSION.SDK_INT < 23) Caption("Скорость меняется на Android 6 и новее.")
             }
             Caption("Видео идёт без звука и останавливается, когда приложение свёрнуто. На слабых телефонах может немного расходовать батарею.")
         }

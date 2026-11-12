@@ -19,6 +19,11 @@ object AppIcons {
         Icon("cosmos", "Космос", "com.apexvpn.client.ui.LauncherCosmos", R.drawable.ic_launcher_cosmos_background, R.drawable.ic_launcher_cosmos_foreground),
         Icon("minimal", "Минимал", "com.apexvpn.client.ui.LauncherMinimal", R.drawable.ic_launcher_minimal_background, R.drawable.ic_launcher_minimal_foreground),
         Icon("gradient", "Градиент", "com.apexvpn.client.ui.LauncherGradient", R.drawable.ic_launcher_gradient_background, R.drawable.ic_launcher_gradient_foreground),
+        // 3.20. Под новые дизайны
+        Icon("sunset", "Закат", "com.apexvpn.client.ui.LauncherSunset", R.drawable.ic_launcher_sunset_background, R.drawable.ic_launcher_sunset_foreground),
+        Icon("forest", "Лес", "com.apexvpn.client.ui.LauncherForest", R.drawable.ic_launcher_forest_background, R.drawable.ic_launcher_forest_foreground),
+        Icon("arctic", "Арктика", "com.apexvpn.client.ui.LauncherArctic", R.drawable.ic_launcher_arctic_background, R.drawable.ic_launcher_arctic_foreground),
+        Icon("mocha", "Мокко", "com.apexvpn.client.ui.LauncherMocha", R.drawable.ic_launcher_mocha_background, R.drawable.ic_launcher_mocha_foreground),
     )
 
     /**

@@ -71,8 +71,17 @@ internal fun ReportPage(onBack: () -> Unit) {
                     }
                 }
             }
+            Spacer(Modifier.height(14.dp))
+            // 3.20. Отчёт картинкой — поделиться
+            val ctx = androidx.compose.ui.platform.LocalContext.current
+            androidx.compose.material3.Button(
+                onClick = { runCatching { com.apexvpn.client.ui.ReportShare.share(ctx, m, MonthStats.title(key).replaceFirstChar { it.uppercase() }) } },
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Apex.Accent, contentColor = Apex.OnAccent),
+                shape = RoundedCornerShape(16.dp),
+            ) { Text("Поделиться отчётом картинкой", fontWeight = FontWeight.SemiBold) }
             Spacer(Modifier.height(10.dp))
-            Caption("Трафик — всё, что прошло через VPN на этом телефоне. Отчёт никуда не отправляется.")
+            Caption("Трафик — всё, что прошло через VPN на этом телефоне. Отчёт никуда не отправляется сам; на картинке только цифры, без адресов и подписки.")
         }
         Spacer(Modifier.height(24.dp))
     }

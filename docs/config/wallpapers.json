@@ -1,6 +1,20 @@
 {
   "live": [
     {
+      "id": "samurai",
+      "title": "Самурай на закате",
+      "url": "wallpapers/live/samurai.mp4",
+      "thumb": "wallpapers/live/samurai.jpg",
+      "sizeMb": 1.1
+    },
+    {
+      "id": "arcade",
+      "title": "Ретро-аркада",
+      "url": "wallpapers/live/arcade.mp4",
+      "thumb": "wallpapers/live/arcade.jpg",
+      "sizeMb": 1.4
+    },
+    {
       "id": "neoncity",
       "title": "Неон-город",
       "url": "wallpapers/live/neoncity.mp4",

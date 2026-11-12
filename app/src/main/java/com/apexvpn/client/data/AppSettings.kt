@@ -102,6 +102,9 @@ data class Settings(
     val shieldBackdrop: String = "none",
     val backdropStamp: Long = 0,                      // 157. меняется при выборе нового фото
     val wallAuto: String = "off",                     // 3.19.8. Обои дня: off | live | pics:<тема>
+    val wallFx: String = "none",                      // 3.20. Эффект поверх обоев: none | snow | rain | sakura | fireflies | stars | leaves
+    val liveSpeed: Int = 100,                         // 3.20. Скорость живых обоев, % (50…200)
+    val photoMotion: Boolean = false,                 // 3.20. «Живое фото»: картинка медленно движется
     val photoBlur: Int = 6,                           // 563. размытие своего фото, dp (0…24)
     val photoDim: Int = 55,                           // 563. затемнение, % (0…90)
     val photoParallax: Boolean = true,                // 563. фото сдвигается при наклоне телефона
@@ -414,7 +417,7 @@ object AppSettings {
         put("userRules", JSONArray(s.userRules.map { JSONObject().put("value", it.value).put("action", it.action) }))
         put("domainStrategy", s.domainStrategy); put("fakeDns", s.fakeDns)
         put("remoteDns", s.remoteDns.json()); put("directDns", s.directDns.json()); put("rulesSource", s.rulesSource)
-        put("warp", s.warp); put("warpConfig", s.warpConfig); put("shieldBackdrop", s.shieldBackdrop); put("backdropStamp", s.backdropStamp); put("wallAuto", s.wallAuto)
+        put("warp", s.warp); put("warpConfig", s.warpConfig); put("shieldBackdrop", s.shieldBackdrop); put("backdropStamp", s.backdropStamp); put("wallAuto", s.wallAuto); put("wallFx", s.wallFx); put("liveSpeed", s.liveSpeed); put("photoMotion", s.photoMotion)
         put("iconStatus", s.iconStatus); put("animatedFlags", s.animatedFlags); put("task", s.task); put("hiddenApps", list(s.hiddenApps)); put("hideTemplateAuto", s.hideTemplateAuto); put("hideTemplateSkip", list(s.hideTemplateSkip)); put("secret", s.secretUnlocked); put("shield3d", s.shield3d); put("automation", s.automation); put("appTraffic", s.appTraffic); put("autoSkipSpecial", s.autoSkipSpecial); put("autoFavoritesOnly", s.autoFavoritesOnly); put("seasonal", s.seasonal); put("autoRules", AutoRule.listToJson(s.autoRules)); put("liveNotification", s.liveNotification); put("autoWhitelist", s.autoWhitelist)
         put("customAccent2", s.customAccent2); put("cdBase", s.cdBase); put("cdAccent", s.cdAccent); put("cdAccent2", s.cdAccent2); put("cdRadius", s.cdRadius); put("cdGlass", s.cdGlass); put("cdBorder", s.cdBorder); put("cdGlow", s.cdGlow); put("photoBlur", s.photoBlur); put("photoDim", s.photoDim); put("photoParallax", s.photoParallax); put("rulesAuto", s.rulesAuto); put("rulesHours", s.rulesHours); put("speedUnit", s.speedUnit); put("speedScale", s.speedScale); put("speedMulti", s.speedMulti); put("quicMode", s.quicMode); put("connectOnOpen", s.connectOnOpen)
         put("pingType", s.pingType); put("pingMode", s.pingMode); put("pingTimeout", s.pingTimeout); put("pingUrl", s.pingUrl); put("pingGood", s.pingGood); put("pingOk", s.pingOk); put("pingView", s.pingView); put("autoMode", s.autoMode); put("modeColors", s.modeColors); put("directCountries", list(s.directCountries)); put("connLog", s.connLog); put("greeting", s.greeting)
@@ -511,6 +514,9 @@ object AppSettings {
             shieldBackdrop = o.optString("shieldBackdrop", d.shieldBackdrop),
             backdropStamp = o.optLong("backdropStamp", d.backdropStamp),
             wallAuto = o.optString("wallAuto", d.wallAuto),
+            wallFx = o.optString("wallFx", d.wallFx),
+            liveSpeed = o.optInt("liveSpeed", d.liveSpeed).coerceIn(50, 200),
+            photoMotion = o.optBoolean("photoMotion", d.photoMotion),
             iconStatus = o.optBoolean("iconStatus", d.iconStatus),
             animatedFlags = o.optBoolean("animatedFlags", d.animatedFlags),
             task = "", // задачи стали режимами автопилота (3.0)

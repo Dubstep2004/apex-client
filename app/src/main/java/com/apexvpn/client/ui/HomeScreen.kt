@@ -116,8 +116,10 @@ fun HomeScreen(
 
     // 157. Своё фото за щитом (из галереи)
     // Живое видео на фоне: шаблон или своё
-    if (LiveVideos.isVideo(settings.shieldBackdrop)) VideoBackdrop(settings.shieldBackdrop, settings.backdropStamp, settings.photoDim)
-    if (settings.shieldBackdrop == "photo") PhotoBackdrop(settings.backdropStamp, settings.photoBlur, settings.photoDim, settings.photoParallax)
+    if (LiveVideos.isVideo(settings.shieldBackdrop)) VideoBackdrop(settings.shieldBackdrop, settings.backdropStamp, settings.photoDim, settings.liveSpeed)
+    if (settings.shieldBackdrop == "photo") PhotoBackdrop(settings.backdropStamp, settings.photoBlur, settings.photoDim, settings.photoParallax, settings.photoMotion)
+    // 3.20. Эффект поверх любых обоев: снег, дождь, сакура, светлячки, звёзды, листья
+    if (settings.wallFx != "none") com.apexvpn.client.ui.theme.WallFxOverlay(settings.wallFx)
     // 354. Фото дня страны сервера (автопилот — ваша страна)
     if (settings.shieldBackdrop == "country") {
         val sel = sub.nodes.find { it.tag == sub.selectedTag }
@@ -876,7 +878,7 @@ private fun plural(n: Long, one: String, few: String, many: String): String {
  * а с «Движением» фото чуть сдвигается при наклоне телефона (как обои на iPhone).
  */
 @Composable
-fun PhotoBackdrop(stamp: Long, blurDp: Int = 6, dim: Int = 55, parallax: Boolean = true) {
+fun PhotoBackdrop(stamp: Long, blurDp: Int = 6, dim: Int = 55, parallax: Boolean = true, motion: Boolean = false) {
     val context = LocalContext.current
     val bitmap by androidx.compose.runtime.produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, stamp) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
@@ -889,6 +891,11 @@ fun PhotoBackdrop(stamp: Long, blurDp: Int = 6, dim: Int = 55, parallax: Boolean
     val blur = blurDp > 0 && android.os.Build.VERSION.SDK_INT >= 31
     val move = parallax && !Apex.feel.smooth
     val d = dim.coerceIn(0, 90) / 100f
+    // 3.20. «Живое фото»: медленное приближение и сдвиг по кругу (40 с)
+    val live = motion && !Apex.feel.smooth
+    val kb = if (live) androidx.compose.animation.core.rememberInfiniteTransition(label = "kb").animateFloat(
+        0f, 1f, androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(40_000, easing = androidx.compose.animation.core.LinearEasing)), label = "kbT",
+    ) else null
     Box(Modifier.fillMaxSize()) {
         androidx.compose.foundation.Image(
             img, null,
@@ -896,7 +903,14 @@ fun PhotoBackdrop(stamp: Long, blurDp: Int = 6, dim: Int = 55, parallax: Boolean
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer {
-                    if (move) {
+                    if (kb != null) {
+                        val a = kb.value * 2f * Math.PI.toFloat()
+                        val sc = 1.14f + 0.06f * kotlin.math.sin(a)
+                        scaleX = sc; scaleY = sc
+                        translationX = kotlin.math.cos(a) * size.width * 0.035f
+                        translationY = kotlin.math.sin(a * 2f) * size.height * 0.02f
+                    }
+                    if (move && kb == null) {
                         // Чуть увеличиваем, чтобы при сдвиге не показывались края
                         scaleX = 1.1f; scaleY = 1.1f
                         translationX = -com.apexvpn.client.ui.theme.Tilt.x * size.width * 0.045f

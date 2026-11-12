@@ -220,6 +220,20 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
         }
     }
 
+    // 3.20. Эффект поверх любых обоев и «Живое фото»
+    Spacer(Modifier.height(14.dp))
+    Text("Эффект поверх обоев", color = Apex.TextDim, fontSize = 14.sp, modifier = Modifier.padding(start = 4.dp, bottom = 6.dp))
+    CategoryChips(com.apexvpn.client.ui.theme.WallFx.all, s.wallFx) { fx -> viewModel.change(reload = false) { copy(wallFx = fx) } }
+    Caption("Снег, дождь, сакура и другие — поверх картинки, живых обоев или дизайна. В «Плавном режиме» эффект не показывается.")
+    if (s.shieldBackdrop == "photo") {
+        Spacer(Modifier.height(6.dp))
+        Group {
+            ListRow("Живое фото", "Картинка медленно приближается и плывёт — как живые обои", onClick = { viewModel.change(reload = false) { copy(photoMotion = !s.photoMotion) } }) {
+                androidx.compose.material3.Switch(checked = s.photoMotion, onCheckedChange = { on -> viewModel.change(reload = false) { copy(photoMotion = on) } })
+            }
+        }
+    }
+
     // 3.19.8. Обои дня
     Spacer(Modifier.height(14.dp))
     Text("Обои дня", color = Apex.TextDim, fontSize = 14.sp, modifier = Modifier.padding(start = 4.dp, bottom = 6.dp))

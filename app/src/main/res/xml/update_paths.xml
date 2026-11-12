@@ -2,4 +2,5 @@
 <paths>
     <cache-path name="updates" path="updates/" />
     <cache-path name="support" path="support/" />
+    <cache-path name="share" path="share/" />
 </paths>

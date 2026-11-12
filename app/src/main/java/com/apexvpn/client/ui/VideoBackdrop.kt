@@ -95,7 +95,8 @@ object LiveVideos {
 }
 
 @Composable
-fun VideoBackdrop(backdrop: String, stamp: Long, dim: Int) {
+fun VideoBackdrop(backdrop: String, stamp: Long, dim: Int, speedPct: Int = 100) {
+    val speed = (speedPct.coerceIn(50, 200)) / 100f
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val holder = remember(backdrop, stamp) { arrayOfNulls<MediaPlayer>(1) }
@@ -126,7 +127,7 @@ fun VideoBackdrop(backdrop: String, stamp: Long, dim: Int) {
     }
 
     Box(Modifier.fillMaxSize()) {
-        androidx.compose.runtime.key(backdrop, stamp) {
+        androidx.compose.runtime.key(backdrop, stamp, speed) {
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
                 factory = { ctx ->
@@ -144,7 +145,11 @@ fun VideoBackdrop(backdrop: String, stamp: Long, dim: Int) {
                                 mp.setOnPreparedListener { p ->
                                     ready[0] = true
                                     centerCrop(this@apply, p.videoWidth, p.videoHeight)
-                                    if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) p.start()
+                                    if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                                        // 3.20. Скорость живых обоев (Android 6+); setPlaybackParams сам запускает видео
+                                        if (speed != 1f && android.os.Build.VERSION.SDK_INT >= 23) runCatching { p.playbackParams = p.playbackParams.setSpeed(speed) }
+                                        p.start()
+                                    }
                                 }
                                 mp.setOnErrorListener { _, _, _ -> true }
                                 runCatching { mp.prepareAsync() }
