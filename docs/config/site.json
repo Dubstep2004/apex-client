@@ -1,0 +1,47 @@
+{
+  "hero": {
+    "title": "",
+    "sub": ""
+  },
+  "cta": null,
+  "show": {
+    "downloads": true,
+    "status": true,
+    "holiday": true
+  },
+  "sections": [
+    {
+      "id": "demo",
+      "on": true
+    },
+    {
+      "id": "features",
+      "on": true
+    },
+    {
+      "id": "news",
+      "on": true
+    },
+    {
+      "id": "compare",
+      "on": true
+    },
+    {
+      "id": "security",
+      "on": true
+    },
+    {
+      "id": "devices",
+      "on": true
+    },
+    {
+      "id": "install",
+      "on": true
+    },
+    {
+      "id": "faq",
+      "on": true
+    }
+  ],
+  "faq": []
+}
