@@ -61,4 +61,14 @@ class WallpapersTest {
         assertEquals("c", Wallpapers.pickForDay(listOf("a", "b", "c"), -1))
         assertEquals(Wallpapers.photoTopics.size, Wallpapers.photoTopics.map { it.id }.toSet().size)
     }
+
+    @Test fun favoritesRoundTrip() {
+        val list = listOf(
+            Wallpapers.Fav("live", "neoncity", "Неон-город", "wallpapers/live/neoncity.jpg", "wallpapers/live/neoncity.mp4"),
+            Wallpapers.Fav("pic", "https://w.wallhaven.cc/full/ab/x.jpg", "1080x1920", "https://th/x.jpg", "https://w.wallhaven.cc/full/ab/x.jpg"),
+        )
+        assertEquals(list, Wallpapers.decodeFavs(Wallpapers.encodeFavs(list)))
+        assertEquals(emptyList<Wallpapers.Fav>(), Wallpapers.decodeFavs("битое"))
+        assertEquals(1, Wallpapers.decodeFavs("""[{"type":"live","id":"a"},{"type":"live","id":"a"},{"type":"x","id":"b"}]""").size)
+    }
 }

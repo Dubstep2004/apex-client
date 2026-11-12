@@ -2,6 +2,13 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.19.9 · 12 ноября 2026
+
+<img src="img/tags/new.svg" alt="Новое" height="22">
+
+- Избранные обои: ☆ на живых обоях и картинках — они собираются в «Избранное» в «Оформлении». Нажмите — встанут на главный экран
+- «Обои дня» могут брать обои из избранного
+
 ## 3.19.8 · 12 ноября 2026
 
 <img src="img/tags/new.svg" alt="Новое" height="22">

@@ -20,6 +20,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.CloudDownload
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.StarBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -68,10 +70,37 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
     var askLink by remember { mutableStateOf(false) }
     var toDelete by remember { mutableStateOf<Wallpapers.Live?>(null) }
 
+    val favs by Wallpapers.favs.collectAsState()
+    LaunchedEffect(Unit) { Wallpapers.loadFavs() }
+    fun star(f: Wallpapers.Fav) = viewModel.showMessage(if (Wallpapers.toggleFav(f)) "Добавлено в избранное" else "Убрано из избранного")
+    var favBusy by remember { mutableStateOf<String?>(null) }
+
     fun select(id: String) = viewModel.change(reload = false) { copy(shieldBackdrop = Wallpapers.key(id), backdropStamp = System.currentTimeMillis()) }
     fun get(item: Wallpapers.Live) = scope.launch {
         val err = Wallpapers.download(context, item)
         if (err == null) { select(item.id); viewModel.showMessage("«${item.title}» скачано и стоит на главном экране") } else viewModel.showMessage(err)
+    }
+
+    // 3.19.9. Избранное — живые обои и картинки вместе
+    if (favs.isNotEmpty()) {
+        Spacer(Modifier.height(14.dp))
+        Text("Избранное · ${favs.size}", color = Apex.TextDim, fontSize = 14.sp, modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            items(favs.size) { i ->
+                val f = favs[i]
+                val on = if (f.type == "live") s.shieldBackdrop == Wallpapers.key(f.id) else false
+                WallTile(f.title, if (f.type == "live") "живые" else "картинка", f.thumb, on, if (favBusy == f.type + f.id) -1f else progress[f.id], false, true, { star(f) }) {
+                    if (favBusy != null) return@WallTile
+                    favBusy = f.type + f.id
+                    scope.launch {
+                        val err = Wallpapers.applyFav(context, f)
+                        favBusy = null
+                        viewModel.showMessage(err ?: "«${f.title}» на главном экране")
+                    }
+                }
+            }
+        }
+        Caption("☆ на обоях — добавить в избранное, ★ — убрать.")
     }
 
     Spacer(Modifier.height(14.dp))
@@ -85,7 +114,8 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
                 val have = remember(rev, item.id) { Wallpapers.isDownloaded(context, item.id) }
                 val on = s.shieldBackdrop == Wallpapers.key(item.id)
                 val p = progress[item.id]
-                WallTile(item.title, if (have) "" else if (item.sizeMb > 0) "%.1f МБ".format(item.sizeMb) else "", item.thumb, on, p, !have) {
+                val fav = favs.any { it.type == "live" && it.id == item.id }
+                WallTile(item.title, if (have) "" else if (item.sizeMb > 0) "%.1f МБ".format(item.sizeMb) else "", item.thumb, on, p, !have, fav, { star(Wallpapers.favOf(item)) }) {
                     when {
                         p != null -> Unit
                         have -> viewModel.change(reload = false) { copy(shieldBackdrop = if (on) "none" else Wallpapers.key(item.id)) }
@@ -138,7 +168,7 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
             val list = photos!!
             items(list.size) { i ->
                 val ph = list[i]
-                WallTile(ph.title, "", ph.thumb, false, if (busy == ph.full) -1f else null, false) {
+                WallTile(ph.title, "", ph.thumb, false, if (busy == ph.full) -1f else null, false, favs.any { it.type == "pic" && it.id == ph.full }, { star(Wallpapers.favOf(ph)) }) {
                     if (busy != null) return@WallTile
                     busy = ph.full
                     scope.launch {
@@ -193,11 +223,12 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
     // 3.19.8. Обои дня
     Spacer(Modifier.height(14.dp))
     Text("Обои дня", color = Apex.TextDim, fontSize = 14.sp, modifier = Modifier.padding(start = 4.dp, bottom = 6.dp))
-    val autoItems = listOf("off" to "Выключено", "live" to "Живые по кругу") + Wallpapers.photoTopics.map { "pics:" + it.id to it.title }
+    val autoItems = listOf("off" to "Выключено", "fav" to "Из избранного", "live" to "Живые по кругу") + Wallpapers.photoTopics.map { "pics:" + it.id to it.title }
     CategoryChips(autoItems, s.wallAuto) { mode ->
         viewModel.change(reload = false) { copy(wallAuto = mode) }
         if (mode != "off") scope.launch {
             if (mode == "live" && Wallpapers.downloaded(context).isEmpty()) { viewModel.showMessage("Сначала скачайте живые обои — они будут меняться по кругу"); return@launch }
+            if (mode == "fav" && favs.isEmpty()) { viewModel.showMessage("Избранное пусто — нажмите ☆ на обоях, которые нравятся"); return@launch }
             viewModel.showMessage("Ставим обои на сегодня…")
             // Настройка сохраняется асинхронно — даём ей примениться
             kotlinx.coroutines.delay(300)
@@ -208,6 +239,7 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
         when {
             s.wallAuto == "off" -> "Каждый день новые обои на главном экране: картинка выбранной темы или следующие скачанные живые обои."
             s.wallAuto == "live" -> "Каждый день — следующие из скачанных живых обоев. Интернет не нужен."
+            s.wallAuto == "fav" -> if (favs.isEmpty()) "Избранное пусто — нажмите ☆ на обоях, которые нравятся." else "Каждый день — следующие из избранного (${favs.size})."
             else -> "Каждый день новая картинка темы «${autoItems.firstOrNull { it.first == s.wallAuto }?.second.orEmpty()}». Меняется при первом открытии за день, нужен интернет."
         },
     )
@@ -258,7 +290,7 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
 
 /** Плитка обоев: миниатюра 88×132, отметка выбора, загрузка (progress -1 — без процентов). */
 @Composable
-private fun WallTile(title: String, sub: String, thumb: String, on: Boolean, progress: Float?, cloud: Boolean, onClick: () -> Unit) {
+private fun WallTile(title: String, sub: String, thumb: String, on: Boolean, progress: Float?, cloud: Boolean, fav: Boolean? = null, onFav: () -> Unit = {}, onClick: () -> Unit) {
     val context = LocalContext.current
     val bmp by produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, thumb) { value = Wallpapers.bitmap(thumb, context)?.asImageBitmap() }
     Column(Modifier.width(88.dp).clip(RoundedCornerShape(16.dp)).clickable(onClick = onClick), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -268,6 +300,12 @@ private fun WallTile(title: String, sub: String, thumb: String, on: Boolean, pro
             contentAlignment = Alignment.Center,
         ) {
             bmp?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+            // 3.19.9. Звёздочка «в избранное»
+            if (fav != null) Box(
+                Modifier.align(Alignment.TopEnd).padding(4.dp).size(30.dp).clip(RoundedCornerShape(50))
+                    .background(Color.Black.copy(alpha = 0.45f)).clickable(onClick = onFav),
+                contentAlignment = Alignment.Center,
+            ) { Icon(if (fav) Icons.Rounded.Star else Icons.Rounded.StarBorder, if (fav) "Убрать из избранного" else "В избранное", tint = if (fav) Color(0xFFFFC94D) else Color.White, modifier = Modifier.size(18.dp)) }
             when {
                 progress != null -> {
                     Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.45f)))

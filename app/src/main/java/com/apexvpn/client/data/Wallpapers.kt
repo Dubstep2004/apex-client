@@ -258,6 +258,49 @@ object Wallpapers {
         ok
     }
 
+    // ── 3.19.9. Избранное: живые обои и картинки ──
+    /** type = live | pic; id — id из каталога или ссылка на картинку; full — откуда скачать. */
+    data class Fav(val type: String, val id: String, val title: String, val thumb: String, val full: String)
+
+    private val _favs = MutableStateFlow<List<Fav>>(emptyList())
+    val favs: StateFlow<List<Fav>> = _favs.asStateFlow()
+    @Volatile private var favsLoaded = false
+
+    fun encodeFavs(list: List<Fav>): String = JSONArray(list.map { JSONObject().put("type", it.type).put("id", it.id).put("title", it.title).put("thumb", it.thumb).put("full", it.full) }).toString()
+    fun decodeFavs(text: String): List<Fav> = runCatching {
+        val a = JSONArray(text)
+        (0 until a.length()).mapNotNull { a.optJSONObject(it) }.mapNotNull { o ->
+            val type = o.optString("type").takeIf { it == "live" || it == "pic" } ?: return@mapNotNull null
+            val id = o.optString("id").takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            Fav(type, id, o.optString("title"), o.optString("thumb"), o.optString("full"))
+        }.distinctBy { it.type + it.id }
+    }.getOrDefault(emptyList())
+
+    fun loadFavs() { if (!favsLoaded) { _favs.value = decodeFavs(Prefs.wallFavs); favsLoaded = true } }
+    fun isFav(type: String, id: String) = _favs.value.any { it.type == type && it.id == id }
+    /** true — добавили, false — убрали. */
+    fun toggleFav(f: Fav): Boolean {
+        loadFavs()
+        val had = isFav(f.type, f.id)
+        _favs.value = if (had) _favs.value.filterNot { it.type == f.type && it.id == f.id } else listOf(f) + _favs.value
+        Prefs.wallFavs = encodeFavs(_favs.value)
+        return !had
+    }
+    fun favOf(item: Live) = Fav("live", item.id, item.title, item.thumb, item.url)
+    fun favOf(p: Photo) = Fav("pic", p.full, p.title, p.thumb, p.full)
+
+    /** Поставить избранное на главный экран (живые — скачать, если ещё нет). Ошибка — текст, null — получилось. */
+    suspend fun applyFav(context: Context, f: Fav): String? = when (f.type) {
+        "live" -> {
+            val err = if (isDownloaded(context, f.id)) null else download(context, Live(f.id, f.title, f.full, f.thumb))
+            if (err == null) AppSettings.update { copy(shieldBackdrop = key(f.id), backdropStamp = System.currentTimeMillis()) }
+            err
+        }
+        else -> if (setPhoto(context, Photo(f.title, f.thumb, f.full, ""))) {
+            AppSettings.update { copy(shieldBackdrop = "photo", backdropStamp = System.currentTimeMillis()) }; null
+        } else "Не удалось скачать картинку"
+    }
+
     // ── 3.19.8. Обои дня: раз в день новая картинка выбранной темы или следующие скачанные живые обои ──
     private val autoLock = kotlinx.coroutines.sync.Mutex()
 
@@ -276,6 +319,11 @@ object Wallpapers {
                 val pick = pickForDay(downloaded(context).sortedBy { it.id }, doy) ?: return@withLock false
                 AppSettings.update { copy(shieldBackdrop = key(pick.id), backdropStamp = System.currentTimeMillis()) }
                 true
+            }
+            mode == "fav" -> {
+                loadFavs()
+                val pick = pickForDay(_favs.value, doy) ?: return@withLock false
+                applyFav(context, pick) == null
             }
             mode.startsWith("pics:") -> {
                 val list = photos(mode.removePrefix("pics:"), page = (doy / 30) % 3)
