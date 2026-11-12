@@ -148,6 +148,12 @@
   .wall.drag, .src.drag { border-color: var(--go2); transform: scale(1.01); box-shadow: 0 10px 30px #0003; }
   .wall .grip, .src .grip { cursor: grab; color: var(--faint); font-size: 20px; padding: 26px 2px; touch-action: none; user-select: none; -webkit-user-select: none; }
   .wall.off { opacity: .55; }
+  .wprev { width: 300px; max-width: 100%; margin: 10px auto 14px; padding: 14px 12px; border-radius: 30px; border: 6px solid #1a1a22; background: #17110d; color: #f6ebdd; font-size: 12px; }
+  .wprev .h { color: #b09a85; margin: 0 0 6px 2px; } .wprev .chips { display: flex; gap: 6px; overflow: hidden; margin-bottom: 8px; }
+  .wprev .chips span { flex: none; padding: 4px 10px; border-radius: 99px; background: #2d2119; white-space: nowrap; } .wprev .chips span.on { background: #d9a066; color: #24160a; font-weight: 700; }
+  .wprev .row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; } .wprev figure { flex: none; width: 62px; margin: 0; text-align: center; }
+  .wprev img, .wprev i { display: block; width: 62px; height: 93px; border-radius: 12px; object-fit: cover; background: #2d2119; margin-bottom: 4px; }
+  .wprev figcaption { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #b09a85; font-size: 10.5px; }
   .sortbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 12px; } .sortbar span { color: var(--dim); font-size: 13px; }
   .srcs { display: grid; gap: 10px; user-select: none; -webkit-user-select: none; }
   .src { display: grid; grid-template-columns: auto 30px minmax(0, 1fr) auto; gap: 10px; align-items: start; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); padding: 12px; transition: transform .15s, border-color .2s; }
@@ -456,6 +462,12 @@
       <div class="phone-inline" data-preview></div>
       <div class="block"><h2>Версии</h2><p class="note">Пульт обновляется сам вместе с репозиторием, приложение — через релизы.</p><div class="vers" id="vers"></div></div>
       <div class="block"><h2>Состояние</h2><p class="note" id="ciNote">Проверяем сборки и автопроверки…</p><ul class="ci" id="ciList"></ul></div>
+      <div class="block"><h2>Резервная копия</h2><p class="note">Все настройки пульта одним файлом: баннеры, серверы, подписка, скрытые сайты, визитка, обои. Сохраните на компьютер — если что-то сломается, верните одной кнопкой.</p>
+        <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn quiet small" id="bkSave" type="button">Скачать копию</button><button class="btn quiet small" id="bkLoad" type="button">Восстановить из файла</button><input type="file" id="bkFile" accept=".json,application/json" hidden></div>
+        <p class="help" id="bkMsg"></p></div>
+      <div class="block"><h2>Разбор отчёта о сбое</h2><p class="note">Пользователь прислал «отчёт для поддержки»? Вставьте текст — пульт покажет главное. Подписки и адресов в отчёте нет.</p>
+        <textarea id="crashIn" rows="4" placeholder="APEX CLIENT — отчёт для поддержки…" style="width:100%"></textarea>
+        <div id="crashOut" class="note"></div></div>
       <div class="block"><h2>Сейчас действует</h2><p class="note">Нажмите на строку, чтобы изменить.</p><dl class="live" id="liveList"></dl></div>
       <div class="block danger"><h2>Всё сломано?</h2><p class="note">Одной кнопкой: аварийный баннер всем, остановка автообновления и пометка «Обслуживание» на проблемные серверы. Перед сохранением всё можно проверить.</p>
         <button class="btn red" id="panicBtn">Включить аварийный режим</button></div>
@@ -627,6 +639,7 @@
         <p class="help">Пусто — на сайте остаётся текст по умолчанию. Кнопка появится рядом с «Скачать», только если указана ссылка https://.</p>
         <label class="sw"><div class="t"><b>Счётчик скачиваний</b><span>«скачали 1 234 раза» под кнопкой</span></div><span class="tog"><input type="checkbox" id="sDownloads" checked><i></i></span></label>
         <label class="sw"><div class="t"><b>Статус серверов</b><span>«🟢 Все серверы работают» по пометкам из пульта</span></div><span class="tog"><input type="checkbox" id="sStatus" checked><i></i></span></label>
+        <label class="sw"><div class="t"><b>Новогоднее оформление</b><span>Снег и гирлянда на визитке. Включите в декабре, выключите после праздников</span></div><span class="tog"><input type="checkbox" id="sHoliday"><i></i></span></label>
       </div>
       <div class="block"><h2>Блоки и порядок</h2><p class="note">Перетащите за ⠿ или двигайте стрелками. Выключенный блок на сайте не показывается.</p>
         <div class="sects" id="sects"></div>
@@ -669,6 +682,9 @@
       </div>
       <div class="block"><h2>Каталог</h2><p class="note">Свои живые обои — показываются первыми, в этом порядке. Перетащите за ⠿. Скрытые не видны новым пользователям, но у скачавших остаются.</p>
         <div class="sortbar"><span>Упорядочить:</span><button class="btn quiet small" data-sort="title">По названию</button><button class="btn quiet small" data-sort="size">Сначала лёгкие</button><button class="btn quiet small" data-sort="hidden">Скрытые в конец</button><button class="btn quiet small" data-sort="cat">По разделам</button></div>
+        <details class="howto" open><summary>Как это выглядит в приложении</summary>
+          <div class="wprev" id="wallPrev" aria-label="Предпросмотр каталога в приложении"></div>
+        </details>
         <div id="wallList"></div>
         <button class="add" id="wallAdd">Добавить обои по ссылке</button>
         <details class="howto"><summary>Где брать видео для каталога</summary><p>Нужна прямая ссылка https://…/файл.mp4 (не страница сайта), вертикальное видео 1080×1920, 5–15 секунд, до 20 МБ. Или положите файл в репозиторий в <code>docs/wallpapers/</code> и укажите путь <code>wallpapers/имя.mp4</code>.</p></details>
@@ -862,6 +878,7 @@
 
       <div class="block"><details><summary>🆕 Что нового в пульте</summary>
         <div class="tbl"><table>
+          <tr><td>2.12</td><td>Резервная копия всех настроек пульта, разбор отчёта о сбое на «Обзоре», предпросмотр каталога обоев, разделы каталога, новогоднее оформление визитки</td></tr>
           <tr><td>2.11</td><td>Новые оформления: Закат, Лес, Арктика, Мокко (🎨 в шапке) — такие же есть в приложении с 3.19.7. Вкладка «Обои» — каталог живых обоев приложения. Карточка «Состояние» на «Обзоре» и красная полоса, если сборка или проверка упала. В справке: поиск, «Развернуть/Свернуть всё», готовые ответы пользователям, раздел про автопроверки, схемы, кнопки перехода на вкладки, шпаргалка для печати. Иконка 🏠 у «Обзора», поле поиска в цвет пульта</td></tr>
           <tr><td>2.10</td><td>Название APEX CLIENT, своя иконка пульта, кнопка «Переименовать все версии», вкладка «Визитка», описание версии, проверка серверов</td></tr>
           <tr><td>2.6–2.9</td><td>Меню по группам и нижнее меню на телефоне, свой порядок вкладок, поиск, Ctrl+S и Ctrl+Z, черновики, предупреждение о сроке токена, предпросмотр на телефоне, ТВ и часах, пометки серверов по расписанию</td></tr>
@@ -924,7 +941,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.11', PANEL_DATE = '12 ноября 2026'
+const PANEL_VERSION = '2.12', PANEL_DATE = '12 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -1349,7 +1366,7 @@ function fillSite(c) {
   c = c || {}
   $('sTitle').value = c.hero?.title || ''; $('sSub').value = c.hero?.sub || ''
   $('sBtnText').value = c.cta?.text || ''; $('sBtnUrl').value = c.cta?.url || ''
-  $('sDownloads').checked = c.show?.downloads !== false; $('sStatus').checked = c.show?.status !== false
+  $('sDownloads').checked = c.show?.downloads !== false; $('sStatus').checked = c.show?.status !== false; $('sHoliday').checked = c.show?.holiday === true
   const known = SECTS.map(x => x[0]), given = (c.sections || []).filter(x => known.includes(x.id))
   sects = [...given.map(x => ({ id: x.id, on: x.on !== false })), ...known.filter(id => !given.some(g => g.id === id)).map(id => ({ id, on: true }))]
   faq = (c.faq || []).map(x => ({ q: x.q || '', a: x.a || '' }))
@@ -1360,7 +1377,7 @@ function collectSite() {
   return {
     hero: { title: $('sTitle').value.trim(), sub: $('sSub').value.trim() },
     cta: url ? { text: $('sBtnText').value.trim() || 'Подробнее', url } : null,
-    show: { downloads: $('sDownloads').checked, status: $('sStatus').checked },
+    show: { downloads: $('sDownloads').checked, status: $('sStatus').checked, ...($('sHoliday').checked ? { holiday: true } : {}) },
     sections: sects.map(x => ({ id: x.id, on: x.on })),
     faq: faq.filter(x => x.q.trim() && x.a.trim()).map(x => ({ q: x.q.trim(), a: x.a.trim() })),
   }
@@ -1711,7 +1728,16 @@ function fillWalls(c) { walls = (c?.live || []).map(w => ({ ...w })); srcKeys = 
 function collectWalls() { const k = srcKeys.pxKey.trim(), pb = srcKeys.pbKey.trim(), gp = srcKeys.gpKey.trim(); return { sources: [...srcOrder], ...(srcOff.size ? { sourcesOff: [...srcOff] } : {}), topics: topics.map(t => ({ id: t.id, title: t.title.trim(), query: t.query.trim(), ...(t.on ? {} : { on: false }) })), ...(k ? { pexelsKey: k } : {}), ...(pb ? { pixabayKey: pb } : {}), ...(gp ? { giphyKey: gp } : {}), live: walls.map(w => { const o = { id: w.id, title: w.title || w.id, url: w.url }; if (w.thumb) o.thumb = w.thumb; if (w.sizeMb) o.sizeMb = w.sizeMb; if (w.hidden) o.hidden = true; if (w.cat) o.cat = w.cat; return o }) } }
 // 2.11: разделы каталога — кнопки над каталогом в приложении (3.20.7+)
 const WALL_CATS = [['', 'Без раздела'], ['anime', 'Аниме-стиль'], ['city', 'Город'], ['nature', 'Природа'], ['space', 'Космос'], ['pixel', 'Пиксель-арт'], ['cozy', 'Уют'], ['abstract', 'Абстракция'], ['games', 'Игры']]
+function renderWallPrev() {
+  const vis = walls.filter(w => !w.hidden && w.url), cats = [...new Set(vis.map(w => w.cat).filter(Boolean))]
+  const name = id => (WALL_CATS.find(c => c[0] === id) || [, id])[1]
+  $('wallPrev').innerHTML = `<div class="h">Живые обои из интернета</div>
+    <div class="chips"><span class="on">Каталог</span><span>По темам</span><span>Скачанные</span><span>Избранное</span></div>
+    ${cats.length > 1 ? `<div class="chips"><span class="on">Все</span>${cats.map(c => `<span>${esc(name(c))}</span>`).join('')}</div>` : ''}
+    <div class="row">${vis.map(w => `<figure>${w.thumb ? `<img src="${esc(wallSrc(w.thumb))}" alt="" loading="lazy">` : '<i></i>'}<figcaption>${esc(w.title || w.id)}</figcaption></figure>`).join('') || '<span class="h">Каталог пуст</span>'}</div>`
+}
 function renderWalls() {
+  renderWallPrev()
   $('wallList').innerHTML = walls.length ? walls.map((w, i) => `<div class="item wall ${w.hidden ? 'off' : ''}" data-i="${i}"><span class="grip" title="Перетащить" aria-hidden="true">⠿</span>
     ${w.thumb ? `<img src="${esc(wallSrc(w.thumb))}" alt="" loading="lazy">` : '<span class="noimg"></span>'}
     <div class="f2"><input data-k="title" maxlength="30" value="${esc(w.title)}" placeholder="Название" aria-label="Название обоев">
@@ -1721,7 +1747,7 @@ function renderWalls() {
     <div class="ctl"><button class="x" data-up title="Выше" aria-label="Выше">↑</button><button class="x" data-down title="Ниже" aria-label="Ниже">↓</button><button class="x" data-del title="Удалить" aria-label="Удалить обои">×</button></div>
   </div>`).join('') : '<p class="help">Каталог пуст — в приложении будут только встроенные живые видео.</p>'
 }
-$('wallList').addEventListener('input', e => { const i = +e.target.closest('[data-i]')?.dataset.i, k = e.target.dataset.k; if (isNaN(i) || !k) return; walls[i][k] = e.target.type === 'checkbox' ? e.target.checked : e.target.value; changedDots() })
+$('wallList').addEventListener('input', e => { const i = +e.target.closest('[data-i]')?.dataset.i, k = e.target.dataset.k; if (isNaN(i) || !k) return; walls[i][k] = e.target.type === 'checkbox' ? e.target.checked : e.target.value; renderWallPrev(); changedDots() })
 $('wallList').addEventListener('click', e => {
   const box = e.target.closest('[data-i]'); if (!box) return; const i = +box.dataset.i
   if (e.target.closest('[data-del]')) { if (!confirm('Убрать «' + (walls[i].title || walls[i].id) + '» из каталога?')) return; walls.splice(i, 1) }
@@ -1743,6 +1769,43 @@ $('saveWalls').onclick = () => guarded($('saveWalls'), async () => {
   const bad = c.live.find(w => !w.url || (/^[a-z]+:/i.test(w.url) && !/^https:\/\//.test(w.url)) || w.url.includes('..'))
   if (bad) throw new Error('У «' + bad.title + '» нужна ссылка https://…/файл.mp4 или путь wallpapers/имя.mp4')
   await putFile(WALLS, c, 'Пульт: обои'); wallsSaved = JSON.stringify(c); changedDots(); toast('Обои сохранены — приложения увидят их при открытии «Оформления»')
+})
+
+// ── 2.12: резервная копия всех настроек пульта
+const BK_FILES = () => [APP, SUB, HIDE, SITE, WALLS]
+$('bkSave').onclick = () => guarded($('bkSave'), async () => {
+  const out = { app: 'APEX CLIENT · пульт', made: new Date().toISOString(), files: {} }
+  for (const f of BK_FILES()) { const d = await getFile(f); if (d) out.files[f] = d }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' }))
+  a.download = 'apex-client-pult-' + new Date().toISOString().slice(0, 10) + '.json'; a.click(); URL.revokeObjectURL(a.href)
+  $('bkMsg').textContent = 'Копия скачана: ' + Object.keys(out.files).length + ' файлов. Ключи обоев (Pixabay, GIPHY) тоже внутри — не выкладывайте файл в открытый доступ.'
+})
+$('bkLoad').onclick = () => $('bkFile').click()
+$('bkFile').onchange = async e => {
+  const file = e.target.files[0]; e.target.value = ''; if (!file) return
+  let c; try { c = JSON.parse(await file.text()) } catch { toast('Это не файл копии пульта', false); return }
+  const names = Object.keys(c.files || {}).filter(f => BK_FILES().includes(f))
+  if (!names.length) { toast('В файле нет настроек пульта', false); return }
+  if (!confirm('Восстановить ' + names.length + ' файлов из копии от ' + (c.made || '?').slice(0, 10) + '? Текущие настройки заменятся (их можно вернуть в «Истории»).')) return
+  await guarded($('bkLoad'), async () => {
+    for (const f of names) { await getFile(f); await putFile(f, c.files[f], 'Пульт: восстановлено из копии') }
+    await loadAll(); toast('Восстановлено из копии')
+  })
+}
+
+// ── 2.12: разбор отчёта о сбое (текст из «Написать в поддержку → Скопировать отчёт»)
+$('crashIn').addEventListener('input', () => {
+  const t = $('crashIn').value, g = re => (t.match(re) || [])[1] || ''
+  if (!t.trim()) { $('crashOut').innerHTML = ''; return }
+  const ver = g(/Версия:\s*([^\n]+)/), phone = g(/Телефон:\s*([^\n]+)/), n = g(/── Сбои \((\d+)\)/) || '0'
+  const errs = [...t.matchAll(/\n\s*([\w.$]+(?:Exception|Error)[^\n]*)/g)].map(m => m[1].trim())
+  const apps = [...t.matchAll(/app=([\d.]+)/g)].map(m => m[1])
+  const vpn = g(/VPN:\s*([^\n,]+)/)
+  const top = {}; errs.forEach(e => top[e] = (top[e] || 0) + 1)
+  $('crashOut').innerHTML = `<b>Версия:</b> ${esc(ver || '—')} · <b>Телефон:</b> ${esc(phone || '—')} · <b>VPN:</b> ${esc(vpn || '—')}<br>
+    <b>Сбоев в отчёте:</b> ${esc(n)}${apps.length ? ' (версии: ' + esc([...new Set(apps)].join(', ')) + ')' : ''}<br>
+    ${Object.keys(top).length ? '<b>Ошибки:</b><br>' + Object.entries(top).map(([e, k]) => '• ' + esc(e.slice(0, 120)) + (k > 1 ? ' × ' + k : '')).join('<br>') : 'Ошибок в отчёте нет — возможно, проблема со связью, а не с приложением.'}
+    <br><span class="help">Перешлите отчёт разработчику целиком — по нему видно, где именно ошибка.</span>`
 })
 
 // ── 2.11: справка — поиск, развернуть/свернуть, копирование ответов, переходы, шпаргалка
