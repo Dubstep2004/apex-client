@@ -94,8 +94,8 @@ internal fun RollbackPage(viewModel: MainViewModel, onBack: () -> Unit) {
                     if (i > 0) GroupDivider()
                     ListRow(
                         (if (apkSaved == v.versionName) "✅ " else "") + "APEX CLIENT ${v.versionName}",
-                        if (apkSaved == v.versionName) "Файл сохранён — шаг 3" else "Сохранить файл apex-vpn-${v.versionName}.apk",
-                        onClick = { chosen = v; progress = null; apkLauncher.launch("apex-vpn-${v.versionName}.apk") },
+                        if (apkSaved == v.versionName) "Файл сохранён — шаг 3" else "Сохранить файл apex-client-${v.versionName}.apk",
+                        onClick = { chosen = v; progress = null; apkLauncher.launch("apex-client-${v.versionName}.apk") },
                     ) { Tag("Скачать") }
                 }
             }
@@ -106,7 +106,7 @@ internal fun RollbackPage(viewModel: MainViewModel, onBack: () -> Unit) {
         Group {
             ListRow(
                 "Удалить APEX CLIENT",
-                if (backupDone && apkSaved != null) "Затем откройте сохранённый apex-vpn-$apkSaved.apk в «Файлах» и установите"
+                if (backupDone && apkSaved != null) "Затем откройте сохранённый apex-client-$apkSaved.apk в «Файлах» и установите"
                 else "Сначала сохраните копию и файл прошлой версии",
                 titleColor = if (backupDone && apkSaved != null) Apex.Bad else Apex.TextDim,
                 onClick = {

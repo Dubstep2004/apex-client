@@ -15,7 +15,7 @@ import java.net.URL
 
 /**
  * Новая версия на GitHub Releases (последний релиз v<версия>, «Latest»).
- * С 3.4 приложение само скачивает apex-vpn-<версия>.apk, сверяет SHA-256 и подпись
+ * С 3.4 приложение само скачивает apex-client-<версия>.apk, сверяет SHA-256 и подпись
  * и ставит через системный установщик (UpdateInstaller). Страница версии — запасной путь.
  */
 data class UpdateInfo(
@@ -23,9 +23,9 @@ data class UpdateInfo(
     val changelog: String,
     val pageUrl: String,
     val mandatory: Boolean = false,
-    /** Прямая ссылка на apex-vpn-<версия>.apk из релиза (3.4: обновление в один клик) */
+    /** Прямая ссылка на apex-client-<версия>.apk из релиза (3.4: обновление в один клик) */
     val apkUrl: String? = null,
-    /** Ссылка на контрольную сумму apex-vpn-<версия>.apk.sha256 */
+    /** Ссылка на контрольную сумму apex-client-<версия>.apk.sha256 */
     val shaUrl: String? = null,
     /** Тестовая версия (Pre-release на GitHub) */
     val beta: Boolean = false,
@@ -134,16 +134,18 @@ object UpdateManager {
         val name = tag.removePrefix("v")
         val body = json.optString("body")
         // Только файлы из релизов этого репозитория; часы (apex-watch-…) не трогаем
-        val prefix = "https://github.com/$repo/releases/download/"
+        // 3.19.3: репозиторий переименован apex-vpn → apex-client — принимаем оба адреса
+        val prefixes = listOf("https://github.com/$repo/releases/download/", "https://github.com/Dubstep2004/apex-client/releases/download/", "https://github.com/Dubstep2004/apex-vpn/releases/download/")
         val assets = json.optJSONArray("assets")
         fun asset(fileName: String): String? = assets?.let { a ->
             (0 until a.length()).mapNotNull { a.optJSONObject(it) }
                 .firstOrNull { it.optString("name") == fileName }
-                ?.optString("browser_download_url")?.takeIf { it.startsWith(prefix) }
+                ?.optString("browser_download_url")?.takeIf { u -> prefixes.any { u.startsWith(it) } }
         }
         return UpdateInfo(
-            apkUrl = asset("apex-vpn-$name.apk"),
-            shaUrl = asset("apex-vpn-$name.apk.sha256"),
+            // 3.19.3: файлы называются apex-client-…, у старых релизов — apex-vpn-…
+            apkUrl = asset("apex-client-$name.apk") ?: asset("apex-vpn-$name.apk"),
+            shaUrl = asset("apex-client-$name.apk.sha256") ?: asset("apex-vpn-$name.apk.sha256"),
             versionName = name,
             changelog = cleanNotes(body),
             pageUrl = json.optString("html_url").takeIf { it.startsWith("https://github.com/") }

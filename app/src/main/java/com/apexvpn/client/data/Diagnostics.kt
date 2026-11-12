@@ -163,7 +163,7 @@ object Diagnostics {
     /** Окно «Поделиться» с файлом отчёта — например, в Telegram поддержки. */
     fun share(context: Context) {
         val dir = File(context.cacheDir, "support").apply { mkdirs() }
-        val file = File(dir, "apex-vpn-report.txt")
+        val file = File(dir, "apex-client-report.txt")
         file.writeText(build(context))
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.updates", file)
         val send = Intent(Intent.ACTION_SEND).apply {

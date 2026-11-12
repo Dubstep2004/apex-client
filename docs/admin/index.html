@@ -465,7 +465,7 @@
         <button class="btn go" id="relSave" style="margin-top:12px;width:100%">Сохранить описание</button>
       </div>
       <div class="block"><h2>Новое название во всех версиях</h2>
-        <p class="note">Заменит «APEX VPN» на «APEX CLIENT» в названиях и описаниях всех релизов на GitHub. Файлы APK не трогаются — обновления и откат на старые версии работают как раньше. Метки «APEX VPN/…» для панели не меняются.</p>
+        <p class="note">Заменит «APEX VPN» на «APEX CLIENT» в названиях и описаниях всех релизов на GitHub и переименует файлы <code>apex-vpn-…</code> в <code>apex-client-…</code> (APK, контрольные суммы). Само содержимое файлов не меняется. Приложение с версии 3.19.3 понимает оба имени. Метки «APEX VPN/…» для панели не меняются.</p>
         <button class="btn quiet" id="relRename" style="width:100%">Переименовать все версии</button>
         <p class="help" id="relRenameLog"></p>
       </div>
@@ -1067,7 +1067,7 @@ async function loadReleases() {
     const latest = releases.find(r => !r.prerelease && !r.draft)
     if (latest) $('latest').textContent = 'Последняя версия — ' + latest.tag_name + ', вышла ' + new Date(latest.published_at).toLocaleDateString('ru', { day: 'numeric', month: 'long' }) + '.'
     const cnt = (r, pre) => r.assets.filter(a => a.name.startsWith(pre) && a.name.endsWith('.apk')).reduce((s, a) => s + a.download_count, 0)
-    const apk = r => cnt(r, 'apex-vpn-')
+    const apk = r => cnt(r, 'apex-vpn-') + cnt(r, 'apex-client-')
     const rows = releases.slice(0, 10).map(r => [r.tag_name + (r.prerelease ? ' бета' : ''), apk(r), cnt(r, 'apex-watch-'), r.published_at])
     const total = releases.reduce((s, r) => s + apk(r), 0), watch = releases.reduce((s, r) => s + cnt(r, 'apex-watch-'), 0), max = Math.max(1, ...rows.map(r => r[1]))
     const week = releases.filter(r => Date.now() - new Date(r.published_at) < 7 * 864e5).reduce((s, r) => s + apk(r), 0)
@@ -1196,12 +1196,15 @@ $('relRename').onclick = () => guarded($('relRename'), async () => {
   const all = []
   for (let page = 1; page <= 5; page++) { const part = await api('/releases?per_page=100&page=' + page); all.push(...part); if (part.length < 100) break }
   const fix = t => (t || '').split('\n').map(l => /APEX VPN\/|User-Agent|\^APEX VPN/.test(l) ? l : l.replace(/APEX VPN/g, 'APEX CLIENT')).join('\n')
-  const todo = all.filter(r => fix(r.name) !== (r.name || '') || fix(r.body) !== (r.body || ''))
+  const fixBody = t => fix(t).replace(/apex-vpn-(?=[\d<…])/g, 'apex-client-')
+  const oldAssets = r => (r.assets || []).filter(a => a.name.startsWith('apex-vpn-'))
+  const todo = all.filter(r => fix(r.name) !== (r.name || '') || fixBody(r.body) !== (r.body || '') || oldAssets(r).length)
   if (!todo.length) { $('relRenameLog').textContent = 'Все ' + all.length + ' версий уже называются APEX CLIENT.'; return toast('Переименовывать нечего') }
-  if (!confirm('Переименовать ' + todo.length + ' версий на GitHub в APEX CLIENT?')) return
+  if (!confirm('Переименовать ' + todo.length + ' версий на GitHub в APEX CLIENT (названия, описания и файлы)?')) return
   let done = 0
   for (const r of todo) {
-    const upd = await api('/releases/' + r.id, { method: 'PATCH', body: JSON.stringify({ name: fix(r.name), body: fix(r.body) }) })
+    for (const a of oldAssets(r)) await api('/releases/assets/' + a.id, { method: 'PATCH', body: JSON.stringify({ name: a.name.replace(/^apex-vpn-/, 'apex-client-') }) })
+    const upd = await api('/releases/' + r.id, { method: 'PATCH', body: JSON.stringify({ name: fix(r.name), body: fixBody(r.body) }) })
     const i = releases.findIndex(x => x.id === r.id); if (i >= 0) releases[i] = upd
     done++; $('relRenameLog').textContent = 'Готово ' + done + ' из ' + todo.length + '…'
   }

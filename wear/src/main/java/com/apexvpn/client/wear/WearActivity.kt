@@ -83,7 +83,7 @@ class WearActivity : ComponentActivity(), DataClient.OnDataChangedListener {
                         Text("APEX Watch — приложение для часов", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
                         Spacer(Modifier.height(10.dp))
                         Text(
-                            "На телефон нужно установить apex-vpn-<версия>.apk со страницы github.com/Dubstep2004/apex-client/releases",
+                            "На телефон нужно установить apex-client-<версия>.apk со страницы github.com/Dubstep2004/apex-client/releases",
                             color = Color(0xFF8E8E9A), fontSize = 14.sp, textAlign = TextAlign.Center,
                         )
                         Spacer(Modifier.height(16.dp))

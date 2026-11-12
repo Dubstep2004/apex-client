@@ -12,7 +12,7 @@ import org.json.JSONObject
 object SettingsBackup {
     const val MIME = "application/json"
 
-    fun fileName() = "apex-vpn-settings.json"
+    fun fileName() = "apex-client-settings.json"
 
     /** Всё для переноса: настройки, подписка, выбранный сервер. */
     fun payload(): JSONObject = JSONObject()

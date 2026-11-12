@@ -54,8 +54,8 @@ sealed interface InstallState {
 }
 
 /**
- * 3.4. Обновление в один клик: скачивает apex-vpn-<версия>.apk из последнего релиза на GitHub
- * (с докачкой), сверяет SHA-256 из apex-vpn-<версия>.apk.sha256 и подпись (тот же ключ, что у
+ * 3.4. Обновление в один клик: скачивает apex-client-<версия>.apk из последнего релиза на GitHub
+ * (с докачкой), сверяет SHA-256 из apex-client-<версия>.apk.sha256 и подпись (тот же ключ, что у
  * установленного приложения) и ставит через PackageInstaller. Android 12+: если прошлую версию
  * поставил сам APEX, обновление может пройти без вопроса; иначе — одна кнопка «Установить».
  */
@@ -191,8 +191,8 @@ object UpdateInstaller {
         val apkUrl = info.apkUrl ?: return@withLock fail("В релизе нет файла apk")
         val shaUrl = info.shaUrl ?: return@withLock fail("В релизе нет контрольной суммы")
         set(InstallState.Downloading(0))
-        val name = "apex-vpn-${info.versionName}.apk"
-        updatesDir(ctx).listFiles()?.filter { it.name.startsWith("apex-vpn-") && !it.name.startsWith(name) }?.forEach { it.delete() }
+        val name = "apex-client-${info.versionName}.apk"
+        updatesDir(ctx).listFiles()?.filter { (it.name.startsWith("apex-vpn-") || it.name.startsWith("apex-client-")) && !it.name.startsWith(name) }?.forEach { it.delete() }
         val (file, err) = fetchVerified(ctx, apkUrl, shaUrl, name) { pct ->
             set(InstallState.Downloading(pct))
             if (showProgress && pct % 5 == 0) notifyProgress(ctx, info.versionName, pct)
@@ -238,7 +238,7 @@ object UpdateInstaller {
             }
             val id = installer.createSession(params)
             installer.openSession(id).use { s ->
-                s.openWrite("apex-vpn.apk", 0, apk.length()).use { out ->
+                s.openWrite("apex-client.apk", 0, apk.length()).use { out ->
                     apk.inputStream().use { it.copyTo(out) }
                     s.fsync(out)
                 }

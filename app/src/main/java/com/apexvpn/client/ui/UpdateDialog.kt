@@ -97,7 +97,7 @@ fun UpdateDialog(viewModel: MainViewModel) {
                     is InstallState.Failed -> Text(i.message, color = Apex.Bad, fontSize = 13.sp)
                     InstallState.Idle -> Text(
                         if (oneClick) "Приложение скачает новую версию с GitHub, проверит её и установит — настройки и подписка сохранятся."
-                        else "Откроется страница версии на GitHub — скачайте там файл apex-vpn-${info.versionName}.apk и установите.",
+                        else "Откроется страница версии на GitHub — скачайте там файл apex-client-${info.versionName}.apk и установите.",
                         color = Apex.TextDim,
                         fontSize = 13.sp,
                     )

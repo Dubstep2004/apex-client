@@ -779,7 +779,7 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
                 onClick = {
                     val text = "APEX CLIENT — VPN для Android: автопилот, обход белых списков, блокировка рекламы.\n\n" +
                         "Скачать: ${com.apexvpn.client.data.Links.GITHUB}/releases/latest\n\n" +
-                        "Как установить:\n1. Скачайте файл apex-vpn-….apk\n2. Откройте его и разрешите установку\n" +
+                        "Как установить:\n1. Скачайте файл apex-client-….apk\n2. Откройте его и разрешите установку\n" +
                         "3. В приложении вставьте ссылку подписки и нажмите «Подключить»"
                     runCatching {
                         context.startActivity(

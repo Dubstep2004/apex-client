@@ -152,7 +152,7 @@ jobs:
           VERSION_NAME=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
           VERSION_CODE=$(grep -oP 'versionCode = \K[0-9]+' app/build.gradle.kts)
           mkdir -p dist
-          APK="dist/apex-vpn-${VERSION_NAME}.apk"
+          APK="dist/apex-client-${VERSION_NAME}.apk"
           cp app/build/outputs/apk/release/app-release.apk "$APK"
           # 11. Приложение для часов Wear OS
           WEAR="dist/apex-watch-${VERSION_NAME}.apk"
@@ -164,7 +164,7 @@ jobs:
           APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner
           "$APKSIGNER" verify --print-certs "$APK" > signer.txt; head -3 signer.txt
           # 3.4: контрольная сумма — приложение сверяет её перед обновлением в один клик
-          (cd dist && sha256sum "apex-vpn-${VERSION_NAME}.apk" > "apex-vpn-${VERSION_NAME}.apk.sha256" && cat "apex-vpn-${VERSION_NAME}.apk.sha256")
+          (cd dist && sha256sum "apex-client-${VERSION_NAME}.apk" > "apex-client-${VERSION_NAME}.apk.sha256" && cat "apex-client-${VERSION_NAME}.apk.sha256")
           # 3.7: и для часов — телефон сверяет её перед передачей на часы
           if [ -f "$WEAR" ]; then (cd dist && sha256sum "apex-watch-${VERSION_NAME}.apk" > "apex-watch-${VERSION_NAME}.apk.sha256"); fi
           # Защита от подделок: релиз должен быть подписан ключом автора — тем же, что записан
@@ -191,12 +191,12 @@ jobs:
             cat dist/changelog.txt
             echo
             echo "---"
-            echo "📱 **apex-vpn-${VERSION_NAME}.apk** — для телефона"
+            echo "📱 **apex-client-${VERSION_NAME}.apk** — для телефона"
             echo "⌚ **apex-watch-${VERSION_NAME}.apk** — только для часов Wear OS. На телефон не устанавливайте."
           } > dist/release.md
           # Описание версии для команды «apex publish» на сервере
           jq -n --argjson code "$VERSION_CODE" --arg name "$VERSION_NAME" --rawfile notes dist/changelog.txt \
-            '{versionCode:$code, versionName:$name, changelog:$notes}' > "dist/apex-vpn-${VERSION_NAME}.json"
+            '{versionCode:$code, versionName:$name, changelog:$notes}' > "dist/apex-client-${VERSION_NAME}.json"
           {
             echo "name=$VERSION_NAME"
             echo "code=$VERSION_CODE"
@@ -205,7 +205,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: apex-vpn-${{ steps.apk.outputs.name }}
+          name: apex-client-${{ steps.apk.outputs.name }}
           path: dist/*.apk
           # APK и так лежит в Releases — копию в Actions храним 1 день, чтобы не забивать место
           retention-days: 1
@@ -220,9 +220,9 @@ jobs:
           body_path: dist/release.md
           files: |
             ${{ steps.apk.outputs.apk }}
-            dist/apex-vpn-${{ steps.apk.outputs.name }}.json
+            dist/apex-client-${{ steps.apk.outputs.name }}.json
             dist/apex-watch-${{ steps.apk.outputs.name }}.apk
-            dist/apex-vpn-${{ steps.apk.outputs.name }}.apk.sha256
+            dist/apex-client-${{ steps.apk.outputs.name }}.apk.sha256
             dist/apex-watch-${{ steps.apk.outputs.name }}.apk.sha256
           # 3.7: тестовые версии (…-beta1) — Pre-release, «последним» остаётся обычный релиз
           prerelease: ${{ contains(steps.apk.outputs.name, 'beta') }}
