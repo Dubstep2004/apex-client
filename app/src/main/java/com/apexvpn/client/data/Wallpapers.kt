@@ -90,13 +90,17 @@ object Wallpapers {
     val pexelsKey: StateFlow<String> get() = _effective
     private val _effective = MutableStateFlow("")
     // Ключ задаётся только в пульте (свой ключ в приложении убран)
-    private fun recalcKey() { _effective.value = _pexelsKey.value }
+    // «Есть чем искать»: Pexels или Pixabay
+    private fun recalcKey() { _effective.value = _pexelsKey.value.ifBlank { _pixabayKey.value } }
     fun parseKey(text: String): String = runCatching { JSONObject(text).optString("pexelsKey").trim().takeIf { it.matches(Regex("[A-Za-z0-9]{20,80}")) }.orEmpty() }.getOrDefault("")
+    /** 3.20. Ключ Pixabay (Pexels перестал выдавать ключи) — вида 12345678-0123abcd… */
+    fun parsePixabayKey(text: String): String = runCatching { JSONObject(text).optString("pixabayKey").trim().takeIf { it.matches(Regex("[0-9]{4,12}-[a-f0-9]{16,40}")) }.orEmpty() }.getOrDefault("")
+    private val _pixabayKey = MutableStateFlow("")
 
     suspend fun loadCatalog(context: Context) = withContext(Dispatchers.IO) {
         val cache = File(context.filesDir, "wallpapers.json")
         loadOwnKey()
-        if (_catalog.value.isEmpty() && cache.exists()) { val t = cache.readText(); _catalog.value = parseCatalog(t); _pexelsKey.value = parseKey(t) }
+        if (_catalog.value.isEmpty() && cache.exists()) { val t = cache.readText(); _catalog.value = parseCatalog(t); _pexelsKey.value = parseKey(t); _pixabayKey.value = parsePixabayKey(t) }
         recalcKey()
         val text = sources("config/wallpapers.json").firstNotNullOfOrNull { u ->
             runCatching { open(u + "?t=" + System.currentTimeMillis() / 600_000).use { it.bufferedReader().readText() } }.getOrNull()
@@ -105,6 +109,7 @@ object Wallpapers {
         cache.writeText(text)
         _catalog.value = parseCatalog(text)
         _pexelsKey.value = parseKey(text)
+        _pixabayKey.value = parsePixabayKey(text)
         recalcKey()
     }
 
@@ -314,9 +319,10 @@ object Wallpapers {
     )
 
     suspend fun liveSearch(query: String, page: Int = 0): List<Live> = withContext(Dispatchers.IO) {
-        loadOwnKey(); recalcKey()
-        val key = _effective.value
-        if (key.isBlank() || query.isBlank()) return@withContext emptyList()
+        recalcKey()
+        if (query.isBlank()) return@withContext emptyList()
+        val key = _pexelsKey.value
+        if (key.isBlank()) return@withContext pixabay(query, page)
         runCatching {
             val c = URL("https://api.pexels.com/videos/search?orientation=portrait&size=medium&per_page=24&page=${page + 1}&query=" + URLEncoder.encode(query.trim().take(80), "UTF-8"))
                 .openConnection() as HttpURLConnection
@@ -327,6 +333,30 @@ object Wallpapers {
             parsePexels(c.inputStream.use { it.bufferedReader().readText() })
         }.getOrDefault(emptyList())
     }
+
+    /** Pixabay: видео без фильтра ориентации — вертикальные первыми, остальные обрежутся по центру. */
+    private fun pixabay(query: String, page: Int): List<Live> {
+        val key = _pixabayKey.value
+        if (key.isBlank()) return emptyList()
+        return runCatching {
+            val u = "https://pixabay.com/api/videos/?safesearch=true&per_page=30&page=${page + 1}&key=$key&q=" + URLEncoder.encode(query.trim().take(90), "UTF-8")
+            parsePixabay(open(u).use { it.bufferedReader().readText() })
+        }.getOrDefault(emptyList())
+    }
+
+    fun parsePixabay(json: String): List<Live> = runCatching {
+        val a = JSONObject(json).optJSONArray("hits") ?: return@runCatching emptyList()
+        (0 until a.length()).mapNotNull { a.optJSONObject(it) }.mapNotNull { h ->
+            val vs = h.optJSONObject("videos") ?: return@mapNotNull null
+            val files = listOf("large", "medium", "small").mapNotNull { vs.optJSONObject(it) }
+                .filter { it.optString("url").startsWith("https://") && maxOf(it.optInt("width"), it.optInt("height")) in 960..1920 }
+            val best = files.maxByOrNull { maxOf(it.optInt("width"), it.optInt("height")) } ?: return@mapNotNull null
+            val portrait = best.optInt("height") > best.optInt("width")
+            val thumb = listOf("medium", "small", "large").mapNotNull { vs.optJSONObject(it)?.optString("thumbnail") }.firstOrNull { it.startsWith("https://") }.orEmpty()
+            val author = h.optString("user").take(40)
+            portrait to Live("pb" + h.optLong("id"), author.ifBlank { "Pixabay" }, best.optString("url"), thumb, 0.0, "Видео: ${author.ifBlank { "автор" }} · Pixabay")
+        }.sortedByDescending { it.first }.map { it.second }
+    }.getOrDefault(emptyList())
 
     suspend fun liveTopic(topicId: String, page: Int = 0): List<Live> =
         liveSearch(liveTopics.firstOrNull { it.id == topicId }?.query ?: topicId, page)

@@ -88,4 +88,15 @@ class WallpapersTest {
         assertEquals("", Wallpapers.parseKey("""{"pexelsKey":"bad key!"}"""))
         assertTrue(Wallpapers.liveTopics.any { it.title == "Аниме" })
     }
+
+    @Test fun pixabayPortraitFirst() {
+        val json = """{"hits":[
+            {"id":1,"user":"Bob","videos":{"large":{"url":"https://cdn.pixabay.com/1-large.mp4","width":1920,"height":1080,"thumbnail":"https://cdn.pixabay.com/1.jpg"}}},
+            {"id":2,"user":"Eva","videos":{"large":{"url":"https://cdn.pixabay.com/2-large.mp4","width":3840,"height":2160},"medium":{"url":"https://cdn.pixabay.com/2-medium.mp4","width":1080,"height":1920,"thumbnail":"https://cdn.pixabay.com/2.jpg"}}}]}"""
+        val v = Wallpapers.parsePixabay(json)
+        assertEquals(listOf("pb2", "pb1"), v.map { it.id })
+        assertEquals("https://cdn.pixabay.com/2-medium.mp4", v[0].url)
+        assertEquals("https://cdn.pixabay.com/2.jpg", v[0].thumb)
+        assertEquals("12345678-0123456789abcdef0123", Wallpapers.parsePixabayKey("""{"pixabayKey":"12345678-0123456789abcdef0123"}"""))
+    }
 }
