@@ -171,7 +171,7 @@ object WhiteList {
 class BackToAutoReceiver : android.content.BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         Subscription.select(AUTO_TAG)
-        context.getSystemService<NotificationManager>()?.cancel(8)
+        context.getSystemService<NotificationManager>()?.cancel(intent.getIntExtra("nid", 8))
         if (VpnState.status.value == VpnStatus.Started) com.apexvpn.client.vpn.ApexVpnService.reload(context)
     }
 }

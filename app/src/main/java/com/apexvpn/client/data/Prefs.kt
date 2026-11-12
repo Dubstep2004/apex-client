@@ -74,6 +74,10 @@ object Prefs {
     var announceSeen: String
         get() = sp.getString("announce_seen", "") ?: ""
         set(v) = sp.edit { putString("announce_seen", v) }
+    /** 3.19. О каких техработах уже предупредили (ключи через перевод строки). */
+    var maintNotified: String
+        get() = sp.getString("maint_notified", "") ?: ""
+        set(v) = sp.edit { putString("maint_notified", v) }
     var bannerDismissed: Int
         get() = sp.getInt("banner_dismissed", 0)
         set(v) = sp.edit { putInt("banner_dismissed", v) }

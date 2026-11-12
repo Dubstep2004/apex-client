@@ -2,6 +2,17 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.19.0 · 12 ноября 2026
+
+<img src="img/tags/new.svg" alt="Новое" height="22">
+
+- История за неделю: время с VPN по дням, трафик, реклама и последние подключения — Настройки → «Отчёт и история»
+- Предупреждение о техработах: если выбранный вручную сервер скоро уйдёт на обслуживание, придёт уведомление с кнопкой «На автопилот»
+
+<img src="img/tags/improved.svg" alt="Улучшено" height="22">
+
+- Когда техработы на сервере начинаются или заканчиваются по расписанию, автопилот учитывает это сам, без перезапуска приложения
+
 ## 3.18.5 · 12 ноября 2026
 
 <img src="img/tags/fixed.svg" alt="Исправлено" height="22">

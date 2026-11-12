@@ -17,7 +17,7 @@
 <p><b>Два ядра</b> · все популярные протоколы · <b>свои списки</b> с шаблонами · <b>3D-глобус</b> · <b>13 дизайнов</b>, палитры и <b>живое видео на фоне</b><br>
 автопилот с белыми списками · DNS «Авто» для каждой сети · базы сайтов каждый день · часы Wear OS</p>
 
-<sub>📱 Android — <b>3.18.5</b> (Android 7+) · sing-box 1.13 · Xray 26</sub><br>
+<sub>📱 Android — <b>3.19.0</b> (Android 7+) · sing-box 1.13 · Xray 26</sub><br>
 <sub>🌐 Сайт: <a href="https://dubstep2004.github.io">dubstep2004.github.io</a> · 💬 Поддержка: <a href="https://t.me/Apexx_support">@Apexx_support</a></sub>
 
 </div>
@@ -860,15 +860,29 @@ core/apexcore/          Go: разбор подписки → конфиги sin
 
 <img src="docs/img/tags/new.svg" alt="Новое" height="22"> <img src="docs/img/tags/improved.svg" alt="Улучшено" height="22"> <img src="docs/img/tags/changed.svg" alt="Изменено" height="22"> <img src="docs/img/tags/fixed.svg" alt="Исправлено" height="22"> <img src="docs/img/tags/removed.svg" alt="Удалено" height="22">
 
-### 3.18.5 · 12 ноября 2026
+### 3.19.0 · 12 ноября 2026
+
+<img src="docs/img/tags/new.svg" alt="Новое" height="22">
+
+- История за неделю: время с VPN по дням, трафик, реклама и последние подключения — Настройки → «Отчёт и история»
+- Предупреждение о техработах: если выбранный вручную сервер скоро уйдёт на обслуживание, придёт уведомление с кнопкой «На автопилот»
+
+<img src="docs/img/tags/improved.svg" alt="Улучшено" height="22">
+
+- Когда техработы на сервере начинаются или заканчиваются по расписанию, автопилот учитывает это сам, без перезапуска приложения
+
+#### 📚 Все версии (112)
+
+Каждая версия — отдельная вкладка.
+
+<details>
+<summary><b>3.18.5</b> · 12 ноября 2026</summary>
 
 <img src="docs/img/tags/fixed.svg" alt="Исправлено" height="22">
 
 - Проверка утечек: DNS чаще показывал «не удалось проверить» — теперь две попытки, а если сервис проверки молчит, приложение само убеждается, что DNS идёт через VPN
 
-#### 📚 Все версии (111)
-
-Каждая версия — отдельная вкладка.
+</details>
 
 <details>
 <summary><b>3.18.4</b> · 12 ноября 2026</summary>

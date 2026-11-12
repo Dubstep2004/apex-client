@@ -34,7 +34,7 @@ object AppConfig {
         val from: Long = 0, val to: Long = 0, val minCode: Int = 0, val maxCode: Int = 0,
         val devices: Set<String> = emptySet(), val countries: Set<String> = emptySet(), val preview: Boolean = false,
     )
-    data class ServerState(val state: String, val note: String, val until: Long = 0, val preview: Boolean = false) // maintenance | slow
+    data class ServerState(val state: String, val note: String, val until: Long = 0, val preview: Boolean = false, val from: Long = 0) // maintenance | slow; 3.19: from — начало по расписанию
     /** Большое окно «Что нового» / объявление — показывается один раз. */
     data class Announce(
         val id: String, val title: String, val text: String, val image: String, val url: String, val button: String,
@@ -64,8 +64,18 @@ object AppConfig {
         private fun hit(title: String, key: String) = key.isNotBlank() && title.contains(key.trim(), ignoreCase = true)
         fun stateOf(title: String): ServerState? {
             val now = System.currentTimeMillis()
-            return servers.entries.firstOrNull { (k, v) -> hit(title, k) && (v.until == 0L || now < v.until) && (!v.preview || previewer) }?.value
+            return servers.entries.firstOrNull { (k, v) -> hit(title, k) && (v.from == 0L || now >= v.from) && (v.until == 0L || now < v.until) && (!v.preview || previewer) }?.value
         }
+        /** 3.19. Пометки, которые действуют прямо сейчас — чтобы перестроить ядро, когда техработы начались или закончились. */
+        fun activeKey(now: Long = System.currentTimeMillis()): String = servers.entries
+            .filter { (_, v) -> (v.from == 0L || now >= v.from) && (v.until == 0L || now < v.until) && (!v.preview || previewer) }
+            .sortedBy { it.key }.joinToString { it.key + "=" + it.value.state }
+        /** 3.19. Техработы на сервере с таким названием: идут сейчас или начнутся в ближайшие [within] мс. */
+        fun maintenanceFor(title: String, within: Long, now: Long = System.currentTimeMillis()): Pair<String, ServerState>? =
+            servers.entries.firstOrNull { (k, v) ->
+                hit(title, k) && v.state == "maintenance" && (!v.preview || previewer) &&
+                    (v.until == 0L || now < v.until) && (v.from == 0L || v.from <= now + within)
+            }?.let { it.key to it.value }
         fun isHidden(title: String) = hidden.any { hit(title, it) }
         fun isRecommended(title: String) = hit(title, recommended)
         /** Сервер не берёт автопилот: на обслуживании или скрыт. */
@@ -135,7 +145,7 @@ object AppConfig {
         val srv = o.optJSONObject("servers")
         val status = srv?.optJSONObject("status")
         val servers = status?.keys()?.asSequence()?.mapNotNull { k ->
-            status.optJSONObject(k)?.let { s -> k to ServerState(s.optString("state"), s.optString("note").take(120), s.optLong("until", 0), s.optBoolean("preview", false)) }
+            status.optJSONObject(k)?.let { s -> k to ServerState(s.optString("state"), s.optString("note").take(120), s.optLong("until", 0), s.optBoolean("preview", false), s.optLong("from", 0)) }
         }?.toMap().orEmpty()
         val links = o.optJSONObject("links")
         val upd = o.optJSONObject("update")
@@ -175,7 +185,7 @@ object AppConfig {
      * Баннер, объявление и ссылки ядро не трогают — из-за них VPN больше не перезагружается.
      */
     private fun coreKey(c: Config) = listOf(
-        c.servers.entries.sortedBy { it.key }.joinToString { "${it.key}=${it.value.state}/${it.value.until}/${it.value.preview}" },
+        c.servers.entries.sortedBy { it.key }.joinToString { "${it.key}=${it.value.state}/${it.value.from}/${it.value.until}/${it.value.preview}" },
         c.hidden.sorted().joinToString(), c.recommended,
         c.features.entries.sortedBy { it.key }.joinToString { "${it.key}=${it.value}" },
         c.previewCode,

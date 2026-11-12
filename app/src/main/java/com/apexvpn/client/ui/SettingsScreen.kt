@@ -379,7 +379,7 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
             GroupDivider()
             ListRow("Помощник", "Чат: «не работает YouTube», «медленно», «банк не открывается» — ответит и подскажет", leading = { tile(Icons.Rounded.SupportAgent) }, onClick = { onOpenPage(Page.Helper) }) { Chevron() }
             GroupDivider()
-            ListRow("Отчёт за месяц", "Трафик, время с VPN, реклама, пинг, любимые серверы", leading = { tile(Icons.Rounded.Search) }, onClick = { onOpenPage(Page.Report) }) { Chevron() }
+            ListRow("Отчёт и история", "Неделя по дням, последние подключения, итоги месяца", leading = { tile(Icons.Rounded.Search) }, onClick = { onOpenPage(Page.Report) }) { Chevron() }
             GroupDivider()
             ListRow("Сервисы на серверах", "Где работают ChatGPT, YouTube Premium, Netflix, Gemini", leading = { tile(Icons.Rounded.Search) }, onClick = { onOpenPage(Page.ServiceCheck) }) { Chevron() }
             GroupDivider()
@@ -1241,7 +1241,7 @@ private val settingsSearch = listOf(
     SearchItem("Проверить сайт", "tools", Page.SiteCheck, ""),
     SearchItem("Правила «если — то»", "tools", Page.AutoRules, ""),
     SearchItem("Помощник", "tools", Page.Helper, ""),
-    SearchItem("Отчёт за месяц", "tools", Page.Report, ""),
+    SearchItem("Отчёт и история", "tools", Page.Report, "отчёт за месяц неделя история подключений статистика"),
     SearchItem("Сервисы на серверах", "tools", Page.ServiceCheck, ""),
     SearchItem("Приложение не работает?", "tools", Page.AppIssue, ""),
     SearchItem("Обновить базы сайтов", "tools", Page.Advanced, ""),

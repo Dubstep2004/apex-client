@@ -40,6 +40,7 @@ class ApexApp : Application() {
         com.apexvpn.client.update.UpdateManager.init(this)
         com.apexvpn.client.update.UpdateInstaller.init(this)
         com.apexvpn.client.data.MonthStats.init(this)
+        com.apexvpn.client.data.WeekStats.init(this)
         // 3.15/3.16: адрес подписки сменился — сохранённая ссылка переносится сама. Сначала встроенный перенос
         // .ru → .xyz (на случай, если файл с GitHub ещё не скачался), потом — по файлу docs/config/subscription.json
         com.apexvpn.client.data.Prefs.subscriptionUrl.let { u ->
@@ -61,6 +62,20 @@ class ApexApp : Application() {
                 if (runCatching { com.apexvpn.client.data.AppConfig.refresh() }.getOrDefault(false) &&
                     VpnState.status.value == com.apexvpn.client.vpn.VpnStatus.Started
                 ) com.apexvpn.client.vpn.ApexVpnService.reload(this@ApexApp)
+            }
+        }
+        // 3.19. Раз в 5 минут: предупредить о техработах на выбранном сервере и перестроить ядро,
+        // когда техработы по расписанию начались или закончились (без скачивания — по уже полученному файлу)
+        appScope.launch {
+            var active = com.apexvpn.client.data.AppConfig.value.activeKey()
+            while (true) {
+                com.apexvpn.client.data.Maintenance.check(this@ApexApp)
+                val now = com.apexvpn.client.data.AppConfig.value.activeKey()
+                if (now != active) {
+                    active = now
+                    if (VpnState.status.value == com.apexvpn.client.vpn.VpnStatus.Started) com.apexvpn.client.vpn.ApexVpnService.reload(this@ApexApp)
+                }
+                kotlinx.coroutines.delay(5 * 60_000L)
             }
         }
         // 3.10. Шаблон «Скрыть VPN»: свежий список и новые приложения — при запуске
@@ -147,6 +162,7 @@ class ApexApp : Application() {
                 // тогда звука не было. Теперь — при любом переходе из подключённого состояния
                 if (st == com.apexvpn.client.vpn.VpnStatus.Stopped && last != com.apexvpn.client.vpn.VpnStatus.Stopped && last != com.apexvpn.client.vpn.VpnStatus.Starting) {
                     com.apexvpn.client.data.ConnectFeedback.onDisconnected(this@ApexApp)
+                    com.apexvpn.client.data.WeekStats.endSession()
                     com.apexvpn.client.data.MonthStats.flush()
                     com.apexvpn.client.data.AutoRulesEngine.reset()
                 }

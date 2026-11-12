@@ -61,6 +61,7 @@ object MonthStats {
             down = c.down + down, up = c.up + up, seconds = c.seconds + 1,
             servers = c.servers + (server to (c.servers[server] ?: 0L) + 1L),
         )
+        WeekStats.tick(down, up, server)
         if (++dirty >= 60) flush()
     }
 
@@ -75,6 +76,7 @@ object MonthStats {
     fun connected() {
         if (!::sp.isInitialized) return
         cur = current().let { it.copy(connects = it.connects + 1) }
+        WeekStats.connected()
         flush()
     }
 
@@ -82,6 +84,7 @@ object MonthStats {
     fun ad() {
         if (!::sp.isInitialized) return
         cur = current().let { it.copy(ads = it.ads + 1) }
+        WeekStats.ad()
         if (++dirty >= 60) flush()
     }
 
@@ -89,6 +92,7 @@ object MonthStats {
     fun flush() {
         cur?.let { write(it) }
         dirty = 0
+        WeekStats.flush()
     }
 
     private fun write(m: Month) {

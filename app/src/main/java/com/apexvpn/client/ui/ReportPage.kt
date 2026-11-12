@@ -24,6 +24,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.apexvpn.client.data.MonthStats
+import com.apexvpn.client.data.WeekStats
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
 import com.apexvpn.client.ui.theme.Apex
 
 /** 3.6. Отчёт за месяц — только данные с этого телефона. */
@@ -34,7 +37,9 @@ internal fun ReportPage(onBack: () -> Unit) {
     val key = months.getOrElse(idx) { MonthStats.key() }
     val m = remember(key) { MonthStats.get(key) }
 
-    PageScaffold("Отчёт за месяц", onBack) {
+    PageScaffold("Отчёт и история", onBack) {
+        WeekSection()
+        SectionLabel("За месяц")
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text("‹", color = if (idx < months.size - 1) Apex.Accent else Apex.TextDim, fontSize = 28.sp,
                 modifier = Modifier.clip(RoundedCornerShape(12.dp)).clickable(enabled = idx < months.size - 1) { idx++ }.padding(horizontal = 14.dp))
@@ -71,6 +76,56 @@ internal fun ReportPage(onBack: () -> Unit) {
         }
         Spacer(Modifier.height(24.dp))
     }
+}
+
+/** 3.19. Последние 7 дней (столбики — время с VPN) и последние подключения. */
+@Composable
+private fun WeekSection() {
+    val days = remember { WeekStats.lastDays() }
+    val sessions = remember { WeekStats.sessions() }
+    if (days.isEmpty() || days.all { it.seconds == 0L && it.connects == 0 } && sessions.isEmpty()) {
+        SectionLabel("Последние 7 дней")
+        Caption("История начнёт собираться с этого обновления, пока VPN включён.")
+        Spacer(Modifier.height(8.dp))
+        return
+    }
+    val total = days.sumOf { it.seconds }
+    SectionLabel("Последние 7 дней", hours(total))
+    Group {
+        val max = days.maxOf { it.seconds }.coerceAtLeast(1L)
+        Row(
+            Modifier.fillMaxWidth().height(120.dp).padding(horizontal = 14.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Bottom,
+        ) {
+            days.forEachIndexed { i, d ->
+                Column(Modifier.weight(1f).fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Bottom) {
+                    val frac = (d.seconds.toFloat() / max).coerceIn(0f, 1f)
+                    Box(
+                        Modifier.fillMaxWidth().height((4 + 64 * frac).dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(if (i == days.lastIndex) Apex.Accent else Apex.Accent.copy(alpha = if (d.seconds > 0) 0.45f else 0.12f)),
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(WeekStats.weekday(d.key), color = if (i == days.lastIndex) Apex.Text else Apex.TextDim, fontSize = 12.sp)
+                }
+            }
+        }
+        GroupDivider()
+        ListRow("Трафик через VPN", formatBytes(days.sumOf { it.down + it.up }))
+        GroupDivider()
+        ListRow("Подключений", "${days.sumOf { it.connects }} · реклама и трекеры: ${"%,d".format(days.sumOf { it.ads }).replace(',', ' ')}")
+    }
+    if (sessions.isNotEmpty()) {
+        SectionLabel("Последние подключения")
+        Group {
+            sessions.take(10).forEachIndexed { i, s ->
+                if (i > 0) GroupDivider()
+                val dur = if (s.end > 0) hours((s.end - s.start) / 1000) else "сейчас"
+                ListRow("${WeekStats.whenText(s.start)} · $dur", "${s.server} · ${formatBytes(s.bytes)}")
+            }
+        }
+    }
+    Spacer(Modifier.height(4.dp))
 }
 
 private fun hours(sec: Long): String = when {
