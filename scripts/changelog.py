@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# APEX VPN — © 2026 Dubstep2004. Код — GPL-3.0 (LICENSE), название и логотип — TRADEMARKS.md.
+# APEX CLIENT — © 2026 Dubstep2004. Код — GPL-3.0 (LICENSE), название и логотип — TRADEMARKS.md.
 """История версий из app/.../data/Changelog.kt с цветными метками.
 
   python3 scripts/changelog.py notes [версия]   описание релиза для GitHub (по умолчанию — последняя версия)
@@ -51,7 +51,7 @@ def main():
         rel = next((r for r in rels if r["version"] == want), rels[0]) if want else rels[0]
         sys.stdout.write(section(rel))
     elif cmd == "full":
-        parts = ["# История версий APEX VPN", "",
+        parts = ["# История версий APEX CLIENT", "",
                  '<img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> '
                  '<img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> '
                  '<img src="img/tags/removed.svg" height="22">', ""]

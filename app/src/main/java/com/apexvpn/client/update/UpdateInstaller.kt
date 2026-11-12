@@ -48,7 +48,7 @@ sealed interface InstallState {
     data object Verifying : InstallState
     /** Ждём, пока пользователь нажмёт «Установить» в окне Android */
     data object Installing : InstallState
-    /** Нужно разрешить установку из APEX VPN (Настройки Android) */
+    /** Нужно разрешить установку из APEX CLIENT (Настройки Android) */
     data object NeedPermission : InstallState
     data class Failed(val message: String) : InstallState
 }
@@ -86,7 +86,7 @@ object UpdateInstaller {
 
     fun reset() { if (_state.value !is InstallState.Downloading) _state.value = InstallState.Idle }
 
-    /** Разрешена ли установка обновлений из APEX VPN (Android 8+ спрашивает один раз). */
+    /** Разрешена ли установка обновлений из APEX CLIENT (Android 8+ спрашивает один раз). */
     fun canInstall(context: Context): Boolean =
         Build.VERSION.SDK_INT < 26 || context.packageManager.canRequestPackageInstalls()
 
@@ -284,7 +284,7 @@ object UpdateInstaller {
                 NotificationCompat.Builder(ctx, ApexApp.CHANNEL_ALERTS)
                     .setSmallIcon(R.drawable.ic_stat_apex)
                     .setContentTitle("Загрузка обновления $pct%")
-                    .setContentText("APEX VPN $version")
+                    .setContentText("APEX CLIENT $version")
                     .setProgress(100, pct, false)
                     .setOnlyAlertOnce(true)
                     .setOngoing(true)
@@ -307,7 +307,7 @@ object UpdateInstaller {
                 NOTIFY_ID,
                 NotificationCompat.Builder(ctx, ApexApp.CHANNEL_ALERTS)
                     .setSmallIcon(R.drawable.ic_stat_apex)
-                    .setContentTitle("APEX VPN обновлён до ${BuildConfig.VERSION_NAME}")
+                    .setContentTitle("APEX CLIENT обновлён до ${BuildConfig.VERSION_NAME}")
                     .setContentText("Нажмите, чтобы открыть")
                     .setContentIntent(pi)
                     .setAutoCancel(true)
@@ -330,7 +330,7 @@ object UpdateInstaller {
                 NOTIFY_ID,
                 NotificationCompat.Builder(ctx, ApexApp.CHANNEL_ALERTS)
                     .setSmallIcon(R.drawable.ic_stat_apex)
-                    .setContentTitle("Обновление APEX VPN скачано")
+                    .setContentTitle("Обновление APEX CLIENT скачано")
                     .setContentText("Нажмите, чтобы установить")
                     .setContentIntent(pi)
                     .setAutoCancel(true)

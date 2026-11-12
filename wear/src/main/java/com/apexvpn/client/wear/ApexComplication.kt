@@ -33,7 +33,7 @@ class ApexComplication : SuspendingComplicationDataSourceService() {
         val icon = MonochromaticImage.Builder(
             Icon.createWithResource(this, if (on) R.drawable.ic_complication_on else R.drawable.ic_complication_off),
         ).build()
-        val desc = PlainComplicationText.Builder("APEX VPN: ${WatchState.label(st.status)}").build()
+        val desc = PlainComplicationText.Builder("APEX CLIENT: ${WatchState.label(st.status)}").build()
         val tap = PendingIntent.getActivity(
             this, 0, Intent(this, WearActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,

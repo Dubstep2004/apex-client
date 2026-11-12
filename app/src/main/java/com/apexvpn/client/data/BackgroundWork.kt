@@ -72,7 +72,7 @@ class BackgroundWork(context: Context, params: WorkerParameters) : CoroutineWork
             7,
             NotificationCompat.Builder(context, ApexApp.CHANNEL_ALERTS)
                 .setSmallIcon(R.drawable.ic_stat_apex)
-                .setContentTitle("Ваш ${MonthStats.title(key).substringBefore(' ')} с APEX VPN")
+                .setContentTitle("Ваш ${MonthStats.title(key).substringBefore(' ')} с APEX CLIENT")
                 .setContentText("${com.apexvpn.client.ui.formatBytes(m.down + m.up)} через VPN · ${m.seconds / 3600} ч · ${m.ads} рекламы заблокировано")
                 .setContentIntent(pi)
                 .setAutoCancel(true)
@@ -99,7 +99,7 @@ class BackgroundWork(context: Context, params: WorkerParameters) : CoroutineWork
             5,
             NotificationCompat.Builder(context, ApexApp.CHANNEL_ALERTS)
                 .setSmallIcon(R.drawable.ic_stat_apex)
-                .setContentTitle("Доступна версия APEX VPN $version")
+                .setContentTitle("Доступна версия APEX CLIENT $version")
                 .setContentText(if (info.apkUrl != null) "Нажмите — обновится в один клик" else "Нажмите — откроется страница версии на GitHub")
                 .setContentIntent(pi)
                 .setAutoCancel(true)
@@ -229,10 +229,10 @@ object ExpiryAlerts {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         val title = when (stage) {
-            0 -> "Подписка APEX VPN закончилась"
+            0 -> "Подписка APEX CLIENT закончилась"
             1 -> "Подписка заканчивается завтра"
             3 -> "Подписка скоро закончится"
-            else -> "APEX VPN"
+            else -> "APEX CLIENT"
         }
         // 3.17.4: кнопка «Продлить» — личный кабинет из подписки, иначе чат поддержки
         val sub = Subscription.state.value

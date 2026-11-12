@@ -180,7 +180,7 @@ object Subscription {
         return re.find(decoded)?.value?.trimEnd('.', ',', ')', ']')?.let { SubHosts.rewrite(it) }
     }
 
-    /** Приложение представляется серверу только как APEX VPN. */
+    /** Приложение представляется серверу только как «APEX VPN/версия» — по этой метке панель отдаёт ему подписку (название в приложении — APEX CLIENT). */
     private val userAgent = "APEX VPN/${BuildConfig.VERSION_NAME}"
 
     private suspend fun fetch(url: String) = withContext(Dispatchers.IO) {

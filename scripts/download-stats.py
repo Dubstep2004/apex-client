@@ -40,7 +40,7 @@ svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewB
 <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#15132A"/><stop offset="1" stop-color="#0A0A12"/></linearGradient>
 <linearGradient id="g" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#7B6CFF"/><stop offset="1" stop-color="#22D3EE"/></linearGradient></defs>
 <rect width="{W}" height="{H}" rx="24" fill="url(#bg)" stroke="#2A2A40"/>
-<text x="36" y="58" style="font-size:22px;font-weight:800">📊 Скачивания APEX VPN</text>
+<text x="36" y="58" style="font-size:22px;font-weight:800">📊 Скачивания APEX CLIENT</text>
 <text x="36" y="84" class="d">из GitHub Releases · обновлено {updated}</text>
 <text x="36" y="160" style="font-size:64px;font-weight:900">{total}</text>
 <text x="36" y="190" class="d">всего скачиваний APK для телефона</text>

@@ -46,12 +46,12 @@
             android:name=".WatchUpdateReceiver"
             android:exported="false" />
 
-        <!-- 409. Плитка APEX VPN -->
+        <!-- 409. Плитка APEX CLIENT -->
         <service
             android:name=".ApexTile"
             android:exported="true"
             android:icon="@drawable/ic_complication_on"
-            android:label="APEX VPN"
+            android:label="APEX CLIENT"
             android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
             <intent-filter>
                 <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
@@ -66,7 +66,7 @@
             android:name=".ApexComplication"
             android:exported="true"
             android:icon="@drawable/ic_complication_on"
-            android:label="APEX VPN"
+            android:label="APEX CLIENT"
             android:permission="com.google.android.wearable.permission.BIND_COMPLICATION_PROVIDER">
             <intent-filter>
                 <action android:name="android.support.wearable.complications.ACTION_COMPLICATION_UPDATE_REQUEST" />

@@ -94,7 +94,7 @@ class WearActivity : ComponentActivity(), DataClient.OnDataChangedListener {
                                 }
                             },
                             modifier = Modifier.size(width = 200.dp, height = 48.dp),
-                        ) { Text("Скачать APEX VPN") }
+                        ) { Text("Скачать APEX CLIENT") }
                     }
                 }
             }
@@ -269,7 +269,7 @@ private fun ServerPicker(list: ServerList, onPick: (String) -> Unit, onBack: () 
     ) {
         item { Text("Сервер", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold) }
         if (list.items.isEmpty()) {
-            item { Text("Откройте APEX VPN на телефоне", color = Color(0xFF8E8E9A), fontSize = 12.sp, textAlign = TextAlign.Center) }
+            item { Text("Откройте APEX CLIENT на телефоне", color = Color(0xFF8E8E9A), fontSize = 12.sp, textAlign = TextAlign.Center) }
         }
         list.items.forEach { srv ->
             item {

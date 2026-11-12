@@ -16,7 +16,7 @@ import com.google.android.gms.wearable.Wearable
 import com.google.common.util.concurrent.ListenableFuture
 
 /**
- * 409. Плитка APEX VPN: состояние, сервер и большая кнопка включения.
+ * 409. Плитка APEX CLIENT: состояние, сервер и большая кнопка включения.
  * Нажатие на кнопку отправляет телефону «переключить».
  */
 class ApexTile : TileService() {
@@ -83,7 +83,7 @@ class ApexTile : TileService() {
 
         val column = LayoutElementBuilders.Column.Builder()
             .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
-            .addContent(text("APEX VPN", 12f, 0xFF8E8E9A.toInt()))
+            .addContent(text("APEX CLIENT", 12f, 0xFF8E8E9A.toInt()))
             .addContent(LayoutElementBuilders.Spacer.Builder().setHeight(dp(4f)).build())
             .addContent(text(if (on) "Защищено" else WatchState.label(st.status), 22f, if (on) 0xFFFFFFFF.toInt() else 0xFFC9C9DA.toInt(), bold = true))
             .addContent(LayoutElementBuilders.Spacer.Builder().setHeight(dp(6f)).build())

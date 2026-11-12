@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="shortcut_connect">Включить VPN</string>
-    <string name="shortcut_connect_long">Включить APEX VPN</string>
+    <string name="shortcut_connect_long">Включить APEX CLIENT</string>
     <string name="shortcut_disconnect">Выключить VPN</string>
-    <string name="shortcut_disconnect_long">Выключить APEX VPN</string>
+    <string name="shortcut_disconnect_long">Выключить APEX CLIENT</string>
     <!-- Фразы для голосового Ассистента -->
     <string-array name="voice_connect">
         <item>включи VPN</item>

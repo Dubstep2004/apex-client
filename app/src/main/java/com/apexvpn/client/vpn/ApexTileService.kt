@@ -13,7 +13,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
-/** Плитка «APEX VPN» в шторке быстрых настроек. */
+/** Плитка «APEX CLIENT» в шторке быстрых настроек. */
 class ApexTileService : TileService() {
     private var job: Job? = null
 

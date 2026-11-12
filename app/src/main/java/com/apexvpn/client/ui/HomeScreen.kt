@@ -157,7 +157,7 @@ fun HomeScreen(
             Spacer(Modifier.height(10.dp))
             Banner(
                 Icons.Rounded.WarningAmber, Apex.Bad,
-                "Неофициальная копия APEX VPN",
+                "Неофициальная копия APEX CLIENT",
                 "Её собрал не автор — она может украсть подписку. Нажмите, чтобы скачать оригинал.",
                 onClick = { openUrl(context, com.apexvpn.client.data.Integrity.OFFICIAL_URL) },
                 onClose = null,

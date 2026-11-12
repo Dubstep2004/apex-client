@@ -372,9 +372,9 @@ class MainActivity : ComponentActivity() {
                             title = { Text("⚠ Неофициальная копия", color = Apex.Bad) },
                             text = {
                                 Text(
-                                    "Это приложение похоже на APEX VPN, но подписано не автором. В копии может быть чужой код: " +
+                                    "Это приложение похоже на APEX CLIENT, но подписано не автором. В копии может быть чужой код: " +
                                         "реклама, слежка или кража ссылки подписки.\n\n" +
-                                        "Оригинал APEX VPN скачивается только со страницы github.com/Dubstep2004/apex-vpn.",
+                                        "Оригинал APEX CLIENT скачивается только со страницы github.com/Dubstep2004/apex-vpn.",
                                     color = Apex.TextDim,
                                 )
                             },

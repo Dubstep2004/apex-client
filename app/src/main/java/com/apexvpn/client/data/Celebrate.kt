@@ -24,7 +24,7 @@ object Celebrate {
         Prefs.connectCount = n
         when {
             n == 1 -> fire("🎉 Первое подключение — вы под защитой!")
-            n in setOf(10, 50, 100, 250, 500, 1000, 2000, 5000) -> fire("🎉 Уже $n подключений с APEX VPN!")
+            n in setOf(10, 50, 100, 250, 500, 1000, 2000, 5000) -> fire("🎉 Уже $n подключений с APEX CLIENT!")
         }
     }
 }

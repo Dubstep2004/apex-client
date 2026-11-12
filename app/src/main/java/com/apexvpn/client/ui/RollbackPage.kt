@@ -93,7 +93,7 @@ internal fun RollbackPage(viewModel: MainViewModel, onBack: () -> Unit) {
                 list.forEachIndexed { i, v ->
                     if (i > 0) GroupDivider()
                     ListRow(
-                        (if (apkSaved == v.versionName) "✅ " else "") + "APEX VPN ${v.versionName}",
+                        (if (apkSaved == v.versionName) "✅ " else "") + "APEX CLIENT ${v.versionName}",
                         if (apkSaved == v.versionName) "Файл сохранён — шаг 3" else "Сохранить файл apex-vpn-${v.versionName}.apk",
                         onClick = { chosen = v; progress = null; apkLauncher.launch("apex-vpn-${v.versionName}.apk") },
                     ) { Tag("Скачать") }
@@ -105,7 +105,7 @@ internal fun RollbackPage(viewModel: MainViewModel, onBack: () -> Unit) {
         SectionLabel("3. Удалить и поставить")
         Group {
             ListRow(
-                "Удалить APEX VPN",
+                "Удалить APEX CLIENT",
                 if (backupDone && apkSaved != null) "Затем откройте сохранённый apex-vpn-$apkSaved.apk в «Файлах» и установите"
                 else "Сначала сохраните копию и файл прошлой версии",
                 titleColor = if (backupDone && apkSaved != null) Apex.Bad else Apex.TextDim,
@@ -117,7 +117,7 @@ internal fun RollbackPage(viewModel: MainViewModel, onBack: () -> Unit) {
             )
         }
         Spacer(Modifier.height(10.dp))
-        Text("4. После установки откройте APEX VPN → Настройки → «Резервная копия» → «Восстановить из файла» и выберите сохранённую копию.",
+        Text("4. После установки откройте APEX CLIENT → Настройки → «Резервная копия» → «Восстановить из файла» и выберите сохранённую копию.",
             color = Apex.TextDim, fontSize = 13.sp, fontWeight = FontWeight.Normal)
         Spacer(Modifier.height(24.dp))
     }

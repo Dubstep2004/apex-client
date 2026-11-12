@@ -91,7 +91,7 @@ fun UpdateDialog(viewModel: MainViewModel) {
                         LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = Apex.Accent)
                     }
                     InstallState.NeedPermission -> Text(
-                        "Разрешите установку обновлений из APEX VPN (откроются настройки Android), вернитесь и нажмите «Обновить» ещё раз.",
+                        "Разрешите установку обновлений из APEX CLIENT (откроются настройки Android), вернитесь и нажмите «Обновить» ещё раз.",
                         color = Apex.Accent, fontSize = 13.sp,
                     )
                     is InstallState.Failed -> Text(i.message, color = Apex.Bad, fontSize = 13.sp)

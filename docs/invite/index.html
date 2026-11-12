@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<title>Приглашение в APEX VPN</title>
-<meta name="description" content="Установите APEX VPN и подключите подписку в одно касание">
+<title>Приглашение в APEX CLIENT</title>
+<meta name="description" content="Установите APEX CLIENT и подключите подписку в одно касание">
 <link rel="icon" href="icon.png">
 <style>
   :root { --bg:#07070d; --card:#12121c; --line:#262636; --text:#f2f2f7; --dim:#9a9aae; --acc:#7b6cff; --cy:#22d3ee; --ok:#34d399; --bad:#ff6b6b; }
@@ -43,23 +43,23 @@
 
   <!-- Приглашение: ссылка подписки после # (не уходит на сервер GitHub) -->
   <section id="invite" hidden>
-    <h1>Вас пригласили в APEX VPN</h1>
+    <h1>Вас пригласили в APEX CLIENT</h1>
     <p class="lead">Два шага — и VPN готов.</p>
     <div class="step"><div class="num">1</div><div style="flex:1">
       <h2>Установите приложение</h2>
       <p>На странице версии откройте «Assets» и нажмите <b>apex-vpn-….apk</b>.</p>
-      <a class="btn" id="dl" href="#" rel="noopener">Скачать APEX VPN</a>
+      <a class="btn" id="dl" href="#" rel="noopener">Скачать APEX CLIENT</a>
     </div></div>
     <div class="step"><div class="num">2</div><div style="flex:1">
       <h2>Добавьте подписку</h2>
       <p>Нажмите — приложение откроется и само добавит подписку.</p>
-      <a class="btn" id="open" href="#">Открыть в APEX VPN</a>
+      <a class="btn" id="open" href="#">Открыть в APEX CLIENT</a>
       <button class="btn alt" id="copySub" type="button">Скопировать ссылку подписки</button>
       <p class="msg" id="msg1"></p>
     </div></div>
     <div class="step"><div class="num">↗</div><div style="flex:1">
       <h2>На другой телефон</h2>
-      <p>Отсканируйте камерой или в APEX VPN → «Сканировать QR-код».</p>
+      <p>Отсканируйте камерой или в APEX CLIENT → «Сканировать QR-код».</p>
       <div class="qr" id="qr1"></div>
     </div></div>
   </section>
@@ -125,7 +125,7 @@
     document.getElementById("dl").href = "https://github.com/" + REPO + "/releases/latest";
     document.getElementById("open").href = "apexvpn://import?url=" + encodeURIComponent(sub);
     document.getElementById("copySub").onclick = function () {
-      copy(sub, document.getElementById("msg1"), "Скопировано — вставьте в APEX VPN");
+      copy(sub, document.getElementById("msg1"), "Скопировано — вставьте в APEX CLIENT");
     };
     qr(document.getElementById("qr1"), sub);
     history.replaceState(null, "", base + location.hash); // не теряем ссылку при обновлении

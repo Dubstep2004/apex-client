@@ -121,7 +121,7 @@ object HideTemplates {
         return add.size
     }
 
-    /** Пакеты установленных приложений из шаблона (без самого APEX VPN). */
+    /** Пакеты установленных приложений из шаблона (без самого APEX CLIENT). */
     fun installed(apps: List<AppInfo>, self: String): List<String> =
         apps.filter { it.packageName != self && matches(it.packageName, it.label) }.map { it.packageName }
 }

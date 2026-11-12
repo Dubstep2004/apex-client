@@ -295,7 +295,7 @@ private fun HelpPage(onBack: () -> Unit) {
     val context = LocalContext.current
     var open by rememberSaveable { mutableStateOf(-1) }
     PageScaffold("Справка", onBack) {
-        Caption("Короткие инструкции с картинками — те же, что на странице APEX VPN на GitHub.")
+        Caption("Короткие инструкции с картинками — те же, что на странице APEX CLIENT на GitHub.")
         Spacer(Modifier.height(10.dp))
         com.apexvpn.client.data.HelpTopics.all.forEachIndexed { i, t ->
             val expanded = open == i
@@ -914,7 +914,7 @@ private fun WifiPage(viewModel: MainViewModel, onBack: () -> Unit) {
             Column(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Apex.Warn.copy(alpha = 0.12f)).padding(16.dp),
             ) {
-                Text("Android показывает имя сети Wi-Fi только приложениям с доступом к геолокации. APEX VPN использует его только для этой функции.", color = Apex.Text, fontSize = 14.sp)
+                Text("Android показывает имя сети Wi-Fi только приложениям с доступом к геолокации. APEX CLIENT использует его только для этой функции.", color = Apex.Text, fontSize = 14.sp)
                 Spacer(Modifier.height(10.dp))
                 Button(
                     onClick = { permission.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)) },
@@ -1865,7 +1865,7 @@ private fun ChangelogPage(onBack: () -> Unit) {
             ApexLogo(44.dp)
             Spacer(Modifier.width(14.dp))
             Column {
-                Text("APEX VPN ${com.apexvpn.client.BuildConfig.VERSION_NAME}", color = Apex.Text, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text("APEX CLIENT ${com.apexvpn.client.BuildConfig.VERSION_NAME}", color = Apex.Text, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 Text("Сборка ${com.apexvpn.client.BuildConfig.VERSION_CODE}", color = Apex.TextDim, fontSize = 14.sp)
             }
         }

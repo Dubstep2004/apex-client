@@ -321,7 +321,7 @@
 <div class="login" id="login" hidden>
   <div class="card">
     <img src="icon.svg" alt="">
-    <h1>Пульт APEX VPN</h1>
+    <h1>Пульт APEX CLIENT</h1>
     <p>Баннеры, серверы, объявления и обновления для всех пользователей — без новой версии приложения.</p>
     <label class="f" for="token">Токен GitHub</label>
     <input id="token" type="password" autocomplete="off" placeholder="github_pat_…">
@@ -620,7 +620,7 @@
         <ol>
           <li><code>app/build.gradle.kts</code> — увеличьте versionCode и versionName.</li>
           <li><code>Changelog.kt</code> — добавьте запись: это описание релиза и окна обновления.</li>
-          <li>Запушьте в main (или Actions → Build APEX VPN → Run workflow). Сборка ~25 минут, потом релиз и окно «Доступна версия».</li>
+          <li>Запушьте в main (или Actions → Build APEX CLIENT → Run workflow). Сборка ~25 минут, потом релиз и окно «Доступна версия».</li>
         </ol>
         <p><b>Бета:</b> имя со словом beta (<code>3.19.0-beta1</code>) — выйдет как Pre-release, получат только с «Настройки → Обновления → Бета-версии».</p>
         <p><b>Плохая версия:</b> «Функции» → выключить автоустановку обновлений, номер сборки — в «Отозванные версии».</p>
@@ -684,7 +684,7 @@
 
 <template id="phoneTpl">
   <div class="phone"><div class="screen">
-    <div class="ph-top">APEX VPN<i>VPN включён</i></div>
+    <div class="ph-top">APEX CLIENT<i>VPN включён</i></div>
     <div class="ph-banner" data-ph-banner hidden><span data-ph-icon></span><span data-ph-text></span><span class="x2">✕</span></div>
     <div class="shield">✓</div>
     <div class="ph-state">Защищено</div>

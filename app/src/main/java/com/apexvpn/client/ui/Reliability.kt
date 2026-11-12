@@ -127,7 +127,7 @@ internal fun KeepAlivePage(onBack: () -> Unit) {
             GroupDivider()
             ListRow(
                 "2. Автозапуск",
-                "Откроется экран вашей оболочки — включите APEX VPN",
+                "Откроется экран вашей оболочки — включите APEX CLIENT",
                 leading = { StatusIcon(SelfCheck.Mark.Wait) },
                 onClick = { KeepAlive.openAutostart(context) },
             ) { Chevron() }
@@ -152,7 +152,7 @@ internal fun KeepAlivePage(onBack: () -> Unit) {
         }
         Spacer(Modifier.height(8.dp))
         OutlinedButton(onClick = { KeepAlive.openAppSettings(context) }, modifier = Modifier.fillMaxWidth().height(50.dp), shape = RoundedCornerShape(14.dp)) {
-            Text("Открыть настройки APEX VPN", color = Apex.Text)
+            Text("Открыть настройки APEX CLIENT", color = Apex.Text)
         }
         Spacer(Modifier.height(24.dp))
     }
@@ -273,7 +273,7 @@ internal fun AboutPage(onBack: () -> Unit) {
                 Image(painterResource(R.drawable.ic_launcher_foreground), null, Modifier.size(160.dp))
             }
             Spacer(Modifier.height(16.dp))
-            Text("APEX VPN", color = Apex.Text, fontSize = 32.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
+            Text("APEX CLIENT", color = Apex.Text, fontSize = 32.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
             Text("Версия ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})", color = Apex.TextDim, fontSize = 15.sp)
             Text("sing-box ${singBoxVersion()} · Xray ${BuildConfig.XRAY_VERSION}", color = Apex.TextDim, fontSize = 13.sp)
             Spacer(Modifier.height(6.dp))
@@ -281,7 +281,7 @@ internal fun AboutPage(onBack: () -> Unit) {
         }
         Spacer(Modifier.height(24.dp))
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            AboutLine(Icons.Rounded.VisibilityOff, "Без журналов: APEX VPN не хранит и никуда не отправляет, какие сайты вы открываете")
+            AboutLine(Icons.Rounded.VisibilityOff, "Без журналов: APEX CLIENT не хранит и никуда не отправляет, какие сайты вы открываете")
             AboutLine(Icons.Rounded.Public, "Серверы по всему миру; российские сайты и банки идут напрямую")
             AboutLine(Icons.Rounded.Lock, "Только подписки ${com.apexvpn.client.data.SubHosts.primary()} — чужие ссылки приложение не примет")
             AboutLine(Icons.Rounded.SupportAgent, "Поддержка в Telegram: ${com.apexvpn.client.data.Links.SUPPORT_NAME}") {
@@ -291,7 +291,7 @@ internal fun AboutPage(onBack: () -> Unit) {
         Spacer(Modifier.height(20.dp))
         Text(
             "Приложение собрано на открытом коде под лицензией GPL-3.0 и распространяется без гарантий. " +
-                "Исходный код этой версии — на GitHub. Название «APEX VPN» и логотип под GPL не передаются.",
+                "Исходный код этой версии — на GitHub. Название «APEX CLIENT» и логотип под GPL не передаются.",
             color = Apex.TextDim, fontSize = 14.sp, lineHeight = 20.sp,
             modifier = Modifier.fillMaxWidth().apexCard().padding(18.dp),
         )
@@ -304,7 +304,7 @@ internal fun AboutPage(onBack: () -> Unit) {
                 onClick = { open("${com.apexvpn.client.data.Links.GITHUB}/tree/v${BuildConfig.VERSION_NAME}") },
             ) { Chevron() }
             GroupDivider()
-            ListRow("Лицензии", "Открытые проекты внутри APEX VPN", onClick = { showLicenses = !showLicenses }) {
+            ListRow("Лицензии", "Открытые проекты внутри APEX CLIENT", onClick = { showLicenses = !showLicenses }) {
                 Text(if (showLicenses) "−" else "+", color = Apex.TextDim, fontSize = 20.sp)
             }
             if (showLicenses) {
@@ -316,7 +316,7 @@ internal fun AboutPage(onBack: () -> Unit) {
         }
         Spacer(Modifier.height(16.dp))
         Text(
-            "© APEX VPN",
+            "© APEX CLIENT",
             color = Apex.TextDim, fontSize = 13.sp, textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
         )

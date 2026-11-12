@@ -150,7 +150,7 @@ jobs:
           fi
           cd out
           cat > README.md <<'EOF'
-          # Базы сайтов APEX VPN
+          # Базы сайтов APEX CLIENT
           Обновляются автоматически раз в день (официальные базы sing-box). Не редактируйте вручную.
           EOF
           git init -q -b rules

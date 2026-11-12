@@ -117,7 +117,7 @@ object NewWidgets {
                         VpnStatus.Stopped -> "Выключен"
                     },
                 )
-                setTextViewText(R.id.srv_ping, if (pingText.isNotEmpty()) "Пинг $pingText" else "APEX VPN")
+                setTextViewText(R.id.srv_ping, if (pingText.isNotEmpty()) "Пинг $pingText" else "APEX CLIENT")
                 setImageViewResource(R.id.srv_button, icon)
                 setOnClickPendingIntent(R.id.srv_button, toggle(context, ApexWidgetServers::class.java))
                 setOnClickPendingIntent(R.id.srv_header, PendingIntent.getActivity(

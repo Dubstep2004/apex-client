@@ -45,7 +45,7 @@ import kotlinx.coroutines.launch
 
 /**
  * 217. Заставка 2.0: щит APEX сам рисуется светящейся линией, заливается градиентом,
- * появляется галочка и волна света, затем по буквам — «APEX VPN» и метка «2.0».
+ * появляется галочка и волна света, затем по буквам — «APEX CLIENT» и метка «2.0».
  */
 @Composable
 fun SplashScreen(onFinished: () -> Unit) {
@@ -124,7 +124,7 @@ fun SplashScreen(onFinished: () -> Unit) {
             }
             Spacer(Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                "APEX VPN".forEachIndexed { i, ch ->
+                "APEX CLIENT".forEachIndexed { i, ch ->
                     // Буквы появляются по очереди
                     val p = ((letters.value * 8f) - i * 0.7f).coerceIn(0f, 1f)
                     Text(

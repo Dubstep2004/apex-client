@@ -216,7 +216,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.apk.outputs.name }}
-          name: APEX VPN ${{ steps.apk.outputs.name }}
+          name: APEX CLIENT ${{ steps.apk.outputs.name }}
           body_path: dist/release.md
           files: |
             ${{ steps.apk.outputs.apk }}

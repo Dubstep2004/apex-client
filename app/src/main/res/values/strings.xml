@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">APEX VPN</string>
+    <string name="app_name">APEX CLIENT</string>
     <string name="notification_channel">Состояние VPN</string>
     <string name="notification_connected">Подключено</string>
     <string name="notification_connecting">Подключение…</string>
@@ -11,5 +11,5 @@
     <string name="widget_info_description">Сервер, скорость и пинг</string>
     <string name="widget_servers_description">Кнопка VPN и четыре сервера на выбор</string>
     <string name="wallpaper_description">Карта мира, дуга до сервера и состояние VPN</string>
-    <string name="tv_banner">APEX VPN</string>
+    <string name="tv_banner">APEX CLIENT</string>
 </resources>

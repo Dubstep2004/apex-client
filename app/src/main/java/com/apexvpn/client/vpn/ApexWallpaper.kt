@@ -167,7 +167,7 @@ class ApexWallpaper : WallpaperService() {
             paint.typeface = Typeface.DEFAULT
             paint.textSize = 15 * d
             paint.color = 0x99FFFFFF.toInt()
-            c.drawText("APEX VPN · $serverTitle", w / 2, my + mh + 90 * d, paint)
+            c.drawText("APEX CLIENT · $serverTitle", w / 2, my + mh + 90 * d, paint)
             paint.textAlign = Paint.Align.LEFT
         }
 

@@ -65,7 +65,7 @@ fun ApexLogo(size: Dp, modifier: Modifier = Modifier) {
 }
 
 /**
- * «Живое» название APEX VPN: по буквам пробегает блик, «VPN» переливается цветами бренда,
+ * «Живое» название APEX CLIENT: по буквам пробегает блик, «VPN» переливается цветами бренда,
  * логотип мягко «дышит». В плавном режиме — неподвижное.
  */
 @Composable
@@ -133,8 +133,8 @@ fun ApexWordmark(modifier: Modifier = Modifier) {
             style = TextStyle(brush = apexBrush, fontWeight = FontWeight.Black, fontSize = 19.sp, letterSpacing = 2.sp),
         )
         Text(
-            " VPN",
-            style = TextStyle(brush = vpnBrush, fontWeight = FontWeight.Medium, fontSize = 19.sp, letterSpacing = 2.sp),
+            " CLIENT",
+            style = TextStyle(brush = vpnBrush, fontWeight = FontWeight.Medium, fontSize = 19.sp, letterSpacing = 1.5.sp),
         )
     }
 }

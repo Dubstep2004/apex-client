@@ -30,14 +30,14 @@ class AutomationActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        runCatching { handle(intent) }.onFailure { toast("APEX VPN: ${it.message ?: "ошибка"}") }
+        runCatching { handle(intent) }.onFailure { toast("APEX CLIENT: ${it.message ?: "ошибка"}") }
         finish()
     }
 
     private fun handle(i: Intent?) {
         val action = i?.action ?: return
         if (!AppSettings.value.automation) {
-            toast("APEX VPN: включите «Автоматизацию» в настройках")
+            toast("APEX CLIENT: включите «Автоматизацию» в настройках")
             return
         }
         val status = VpnState.status.value
@@ -52,7 +52,7 @@ class AutomationActivity : Activity() {
     private fun connect(server: String?) {
         val nodes = Subscription.state.value.nodes
         if (nodes.isEmpty()) {
-            toast("APEX VPN: сначала добавьте подписку")
+            toast("APEX CLIENT: сначала добавьте подписку")
             return
         }
         if (!server.isNullOrBlank()) {
@@ -61,7 +61,7 @@ class AutomationActivity : Activity() {
             } else {
                 val node = nodes.firstOrNull { ServerInfo.title(it.name).equals(server.trim(), true) }
                     ?: nodes.firstOrNull { ServerInfo.title(it.name).contains(server.trim(), true) }
-                if (node == null) toast("APEX VPN: сервер «$server» не найден") else Subscription.select(node.tag)
+                if (node == null) toast("APEX CLIENT: сервер «$server» не найден") else Subscription.select(node.tag)
             }
         }
         if (VpnService.prepare(this) != null) {

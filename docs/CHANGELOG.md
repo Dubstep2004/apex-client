@@ -1,6 +1,12 @@
-# История версий APEX VPN
+# История версий APEX CLIENT
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
+
+## 3.19.1 · 12 ноября 2026
+
+<img src="img/tags/changed.svg" alt="Изменено" height="22">
+
+- Новое название — APEX CLIENT. Сменилось только имя: обновление ставится поверх, подписка и настройки остаются
 
 ## 3.19.0 · 12 ноября 2026
 

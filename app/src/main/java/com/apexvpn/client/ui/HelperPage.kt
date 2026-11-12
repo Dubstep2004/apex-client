@@ -156,7 +156,7 @@ object Helper {
             has(t, "батаре", "заряд", "аккумулятор") -> Msg(false,
                 "Режим автопилота «Экономный» проверяет серверы раз в 30 минут — меньше расход батареи. Ещё помогает отключить оптимизацию батареи для APEX, чтобы Android не перезапускал VPN.",
                 listOf(Action("Режим «Экономный»", run = { viewModel.change { copy(autoMode = "battery") } }), Action("Работа в фоне", Page.KeepAlive)))
-            has(t, "привет", "здравств", "хай", "hello") -> Msg(false, "Привет! Я помощник APEX VPN. Напишите, что не работает — например, «не открывается YouTube» или «медленно».")
+            has(t, "привет", "здравств", "хай", "hello") -> Msg(false, "Привет! Я помощник APEX CLIENT. Напишите, что не работает — например, «не открывается YouTube» или «медленно».")
             else -> Msg(false,
                 "Не понял вопрос — я отвечаю по готовым подсказкам, это не ИИ. Попробуйте: «не работает YouTube», «не открывается банк», «медленно», «VPN не подключается», «пинг в играх», «подписка». Или напишите в поддержку.",
                 listOf(support))
@@ -169,7 +169,7 @@ internal fun HelperPage(viewModel: MainViewModel, onBack: () -> Unit, openPage: 
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val messages = remember {
-        mutableStateListOf(Helper.Msg(false, "Здравствуйте! Я помощник APEX VPN. Напишите, что не работает, или выберите подсказку ниже. Я отвечаю по состоянию VPN, подписке и журналу соединений — без интернета (это не ИИ)."))
+        mutableStateListOf(Helper.Msg(false, "Здравствуйте! Я помощник APEX CLIENT. Напишите, что не работает, или выберите подсказку ниже. Я отвечаю по состоянию VPN, подписке и журналу соединений — без интернета (это не ИИ)."))
     }
     var input by remember { mutableStateOf("") }
     val list = rememberLazyListState()

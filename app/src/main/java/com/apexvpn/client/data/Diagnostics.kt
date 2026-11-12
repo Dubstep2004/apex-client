@@ -46,7 +46,7 @@ object Diagnostics {
         val hosts = sub.nodes.map { it.server }.toSet() + listOf(sub.url)
         val now = SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z", Locale.US).format(Date())
         val b = StringBuilder()
-        b.appendLine("APEX VPN — отчёт для поддержки")
+        b.appendLine("APEX CLIENT — отчёт для поддержки")
         b.appendLine("Время: $now")
         b.appendLine("Версия: ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}), Xray ${BuildConfig.XRAY_VERSION}")
         b.appendLine("Сборка: ${when (Integrity.status(context)) {
@@ -138,7 +138,7 @@ object Diagnostics {
             headPart + title + "\n" + tail.joinToString("\n")
         }
         val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-        cm.setPrimaryClip(android.content.ClipData.newPlainText("APEX VPN — отчёт", text))
+        cm.setPrimaryClip(android.content.ClipData.newPlainText("APEX CLIENT — отчёт", text))
     }
 
     /**
@@ -170,8 +170,8 @@ object Diagnostics {
             type = "text/plain"
             clipData = android.content.ClipData.newRawUri("report", uri)
             putExtra(Intent.EXTRA_STREAM, uri)
-            putExtra(Intent.EXTRA_SUBJECT, "APEX VPN ${BuildConfig.VERSION_NAME}: отчёт")
-            putExtra(Intent.EXTRA_TEXT, "Отчёт APEX VPN ${BuildConfig.VERSION_NAME}. Опишите проблему:")
+            putExtra(Intent.EXTRA_SUBJECT, "APEX CLIENT ${BuildConfig.VERSION_NAME}: отчёт")
+            putExtra(Intent.EXTRA_TEXT, "Отчёт APEX CLIENT ${BuildConfig.VERSION_NAME}. Опишите проблему:")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         context.startActivity(Intent.createChooser(send, "Отправить отчёт").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))

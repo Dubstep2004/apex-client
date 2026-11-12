@@ -104,7 +104,7 @@ object TvPairing {
     }
 
     private fun page(error: String?, value: String) = """
-        <h2>APEX VPN → телевизор</h2>
+        <h2>APEX CLIENT → телевизор</h2>
         <p>Вставьте ссылку подписки (https://${com.apexvpn.client.data.SubHosts.primary()}/…) и нажмите «Отправить».</p>
         ${if (error != null) "<p style='color:#ef4444'>$error</p>" else ""}
         <form method='post'><input name='url' value='$value' placeholder='https://${com.apexvpn.client.data.SubHosts.primary()}/…' autofocus
@@ -114,7 +114,7 @@ object TvPairing {
 
     private fun reply(s: Socket, code: Int, html: String) {
         val body = ("<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>" +
-            "<title>APEX VPN</title></head><body style='font-family:sans-serif;background:#0b0b14;color:#eee;padding:24px;max-width:560px;margin:auto'>$html</body></html>")
+            "<title>APEX CLIENT</title></head><body style='font-family:sans-serif;background:#0b0b14;color:#eee;padding:24px;max-width:560px;margin:auto'>$html</body></html>")
             .toByteArray(Charsets.UTF_8)
         val head = "HTTP/1.1 $code ${if (code == 200) "OK" else "Not Found"}\r\nContent-Type: text/html; charset=utf-8\r\n" +
             "Content-Length: ${body.size}\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n"

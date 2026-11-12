@@ -56,7 +56,7 @@ object RulesUpdater {
     )
 
     /**
-     * 3.17.5. Необязательные базы: есть только в ветке «rules» APEX VPN (у SagerNet их нет).
+     * 3.17.5. Необязательные базы: есть только в ветке «rules» APEX CLIENT (у SagerNet их нет).
      * Не скачались — ядро работает без них, обновление при этом не считается неудачным.
      */
     val OPTIONAL = listOf("ads-hagezi.srs", "ru-inside.srs", "threats-hagezi.srs")
@@ -143,7 +143,7 @@ object RulesUpdater {
     fun sourceTitle(base: String): String = when {
         base.isEmpty() -> "встроенные в приложение"
         base == UPSTREAM -> "официальные базы sing-box"
-        base.startsWith("https://raw.githubusercontent.com/") -> "GitHub APEX VPN"
+        base.startsWith("https://raw.githubusercontent.com/") -> "GitHub APEX CLIENT"
         base.startsWith("https://cdn.jsdelivr.net/") -> "зеркало jsDelivr"
         else -> base.removePrefix("https://")
     }

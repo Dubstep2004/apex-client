@@ -54,7 +54,7 @@ import java.net.URL
 import io.nekohasekai.libbox.Notification as BoxNotification
 
 /**
- * VPN-сервис APEX VPN: поднимает TUN-интерфейс Android и запускает в нём ядро sing-box.
+ * VPN-сервис APEX CLIENT: поднимает TUN-интерфейс Android и запускает в нём ядро sing-box.
  * Дополнительно: скорость в уведомлении, автопереключение при сбое сервера,
  * таймер отключения и пауза в доверенных сетях Wi-Fi.
  */
@@ -332,7 +332,7 @@ class ApexVpnService : VpnService(), PlatformInterface, CommandServerHandler {
         autoRedirect = false
         when (s.appsMode) {
             AppsMode.Include -> {
-                // Только выбранные приложения (и само APEX VPN — для теста скорости и пинга)
+                // Только выбранные приложения (и само APEX CLIENT — для теста скорости и пинга)
                 includePackage = StringArray((s.apps - banks.toSet() + packageName).toList())
                 excludePackage = StringArray(emptyList())
             }
@@ -510,7 +510,7 @@ class ApexVpnService : VpnService(), PlatformInterface, CommandServerHandler {
         val text = when {
             // Защита от подделок: копия честно говорит, что она не оригинал
             com.apexvpn.client.data.Integrity.status(this) == com.apexvpn.client.data.Integrity.Status.Unofficial ->
-                "⚠ Неофициальная копия APEX VPN — скачайте оригинал с GitHub"
+                "⚠ Неофициальная копия APEX CLIENT — скачайте оригинал с GitHub"
             status == VpnStatus.Paused -> "VPN включится сам, когда вы выйдете из этой сети"
             status == VpnStatus.Blocked -> "Аварийный выключатель: без VPN интернет не работает"
             status == VpnStatus.Started && AppSettings.value.speedInNotification -> {

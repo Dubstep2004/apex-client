@@ -197,11 +197,11 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
                     val invite = com.apexvpn.client.data.Invite.link(sub.url)
                     val send = android.content.Intent(android.content.Intent.ACTION_SEND)
                         .setType("text/plain")
-                        .putExtra(android.content.Intent.EXTRA_TEXT, "APEX VPN — установка и подписка: $invite")
+                        .putExtra(android.content.Intent.EXTRA_TEXT, "APEX CLIENT — установка и подписка: $invite")
                     runCatching { context.startActivity(android.content.Intent.createChooser(send, "Отправить приглашение")) }
                         .onFailure {
                             val cm = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                            cm.setPrimaryClip(android.content.ClipData.newPlainText("APEX VPN", invite))
+                            cm.setPrimaryClip(android.content.ClipData.newPlainText("APEX CLIENT", invite))
                             viewModel.showMessage("Ссылка-приглашение скопирована")
                         }
                 },
@@ -572,11 +572,11 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
             if (uri != null) {
                 val o = com.apexvpn.client.data.SettingsBackup.read(context, uri)
                 when {
-                    o == null -> viewModel.showMessage("Это не файл настроек APEX VPN")
+                    o == null -> viewModel.showMessage("Это не файл настроек APEX CLIENT")
                     com.apexvpn.client.data.SettingsBackup.isEncrypted(o) -> lockedBackup = o
                     else -> {
                         val restored = com.apexvpn.client.data.SettingsBackup.restore(o)
-                        if (restored == null) viewModel.showMessage("Это не файл настроек APEX VPN") else viewModel.applyRestored(restored)
+                        if (restored == null) viewModel.showMessage("Это не файл настроек APEX CLIENT") else viewModel.applyRestored(restored)
                     }
                 }
             }
@@ -663,10 +663,10 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
             TransferQrDialog(
                 bmp,
                 title = "QR-код подписки",
-                hint = "Только ссылка подписки, без настроек. Отсканируйте в APEX VPN («Сканировать QR-код») или в другом приложении, например Happ.",
+                hint = "Только ссылка подписки, без настроек. Отсканируйте в APEX CLIENT («Сканировать QR-код») или в другом приложении, например Happ.",
             ) { subQr = null }
         }
-        Caption("Новый телефон: установите APEX VPN, нажмите «Сканировать QR-код» и наведите камеру на QR переноса. Настройки сохраняются при обновлении приложения. Файл нужен, если приложение пришлось удалить. В нём ссылка подписки — не отправляйте его другим. Ещё настройки попадают в резервную копию Android, если она включена на телефоне.")
+        Caption("Новый телефон: установите APEX CLIENT, нажмите «Сканировать QR-код» и наведите камеру на QR переноса. Настройки сохраняются при обновлении приложения. Файл нужен, если приложение пришлось удалить. В нём ссылка подписки — не отправляйте его другим. Ещё настройки попадают в резервную копию Android, если она включена на телефоне.")
 
         // ── 379. Очистить данные ──
         var confirmClear by remember { mutableStateOf(false) }
@@ -717,7 +717,7 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
                 SecretLogo(viewModel)
                 Spacer(Modifier.width(16.dp))
                 Column {
-                    Text("APEX VPN", color = Apex.Text, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Text("APEX CLIENT", color = Apex.Text, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     Text("Версия ${BuildConfig.VERSION_NAME}", color = Apex.TextDim, fontSize = 14.sp)
                     Text("Ядро sing-box ${singBoxVersion()}", color = Apex.TextDim, fontSize = 13.sp)
                     Text("Ядро Xray ${BuildConfig.XRAY_VERSION}", color = Apex.TextDim, fontSize = 13.sp)
@@ -758,7 +758,7 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
             GroupDivider()
             ListRow(
                 "Что нового",
-                "История версий APEX VPN",
+                "История версий APEX CLIENT",
                 leading = { tile(Icons.Rounded.NewReleases) },
                 onClick = { onOpenPage(Page.Changelog) },
             ) { Chevron() }
@@ -773,11 +773,11 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
             // 3.17.4 (70). Поделиться приложением: ссылка на скачивание и короткая инструкция
             GroupDivider()
             ListRow(
-                "Поделиться APEX VPN",
+                "Поделиться APEX CLIENT",
                 "Ссылка на скачивание и как установить",
                 leading = { tile(Icons.Rounded.Share) },
                 onClick = {
-                    val text = "APEX VPN — VPN для Android: автопилот, обход белых списков, блокировка рекламы.\n\n" +
+                    val text = "APEX CLIENT — VPN для Android: автопилот, обход белых списков, блокировка рекламы.\n\n" +
                         "Скачать: ${com.apexvpn.client.data.Links.GITHUB}/releases/latest\n\n" +
                         "Как установить:\n1. Скачайте файл apex-vpn-….apk\n2. Откройте его и разрешите установку\n" +
                         "3. В приложении вставьте ссылку подписки и нажмите «Подключить»"
@@ -786,7 +786,7 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
                             android.content.Intent.createChooser(
                                 android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain")
                                     .putExtra(android.content.Intent.EXTRA_TEXT, text),
-                                "Поделиться APEX VPN",
+                                "Поделиться APEX CLIENT",
                             ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
                         )
                     }
@@ -845,7 +845,7 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
                 GroupDivider()
                 ListRow(
                     "Telegram-канал",
-                    "Новости и обновления APEX VPN",
+                    "Новости и обновления APEX CLIENT",
                     leading = { tile(Icons.AutoMirrored.Rounded.Send) },
                     onClick = { openLink(context, com.apexvpn.client.data.Links.channel()) },
                 ) { Chevron() }
@@ -1114,7 +1114,7 @@ private fun maskUrl(url: String): String {
 private fun TransferQrDialog(
     bitmap: android.graphics.Bitmap,
     title: String = "Перенос на новый телефон",
-    hint: String = "На новом телефоне: APEX VPN → «Сканировать QR-код». Перенесутся настройки, свои списки, избранное и подписка.",
+    hint: String = "На новом телефоне: APEX CLIENT → «Сканировать QR-код». Перенесутся настройки, свои списки, избранное и подписка.",
     onDismiss: () -> Unit,
 ) {
     // Пока QR на экране — максимальная яркость, чтобы камера нового телефона его быстро прочитала
@@ -1267,7 +1267,7 @@ private val settingsSearch = listOf(
     SearchItem("Справка", "about", null, ""),
     SearchItem("Что нового", "about", Page.Changelog, ""),
     SearchItem("GitHub", "about", null, ""),
-    SearchItem("Поделиться APEX VPN", "about", null, ""),
+    SearchItem("Поделиться APEX CLIENT", "about", null, ""),
     SearchItem("Telegram-канал", "about", null, ""),
     SearchItem("Написать в поддержку", "about", null, "отчёт помощь ошибка telegram"),
     SearchItem("Блокировка рекламы", "mode", null, "реклама трекеры hagezi"),

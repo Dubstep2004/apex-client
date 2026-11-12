@@ -61,7 +61,7 @@ fun SetupScreen(viewModel: MainViewModel, onScanQr: () -> Unit) {
         Spacer(Modifier.height(48.dp))
         ApexLogo(112.dp)
         Spacer(Modifier.height(20.dp))
-        Text("APEX VPN", color = Apex.Text, fontSize = 30.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
+        Text("APEX CLIENT", color = Apex.Text, fontSize = 30.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
         Spacer(Modifier.height(8.dp))
         Text(
             "Добавьте ссылку на вашу подписку, чтобы начать",

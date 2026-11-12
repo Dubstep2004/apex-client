@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Ярлыки (долгое нажатие на иконку) и голосовые команды Ассистента:
-     «Окей Google, включи VPN в APEX VPN» / «выключи VPN в APEX VPN». -->
+     «Окей Google, включи VPN в APEX CLIENT» / «выключи VPN в APEX CLIENT». -->
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
 
     <capability android:name="actions.intent.OPEN_APP_FEATURE">

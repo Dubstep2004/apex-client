@@ -172,7 +172,7 @@ object AutoRulesEngine {
                 androidx.core.app.NotificationCompat.Builder(ctx, com.apexvpn.client.ApexApp.CHANNEL_ALERTS)
                     .setSmallIcon(com.apexvpn.client.R.drawable.ic_stat_apex)
                     .setContentTitle("Правила «если — то» не видят приложения")
-                    .setContentText("Android отключил доступ к истории использования. Нажмите и включите его для APEX VPN")
+                    .setContentText("Android отключил доступ к истории использования. Нажмите и включите его для APEX CLIENT")
                     .setContentIntent(pi)
                     .setAutoCancel(true)
                     .build(),

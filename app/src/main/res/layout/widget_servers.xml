@@ -36,7 +36,7 @@
                 android:id="@+id/srv_ping"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="APEX VPN"
+                android:text="APEX CLIENT"
                 android:textColor="#8E8E9A"
                 android:textSize="12sp" />
         </LinearLayout>
