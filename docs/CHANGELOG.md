@@ -2,6 +2,12 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.19.4 · 12 ноября 2026
+
+<img src="img/tags/changed.svg" alt="Изменено" height="22">
+
+- Картинки в справке — с новым названием APEX CLIENT и адресом apex-client
+
 ## 3.19.3 · 12 ноября 2026
 
 <img src="img/tags/changed.svg" alt="Изменено" height="22">
