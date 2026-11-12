@@ -144,7 +144,26 @@
   .tog input:focus-visible + i { outline: 2px solid var(--go2); outline-offset: 2px; }
 
   .item { border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px; margin: 0 0 12px; background: var(--panel); }
-  .wall { display: grid; grid-template-columns: 54px 1fr auto; gap: 12px; align-items: start; }
+  .wall { display: grid; grid-template-columns: auto 54px 1fr auto; gap: 12px; align-items: start; transition: transform .15s, border-color .2s; }
+  .wall.drag, .src.drag { border-color: var(--go2); transform: scale(1.01); box-shadow: 0 10px 30px #0003; }
+  .wall .grip, .src .grip { cursor: grab; color: var(--faint); font-size: 20px; padding: 26px 2px; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .wall.off { opacity: .55; }
+  .sortbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 12px; } .sortbar span { color: var(--dim); font-size: 13px; }
+  .srcs { display: grid; gap: 10px; user-select: none; -webkit-user-select: none; }
+  .src { display: grid; grid-template-columns: auto 30px minmax(0, 1fr) auto; gap: 10px; align-items: start; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); padding: 12px; transition: transform .15s, border-color .2s; }
+  .src .grip { padding: 6px 2px; }
+  .src .num { width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; font-weight: 800; background: var(--line); margin-top: 2px; }
+  .src .num.dim { opacity: .45; }
+  .src .body { min-width: 0; } .src .body b { display: block; } .src .body small { color: var(--dim); font-size: 13px; display: block; margin: 2px 0 8px; }
+  .src .wide { grid-column: 1 / -1; min-width: 0; } .src .wide:empty { display: none; }
+  .src .wide input { width: 100%; min-width: 0; padding: 10px 12px; font-size: 14px; }
+  .src .chip { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 99px; background: var(--line); color: var(--dim); white-space: nowrap; margin-top: 4px; }
+  .src .chip.ok { background: #2fd38b26; color: var(--go1); }
+  .src .mv { display: grid; gap: 2px; } .src .mv button { border: 1px solid var(--line); background: var(--panel2); color: var(--text); border-radius: 9px; width: 34px; height: 30px; cursor: pointer; }
+  .src .mv button:disabled { opacity: .3; cursor: default; }
+  .src details, .howto { margin-top: 8px; } .src details summary, .howto summary { cursor: pointer; color: var(--go2); font-size: 13px; font-weight: 700; }
+  .src details p, .howto p { color: var(--dim); font-size: 13px; margin: 6px 0 0; } .src details a { color: var(--go2); }
+  @media (max-width: 560px) { .src { grid-template-columns: auto minmax(0, 1fr) auto; } .src .num { display: none; } }
   .wall img, .wall .noimg { width: 54px; height: 81px; object-fit: cover; border-radius: 10px; background: var(--panel2); display: block; }
   .wall > * { min-width: 0; } .wall .f2 { display: grid; gap: 6px; } .wall .f2 input { padding: 9px 12px; min-width: 0; width: 100%; }
   .wall .ctl { display: grid; gap: 2px; justify-items: center; }
@@ -618,24 +637,15 @@
     <section data-tab="walls" hidden>
       <h1>Живые обои из интернета</h1>
       <p class="lead">Каталог в приложении: «Настройки → Оформление → Живые обои из интернета» (с 3.19.7). Пользователь нажимает — видео скачивается, ненужные он удаляет сам.</p>
-      <div class="block"><h2>Каталог</h2><p class="note">Порядок — как в приложении. Скрытые не показываются, но у тех, кто уже скачал, остаются.</p>
+      <div class="block"><h2>Откуда искать живые обои</h2>
+        <p class="note">Приложение ищет по темам (Аниме, Игры, Неон, Космос…) в источниках <b>сверху вниз</b>: не нашлось в первом — идёт во второй. Перетащите за ⠿ или двигайте стрелками. Без ключа источник пропускается.</p>
+        <div class="srcs" id="srcList"></div>
+      </div>
+      <div class="block"><h2>Каталог</h2><p class="note">Свои живые обои — показываются первыми, в этом порядке. Перетащите за ⠿. Скрытые не видны новым пользователям, но у скачавших остаются.</p>
+        <div class="sortbar"><span>Упорядочить:</span><button class="btn quiet small" data-sort="title">По названию</button><button class="btn quiet small" data-sort="size">Сначала лёгкие</button><button class="btn quiet small" data-sort="hidden">Скрытые в конец</button></div>
         <div id="wallList"></div>
         <button class="add" id="wallAdd">Добавить обои по ссылке</button>
-      </div>
-      <div class="block"><h2>Поиск живых обоев по темам</h2><p class="note">Аниме, игры, неон, космос, дождь и ещё 14 тем — бесплатные видео прямо в приложении (с 3.20). Нужен бесплатный ключ Pixabay или Pexels. Пусто — поиска в приложении нет.</p>
-        <p class="note"><b>Pexels сейчас не выдаёт новые ключи.</b> Подойдёт бесплатный ключ <b>Pixabay</b>: <a href="https://pixabay.com/accounts/register/" target="_blank" rel="noopener">зарегистрируйтесь на pixabay.com</a> → войдите → откройте <a href="https://pixabay.com/api/docs/" target="_blank" rel="noopener">pixabay.com/api/docs</a> → в разделе «Parameters» у строки <code>key</code> будет ваш ключ (вида 12345678-abcd…). Можно задать оба — сначала ищем в Pexels.</p>
-        <p class="note">📷 <a href="pixabay-guide.jpg" target="_blank" rel="noopener">Инструкция с картинками: как получить ключ Pixabay</a></p>
-        <label class="f" for="pbKey">Ключ Pixabay API</label>
-        <input id="pbKey" type="text" autocomplete="off" spellcheck="false" placeholder="12345678-0123abcd4567ef89…">
-        <p class="note"><b>Pixabay не открывается?</b> Возьмите ключ <b>GIPHY</b> — там много коротких роликов с аниме и играми, ключ выдают сразу: <a href="https://developers.giphy.com/dashboard/" target="_blank" rel="noopener">developers.giphy.com/dashboard</a> → войти → «Create an API Key» → «API» → название «APEX CLIENT» → скопировать ключ сюда. Ролики там короче и меньше по размеру, чем на Pixabay.</p>
-        <label class="f" for="gpKey">Ключ GIPHY API</label>
-        <input id="gpKey" type="text" autocomplete="off" spellcheck="false" placeholder="AbCdEf0123456789…">
-        <label class="f" for="pxKey">Ключ Pexels API (если уже есть)</label>
-        <input id="pxKey" type="text" autocomplete="off" spellcheck="false" placeholder="563492ad6f9170000100000…">
-        <p class="help">Ключ хранится в открытом файле каталога — так приложения его получают. Это не пароль: им можно только искать видео (лимит Pexels — 200 запросов в час на всех). Если начнут злоупотреблять — создайте новый на pexels.com и вставьте сюда.</p>
-      </div>
-      <div class="block"><h2>Где брать видео</h2>
-        <p class="note">Нужна прямая ссылка https://…/файл.mp4 (не страница сайта), вертикальное видео 1080×1920, 5–15 секунд, до 20 МБ. Подойдут бесплатные видео без обязательной подписи автора — Pexels, Pixabay, Mixkit: «Скачать» → правой кнопкой «Копировать адрес ссылки». Или положите файл в репозиторий в <code>docs/wallpapers/</code> и укажите путь <code>wallpapers/имя.mp4</code>.</p>
+        <details class="howto"><summary>Где брать видео для каталога</summary><p>Нужна прямая ссылка https://…/файл.mp4 (не страница сайта), вертикальное видео 1080×1920, 5–15 секунд, до 20 МБ. Или положите файл в репозиторий в <code>docs/wallpapers/</code> и укажите путь <code>wallpapers/имя.mp4</code>.</p></details>
       </div>
       <button class="btn go" id="saveWalls" style="width:100%">Сохранить обои</button>
       <p class="help">Приложения увидят новый каталог при следующем открытии «Оформления».</p>
@@ -1599,10 +1609,61 @@ function goHit(h) {
 
 // ── 2.11: каталог живых обоев (docs/config/wallpapers.json)
 const wallSrc = u => /^https:\/\//.test(u) ? u : (u ? '../' + u.replace(/^\/+/, '') : '')
-function fillWalls(c) { walls = (c?.live || []).map(w => ({ ...w })); $('pxKey').value = c?.pexelsKey || ''; $('pbKey').value = c?.pixabayKey || ''; $('gpKey').value = c?.giphyKey || ''; wallsSaved = JSON.stringify(collectWalls()); renderWalls() }
-function collectWalls() { const k = $('pxKey').value.trim(), pb = $('pbKey').value.trim(), gp = $('gpKey').value.trim(); return { ...(k ? { pexelsKey: k } : {}), ...(pb ? { pixabayKey: pb } : {}), ...(gp ? { giphyKey: gp } : {}), live: walls.map(w => { const o = { id: w.id, title: w.title || w.id, url: w.url }; if (w.thumb) o.thumb = w.thumb; if (w.sizeMb) o.sizeMb = w.sizeMb; if (w.hidden) o.hidden = true; return o }) } }
+// 2.11: источники поиска живых обоев — порядок сохраняется в wallpapers.json → sources
+const SOURCES = {
+  giphy: { t: 'GIPHY', d: 'Много коротких роликов с аниме и играми. Ключ выдают сразу.', key: 'gpKey', ph: 'AbCdEf0123456789…', how: 'Откройте <a href="https://developers.giphy.com/dashboard/" target="_blank" rel="noopener">developers.giphy.com/dashboard</a> → войдите → «Create an API Key» → «API» → название «APEX CLIENT» → скопируйте ключ сюда.' },
+  pixabay: { t: 'Pixabay', d: 'Видео в хорошем качестве: природа, неон, абстракция.', key: 'pbKey', ph: '12345678-0123abcd4567ef89…', how: '<a href="https://pixabay.com/accounts/register/" target="_blank" rel="noopener">Зарегистрируйтесь</a> → откройте <a href="https://pixabay.com/api/docs/" target="_blank" rel="noopener">pixabay.com/api/docs</a> → раздел «Parameters», строка <code>key</code>. «Rate limit exceeded» — выключите VPN. <a href="pixabay-guide.jpg" target="_blank" rel="noopener">📷 Инструкция с картинками</a>' },
+  pexels: { t: 'Pexels', d: 'Лучшие вертикальные видео. Сейчас Pexels не выдаёт новые ключи.', key: 'pxKey', ph: '563492ad6f9170000100000…', how: 'Если ключ уже есть: <a href="https://www.pexels.com/api/" target="_blank" rel="noopener">pexels.com/api</a> → «Your API key».' },
+  commons: { t: 'Wikimedia Commons', d: 'Без ключа, работает всегда: космос, природа, океан, огонь.', key: null },
+}
+let srcOrder = ['giphy', 'pixabay', 'pexels', 'commons'], srcKeys = { gpKey: '', pbKey: '', pxKey: '' }
+function renderSrcs() {
+  let n = 0
+  $('srcList').innerHTML = srcOrder.map((id, i) => {
+    const m = SOURCES[id], v = m.key ? srcKeys[m.key] : '', on = !m.key || !!v.trim()
+    return `<div class="src" data-i="${i}"><span class="grip" title="Перетащить" aria-hidden="true">⠿</span><span class="num ${on ? '' : 'dim'}">${on ? ++n : '–'}</span>
+      <div class="body"><b>${m.t}</b><small>${m.d}</small></div>
+      <div style="display:grid;gap:6px;justify-items:end"><span class="chip ${on ? 'ok' : ''}">${m.key ? (on ? '✓ ключ есть' : 'нет ключа') : '✓ без ключа'}</span>
+        <div class="mv"><button data-mv="-1" ${i === 0 ? 'disabled' : ''} aria-label="Выше">↑</button><button data-mv="1" ${i === srcOrder.length - 1 ? 'disabled' : ''} aria-label="Ниже">↓</button></div></div>
+      <div class="wide">${m.key ? `<input id="${m.key}" data-key="${m.key}" type="text" autocomplete="off" spellcheck="false" placeholder="${m.ph}" value="${esc(v)}" aria-label="Ключ ${m.t}"><details><summary>Как получить ключ</summary><p>${m.how}</p></details>` : ''}</div>
+    </div>`
+  }).join('')
+}
+$('srcList').addEventListener('input', e => { const k = e.target.dataset.key; if (!k) return; srcKeys[k] = e.target.value; const row = e.target.closest('.src'); const chip = row.querySelector('.chip'); const on = !!e.target.value.trim(); chip.className = 'chip ' + (on ? 'ok' : ''); chip.textContent = on ? '✓ ключ есть' : 'нет ключа'; changedDots() })
+$('srcList').addEventListener('change', e => { if (e.target.dataset.key) renderSrcs() })
+$('srcList').addEventListener('click', e => {
+  const b = e.target.closest('[data-mv]'); if (!b) return
+  const i = +b.closest('.src').dataset.i, j = i + +b.dataset.mv; if (j < 0 || j >= srcOrder.length) return
+  ;[srcOrder[i], srcOrder[j]] = [srcOrder[j], srcOrder[i]]; renderSrcs(); changedDots()
+})
+// Перетаскивание за ⠿ — общий помощник для источников и каталога
+function dragSort(list, rowSel, arr, render) {
+  list.addEventListener('pointerdown', e => {
+    const grip = e.target.closest('.grip'); if (!grip) return
+    e.preventDefault(); const row = grip.closest(rowSel); let from = +row.dataset.i; row.classList.add('drag')
+    const move = ev => {
+      const over = document.elementsFromPoint(ev.clientX, ev.clientY).map(el => el.closest?.(rowSel)).find(el => el && el.parentElement === list && el !== list.children[from])
+      if (!over) return; const to = +over.dataset.i; if (to === from || isNaN(to)) return
+      const a = arr(); const [x] = a.splice(from, 1); a.splice(to, 0, x); from = to; render(); list.children[to]?.classList.add('drag')
+    }
+    const up = () => { document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); render(); changedDots() }
+    document.addEventListener('pointermove', move); document.addEventListener('pointerup', up)
+  })
+}
+dragSort($('srcList'), '.src', () => srcOrder, renderSrcs)
+dragSort($('wallList'), '.wall', () => walls, renderWalls)
+document.querySelector('.sortbar').addEventListener('click', e => {
+  const k = e.target.closest('[data-sort]')?.dataset.sort; if (!k) return
+  if (k === 'title') walls.sort((a, b) => (a.title || a.id).localeCompare(b.title || b.id, 'ru'))
+  else if (k === 'size') walls.sort((a, b) => (a.sizeMb || 99) - (b.sizeMb || 99))
+  else walls.sort((a, b) => (a.hidden ? 1 : 0) - (b.hidden ? 1 : 0))
+  renderWalls(); changedDots(); toast('Порядок изменён — нажмите «Сохранить обои»')
+})
+
+function fillWalls(c) { walls = (c?.live || []).map(w => ({ ...w })); srcKeys = { pxKey: c?.pexelsKey || '', pbKey: c?.pixabayKey || '', gpKey: c?.giphyKey || '' }; const so = (c?.sources || []).filter(x => SOURCES[x]); srcOrder = [...so, ...Object.keys(SOURCES).filter(x => !so.includes(x))]; renderSrcs(); wallsSaved = JSON.stringify(collectWalls()); renderWalls() }
+function collectWalls() { const k = srcKeys.pxKey.trim(), pb = srcKeys.pbKey.trim(), gp = srcKeys.gpKey.trim(); return { sources: [...srcOrder], ...(k ? { pexelsKey: k } : {}), ...(pb ? { pixabayKey: pb } : {}), ...(gp ? { giphyKey: gp } : {}), live: walls.map(w => { const o = { id: w.id, title: w.title || w.id, url: w.url }; if (w.thumb) o.thumb = w.thumb; if (w.sizeMb) o.sizeMb = w.sizeMb; if (w.hidden) o.hidden = true; return o }) } }
 function renderWalls() {
-  $('wallList').innerHTML = walls.length ? walls.map((w, i) => `<div class="item wall" data-i="${i}">
+  $('wallList').innerHTML = walls.length ? walls.map((w, i) => `<div class="item wall ${w.hidden ? 'off' : ''}" data-i="${i}"><span class="grip" title="Перетащить" aria-hidden="true">⠿</span>
     ${w.thumb ? `<img src="${esc(wallSrc(w.thumb))}" alt="" loading="lazy">` : '<span class="noimg"></span>'}
     <div class="f2"><input data-k="title" maxlength="30" value="${esc(w.title)}" placeholder="Название" aria-label="Название обоев">
       <input data-k="url" value="${esc(w.url)}" placeholder="https://…/video.mp4 или wallpapers/имя.mp4" aria-label="Ссылка на видео">
@@ -1619,7 +1680,6 @@ $('wallList').addEventListener('click', e => {
   else return
   renderWalls(); changedDots()
 })
-$('pxKey').addEventListener('input', changedDots); $('pbKey').addEventListener('input', changedDots); $('gpKey').addEventListener('input', changedDots)
 $('wallAdd').onclick = () => {
   let id = 'w' + Date.now().toString(36); walls.push({ id, title: 'Новые обои', url: '' }); renderWalls(); changedDots()
   $('wallList').lastElementChild.querySelector('[data-k=url]').focus()
