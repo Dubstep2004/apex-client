@@ -91,7 +91,8 @@ object Wallpapers {
     private val _effective = MutableStateFlow("")
     // Ключ задаётся только в пульте (свой ключ в приложении убран)
     // «Есть чем искать»: Pexels или Pixabay
-    private fun recalcKey() { _effective.value = _pexelsKey.value.ifBlank { _pixabayKey.value } }
+    // 3.20.1: без ключей ищем в Wikimedia Commons — поиск есть всегда
+    private fun recalcKey() { _effective.value = _pexelsKey.value.ifBlank { _pixabayKey.value }.ifBlank { "commons" } }
     fun parseKey(text: String): String = runCatching { JSONObject(text).optString("pexelsKey").trim().takeIf { it.matches(Regex("[A-Za-z0-9]{20,80}")) }.orEmpty() }.getOrDefault("")
     /** 3.20. Ключ Pixabay (Pexels перестал выдавать ключи) — вида 12345678-0123abcd… */
     fun parsePixabayKey(text: String): String = runCatching { JSONObject(text).optString("pixabayKey").trim().takeIf { it.matches(Regex("[0-9]{4,12}-[a-f0-9]{16,40}")) }.orEmpty() }.getOrDefault("")
@@ -180,9 +181,10 @@ object Wallpapers {
         _rev.value++
     }
 
-    /** MP4: в начале файла блок «ftyp». */
+    /** MP4 (блок «ftyp») или WebM (заголовок EBML 1A 45 DF A3). */
     private fun looksLikeVideo(f: File): Boolean = runCatching {
-        f.inputStream().use { val b = ByteArray(12); it.read(b) == 12 && String(b, 4, 4, Charsets.US_ASCII) == "ftyp" }
+        f.inputStream().use { val b = ByteArray(12); it.read(b) == 12 && (String(b, 4, 4, Charsets.US_ASCII) == "ftyp" ||
+            (b[0] == 0x1A.toByte() && b[1] == 0x45.toByte() && b[2] == 0xDF.toByte() && b[3] == 0xA3.toByte())) }
     }.getOrDefault(false)
 
     // ── Обои-картинки: поиск на Wallhaven (только безопасные, purity=100) и лучшие фото Wikimedia Commons ──
@@ -322,7 +324,7 @@ object Wallpapers {
         recalcKey()
         if (query.isBlank()) return@withContext emptyList()
         val key = _pexelsKey.value
-        if (key.isBlank()) return@withContext pixabay(query, page)
+        if (key.isBlank()) return@withContext pixabay(query, page).ifEmpty { commonsVideos(query, page) }
         runCatching {
             val c = URL("https://api.pexels.com/videos/search?orientation=portrait&size=medium&per_page=24&page=${page + 1}&query=" + URLEncoder.encode(query.trim().take(80), "UTF-8"))
                 .openConnection() as HttpURLConnection
@@ -343,6 +345,33 @@ object Wallpapers {
             parsePixabay(open(u).use { it.bufferedReader().readText() })
         }.getOrDefault(emptyList())
     }
+
+    /** 3.20.1. Видео Wikimedia Commons — без ключа, свободные лицензии. WebM 720p/1080p (Android играет WebM сам). */
+    private fun commonsVideos(query: String, page: Int): List<Live> = runCatching {
+        val q = "filetype:video " + query.trim().take(80) + " -nude -naked -sex -porn -erotic -surgery -autopsy"
+        val u = "https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=search&gsrnamespace=6&gsrlimit=40" +
+            "&gsroffset=${page * 40}&gsrsearch=" + URLEncoder.encode(q, "UTF-8") +
+            "&prop=videoinfo&viprop=url|size|mime|derivatives|extmetadata&viextmetadatafilter=Artist|LicenseShortName&viurlwidth=360"
+        parseCommonsVideos(open(u).use { it.bufferedReader().readText() })
+    }.getOrDefault(emptyList())
+
+    fun parseCommonsVideos(json: String): List<Live> = runCatching {
+        val pages = JSONObject(json).optJSONObject("query")?.optJSONObject("pages") ?: return@runCatching emptyList()
+        pages.keys().asSequence().mapNotNull { pages.optJSONObject(it) }.sortedBy { it.optInt("index") }.mapNotNull { p ->
+            val vi = p.optJSONArray("videoinfo")?.optJSONObject(0) ?: return@mapNotNull null
+            val dur = vi.optDouble("duration", 0.0)
+            if (dur <= 0.0 || dur > 180.0) return@mapNotNull null // обои — короткие ролики
+            val ders = vi.optJSONArray("derivatives") ?: return@mapNotNull null
+            val best = (0 until ders.length()).mapNotNull { ders.optJSONObject(it) }
+                .filter { it.optString("type").startsWith("video/webm") && it.optString("src").startsWith("https://") && maxOf(it.optInt("width"), it.optInt("height")) in 640..1920 }
+                .maxByOrNull { maxOf(it.optInt("width"), it.optInt("height")) } ?: return@mapNotNull null
+            val thumb = vi.optString("thumburl").takeIf { it.startsWith("https://") }.orEmpty()
+            val artist = vi.optJSONObject("extmetadata")?.optJSONObject("Artist")?.optString("value").orEmpty().replace(Regex("<[^>]+>"), "").trim().take(40)
+            val portrait = best.optInt("height") > best.optInt("width")
+            portrait to Live("wc" + p.optLong("pageid"), p.optString("title").removePrefix("File:").substringBeforeLast('.').take(30), best.optString("src"), thumb, 0.0,
+                "Видео: ${artist.ifBlank { "автор" }} · Wikimedia Commons")
+        }.toList().sortedByDescending { it.first }.map { it.second }
+    }.getOrDefault(emptyList())
 
     fun parsePixabay(json: String): List<Live> = runCatching {
         val a = JSONObject(json).optJSONArray("hits") ?: return@runCatching emptyList()

@@ -2,6 +2,12 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.20.1 · 12 ноября 2026
+
+<img src="img/tags/new.svg" alt="Новое" height="22">
+
+- Живые обои по темам работают и без ключа: видео из Wikimedia Commons (космос, природа, океан, огонь и другие). С ключом Pixabay из пульта выбор больше
+
 ## 3.20.0 · 12 ноября 2026
 
 <img src="img/tags/new.svg" alt="Новое" height="22">

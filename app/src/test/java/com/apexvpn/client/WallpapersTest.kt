@@ -99,4 +99,17 @@ class WallpapersTest {
         assertEquals("https://cdn.pixabay.com/2.jpg", v[0].thumb)
         assertEquals("12345678-0123456789abcdef0123", Wallpapers.parsePixabayKey("""{"pixabayKey":"12345678-0123456789abcdef0123"}"""))
     }
+
+    @Test fun commonsVideosShortWebm() {
+        val json = """{"query":{"pages":{"1":{"pageid":11,"index":1,"title":"File:Aurora timelapse.webm","videoinfo":[{"duration":30.5,"thumburl":"https://upload.wikimedia.org/a.jpg",
+            "derivatives":[{"src":"https://upload.wikimedia.org/a.webm.360p.webm","type":"video/webm; codecs=\"vp9\"","width":640,"height":360},
+                           {"src":"https://upload.wikimedia.org/a.webm.1080p.vp9.webm","type":"video/webm; codecs=\"vp9\"","width":1920,"height":1080},
+                           {"src":"https://upload.wikimedia.org/a.webm.2160p.webm","type":"video/webm","width":3840,"height":2160}]}]},
+            "2":{"pageid":12,"index":2,"title":"File:Long.webm","videoinfo":[{"duration":900,"derivatives":[]}]}}}}"""
+        val v = Wallpapers.parseCommonsVideos(json)
+        assertEquals(1, v.size)
+        assertEquals("wc11", v[0].id)
+        assertEquals("https://upload.wikimedia.org/a.webm.1080p.vp9.webm", v[0].url)
+        assertEquals("Aurora timelapse", v[0].title)
+    }
 }
