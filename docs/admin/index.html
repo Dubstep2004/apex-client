@@ -204,6 +204,27 @@
   .diff .a { color: #2fd38b; } .diff .d { color: #f0616d; } .diff .n { color: var(--faint); }
   .quick { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; } .quick .pill { font-size: 13px; }
   .bname { background: transparent; border: 0; border-bottom: 1px dashed var(--line); border-radius: 0; padding: 2px 0; font-weight: 800; font-size: 15px; color: var(--text); min-width: 0; flex: 1; }
+
+  /* Визитка: порядок блоков */
+  .sects { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; user-select: none; -webkit-user-select: none; }
+  @media (max-width: 560px) { .sect { gap: 8px; padding: 10px 8px; } .sect .t span, .sect .ic { display: none; } .sect .t b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .sect .mv button { width: 30px; height: 30px; } .sect .tog { transform: scale(.9); } }
+  .sect { display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 10px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); transition: opacity .2s, transform .15s, border-color .2s; }
+  .sect.off { opacity: .5; } .sect.drag { border-color: var(--go2); transform: scale(1.01); box-shadow: 0 10px 30px #0003; }
+  .sect .grip { cursor: grab; color: var(--faint); font-size: 18px; padding: 4px; touch-action: none; user-select: none; }
+  .sect .num { flex: 0 0 26px; height: 26px; border-radius: 9px; display: grid; place-items: center; font-weight: 800; font-size: 13px; background: var(--line); }
+  .sect .ic { font-size: 20px; } .sect .t { flex: 1; min-width: 0; } .sect .t b { display: block; } .sect .t span { color: var(--faint); font-size: 13px; }
+  .sect .mv { display: flex; gap: 4px; } .sect .mv button { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--text); cursor: pointer; font-size: 15px; }
+  .sect .mv button:disabled { opacity: .3; cursor: default; }
+  .faqi { border: 1px solid var(--line); border-radius: 16px; padding: 12px; margin: 0 0 10px; background: var(--panel); }
+  .faqi .row { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; } .faqi .row b { flex: 1; color: var(--faint); font-size: 13px; }
+  .faqi .row button { width: 32px; height: 32px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--text); cursor: pointer; }
+  .faqi textarea { min-height: 64px; }
+  .siteprev { border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+  .siteprev .h { padding: 18px; background: radial-gradient(300px 160px at 80% 0%, #6d5cff40, transparent 70%), #0a0d1c; color: #eef1fa; }
+  .siteprev .h b { display: block; font-size: 20px; line-height: 1.15; margin-bottom: 6px; } .siteprev .h span { color: #8c93b0; font-size: 13px; }
+  .siteprev .h i { display: inline-block; margin-top: 12px; font-style: normal; font-weight: 800; font-size: 13px; padding: 8px 12px; border-radius: 10px; background: linear-gradient(135deg, #6d5cff, #22d3ee); color: #fff; }
+  .siteprev .h i + i { background: #ffffff1a; margin-left: 6px; }
+  .siteprev ol { margin: 0; padding: 10px 14px 12px 34px; font-size: 13px; color: var(--dim); }
   .helpdoc h2 { font-size: 18px; margin: 0 0 10px; }
   .helpdoc p, .helpdoc li { color: var(--dim); font-size: 14.5px; line-height: 1.55; }
   .helpdoc b, .helpdoc strong { color: var(--text); }
@@ -453,6 +474,35 @@
         <button class="btn go" id="saveHide" style="width:100%;margin-top:14px">Сохранить шаблон</button></div>
     </section>
 
+
+    <!-- Визитка -->
+    <section data-tab="site" hidden>
+      <h1>Визитка</h1>
+      <p class="lead">Что показывать на <a href="https://dubstep2004.github.io" target="_blank" rel="noopener">dubstep2004.github.io</a> и в каком порядке. Баннер и статус серверов сайт берёт из «Баннеров» и «Серверов».</p>
+      <div class="block"><h2>Как будет выглядеть</h2><div class="siteprev" id="sPrev"></div></div>
+      <div class="block"><h2>Главный экран</h2>
+        <label class="f" for="sTitle">Заголовок</label><input id="sTitle" type="text" maxlength="70" placeholder="VPN, который сам находит дорогу">
+        <label class="f" for="sSub">Подзаголовок</label><textarea id="sSub" maxlength="220" placeholder="Автопилот выбирает лучший сервер, обходит белые списки оператора и убирает рекламу. Вы просто нажимаете на щит."></textarea>
+        <div class="two">
+          <div><label class="f" for="sBtnText">Дополнительная кнопка</label><input id="sBtnText" type="text" maxlength="30" placeholder="Купить подписку"></div>
+          <div><label class="f" for="sBtnUrl">Ссылка кнопки</label><input id="sBtnUrl" type="url" placeholder="https://t.me/ваш_бот"></div>
+        </div>
+        <p class="help">Пусто — на сайте остаётся текст по умолчанию. Кнопка появится рядом с «Скачать», только если указана ссылка https://.</p>
+        <label class="sw"><div class="t"><b>Счётчик скачиваний</b><span>«скачали 1 234 раза» под кнопкой</span></div><span class="tog"><input type="checkbox" id="sDownloads" checked><i></i></span></label>
+        <label class="sw"><div class="t"><b>Статус серверов</b><span>«🟢 Все серверы работают» по пометкам из пульта</span></div><span class="tog"><input type="checkbox" id="sStatus" checked><i></i></span></label>
+      </div>
+      <div class="block"><h2>Блоки и порядок</h2><p class="note">Перетащите за ⠿ или двигайте стрелками. Выключенный блок на сайте не показывается.</p>
+        <div class="sects" id="sects"></div>
+        <button class="btn quiet small" id="sectsReset" style="margin-top:12px">Вернуть порядок по умолчанию</button>
+      </div>
+      <div class="block"><h2>Вопросы и ответы</h2><p class="note">Пусто — на сайте стандартные вопросы. Добавили свои — показываются они, в этом порядке.</p>
+        <div id="faqList"></div>
+        <div class="rowx"><button class="add" id="faqAdd">Добавить вопрос</button><button class="btn quiet small" id="faqDefaults">Взять стандартные</button></div>
+      </div>
+      <button class="btn go" id="saveSite" style="width:100%">Сохранить визитку</button>
+      <p class="help">Сайт подхватывает изменения за 1–5 минут. Английская версия берёт порядок и включённые блоки, тексты на ней свои.</p>
+    </section>
+
     <!-- Справка -->
     <section data-tab="help" hidden class="helpdoc">
       <h1>Справка для владельца</h1>
@@ -471,6 +521,7 @@
           <tr><td>Функции</td><td>Экстренно выключить LTE-автопереход, HaGeZi, защиту от мошенников, автоустановку обновлений</td></tr>
           <tr><td>Предпросмотр</td><td>Черновики видны только на вашем телефоне</td></tr>
           <tr><td>История</td><td>Все сохранения, «Что изменилось» (было/стало), «Вернуть» прошлую версию, резервная копия в файл и загрузка из файла</td></tr>
+          <tr><td>Визитка</td><td>Заголовок сайта, своя кнопка («Купить подписку»), счётчик и статус, какие блоки показывать и в каком порядке (перетаскиванием), свои вопросы и ответы</td></tr>
           <tr><td>Проверка</td><td>Открываются ли подписка и поддержка, дошёл ли файл до GitHub и зеркала. «Серверы» — грубая проверка адресов, список только в этом браузере</td></tr>
         </table></div>
         <div class="callout">VPN у пользователей перезапускается (с 3.18.3) только из-за серверов, функций и кода предпросмотра. Баннеры, объявление и ссылки соединение не прерывают.</div>
@@ -588,9 +639,9 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.4', PANEL_DATE = '12 ноября 2026'
+const PANEL_VERSION = '2.5', PANEL_DATE = '12 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-vpn', BRANCH = 'main'
-const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json'
+const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json'
 const DESIGNS = [
   ['night', 'Ночь', 'Тёмный, как приложение', 'linear-gradient(135deg,#2fd38b,#18b6c9)'],
   ['day', 'День', 'Светлый', 'linear-gradient(135deg,#ffffff,#d7dcea)'],
@@ -606,7 +657,7 @@ const FEATURES = [
 ]
 const TABS = [['home', '◎', 'Обзор'], ['banner', '📢', 'Баннеры'], ['servers', '🖥', 'Серверы'], ['announce', '🪧', 'Объявление'],
   ['links', '🔗', 'Ссылки'], ['update', '📦', 'Обновления'], ['features', '⚙️', 'Функции'], ['preview', '👁', 'Предпросмотр'], '-',
-  ['history', '🕘', 'История'], ['checks', '🩺', 'Проверка'], ['sub', '🔐', 'Подписка'], ['hide', '🧩', 'Скрыть VPN'], ['help', '📖', 'Справка']]
+  ['history', '🕘', 'История'], ['checks', '🩺', 'Проверка'], ['sub', '🔐', 'Подписка'], ['hide', '🧩', 'Скрыть VPN'], ['site', '🌐', 'Визитка'], ['help', '📖', 'Справка']]
 const APP_TABS = ['banner', 'servers', 'announce', 'links', 'update', 'features', 'preview']
 const PART = { banners: ['banner', 'Баннеры'], servers: ['servers', 'Серверы'], announce: ['announce', 'Объявление'], links: ['links', 'Ссылки'],
   update: ['update', 'Обновления'], features: ['features', 'Функции'], previewCode: ['preview', 'Предпросмотр'] }
@@ -908,6 +959,102 @@ $('relSave').onclick = () => guarded($('relSave'), async () => {
   toast('Описание ' + r.tag_name + ' сохранено')
 })
 
+
+// ── Визитка (docs/config/site.json → dubstep2004.github.io)
+const SECTS = [
+  ['demo', '🎮', 'Демонстрация', 'макет телефона, который можно нажимать'],
+  ['features', '✨', 'Возможности', 'автопилот, белые списки, реклама, банки'],
+  ['news', '🆕', 'Что нового', 'последние изменения из релизов'],
+  ['compare', '⚖️', 'Сравнение', 'APEX и обычные VPN'],
+  ['security', '🔒', 'Безопасность', 'открытый код, без аналитики, оригинал'],
+  ['devices', '📱', 'Телефон, ТВ и часы', 'кнопки скачивания для устройств'],
+  ['install', '⬇️', 'Установка', '3 шага'],
+  ['faq', '❓', 'Вопросы', 'ответы на частые вопросы'],
+]
+const FAQ_DEFAULT = [
+  ['Это бесплатно?', 'Приложение бесплатное и с открытым кодом (лицензия GPL-3.0). Для работы нужна подписка — ссылка на ваши серверы.'],
+  ['Откуда взять подписку?', 'Её выдаёт сервис, к которому вы подключаетесь. Ссылку можно вставить вручную, отсканировать QR-код или открыть ссылку-приглашение.'],
+  ['Безопасно ли ставить не из Google Play?', 'Каждая версия собирается на GitHub из открытого кода и подписана одним ключом. Приложение само проверяет, что это оригинал, и предупредит, если копию подменили.'],
+  ['Сайты не открываются при белых списках', 'Выберите «Автопилот» — он сам найдёт LTE-обход. Если обход выбран вручную, весь трафик идёт через VPN, чтобы открывались и российские сайты.'],
+  ['Куда писать, если что-то не работает?', 'В приложении: Настройки → О приложении → «Написать в поддержку». Там же можно одной кнопкой отправить отчёт — без ссылки подписки, ключей и IP.'],
+]
+let sects = SECTS.map(([id]) => ({ id, on: true })), faq = [], siteSaved = ''
+function fillSite(c) {
+  c = c || {}
+  $('sTitle').value = c.hero?.title || ''; $('sSub').value = c.hero?.sub || ''
+  $('sBtnText').value = c.cta?.text || ''; $('sBtnUrl').value = c.cta?.url || ''
+  $('sDownloads').checked = c.show?.downloads !== false; $('sStatus').checked = c.show?.status !== false
+  const known = SECTS.map(x => x[0]), given = (c.sections || []).filter(x => known.includes(x.id))
+  sects = [...given.map(x => ({ id: x.id, on: x.on !== false })), ...known.filter(id => !given.some(g => g.id === id)).map(id => ({ id, on: true }))]
+  faq = (c.faq || []).map(x => ({ q: x.q || '', a: x.a || '' }))
+  renderSects(); renderFaq(); sitePrev(); siteSaved = JSON.stringify(collectSite())
+}
+function collectSite() {
+  const url = $('sBtnUrl').value.trim()
+  return {
+    hero: { title: $('sTitle').value.trim(), sub: $('sSub').value.trim() },
+    cta: url ? { text: $('sBtnText').value.trim() || 'Подробнее', url } : null,
+    show: { downloads: $('sDownloads').checked, status: $('sStatus').checked },
+    sections: sects.map(x => ({ id: x.id, on: x.on })),
+    faq: faq.filter(x => x.q.trim() && x.a.trim()).map(x => ({ q: x.q.trim(), a: x.a.trim() })),
+  }
+}
+const meta = id => SECTS.find(x => x[0] === id)
+function renderSects() {
+  $('sects').innerHTML = sects.map((x, i) => { const [, ic, t, d] = meta(x.id); return `<div class="sect ${x.on ? '' : 'off'}" data-i="${i}">
+    <span class="grip" title="Перетащить" aria-hidden="true">⠿</span><span class="num">${x.on ? sects.slice(0, i + 1).filter(y => y.on).length : '–'}</span><span class="ic">${ic}</span>
+    <div class="t"><b>${t}</b><span>${d}</span></div>
+    <div class="mv"><button data-mv="-1" ${i === 0 ? 'disabled' : ''} aria-label="Выше">↑</button><button data-mv="1" ${i === sects.length - 1 ? 'disabled' : ''} aria-label="Ниже">↓</button></div>
+    <span class="tog"><input type="checkbox" data-on ${x.on ? 'checked' : ''} aria-label="Показывать «${t}»"><i></i></span></div>` }).join('')
+}
+$('sects').addEventListener('click', e => {
+  const b = e.target.closest('[data-mv]'); if (!b) return
+  const i = +b.closest('.sect').dataset.i, j = i + +b.dataset.mv; if (j < 0 || j >= sects.length) return
+  ;[sects[i], sects[j]] = [sects[j], sects[i]]; renderSects(); sitePrev()
+})
+$('sects').addEventListener('change', e => { if (!e.target.matches('[data-on]')) return; sects[+e.target.closest('.sect').dataset.i].on = e.target.checked; renderSects(); sitePrev() })
+// Перетаскивание за ⠿ (мышь и палец)
+$('sects').addEventListener('pointerdown', e => {
+  const grip = e.target.closest('.grip'); if (!grip) return
+  e.preventDefault(); const row = grip.closest('.sect'); let from = +row.dataset.i; row.classList.add('drag')
+  const move = ev => {
+    const over = document.elementsFromPoint(ev.clientX, ev.clientY).find(el => el.classList?.contains('sect') && el !== row)
+    if (!over) return; const to = +over.dataset.i; if (to === from) return
+    const [x] = sects.splice(from, 1); sects.splice(to, 0, x); from = to; renderSects()
+    const now = $('sects').children[to]; now.classList.add('drag')
+  }
+  const up = () => { document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); renderSects(); sitePrev() }
+  document.addEventListener('pointermove', move); document.addEventListener('pointerup', up)
+})
+$('sectsReset').onclick = () => { sects = SECTS.map(([id]) => ({ id, on: true })); renderSects(); sitePrev() }
+function renderFaq() {
+  $('faqList').innerHTML = faq.length ? faq.map((x, i) => `<div class="faqi" data-i="${i}"><div class="row"><b>Вопрос ${i + 1}</b>
+    <button data-fm="-1" ${i === 0 ? 'disabled' : ''} aria-label="Выше">↑</button><button data-fm="1" ${i === faq.length - 1 ? 'disabled' : ''} aria-label="Ниже">↓</button><button data-fd aria-label="Удалить">×</button></div>
+    <input type="text" data-k="q" maxlength="120" value="${esc(x.q)}" placeholder="Вопрос"><textarea data-k="a" maxlength="600" placeholder="Ответ" style="margin-top:8px">${esc(x.a)}</textarea></div>`).join('')
+    : '<p class="note">Сейчас на сайте стандартные вопросы.</p>'
+}
+$('faqList').addEventListener('input', e => { const k = e.target.dataset.k; if (!k) return; faq[+e.target.closest('.faqi').dataset.i][k] = e.target.value; sitePrev() })
+$('faqList').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return; const i = +b.closest('.faqi').dataset.i
+  if (b.dataset.fd !== undefined) faq.splice(i, 1); else if (b.dataset.fm) { const j = i + +b.dataset.fm; [faq[i], faq[j]] = [faq[j], faq[i]] } else return
+  renderFaq(); sitePrev()
+})
+$('faqAdd').onclick = () => { faq.push({ q: '', a: '' }); renderFaq(); $('faqList').lastElementChild.querySelector('input').focus() }
+$('faqDefaults').onclick = () => { faq = FAQ_DEFAULT.map(([q, a]) => ({ q, a })); renderFaq(); sitePrev(); toast('Стандартные вопросы добавлены — меняйте и сохраняйте') }
+function sitePrev() {
+  const c = collectSite()
+  $('sPrev').innerHTML = `<div class="h"><b>${esc(c.hero.title || 'VPN, который сам находит дорогу')}</b><span>${esc(c.hero.sub || 'Автопилот выбирает лучший сервер, обходит белые списки оператора и убирает рекламу.')}</span><br>
+    <i>⬇ Скачать для Android</i>${c.cta ? `<i>${esc(c.cta.text)}</i>` : ''}${c.show.status ? '<br><span style="display:inline-block;margin-top:10px">🟢 Все серверы работают</span>' : ''}</div>
+    <ol>${c.sections.filter(x => x.on).map(x => `<li>${meta(x.id)[1]} ${meta(x.id)[2]}${x.id === 'faq' && c.faq.length ? ' · ' + c.faq.length + ' шт.' : ''}</li>`).join('')}</ol>`
+}
+;['sTitle', 'sSub', 'sBtnText', 'sBtnUrl', 'sDownloads', 'sStatus'].forEach(id => $(id).addEventListener('input', sitePrev))
+;['sDownloads', 'sStatus'].forEach(id => $(id).addEventListener('change', sitePrev))
+$('saveSite').onclick = () => guarded($('saveSite'), async () => {
+  const c = collectSite()
+  if (c.cta && !/^https:\/\//.test(c.cta.url)) throw new Error('Ссылка кнопки должна начинаться с https://')
+  await putFile(SITE, c, 'Пульт: визитка'); siteSaved = JSON.stringify(c); toast('Визитка сохранена — на сайте через 1–5 минут')
+})
+
 // ── История
 async function loadHistory() {
   const host = $('histList'); host.innerHTML = '<p class="note">Загружаем…</p>'
@@ -986,9 +1133,9 @@ function showTab(id) {
   preview(collectApp(true))
 }
 async function loadAll() {
-  const [app, sub, hide] = await Promise.all([getFile(APP), getFile(SUB), getFile(HIDE)])
+  const [app, sub, hide, site] = await Promise.all([getFile(APP), getFile(SUB), getFile(HIDE), getFile(SITE)])
   fillApp(app); saved = JSON.stringify(collectApp(true)); changed()
-  fillSub(sub); $('hideJson').value = hide ? JSON.stringify(hide, null, 2) : ''
+  fillSub(sub); $('hideJson').value = hide ? JSON.stringify(hide, null, 2) : ''; fillSite(site)
   renderVersions(); loadReleases()
 }
 async function guarded(btn, fn) {
@@ -1070,7 +1217,7 @@ $('srvRun').onclick = () => guarded($('srvRun'), async () => {
 $('exportBtn').onclick = () => {
   let hide = null; try { hide = JSON.parse($('hideJson').value) } catch {}
   let sub = files[SUB]?.data || null; try { sub = collectSub() } catch {}
-  const blob = new Blob([JSON.stringify({ apexPult: PANEL_VERSION, saved: new Date().toISOString(), app: collectApp(true), subscription: sub, hide }, null, 2)], { type: 'application/json' })
+  const blob = new Blob([JSON.stringify({ apexPult: PANEL_VERSION, saved: new Date().toISOString(), app: collectApp(true), subscription: sub, hide, site: collectSite() }, null, 2)], { type: 'application/json' })
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'apex-pult-' + new Date().toISOString().slice(0, 10) + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000)
   toast('Копия скачана')
 }
@@ -1079,8 +1226,8 @@ $('importFile').onchange = async e => {
   const f = e.target.files[0]; e.target.value = ''; if (!f) return
   try {
     const d = JSON.parse(await f.text()); if (!d.app) throw new Error('это не копия пульта')
-    fillApp(d.app); if (d.subscription) fillSub(d.subscription); if (d.hide) $('hideJson').value = JSON.stringify(d.hide, null, 2)
-    changed(); toast('Копия загружена — проверьте и нажмите «Сохранить» (подписку и «Скрыть VPN» — на своих вкладках)')
+    fillApp(d.app); if (d.subscription) fillSub(d.subscription); if (d.hide) $('hideJson').value = JSON.stringify(d.hide, null, 2); if (d.site) fillSite(d.site)
+    changed(); toast('Копия загружена — проверьте и нажмите «Сохранить» (подписку, «Скрыть VPN» и визитку — на своих вкладках)')
   } catch (err) { toast('Не удалось загрузить: ' + err.message, false) }
 }
 document.querySelector('[data-tab=servers]').addEventListener('click', e => {
