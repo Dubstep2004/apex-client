@@ -54,12 +54,30 @@ object LeakTest {
         }
     }.getOrNull()
 
-    /** DNS: edns.ip-api.com отвечает, какой DNS-сервер запросил его адрес. */
-    private fun dnsResolver(): Pair<String, String>? = runCatching {
+    /**
+     * DNS: edns.ip-api.com отвечает, какой DNS-сервер запросил его адрес.
+     * 3.18.5: две попытки с паузой (ip-api иногда не отвечает с первого раза).
+     */
+    private fun dnsResolver(): Pair<String, String>? =
+        dnsResolverOnce() ?: run { Thread.sleep(800); dnsResolverOnce() }
+
+    /**
+     * 3.18.5. Запасная проверка, если ip-api молчит: спросить адрес у системы телефона.
+     * Ответ из 198.18.0.0/15 — это FakeIP ядра: значит, все DNS-запросы телефона уходят в туннель, утечки нет.
+     */
+    private fun dnsInTunnel(): Boolean? = runCatching {
+        val id = (1..12).map { "abcdefghijklmnopqrstuvwxyz0123456789"[SecureRandom().nextInt(36)] }.joinToString("")
+        val a = InetAddress.getAllByName("$id.apex-check.cloudflare.com").firstOrNull { it is java.net.Inet4Address }
+            ?: InetAddress.getAllByName("www.cloudflare.com").first { it is java.net.Inet4Address }
+        val b = a.address
+        (b[0].toInt() and 0xff) == 198 && ((b[1].toInt() and 0xff) == 18 || (b[1].toInt() and 0xff) == 19)
+    }.getOrNull()
+
+    private fun dnsResolverOnce(): Pair<String, String>? = runCatching {
         val id = (1..16).map { "abcdefghijklmnopqrstuvwxyz0123456789"[SecureRandom().nextInt(36)] }.joinToString("")
         val c = URL("http://$id.edns.ip-api.com/json").openConnection() as HttpURLConnection
-        c.connectTimeout = 6000
-        c.readTimeout = 6000
+        c.connectTimeout = 8000
+        c.readTimeout = 8000
         try {
             val o = JSONObject(c.inputStream.bufferedReader().readText()).optJSONObject("dns") ?: return null
             o.optString("ip") to o.optString("geo")
@@ -131,17 +149,26 @@ object LeakTest {
         val dns = dnsResolver()
         val dnsLeak = dns != null && real != null && real.country.isNotEmpty() && vpn != null && real.country != vpn.country &&
             dns.second.contains(countryName(real.country), ignoreCase = true)
+        val tunnel = if (dns == null) dnsInTunnel() else null
         set(
             2,
             Item(
                 titles[2],
                 when {
-                    dns == null -> Mark.Warn
                     dnsLeak -> Mark.Bad
-                    else -> Mark.Ok
+                    dns != null || tunnel == true -> Mark.Ok
+                    else -> Mark.Warn
                 },
-                dns?.let { "${it.first} · ${it.second}" } ?: "не удалось проверить",
-                if (dnsLeak) "DNS идёт через вашего провайдера — включите DNS «Авто» или свой DNS" else "Адреса сайтов узнаются через защищённый DNS",
+                when {
+                    dns != null -> "${dns.first} · ${dns.second}"
+                    tunnel == true -> "через VPN"
+                    else -> "не удалось проверить"
+                },
+                when {
+                    dnsLeak -> "DNS идёт через вашего провайдера — включите DNS «Авто» или свой DNS"
+                    dns != null || tunnel == true -> "Адреса сайтов узнаются через защищённый DNS"
+                    else -> "Сервис проверки не ответил — попробуйте ещё раз"
+                },
             ),
         )
         val v6 = trace("https://[2606:4700:4700::1111]/cdn-cgi/trace", direct = false)

@@ -2,6 +2,12 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.18.5 · 12 ноября 2026
+
+<img src="img/tags/fixed.svg" alt="Исправлено" height="22">
+
+- Проверка утечек: DNS чаще показывал «не удалось проверить» — теперь две попытки, а если сервис проверки молчит, приложение само убеждается, что DNS идёт через VPN
+
 ## 3.18.4 · 12 ноября 2026
 
 <img src="img/tags/new.svg" alt="Новое" height="22">
