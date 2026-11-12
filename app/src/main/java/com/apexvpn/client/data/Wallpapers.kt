@@ -89,7 +89,8 @@ object Wallpapers {
     /** Ключ, которым ищем: свой, иначе из пульта. */
     val pexelsKey: StateFlow<String> get() = _effective
     private val _effective = MutableStateFlow("")
-    private fun recalcKey() { _effective.value = _ownKey.value?.takeIf { it.isNotBlank() } ?: _pexelsKey.value }
+    // Ключ задаётся только в пульте (свой ключ в приложении убран)
+    private fun recalcKey() { _effective.value = _pexelsKey.value }
     fun parseKey(text: String): String = runCatching { JSONObject(text).optString("pexelsKey").trim().takeIf { it.matches(Regex("[A-Za-z0-9]{20,80}")) }.orEmpty() }.getOrDefault("")
 
     suspend fun loadCatalog(context: Context) = withContext(Dispatchers.IO) {

@@ -143,47 +143,8 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
     Spacer(Modifier.height(14.dp))
     Text("Живые обои по темам", color = Apex.TextDim, fontSize = 14.sp, modifier = Modifier.padding(start = 4.dp, bottom = 6.dp))
     val pxKey by Wallpapers.pexelsKey.collectAsState()
-    val ownKey by Wallpapers.ownKey.collectAsState()
-    val pultKey by Wallpapers.pultKey.collectAsState()
-    var askKey by remember { mutableStateOf(false) }
-    Group {
-        ListRow(
-            "Ключ Pexels",
-            when {
-                !ownKey.isNullOrBlank() -> "Свой ключ · нажмите, чтобы сменить или убрать"
-                pultKey.isNotBlank() -> "Работает ключ из пульта · можно указать свой"
-                else -> "Нужен для поиска живых обоев: бесплатно на pexels.com/api"
-            },
-            onClick = { askKey = true },
-        ) { Chevron() }
-    }
-    if (askKey) {
-        var k by remember { mutableStateOf(ownKey.orEmpty()) }
-        AlertDialog(
-            onDismissRequest = { askKey = false },
-            title = { Text("Свой ключ Pexels") },
-            text = {
-                Column {
-                    Text("1. Откройте pexels.com/api → «Get started», войдите.\n2. Скопируйте «Your API key» и вставьте сюда.\nКлюч хранится только на этом телефоне. Пусто — работает ключ из пульта.", fontSize = 14.sp, color = Apex.TextDim)
-                    Spacer(Modifier.height(10.dp))
-                    OutlinedTextField(k, { k = it }, singleLine = true, placeholder = { Text("Ключ из букв и цифр") }, modifier = Modifier.fillMaxWidth())
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    if (Wallpapers.setOwnKey(k)) { askKey = false; viewModel.showMessage(if (k.isBlank()) "Свой ключ убран" else "Ключ сохранён — ищите живые обои") }
-                    else viewModel.showMessage("Ключ — только латинские буквы и цифры, без пробелов")
-                }) { Text("Сохранить") }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    androidx.core.content.ContextCompat.startActivity(context, android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://www.pexels.com/api/")).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK), null)
-                }) { Text("Открыть сайт") }
-            },
-        )
-    }
     if (pxKey.isBlank()) {
-        Caption("Чтобы искать живые обои по темам (аниме, игры, неон, космос…), добавьте ключ Pexels выше. Пока есть каталог и «Видео по ссылке».")
+        Caption("Поиск живых обоев по темам (аниме, игры, неон, космос…) скоро появится. Пока есть каталог выше и «Видео по ссылке».")
     } else {
         var topic by rememberSaveable { mutableStateOf(Wallpapers.liveTopics.first().id) }
         var query by rememberSaveable { mutableStateOf("") }
