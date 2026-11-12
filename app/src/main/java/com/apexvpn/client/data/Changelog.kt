@@ -25,6 +25,13 @@ private fun d(text: String) = Change(ChangeKind.Removed, text)  // Удален�
 object Changelog {
     val releases = listOf(
         Release(
+            "3.19.5", 117, "12 ноября 2026",
+            listOf(
+                n("Настройки → О приложении → «Сайт APEX CLIENT»: ссылку можно поменять в пульте"),
+                c("«Поделиться APEX CLIENT» отправляет ссылку на сайт — там кнопка скачивания и инструкция"),
+            ),
+        ),
+        Release(
             "3.19.4", 116, "12 ноября 2026",
             listOf(
                 c("Картинки в справке — с новым названием APEX CLIENT и адресом apex-client"),

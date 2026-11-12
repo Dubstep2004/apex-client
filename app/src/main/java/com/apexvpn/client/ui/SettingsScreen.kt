@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
 import androidx.compose.material.icons.rounded.Update
+import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material.icons.rounded.Policy
 import androidx.compose.material.icons.rounded.NetworkPing
 import androidx.compose.material.icons.rounded.Shield
@@ -778,7 +779,7 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
                 leading = { tile(Icons.Rounded.Share) },
                 onClick = {
                     val text = "APEX CLIENT — VPN для Android: автопилот, обход белых списков, блокировка рекламы.\n\n" +
-                        "Скачать: ${com.apexvpn.client.data.Links.GITHUB}/releases/latest\n\n" +
+                        "Сайт и скачивание: ${com.apexvpn.client.data.Links.site()}\n\n" +
                         "Как установить:\n1. Скачайте файл apex-client-….apk\n2. Откройте его и разрешите установку\n" +
                         "3. В приложении вставьте ссылку подписки и нажмите «Подключить»"
                     runCatching {
@@ -841,6 +842,14 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
                     dismissButton = { androidx.compose.material3.TextButton(onClick = { previewDialog = false }) { Text("Отмена", color = Apex.TextDim) } },
                 )
             }
+            // 3.19.5. Сайт — ссылка из пульта (Ссылки → Сайт), по умолчанию визитка
+            GroupDivider()
+            ListRow(
+                "Сайт APEX CLIENT",
+                com.apexvpn.client.data.Links.site().removePrefix("https://").trimEnd('/'),
+                leading = { tile(Icons.Rounded.Public) },
+                onClick = { openLink(context, com.apexvpn.client.data.Links.site()) },
+            ) { Chevron() }
             if (com.apexvpn.client.data.Links.channel().isNotEmpty()) {
                 GroupDivider()
                 ListRow(
@@ -1268,6 +1277,7 @@ private val settingsSearch = listOf(
     SearchItem("Что нового", "about", Page.Changelog, ""),
     SearchItem("GitHub", "about", null, ""),
     SearchItem("Поделиться APEX CLIENT", "about", null, ""),
+    SearchItem("Сайт APEX CLIENT", "about", null, "сайт визитка"),
     SearchItem("Telegram-канал", "about", null, ""),
     SearchItem("Написать в поддержку", "about", null, "отчёт помощь ошибка telegram"),
     SearchItem("Блокировка рекламы", "mode", null, "реклама трекеры hagezi"),
