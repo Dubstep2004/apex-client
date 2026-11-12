@@ -1,4 +1,5 @@
 {
+  "giphyKey": "8F7IqXUqi4Dx8A84y40qOChQvrmL7d0h",
   "live": [
     {
       "id": "samurai",
@@ -68,7 +69,7 @@
       "title": "Неоновые волны",
       "url": "wallpapers/live/waves.mp4",
       "thumb": "wallpapers/live/waves.jpg",
-      "sizeMb": 3.0
+      "sizeMb": 3
     },
     {
       "id": "bokeh",
@@ -89,14 +90,7 @@
       "title": "Лава-лампа",
       "url": "wallpapers/live/lava.mp4",
       "thumb": "wallpapers/live/lava.jpg",
-      "sizeMb": 2.0
-    },
-    {
-      "id": "mesh",
-      "title": "Переливы",
-      "url": "wallpapers/live/mesh.mp4",
-      "thumb": "wallpapers/live/mesh.jpg",
-      "sizeMb": 3.3
+      "sizeMb": 2
     }
   ]
 }
