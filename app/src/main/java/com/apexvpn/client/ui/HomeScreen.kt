@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.outlined.Info
@@ -193,6 +195,9 @@ fun HomeScreen(
                 },
             )
         }
+
+        // 3.20.10: «Вышла версия … Обновить» — обновиться прямо с главного экрана, без настроек
+        UpdatePill(viewModel)
 
         // 13. Подписка заканчивается
         ExpiryAlerts.warning(sub)?.let { w ->
@@ -996,3 +1001,46 @@ private fun greeting(): String = when (java.util.Calendar.getInstance().get(java
 
 /** 3.20.5. Минимальное затемнение обоев (фото и видео) на главном экране — чтобы щит и текст было видно. */
 const val MIN_DIM = 30
+
+
+/**
+ * 3.20.10. Плашка «Вышла версия X · Обновить» вверху главного экрана.
+ * Видна, когда есть новая версия, а окно обновления закрыли кнопкой «Позже».
+ * Нажатие — сразу скачать, проверить и установить (окно снова покажет ход загрузки).
+ */
+@Composable
+private fun UpdatePill(viewModel: MainViewModel) {
+    val state by viewModel.update.collectAsStateWithLifecycle()
+    val later by com.apexvpn.client.update.UpdateManager.laterCode.collectAsStateWithLifecycle()
+    val info = (state as? com.apexvpn.client.update.UpdateState.Available)?.info ?: return
+    if (info.mandatory || later != info.versionCode) return
+    val context = LocalContext.current
+    Spacer(Modifier.height(10.dp))
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(50))
+            .background(Apex.Surface)
+            .border(1.dp, Apex.Text.copy(alpha = 0.08f), RoundedCornerShape(50))
+            .clickable {
+                com.apexvpn.client.update.UpdateManager.reopen()
+                if (info.apkUrl != null && info.shaUrl != null) viewModel.installUpdate(info)
+                else runCatching { com.apexvpn.client.update.UpdateManager.openPage(context, info) }
+            }
+            .padding(start = 8.dp, end = 18.dp, top = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(40.dp).clip(CircleShape).background(Apex.Text), contentAlignment = Alignment.Center) {
+            Icon(Icons.Rounded.Download, contentDescription = null, tint = Apex.Surface, modifier = Modifier.size(22.dp))
+        }
+        Spacer(Modifier.width(12.dp))
+        Text(
+            "Вышла версия ${info.versionName}" + if (info.beta) " (бета)" else "",
+            color = Apex.Text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
+            maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        Spacer(Modifier.width(8.dp))
+        Text("Обновить", color = Apex.TextDim, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+    }
+}

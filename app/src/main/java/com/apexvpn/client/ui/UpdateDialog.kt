@@ -22,7 +22,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.apexvpn.client.BuildConfig
-import com.apexvpn.client.data.Prefs
 import com.apexvpn.client.update.InstallState
 import com.apexvpn.client.update.UpdateInfo
 import com.apexvpn.client.update.UpdateInstaller
@@ -36,6 +35,7 @@ fun UpdateDialog(viewModel: MainViewModel) {
     val state by viewModel.update.collectAsStateWithLifecycle()
     val install by UpdateInstaller.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val laterCode by UpdateManager.laterCode.collectAsStateWithLifecycle()
 
     val info: UpdateInfo = when (val s = state) {
         is UpdateState.Available -> s.info
@@ -43,16 +43,17 @@ fun UpdateDialog(viewModel: MainViewModel) {
         else -> return
     }
     // «Позже» запоминаем для этой версии, кроме обязательных обновлений
-    if (state is UpdateState.Available && !info.mandatory && Prefs.dismissedUpdateCode == info.versionCode) return
+    if (state is UpdateState.Available && !info.mandatory && laterCode == info.versionCode) return
 
     val busy = install is InstallState.Downloading || install is InstallState.Verifying || install is InstallState.Installing
     val canDismiss = !info.mandatory && !busy
     val oneClick = info.apkUrl != null && info.shaUrl != null
 
     fun later() {
-        Prefs.dismissedUpdateCode = info.versionCode
+        UpdateManager.later(info)
         UpdateInstaller.reset()
-        UpdateManager.dismiss()
+        // 3.20.10: доступная версия остаётся — её показывает плашка на главном экране
+        if (state is UpdateState.Failed) UpdateManager.dismiss()
     }
 
     AlertDialog(

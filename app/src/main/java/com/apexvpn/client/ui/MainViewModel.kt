@@ -458,7 +458,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     // ─── Обновления приложения ───────────────────────────────────────────
 
     fun checkUpdate() {
-        com.apexvpn.client.data.Prefs.dismissedUpdateCode = 0
+        com.apexvpn.client.update.UpdateManager.reopen()
         viewModelScope.launch { UpdateManager.check(silent = false) }
     }
 

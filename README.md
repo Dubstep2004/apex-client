@@ -17,7 +17,7 @@
 <p><b>Два ядра</b> · все популярные протоколы · <b>свои списки</b> с шаблонами · <b>3D-глобус</b> · <b>13 дизайнов</b>, палитры и <b>живое видео на фоне</b><br>
 автопилот с белыми списками · DNS «Авто» для каждой сети · базы сайтов каждый день · часы Wear OS</p>
 
-<sub>📱 Android — <b>3.20.9</b> (Android 7+) · sing-box 1.13 · Xray 26</sub><br>
+<sub>📱 Android — <b>3.20.10</b> (Android 7+) · sing-box 1.13 · Xray 26</sub><br>
 <sub>🌐 Сайт: <a href="https://dubstep2004.github.io">dubstep2004.github.io</a> · 💬 Поддержка: <a href="https://t.me/Apexx_support">@Apexx_support</a></sub>
 
 </div>
@@ -860,7 +860,22 @@ core/apexcore/          Go: разбор подписки → конфиги sin
 
 <img src="docs/img/tags/new.svg" alt="Новое" height="22"> <img src="docs/img/tags/improved.svg" alt="Улучшено" height="22"> <img src="docs/img/tags/changed.svg" alt="Изменено" height="22"> <img src="docs/img/tags/fixed.svg" alt="Исправлено" height="22"> <img src="docs/img/tags/removed.svg" alt="Удалено" height="22">
 
-### 3.20.9 · 13 ноября 2026
+### 3.20.10 · 13 ноября 2026
+
+<img src="docs/img/tags/new.svg" alt="Новое" height="22">
+
+- Плашка «Вышла версия … Обновить» вверху главного экрана — обновиться можно одним нажатием, не заходя в настройки
+
+<img src="docs/img/tags/improved.svg" alt="Улучшено" height="22">
+
+- После «Позже» в окне обновления новая версия больше не теряется: она ждёт на главном экране, пока вы не обновитесь
+
+#### 📚 Все версии (132)
+
+Каждая версия — отдельная вкладка.
+
+<details>
+<summary><b>3.20.9</b> · 13 ноября 2026</summary>
 
 <img src="docs/img/tags/improved.svg" alt="Улучшено" height="22">
 
@@ -873,9 +888,7 @@ core/apexcore/          Go: разбор подписки → конфиги sin
 - «Обои дня» по теме после перезапуска телефона искали без ключей из пульта — теперь сначала загружают настройки
 - Если в пульте убрать все обои из каталога, ключи и темы всё равно доходят до приложения
 
-#### 📚 Все версии (131)
-
-Каждая версия — отдельная вкладка.
+</details>
 
 <details>
 <summary><b>3.20.8</b> · 13 ноября 2026</summary>

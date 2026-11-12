@@ -2,6 +2,16 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.20.10 · 13 ноября 2026
+
+<img src="img/tags/new.svg" alt="Новое" height="22">
+
+- Плашка «Вышла версия … Обновить» вверху главного экрана — обновиться можно одним нажатием, не заходя в настройки
+
+<img src="img/tags/improved.svg" alt="Улучшено" height="22">
+
+- После «Позже» в окне обновления новая версия больше не теряется: она ждёт на главном экране, пока вы не обновитесь
+
 ## 3.20.9 · 13 ноября 2026
 
 <img src="img/tags/improved.svg" alt="Улучшено" height="22">

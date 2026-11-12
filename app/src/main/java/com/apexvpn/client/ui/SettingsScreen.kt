@@ -537,7 +537,7 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
             ListRow("Проверить сейчас", subtitle, leading = { tile(Icons.Rounded.SystemUpdate) }, onClick = {
                 val u = update
                 if (u is UpdateState.Available) {
-                    com.apexvpn.client.data.Prefs.dismissedUpdateCode = 0
+                    com.apexvpn.client.update.UpdateManager.reopen()
                     if (u.info.apkUrl != null && u.info.shaUrl != null) viewModel.installUpdate(u.info)
                     else com.apexvpn.client.update.UpdateManager.openPage(context, u.info)
                 }

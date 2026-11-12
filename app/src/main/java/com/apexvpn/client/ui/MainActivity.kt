@@ -521,7 +521,7 @@ class MainActivity : ComponentActivity() {
                 when {
                     info == null -> runCatching { com.apexvpn.client.update.UpdateManager.openPage(this@MainActivity, null) }
                     info.apkUrl != null && info.shaUrl != null -> {
-                        com.apexvpn.client.data.Prefs.dismissedUpdateCode = 0
+                        com.apexvpn.client.update.UpdateManager.reopen()
                         com.apexvpn.client.update.UpdateInstaller.updateNow(this@MainActivity, info)
                     }
                     else -> runCatching { com.apexvpn.client.update.UpdateManager.openPage(this@MainActivity, info) }

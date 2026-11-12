@@ -85,6 +85,16 @@ object UpdateManager {
         }
     }
 
+    /**
+     * 3.20.10: «Позже» прячет окно обновления, но на главном экране остаётся плашка
+     * «Вышла версия … Обновить» — обновиться можно в одно нажатие, без настроек.
+     * Значение — код версии, для которой нажали «Позже» (0 — окно снова показывать).
+     */
+    private val _later by lazy { MutableStateFlow(runCatching { com.apexvpn.client.data.Prefs.dismissedUpdateCode }.getOrDefault(0)) }
+    val laterCode: StateFlow<Int> get() = _later.asStateFlow()
+    fun later(info: UpdateInfo) { com.apexvpn.client.data.Prefs.dismissedUpdateCode = info.versionCode; _later.value = info.versionCode }
+    fun reopen() { com.apexvpn.client.data.Prefs.dismissedUpdateCode = 0; _later.value = 0 }
+
     fun dismiss() {
         val s = _state.value
         if (s is UpdateState.Available && s.info.mandatory) return
