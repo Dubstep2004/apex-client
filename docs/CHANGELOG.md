@@ -2,6 +2,14 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.20.7 · 13 ноября 2026
+
+<img src="img/tags/improved.svg" alt="Улучшено" height="22">
+
+- Живые обои из интернета разложены по вкладкам: «Каталог», «По темам», «Скачанные», «Избранное» — одна лента за раз, без длинной простыни
+- В каталоге — разделы: Аниме-стиль, Город, Игры, Пиксель-арт, Космос, Природа, Абстракция
+- Эффекты, «Живое фото» и «Обои дня» собраны в «Настройку обоев»
+
 ## 3.20.6 · 13 ноября 2026
 
 <img src="img/tags/improved.svg" alt="Улучшено" height="22">

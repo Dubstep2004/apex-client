@@ -12,91 +12,104 @@
       "title": "Самурай на закате",
       "url": "wallpapers/live/samurai.mp4",
       "thumb": "wallpapers/live/samurai.jpg",
-      "sizeMb": 1.1
-    },
-    {
-      "id": "arcade",
-      "title": "Ретро-аркада",
-      "url": "wallpapers/live/arcade.mp4",
-      "thumb": "wallpapers/live/arcade.jpg",
-      "sizeMb": 1.4
-    },
-    {
-      "id": "neoncity",
-      "title": "Неон-город",
-      "url": "wallpapers/live/neoncity.mp4",
-      "thumb": "wallpapers/live/neoncity.jpg",
-      "sizeMb": 1.1
-    },
-    {
-      "id": "pixelsunset",
-      "title": "Пиксель-закат",
-      "url": "wallpapers/live/pixelsunset.mp4",
-      "thumb": "wallpapers/live/pixelsunset.jpg",
-      "sizeMb": 0.1
+      "sizeMb": 1.1,
+      "cat": "anime"
     },
     {
       "id": "sakura",
       "title": "Сакура ночью",
       "url": "wallpapers/live/sakura.mp4",
       "thumb": "wallpapers/live/sakura.jpg",
-      "sizeMb": 1.6
+      "sizeMb": 1.6,
+      "cat": "anime"
+    },
+    {
+      "id": "neoncity",
+      "title": "Неон-город",
+      "url": "wallpapers/live/neoncity.mp4",
+      "thumb": "wallpapers/live/neoncity.jpg",
+      "sizeMb": 1.1,
+      "cat": "city"
+    },
+    {
+      "id": "arcade",
+      "title": "Ретро-аркада",
+      "url": "wallpapers/live/arcade.mp4",
+      "thumb": "wallpapers/live/arcade.jpg",
+      "sizeMb": 1.4,
+      "cat": "games"
+    },
+    {
+      "id": "pixelsunset",
+      "title": "Пиксель-закат",
+      "url": "wallpapers/live/pixelsunset.mp4",
+      "thumb": "wallpapers/live/pixelsunset.jpg",
+      "sizeMb": 0.1,
+      "cat": "pixel"
     },
     {
       "id": "pixelspace",
       "title": "Пиксель-космос",
       "url": "wallpapers/live/pixelspace.mp4",
       "thumb": "wallpapers/live/pixelspace.jpg",
-      "sizeMb": 0.9
-    },
-    {
-      "id": "aurora2",
-      "title": "Полярное сияние",
-      "url": "wallpapers/live/aurora2.mp4",
-      "thumb": "wallpapers/live/aurora2.jpg",
-      "sizeMb": 1.6
+      "sizeMb": 0.9,
+      "cat": "pixel"
     },
     {
       "id": "nebula",
       "title": "Туманность",
       "url": "wallpapers/live/nebula.mp4",
       "thumb": "wallpapers/live/nebula.jpg",
-      "sizeMb": 4.9
+      "sizeMb": 4.9,
+      "cat": "space"
     },
     {
       "id": "hyper",
       "title": "Гиперпрыжок",
       "url": "wallpapers/live/hyper.mp4",
       "thumb": "wallpapers/live/hyper.jpg",
-      "sizeMb": 5.1
+      "sizeMb": 5.1,
+      "cat": "space"
     },
     {
-      "id": "waves",
-      "title": "Неоновые волны",
-      "url": "wallpapers/live/waves.mp4",
-      "thumb": "wallpapers/live/waves.jpg",
-      "sizeMb": 3
-    },
-    {
-      "id": "bokeh",
-      "title": "Боке",
-      "url": "wallpapers/live/bokeh.mp4",
-      "thumb": "wallpapers/live/bokeh.jpg",
-      "sizeMb": 2.7
+      "id": "aurora2",
+      "title": "Полярное сияние",
+      "url": "wallpapers/live/aurora2.mp4",
+      "thumb": "wallpapers/live/aurora2.jpg",
+      "sizeMb": 1.6,
+      "cat": "nature"
     },
     {
       "id": "fireflies",
       "title": "Светлячки",
       "url": "wallpapers/live/fireflies.mp4",
       "thumb": "wallpapers/live/fireflies.jpg",
-      "sizeMb": 1.2
+      "sizeMb": 1.2,
+      "cat": "nature"
+    },
+    {
+      "id": "waves",
+      "title": "Неоновые волны",
+      "url": "wallpapers/live/waves.mp4",
+      "thumb": "wallpapers/live/waves.jpg",
+      "sizeMb": 3,
+      "cat": "abstract"
+    },
+    {
+      "id": "bokeh",
+      "title": "Боке",
+      "url": "wallpapers/live/bokeh.mp4",
+      "thumb": "wallpapers/live/bokeh.jpg",
+      "sizeMb": 2.7,
+      "cat": "abstract"
     },
     {
       "id": "lava",
       "title": "Лава-лампа",
       "url": "wallpapers/live/lava.mp4",
       "thumb": "wallpapers/live/lava.jpg",
-      "sizeMb": 2
+      "sizeMb": 2,
+      "cat": "abstract"
     }
   ]
 }
