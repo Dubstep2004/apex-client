@@ -374,7 +374,7 @@ class MainActivity : ComponentActivity() {
                                 Text(
                                     "Это приложение похоже на APEX CLIENT, но подписано не автором. В копии может быть чужой код: " +
                                         "реклама, слежка или кража ссылки подписки.\n\n" +
-                                        "Оригинал APEX CLIENT скачивается только со страницы github.com/Dubstep2004/apex-vpn.",
+                                        "Оригинал APEX CLIENT скачивается только со страницы github.com/Dubstep2004/apex-client.",
                                     color = Apex.TextDim,
                                 )
                             },

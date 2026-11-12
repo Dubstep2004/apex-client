@@ -172,7 +172,7 @@ jobs:
           GOT=$(grep -oP 'certificate SHA-256 digest: \K[0-9a-f]+' signer.txt | head -1 | tr 'a-f' 'A-F')
           WANT=$(grep -oP 'OFFICIAL_CERT = "\K[0-9A-F]+' app/src/main/java/com/apexvpn/client/data/Integrity.kt)
           if [ "$GOT" != "$WANT" ]; then
-            if [ "${{ github.repository }}" = "Dubstep2004/apex-vpn" ]; then
+            if [ "${{ github.repository }}" = "Dubstep2004/apex-client" ]; then
               echo "::error title=Подпись::APK подписан не официальным ключом ($GOT). Проверьте секреты APEX_KEYSTORE_BASE64 и APEX_KEYSTORE_PASSWORD — релиз не выпущен."
               exit 1
             fi

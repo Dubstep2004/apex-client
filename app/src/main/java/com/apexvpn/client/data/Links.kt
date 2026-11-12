@@ -5,7 +5,7 @@ package com.apexvpn.client.data
  * когда появится канал, впишите ссылку https://t.me/… сюда и в wear/…/WearActivity.kt (Links).
  */
 object Links {
-    const val GITHUB = "https://github.com/Dubstep2004/apex-vpn"
+    const val GITHUB = "https://github.com/Dubstep2004/apex-client"
     const val TELEGRAM = ""
     /** Поддержка в Telegram */
     const val SUPPORT = "https://t.me/Apexx_support"

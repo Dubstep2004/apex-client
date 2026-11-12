@@ -332,7 +332,7 @@
     <details><summary>Где взять токен</summary>
       <ol>
         <li>Откройте <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">создание токена</a> на GitHub.</li>
-        <li>Срок — 90 дней. Repository access → Only select repositories → apex-vpn.</li>
+        <li>Срок — 90 дней. Repository access → Only select repositories → apex-client (старое имя apex-vpn — тот же репозиторий).</li>
         <li>Permissions → Contents: Read and write. Остальное не трогайте.</li>
         <li>Generate token, скопируйте и вставьте сюда.</li>
       </ol>
@@ -585,7 +585,7 @@
         <ol>
           <li>Откройте <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a></li>
           <li>Token name: <b>APEX admin</b>, Expiration: <b>90 дней</b>.</li>
-          <li><b>Repository access → Only select repositories → Dubstep2004/apex-vpn.</b> «Public repositories» (по умолчанию) — только чтение, будет 403.</li>
+          <li><b>Repository access → Only select repositories → Dubstep2004/apex-client.</b> «Public repositories» (по умолчанию) — только чтение, будет 403.</li>
           <li><b>Permissions → «+ Add permissions» → Contents → Read and write.</b></li>
           <li><b>Generate token</b> → скопируйте → здесь «Выйти и стереть токен» → войдите с новым.</li>
         </ol>
@@ -605,13 +605,13 @@
       <div class="block"><details><summary>🌐 Сайты</summary>
         <div class="tbl"><table>
           <tr><td><a href="https://dubstep2004.github.io" target="_blank" rel="noopener">dubstep2004.github.io</a></td><td>Визитка — репозиторий Dubstep2004.github.io</td></tr>
-          <tr><td>/apex-vpn/admin/</td><td>Этот пульт — apex-vpn/docs/admin</td></tr>
-          <tr><td>/apex-vpn/invite/</td><td>Приглашение — apex-vpn/docs/invite</td></tr>
-          <tr><td>/apex-vpn/</td><td>Старый лендинг, сам переводит на визитку</td></tr>
+          <tr><td>/apex-client/admin/</td><td>Этот пульт — apex-client/docs/admin</td></tr>
+          <tr><td>/apex-client/invite/</td><td>Приглашение — apex-client/docs/invite</td></tr>
+          <tr><td>/apex-client/</td><td>Старый лендинг, сам переводит на визитку. Старые адреса /apex-vpn/… тоже переводятся сами</td></tr>
         </table></div>
         <ul>
-          <li>Картинки и иконку визитка берёт из <code>apex-vpn/docs/img</code> и <code>docs/invite</code> — не удаляйте их.</li>
-          <li>Pages: apex-vpn → main, папка /docs; Dubstep2004.github.io → main, папка / (root).</li>
+          <li>Картинки и иконку визитка берёт из <code>apex-client/docs/img</code> и <code>docs/invite</code> — не удаляйте их.</li>
+          <li>Pages: apex-client → main, папка /docs; Dubstep2004.github.io → main, папка / (root).</li>
           <li>Изменения на сайтах — через 1–3 минуты. Не видно — Ctrl+F5.</li>
         </ul>
       </details></div>
@@ -647,7 +647,7 @@
 
       <div class="block"><details><summary>🩺 GitHub не собирает или сайт не открывается</summary>
         <ul>
-          <li><a href="https://github.com/Dubstep2004/apex-vpn/actions" target="_blank" rel="noopener">Actions</a>: жёлтый — в очереди, зелёный — готово, красный — ошибка.</li>
+          <li><a href="https://github.com/Dubstep2004/apex-client/actions" target="_blank" rel="noopener">Actions</a>: жёлтый — в очереди, зелёный — готово, красный — ошибка.</li>
           <li>Долго в очереди или «startup_failure» — обычно сбой у GitHub. Подождите и нажмите Re-run jobs.</li>
           <li>Лимиты не тратятся: репозитории публичные, Actions бесплатные. Старые файлы сборок удаляет ежедневная очистка.</li>
           <li>Сайт показывает 404 — проверьте, прошёл ли pages-build-deployment, и Settings → Pages.</li>
@@ -697,7 +697,7 @@
 <script>
 'use strict'
 const PANEL_VERSION = '2.6', PANEL_DATE = '12 ноября 2026'
-const OWNER = 'Dubstep2004', REPO = 'apex-vpn', BRANCH = 'main'
+const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json'
 const DESIGNS = [
   ['night', 'Ночь', 'Тёмный, как приложение', 'linear-gradient(135deg,#2fd38b,#18b6c9)'],
@@ -750,7 +750,7 @@ function tokenExpiry(s) {
   const days = Math.floor((t - Date.now()) / 864e5), el = $('tokwarn'); if (!el) return
   const date = new Date(t).toLocaleDateString('ru', { day: 'numeric', month: 'long' })
   el.hidden = days > 7
-  if (days <= 7) el.innerHTML = (days < 0 ? '⛔ Токен истёк ' : '⏳ Токен истекает ' + (days === 0 ? 'сегодня' : 'через ' + days + ' дн.') + ' — ') + date + '. Сделайте новый: <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">создать токен</a> (Only select repositories → apex-vpn, Contents: Read and write), затем «Выйти и стереть токен» и войдите с ним.'
+  if (days <= 7) el.innerHTML = (days < 0 ? '⛔ Токен истёк ' : '⏳ Токен истекает ' + (days === 0 ? 'сегодня' : 'через ' + days + ' дн.') + ' — ') + date + '. Сделайте новый: <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">создать токен</a> (Only select repositories → apex-client, Contents: Read and write), затем «Выйти и стереть токен» и войдите с ним.'
   const rv = $('railVer'); if (rv && !rv.dataset.tok) { rv.dataset.tok = '1'; rv.title = 'Токен действует до ' + date }
 }
 function store(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v) } catch {} }
@@ -1279,7 +1279,7 @@ async function guarded(btn, fn) {
   btn.disabled = true
   try { await fn() } catch (e) {
     if (e.status === 409 || e.status === 422) { toast('Файл изменился на GitHub — данные обновлены, сохраните ещё раз', false); await loadAll() }
-    else if (e.status === 403) toast('У токена нет права записи. Создайте новый токен: Only select repositories → apex-vpn, Add permissions → Contents: Read and write. Потом «Выйти» и войти с ним.', false)
+    else if (e.status === 403) toast('У токена нет права записи. Создайте новый токен: Only select repositories → apex-client, Add permissions → Contents: Read and write. Потом «Выйти» и войти с ним.', false)
     else if (e.status === 401) { toast('Токен не подошёл или истёк — войдите снова', false); logout() }
     else if (e.status === 0) { toast(e.message, false); retryBtn = btn }
     else toast(e.message, false)

@@ -15,7 +15,7 @@
 
 ## Как отличить оригинал
 
-- Оригинальные сборки публикуются **только** на странице [github.com/Dubstep2004/apex-vpn/releases](https://github.com/Dubstep2004/apex-vpn/releases).
+- Оригинальные сборки публикуются **только** на странице [github.com/Dubstep2004/apex-client/releases](https://github.com/Dubstep2004/apex-client/releases).
 - В приложении: **Настройки → О приложении** — у оригинала написано **«✓ Официальная сборка»**.
 - Сертификат подписи оригинала (SHA-256):
 

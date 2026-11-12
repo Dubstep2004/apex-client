@@ -299,7 +299,7 @@ internal fun AboutPage(onBack: () -> Unit) {
         Group {
             ListRow(
                 "Исходный код версии ${BuildConfig.VERSION_NAME}",
-                "github.com/Dubstep2004/apex-vpn",
+                "github.com/Dubstep2004/apex-client",
                 leading = { Icon(Icons.Rounded.Code, null, tint = Apex.Text) },
                 onClick = { open("${com.apexvpn.client.data.Links.GITHUB}/tree/v${BuildConfig.VERSION_NAME}") },
             ) { Chevron() }

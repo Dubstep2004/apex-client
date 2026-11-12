@@ -83,14 +83,14 @@ class WearActivity : ComponentActivity(), DataClient.OnDataChangedListener {
                         Text("APEX Watch — приложение для часов", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
                         Spacer(Modifier.height(10.dp))
                         Text(
-                            "На телефон нужно установить apex-vpn-<версия>.apk со страницы github.com/Dubstep2004/apex-vpn/releases",
+                            "На телефон нужно установить apex-vpn-<версия>.apk со страницы github.com/Dubstep2004/apex-client/releases",
                             color = Color(0xFF8E8E9A), fontSize = 14.sp, textAlign = TextAlign.Center,
                         )
                         Spacer(Modifier.height(16.dp))
                         Button(
                             onClick = {
                                 runCatching {
-                                    startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/Dubstep2004/apex-vpn/releases/latest")))
+                                    startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/Dubstep2004/apex-client/releases/latest")))
                                 }
                             },
                             modifier = Modifier.size(width = 200.dp, height = 48.dp),
@@ -183,7 +183,7 @@ class WearActivity : ComponentActivity(), DataClient.OnDataChangedListener {
 
 /** Наши ссылки. Telegram пустой — кнопка не показывается (появится, когда будет канал). */
 object Links {
-    const val GITHUB = "https://github.com/Dubstep2004/apex-vpn"
+    const val GITHUB = "https://github.com/Dubstep2004/apex-client"
     const val TELEGRAM = ""
 }
 

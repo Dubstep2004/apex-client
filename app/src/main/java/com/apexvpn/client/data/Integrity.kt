@@ -19,7 +19,7 @@ object Integrity {
     private const val OFFICIAL_PACKAGE = "com.apexvpn.client"
 
     /** Откуда скачивать оригинал — не из BuildConfig, чтобы копия не подменила ссылку сборкой. */
-    const val OFFICIAL_URL = "https://github.com/Dubstep2004/apex-vpn/releases/latest"
+    const val OFFICIAL_URL = "https://github.com/Dubstep2004/apex-client/releases/latest"
 
     enum class Status {
         /** Подпись автора — всё хорошо */

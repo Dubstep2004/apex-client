@@ -2,6 +2,12 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.19.2 · 12 ноября 2026
+
+<img src="img/tags/changed.svg" alt="Изменено" height="22">
+
+- Новый адрес на GitHub — github.com/Dubstep2004/apex-client. Обновления, базы сайтов и приглашения работают по новому адресу, старые ссылки переадресуются
+
 ## 3.19.1 · 12 ноября 2026
 
 <img src="img/tags/changed.svg" alt="Изменено" height="22">

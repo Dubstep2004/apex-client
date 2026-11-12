@@ -35,13 +35,13 @@ android {
         applicationId = "com.apexvpn.client"
         minSdk = 24
         targetSdk = 35
-        versionCode = 113
-        versionName = "3.19.1"
+        versionCode = 114
+        versionName = "3.19.2"
 
         buildConfigField("String", "SUBSCRIPTION_HOST", "\"$subscriptionHost\"")
         buildConfigField("String", "RULES_BASE_URL", "\"$rulesBaseUrl\"")
         // Откуда приложение узнаёт о новых версиях: GitHub Releases этого репозитория
-        buildConfigField("String", "GITHUB_REPO", "\"${System.getenv("GITHUB_REPOSITORY")?.takeIf { it.contains('/') } ?: "Dubstep2004/apex-vpn"}\"")
+        buildConfigField("String", "GITHUB_REPO", "\"${System.getenv("GITHUB_REPOSITORY")?.takeIf { it.contains('/') } ?: "Dubstep2004/apex-client"}\"")
         buildConfigField("String", "XRAY_VERSION", "\"$xrayVersion\"")
 
         ndk {

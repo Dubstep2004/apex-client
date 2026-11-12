@@ -6,7 +6,7 @@ data class HelpTopic(val emoji: String, val title: String, val image: String?, v
 object HelpTopics {
     val all = listOf(
         HelpTopic("📲", "Установка и обновление", "gh_update", listOf(
-            "Новые версии выходят на GitHub: github.com/Dubstep2004/apex-vpn/releases.",
+            "Новые версии выходят на GitHub: github.com/Dubstep2004/apex-client/releases.",
             "Приложение само проверяет GitHub и показывает окно «Доступна версия» — нажмите «Открыть на GitHub».",
             "Скачайте apex-vpn-<версия>.apk и установите поверх — настройки сохранятся.",
             "apex-watch-<версия>.apk — только для часов, на телефон его не ставьте.",
