@@ -334,6 +334,16 @@ object RulesUpdater {
 
 object CrashReporter {
     private fun dir(context: Context) = File(context.filesDir, "crashes").apply { mkdirs() }
+    private fun seen(context: Context) = File(dir(context), ".seen")
+
+    /** 3.20.8. Был ли сбой после прошлого вопроса «Отправить отчёт?» */
+    fun hasNew(context: Context): Boolean = runCatching {
+        val last = dir(context).listFiles().orEmpty().filter { it.name.startsWith("crash-") }.maxOfOrNull { it.lastModified() } ?: return@runCatching false
+        val seenAt = seen(context).takeIf { it.exists() }?.readText()?.trim()?.toLongOrNull() ?: 0L
+        last > seenAt
+    }.getOrDefault(false)
+
+    fun markSeen(context: Context) { runCatching { seen(context).writeText(System.currentTimeMillis().toString()) } }
 
     fun install(context: Context) {
         val app = context.applicationContext

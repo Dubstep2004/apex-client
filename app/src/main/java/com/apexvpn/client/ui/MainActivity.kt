@@ -361,6 +361,23 @@ class MainActivity : ComponentActivity() {
                             dismissButton = { TextButton(onClick = { pendingTransfer.value = null }) { Text("Отмена", color = Apex.TextDim) } },
                         )
                     }
+                    // 3.20.8. После вылета — предложить отправить отчёт (без ссылки подписки и адресов)
+                    var crashAsk by rememberSaveable { mutableStateOf(com.apexvpn.client.data.CrashReporter.hasNew(this@MainActivity)) }
+                    if (crashAsk && !splash) {
+                        AlertDialog(
+                            onDismissRequest = { crashAsk = false; com.apexvpn.client.data.CrashReporter.markSeen(this@MainActivity) },
+                            containerColor = Apex.Dialog,
+                            title = { Text("Приложение закрылось с ошибкой", color = Apex.Text) },
+                            text = { Text("Отправьте отчёт — так ошибку исправят быстрее. В отчёте только техническая информация: без ссылки подписки и адресов серверов.", color = Apex.TextDim) },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    crashAsk = false; com.apexvpn.client.data.CrashReporter.markSeen(this@MainActivity)
+                                    runCatching { com.apexvpn.client.data.Diagnostics.share(this@MainActivity) }
+                                }) { Text("Отправить отчёт", color = Apex.Accent) }
+                            },
+                            dismissButton = { TextButton(onClick = { crashAsk = false; com.apexvpn.client.data.CrashReporter.markSeen(this@MainActivity) }) { Text("Не сейчас", color = Apex.TextDim) } },
+                        )
+                    }
                     // Защита от подделок: при каждом запуске неофициальной копии — предупреждение
                     var cloneWarning by rememberSaveable {
                         mutableStateOf(com.apexvpn.client.data.Integrity.status(this@MainActivity) == com.apexvpn.client.data.Integrity.Status.Unofficial)

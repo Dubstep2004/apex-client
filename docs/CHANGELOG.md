@@ -2,6 +2,14 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.20.8 · 13 ноября 2026
+
+<img src="img/tags/new.svg" alt="Новое" height="22">
+
+- Предпросмотр живых обоев: долгое нажатие на плитку — видео играет до скачивания
+- «Скачанные»: сколько места занимают обои и кнопка «Удалить всё»
+- Если приложение закрылось с ошибкой, при следующем запуске оно предложит отправить отчёт
+
 ## 3.20.7 · 13 ноября 2026
 
 <img src="img/tags/improved.svg" alt="Улучшено" height="22">

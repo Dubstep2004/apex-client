@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -74,6 +75,8 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
     LaunchedEffect(Unit) { Wallpapers.loadFavs() }
     fun star(f: Wallpapers.Fav) = viewModel.showMessage(if (Wallpapers.toggleFav(f)) "Добавлено в избранное" else "Убрано из избранного")
     var favBusy by remember { mutableStateOf<String?>(null) }
+    var preview by remember { mutableStateOf<Wallpapers.Live?>(null) }
+    var askClear by remember { mutableStateOf(false) }
 
     fun select(id: String) = viewModel.change(reload = false) { copy(shieldBackdrop = Wallpapers.key(id), backdropStamp = System.currentTimeMillis()) }
     fun get(item: Wallpapers.Live) = scope.launch {
@@ -128,7 +131,7 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
                 val on = s.shieldBackdrop == Wallpapers.key(item.id)
                 val p = progress[item.id]
                 val fav = favs.any { it.type == "live" && it.id == item.id }
-                WallTile(item.title, if (have) "" else if (item.sizeMb > 0) "%.1f МБ".format(item.sizeMb) else "", item.thumb, on, p, !have, fav, { star(Wallpapers.favOf(item)) }) {
+                WallTile(item.title, if (have) "" else if (item.sizeMb > 0) "%.1f МБ".format(item.sizeMb) else "", item.thumb, on, p, !have, fav, { star(Wallpapers.favOf(item)) }, { preview = item }) {
                     when {
                         p != null -> Unit
                         have -> viewModel.change(reload = false) { copy(shieldBackdrop = if (on) "none" else Wallpapers.key(item.id)) }
@@ -137,7 +140,15 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
                 }
             }
         }
-        Caption("Нажмите — обои скачаются (2–6 МБ) и встанут на главный экран. Работают без интернета.")
+        Caption("Нажмите — обои скачаются (2–6 МБ) и встанут на главный экран. Долгое нажатие — посмотреть перед скачиванием.")
+    }
+    if (tab == "dl" && downloaded.isNotEmpty()) {
+        // 3.20.8. Сколько места занимают обои и «Удалить всё»
+        val total = downloaded.sumOf { it.sizeMb }
+        Row(Modifier.fillMaxWidth().padding(start = 4.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Занято: %.1f МБ · %d шт.".format(total, downloaded.size), color = Apex.TextDim, fontSize = 14.sp, modifier = Modifier.weight(1f))
+            TextButton(onClick = { askClear = true }) { Text("Удалить всё", color = Apex.Bad) }
+        }
     }
     if (tab == "dl") Group {
         ListRow("Видео по ссылке", "Прямая ссылка https://…/файл.mp4, до 150 МБ", onClick = { askLink = true }) { Chevron() }
@@ -189,7 +200,7 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
                     val v = list[i]
                     val have = remember(rev, v.id) { Wallpapers.isDownloaded(context, v.id) }
                     val on = s.shieldBackdrop == Wallpapers.key(v.id)
-                    WallTile("", "", v.thumb, on, progress[v.id], !have, favs.any { it.type == "live" && it.id == v.id }, { star(Wallpapers.favOf(v)) }) {
+                    WallTile("", "", v.thumb, on, progress[v.id], !have, favs.any { it.type == "live" && it.id == v.id }, { star(Wallpapers.favOf(v)) }, { preview = v }) {
                         when {
                             progress[v.id] != null -> Unit
                             have -> viewModel.change(reload = false) { copy(shieldBackdrop = if (on) "none" else Wallpapers.key(v.id)) }
@@ -280,6 +291,27 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
             dismissButton = { TextButton(onClick = { askLink = false }) { Text("Отмена") } },
         )
     }
+    if (askClear) {
+        AlertDialog(
+            onDismissRequest = { askClear = false },
+            title = { Text("Удалить все скачанные обои?") },
+            text = { Text("Освободится %.1f МБ. Избранное останется — скачать снова можно в любой момент.".format(downloaded.sumOf { it.sizeMb })) },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (Wallpapers.idOf(s.shieldBackdrop) != null) viewModel.change(reload = false) { copy(shieldBackdrop = "none") }
+                    downloaded.forEach { Wallpapers.delete(context, it.id) }
+                    askClear = false; viewModel.showMessage("Скачанные обои удалены")
+                }) { Text("Удалить всё", color = Apex.Bad) }
+            },
+            dismissButton = { TextButton(onClick = { askClear = false }) { Text("Отмена") } },
+        )
+    }
+    preview?.let { v ->
+        WallPreview(v, onDismiss = { preview = null }) {
+            preview = null
+            if (Wallpapers.isDownloaded(context, v.id)) select(v.id) else get(v)
+        }
+    }
     toDelete?.let { d ->
         AlertDialog(
             onDismissRequest = { toDelete = null },
@@ -298,10 +330,11 @@ internal fun NetWallpapers(viewModel: MainViewModel, s: Settings) {
 
 /** Плитка обоев: миниатюра 88×132, отметка выбора, загрузка (progress -1 — без процентов). */
 @Composable
-private fun WallTile(title: String, sub: String, thumb: String, on: Boolean, progress: Float?, cloud: Boolean, fav: Boolean? = null, onFav: () -> Unit = {}, onClick: () -> Unit) {
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+private fun WallTile(title: String, sub: String, thumb: String, on: Boolean, progress: Float?, cloud: Boolean, fav: Boolean? = null, onFav: () -> Unit = {}, onLong: (() -> Unit)? = null, onClick: () -> Unit) {
     val context = LocalContext.current
     val bmp by produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, thumb) { value = Wallpapers.bitmap(thumb, context)?.asImageBitmap() }
-    Column(Modifier.width(88.dp).clip(RoundedCornerShape(16.dp)).clickable(onClick = onClick), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(Modifier.width(88.dp).clip(RoundedCornerShape(16.dp)).combinedClickable(onClick = onClick, onLongClick = onLong), horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             Modifier.size(88.dp, 132.dp).clip(RoundedCornerShape(16.dp)).background(Apex.Surface)
                 .border(2.dp, if (on) Apex.Accent else Apex.Outline, RoundedCornerShape(16.dp)),
@@ -330,4 +363,38 @@ private fun WallTile(title: String, sub: String, thumb: String, on: Boolean, pro
         Text(title, color = if (on) Apex.Text else Apex.TextDim, fontSize = 12.sp, maxLines = 1)
         if (sub.isNotEmpty()) Text(sub, color = Apex.TextDim, fontSize = 11.sp, maxLines = 1)
     }
+}
+
+/** 3.20.8. Посмотреть живые обои перед скачиванием: видео играет прямо из интернета, без звука, по кругу. */
+@Composable
+private fun WallPreview(v: Wallpapers.Live, onDismiss: () -> Unit, onSet: () -> Unit) {
+    val context = LocalContext.current
+    val local = Wallpapers.file(context, v.id).takeIf { it.exists() && it.length() > 0 }
+    val src = local?.absolutePath ?: Wallpapers.sources(v.url).firstOrNull().orEmpty()
+    var failed by remember { mutableStateOf(false) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(v.title.ifBlank { "Живые обои" }) },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                Box(Modifier.size(200.dp, 356.dp).clip(RoundedCornerShape(18.dp)).background(Color.Black), contentAlignment = Alignment.Center) {
+                    if (src.isBlank() || failed) Text("Не удалось показать", color = Color.White, fontSize = 13.sp)
+                    else androidx.compose.ui.viewinterop.AndroidView(
+                        factory = { ctx ->
+                            android.widget.VideoView(ctx).apply {
+                                setOnPreparedListener { mp -> mp.isLooping = true; mp.setVolume(0f, 0f); start() }
+                                setOnErrorListener { _, _, _ -> failed = true; true }
+                                if (local != null) setVideoPath(src) else setVideoURI(android.net.Uri.parse(src))
+                            }
+                        },
+                        onRelease = { it.stopPlayback() },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+                if (v.credit.isNotBlank()) { Spacer(Modifier.height(8.dp)); Text(v.credit, color = Apex.TextDim, fontSize = 12.sp) }
+            }
+        },
+        confirmButton = { TextButton(onClick = onSet) { Text(if (local != null) "Поставить" else "Скачать и поставить", color = Apex.Accent) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Закрыть") } },
+    )
 }
