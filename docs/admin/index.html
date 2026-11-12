@@ -269,6 +269,49 @@
     .work h1 { font-size: 23px; } .two, .mark .more, .vers { grid-template-columns: 1fr; } .live dt { width: 120px; }
     .savebar { padding: 10px; gap: 8px; } .savebar p { font-size: 13.5px; line-height: 1.3; } .savebar p small { display: none; } .savebar .btn { padding: 10px 14px; min-height: 44px; }
   }
+  /* 2.6: группы меню, поиск, нижнее меню на телефоне, устройства в предпросмотре */
+  .ngroup { color: var(--faint); font-size: 11.5px; font-weight: 800; letter-spacing: .02em; margin: 14px 12px 4px; display: flex; align-items: center; }
+  .ngroup:first-child { margin-top: 0; }
+  .nav .edit { display: none; margin-left: auto; gap: 2px; } .nav.editing .edit { display: flex; } .nav.editing .dot { display: none; }
+  .nav .edit span { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; font-size: 13px; color: var(--dim); }
+  .nav .edit span:hover { background: var(--line); color: var(--text); }
+  .nav button.hid { opacity: .4; } .nav:not(.editing) button.hid { display: none; }
+  .navtools { display: flex; gap: 6px; margin: 0 0 10px; }
+  .navtools input { flex: 1; min-width: 0; padding: 9px 12px; border-radius: 12px; font-size: 14px; }
+  .navtools button { flex: 0 0 auto; border: 1px solid var(--line); background: var(--panel); color: var(--dim); border-radius: 12px; width: 40px; cursor: pointer; }
+  .navtools button[aria-pressed=true] { color: var(--text); border-color: var(--go2); }
+  .sres { position: absolute; z-index: 40; left: 0; right: 0; top: 100%; margin-top: 4px; background: var(--panel2); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 16px 40px var(--shadow); max-height: 60vh; overflow: auto; padding: 6px; }
+  .sres button { display: block; width: 100%; text-align: left; background: none; border: 0; color: var(--text); padding: 9px 10px; border-radius: 10px; cursor: pointer; font: inherit; font-size: 14px; }
+  .sres button span { color: var(--faint); font-size: 12.5px; margin-left: 6px; } .sres button:hover, .sres button.sel { background: var(--line); }
+  .sres p { color: var(--faint); font-size: 13px; margin: 8px 10px; }
+  .flash { animation: flash 1.6s ease-out; } @keyframes flash { 0%, 40% { box-shadow: 0 0 0 3px var(--go2); border-radius: 12px; } 100% { box-shadow: 0 0 0 3px transparent; } }
+  .bnav { display: none; }
+  .vers div[data-go], .relblock { cursor: pointer; } .vers div[data-go]:hover { border-color: var(--go2); }
+  .live div::after { content: "›"; margin-left: auto; color: var(--faint); font-size: 18px; line-height: 1; }
+  .tokwarn { border: 1px solid #f5b75966; background: #f5b7591a; border-radius: var(--r-md); padding: 12px 14px; margin: 0 0 16px; font-weight: 600; }
+  .tokwarn a { color: var(--go2); }
+  .devsw { display: inline-flex; gap: 4px; margin: 0 0 12px 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 3px; }
+  .devsw button { border: 0; background: none; color: var(--dim); border-radius: 9px; padding: 6px 10px; cursor: pointer; font: inherit; font-size: 13px; font-weight: 700; }
+  .devsw button[aria-pressed=true] { background: var(--panel2); color: var(--text); }
+  .phone.tv { width: 100%; max-width: 420px; border-radius: 16px; padding: 10px; } .phone.tv .screen { min-height: 0; aspect-ratio: 16 / 9; border-radius: 8px; padding: 14px 16px; }
+  .phone.tv .shield { width: 54px; height: 62px; font-size: 22px; margin: 4px auto 6px; } .phone.tv .ph-state { font-size: 15px; margin-bottom: 8px; } .phone.tv .ph-list { display: none; }
+  .phone.watch { width: 230px; height: 230px; border-radius: 50%; padding: 10px; margin: 0 auto; } .phone.watch .screen { min-height: 0; height: 100%; border-radius: 50%; padding: 34px 26px; text-align: center; }
+  .phone.watch .ph-top { justify-content: center; font-size: 11px; margin: 0 0 6px; } .phone.watch .ph-top i { display: none; }
+  .phone.watch .ph-banner { font-size: 10.5px; padding: 6px 8px; border-radius: 12px; margin: 0 0 6px; } .phone.watch .ph-banner .x2 { display: none; }
+  .phone.watch .shield { width: 46px; height: 52px; font-size: 18px; margin: 2px auto 4px; } .phone.watch .ph-state { font-size: 13px; margin: 0; } .phone.watch .ph-list, .phone.watch .ph-ann { display: none; }
+  .draftbar { border: 1px solid var(--go2); background: var(--panel); border-radius: var(--r-md); padding: 14px; margin: 0 0 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .draftbar p { margin: 0; flex: 1; min-width: 200px; font-weight: 600; }
+  @media (max-width: 760px) {
+    .rail .ngroup, .navtools button#navEdit { display: none; }
+    .rail .navtools { margin: 0 0 8px; position: relative; }
+    .bnav { display: flex; position: fixed; z-index: 25; left: 0; right: 0; bottom: 0; background: var(--panel); border-top: 1px solid var(--line); padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); }
+    .bnav button { flex: 1; background: none; border: 0; color: var(--faint); font: inherit; font-size: 11px; font-weight: 700; display: grid; gap: 2px; justify-items: center; padding: 6px 2px; border-radius: 12px; cursor: pointer; position: relative; }
+    .bnav button b { font-size: 19px; font-weight: 400; line-height: 1; } .bnav button.on { color: var(--text); background: var(--panel2); }
+    .bnav button i { position: absolute; top: 4px; right: 22%; width: 7px; height: 7px; border-radius: 50%; background: var(--warn); }
+    .savebar { bottom: calc(70px + env(safe-area-inset-bottom)); left: 8px; right: 8px; width: auto; max-width: none; transform: translateY(160%); } .savebar.show { transform: none; }
+    .savebar p { font-size: 13px; } .savebar #discard { padding: 10px; font-size: 13px; } .savebar #undoBtn { padding: 10px 12px; }
+    .toast { top: 12px; }
+  }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -318,12 +361,15 @@
       <button class="icon-btn" id="designBtn" title="Оформление" aria-label="Оформление пульта" aria-expanded="false">🎨</button>
       <div class="designs" id="designs" hidden></div>
     </div>
+    <div class="navtools" style="position:relative"><input id="q" type="search" placeholder="Поиск   Ctrl+K" aria-label="Поиск по пульту" autocomplete="off"><button id="navEdit" title="Настроить меню" aria-label="Настроить меню" aria-pressed="false">✏️</button><div class="sres" id="qres" hidden></div></div>
     <nav class="nav" id="nav"></nav>
     <button class="out" id="lock">Заблокировать пульт</button>
     <button class="out" id="logout">Выйти и стереть токен</button>
   </aside>
 
   <main class="work">
+    <div class="draftbar" id="draftbar" hidden><p id="draftText">Есть несохранённый черновик</p><button class="btn quiet small" id="draftDrop">Удалить</button><button class="btn go small" id="draftUse">Восстановить</button></div>
+    <div class="tokwarn" id="tokwarn" hidden></div>
     <!-- Обзор -->
     <section data-tab="home">
       <h1>Что сейчас видят пользователи</h1>
@@ -333,7 +379,7 @@
       <div class="block"><h2>Сейчас действует</h2><p class="note">Нажмите на строку, чтобы изменить.</p><dl class="live" id="liveList"></dl></div>
       <div class="block danger"><h2>Всё сломано?</h2><p class="note">Одной кнопкой: аварийный баннер всем, остановка автообновления и пометка «Обслуживание» на проблемные серверы. Перед сохранением всё можно проверить.</p>
         <button class="btn red" id="panicBtn">Включить аварийный режим</button></div>
-      <div class="block"><h2>Скачивания по версиям</h2><p class="note" id="relNote">Загружаем…</p><div class="rel" id="relList"></div></div>
+      <div class="block relblock" data-go="update"><h2>Скачивания по версиям</h2><p class="note" id="relNote">Загружаем…</p><div class="rel" id="relList"></div></div>
     </section>
 
     <!-- Баннеры -->
@@ -518,6 +564,7 @@
         <p>Пульт меняет файл <code>docs/config/app.json</code> на GitHub. Приложения забирают его при запуске, при открытии (не чаще раза в 5 минут) и раз в 15 минут в фоне — <b>изменения доходят за 1–15 минут</b>. Новую версию приложения выпускать не нужно.</p>
         <p><b>Вход:</b> первый раз — токен GitHub и PIN из 4–8 цифр, дальше только PIN. Токен хранится только в этом браузере, зашифрованный PIN-ом.</p>
         <div class="tbl"><table>
+          <tr><td>Меню и поиск</td><td>Вкладки разложены по группам (на телефоне — нижнее меню). ✏️ возле поиска — свой порядок вкладок и скрытие редких. Поиск (Ctrl+K) находит вкладку и поле. Ctrl+S — сохранить, Ctrl+Z (не в поле ввода) или ↶ — отменить последнее изменение. Несохранённое не пропадает: при следующем входе пульт предложит восстановить черновик</td></tr>
           <tr><td>Обзор</td><td>Что видят пользователи, версии, скачивания по версиям (телефон и часы, в день), <b>аварийный режим</b>: красный баннер всем, серверы на обслуживание, стоп автообновлениям</td></tr>
           <tr><td>Баннеры</td><td>Полоса на главном экране: название для себя, расписание «с … до …», устройства, страна оператора, версии, шаблоны. Отметьте «Сайт» — баннер появится и на визитке</td></tr>
           <tr><td>Серверы</td><td>«🔧 Обслуживание» — автопилот не выбирает, «🐢 Медленно», «⭐ Советуем», «Скрыть у всех». Сервер ищется по части названия: «Германия» — все немецкие. Быстрые кнопки: на 1, 2, 4 часа или до 9:00. Можно запланировать «с … до …» — кто выбрал сервер вручную, получит уведомление за ~15 минут (с 3.19)</td></tr>
@@ -611,12 +658,16 @@
     <button class="btn quiet out-m" id="lock2">Заблокировать пульт</button>
   </main>
 
-  <aside class="phone-col"><h3>Так увидят пользователи</h3><div data-preview></div></aside>
+  <aside class="phone-col"><h3>Так увидят пользователи</h3><div class="devsw" role="group" aria-label="Устройство"><button data-dev="phone" aria-pressed="true">📱 Телефон</button><button data-dev="tv" aria-pressed="false">📺 ТВ</button><button data-dev="watch" aria-pressed="false">⌚ Часы</button></div><div data-preview></div></aside>
+</div>
+<nav class="bnav" id="bnav" aria-label="Разделы"></nav>
+<div hidden>
 </div>
 
 <div class="savebar" id="savebar">
   <p>Есть несохранённые изменения<small id="saveWhat"></small></p>
-  <button class="btn quiet" id="discard">Отменить</button>
+  <button class="btn quiet" id="undoBtn" title="Отменить последнее изменение (Ctrl+Z)" aria-label="Отменить последнее изменение">↶</button>
+  <button class="btn quiet" id="discard">Сбросить</button>
   <button class="btn go" id="saveApp">Сохранить</button>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -645,7 +696,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.5', PANEL_DATE = '12 ноября 2026'
+const PANEL_VERSION = '2.6', PANEL_DATE = '12 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-vpn', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json'
 const DESIGNS = [
@@ -662,8 +713,18 @@ const FEATURES = [
   ['autoUpdate', 'Автоустановка обновлений', 'Остановите, если выпущенная версия оказалась плохой'],
 ]
 const TABS = [['home', '◎', 'Обзор'], ['banner', '📢', 'Баннеры'], ['servers', '🖥', 'Серверы'], ['announce', '🪧', 'Объявление'],
-  ['links', '🔗', 'Ссылки'], ['update', '📦', 'Обновления'], ['features', '⚙️', 'Функции'], ['preview', '👁', 'Предпросмотр'], '-',
+  ['links', '🔗', 'Ссылки'], ['update', '📦', 'Обновления'], ['features', '⚙️', 'Функции'], ['preview', '👁', 'Предпросмотр'],
   ['history', '🕘', 'История'], ['checks', '🩺', 'Проверка'], ['sub', '🔐', 'Подписка'], ['hide', '🧩', 'Скрыть VPN'], ['site', '🌐', 'Визитка'], ['help', '📖', 'Справка']]
+// 2.6: группы меню (и нижнее меню на телефоне)
+const GROUPS = [
+  ['main', '◎', 'Обзор', ['home']],
+  ['users', '📣', 'Пользователям', ['banner', 'announce', 'site']],
+  ['srv', '🖥', 'Серверы', ['servers', 'checks']],
+  ['app', '📦', 'Приложение', ['update', 'features', 'links', 'preview', 'sub', 'hide']],
+  ['more', '☰', 'Сервис', ['history', 'help']],
+]
+const tabInfo = id => TABS.find(t => t[0] === id)
+const groupOf = id => GROUPS.find(g => g[3].includes(id)) || GROUPS[0]
 const APP_TABS = ['banner', 'servers', 'announce', 'links', 'update', 'features', 'preview']
 const PART = { banners: ['banner', 'Баннеры'], servers: ['servers', 'Серверы'], announce: ['announce', 'Объявление'], links: ['links', 'Ссылки'],
   update: ['update', 'Обновления'], features: ['features', 'Функции'], previewCode: ['preview', 'Предпросмотр'] }
@@ -683,6 +744,15 @@ const $ = id => document.getElementById(id)
 let token = '', saved = '', releases = [], banners = [], marks = [], annId = ''
 const files = {}
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+// Срок токена: GitHub присылает его в каждом ответе (если браузер его отдаёт)
+function tokenExpiry(s) {
+  const t = Date.parse(s.replace(' UTC', 'Z').replace(' ', 'T')); if (!t) return
+  const days = Math.floor((t - Date.now()) / 864e5), el = $('tokwarn'); if (!el) return
+  const date = new Date(t).toLocaleDateString('ru', { day: 'numeric', month: 'long' })
+  el.hidden = days > 7
+  if (days <= 7) el.innerHTML = (days < 0 ? '⛔ Токен истёк ' : '⏳ Токен истекает ' + (days === 0 ? 'сегодня' : 'через ' + days + ' дн.') + ' — ') + date + '. Сделайте новый: <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">создать токен</a> (Only select repositories → apex-vpn, Contents: Read and write), затем «Выйти и стереть токен» и войдите с ним.'
+  const rv = $('railVer'); if (rv && !rv.dataset.tok) { rv.dataset.tok = '1'; rv.title = 'Токен действует до ' + date }
+}
 function store(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v) } catch {} }
 function load(k) { try { return localStorage.getItem(k) || '' } catch { return '' } }
 function toast(msg, ok = true) { const t = $('toast'); t.textContent = msg; t.className = 'toast show ' + (ok ? 'ok' : 'err'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('show'), ok ? 2600 : 6000) }
@@ -720,8 +790,15 @@ async function unseal(pin) {
 
 // ── GitHub
 async function api(path, opts = {}) {
-  const r = await fetch('https://api.github.com/repos/' + OWNER + '/' + REPO + path, { ...opts,
-    headers: { Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + token, 'X-GitHub-Api-Version': '2022-11-28', ...(opts.headers || {}) } })
+  let r
+  try {
+    r = await fetch('https://api.github.com/repos/' + OWNER + '/' + REPO + path, { ...opts,
+      headers: { Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + token, 'X-GitHub-Api-Version': '2022-11-28', ...(opts.headers || {}) } })
+  } catch {
+    const e = new Error(navigator.onLine === false ? 'Нет интернета. Изменения остались в пульте — сохраните, когда сеть появится.' : 'Нет связи с GitHub. Проверьте интернет или VPN и нажмите ещё раз — изменения на месте.')
+    e.status = 0; throw e
+  }
+  const exp = r.headers.get('github-authentication-token-expiration'); if (exp) tokenExpiry(exp)
   if (!r.ok) { let m = ''; try { m = (await r.json()).message } catch {}; const e = new Error(r.status + (m ? ': ' + m : '')); e.status = r.status; throw e }
   return r.json()
 }
@@ -869,20 +946,68 @@ function collectApp(loose = false) {
 }
 
 // ── Изменения, превью, обзор
+let dirtyTabs = new Set()
+function otherDirty() {
+  const d = new Set()
+  if (files[SUB]) { try { if (JSON.stringify(collectSub()) !== JSON.stringify(files[SUB].data || null)) d.add('sub') } catch { if ($('sHosts').value.trim() || (files[SUB].data?.hosts || []).length) d.add('sub') } }
+  if (typeof siteSaved === 'string' && siteSaved && JSON.stringify(collectSite()) !== siteSaved) d.add('site')
+  if (files[HIDE] && $('hideJson').value.trim() && $('hideJson').value.trim() !== JSON.stringify(files[HIDE].data, null, 2).trim()) d.add('hide')
+  return d
+}
+function changedDots() {
+  const all = new Set([...dirtyTabs, ...(files[SUB] ? otherDirty() : [])])
+  document.querySelectorAll('.nav button[data-id]').forEach(b => { let d = b.querySelector('.dot'); if (!d) { d = document.createElement('span'); d.className = 'dot'; b.insertBefore(d, b.querySelector('.edit')) } d.hidden = !all.has(b.dataset.id) })
+  document.querySelectorAll('.bnav button').forEach(b => { b.querySelector('i').hidden = !GROUPS.find(g => g[0] === b.dataset.g)[3].some(id => all.has(id)) })
+  return all
+}
+
+// Отмена последних изменений (Ctrl+Z вне поля ввода или кнопка в полосе сохранения)
+let undoStack = [], undoTimer = 0, undoing = false
+function pushUndo(c) {
+  if (undoing) return
+  clearTimeout(undoTimer)
+  undoTimer = setTimeout(() => { const j = JSON.stringify(c); if (undoStack[undoStack.length - 1] !== j) { undoStack.push(j); if (undoStack.length > 50) undoStack.shift() } }, 500)
+}
+function undo() {
+  clearTimeout(undoTimer)
+  const cur = JSON.stringify(collectApp(true))
+  while (undoStack.length && undoStack[undoStack.length - 1] === cur) undoStack.pop()
+  const prev = undoStack.pop()
+  if (!prev) return toast('Отменять нечего', false)
+  undoing = true; fillApp(JSON.parse(prev)); changed(); undoing = false; undoStack.push(prev); toast('Последнее изменение отменено')
+}
+
+// Черновик: несохранённые правки живут в этом браузере, пока их не сохранят или не удалят
+function saveDraft(c, dirty) {
+  if (!saved) return
+  if (dirty) store('apex_admin_draft', JSON.stringify({ at: Date.now(), base: saved, app: c })); else store('apex_admin_draft', null)
+}
+function offerDraft() {
+  let d; try { d = JSON.parse(load('apex_admin_draft') || 'null') } catch {}
+  if (!d || !d.app || JSON.stringify(d.app) === saved) { store('apex_admin_draft', null); return }
+  const when = new Date(d.at).toLocaleString('ru', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+  $('draftText').textContent = 'Несохранённые изменения от ' + when + (d.base !== saved ? ' (файл с тех пор меняли — проверьте перед сохранением)' : '') + '. Восстановить?'
+  $('draftbar').hidden = false
+  $('draftUse').onclick = () => { fillApp(d.app); changed(); $('draftbar').hidden = true; toast('Черновик восстановлен — проверьте и нажмите «Сохранить»') }
+  $('draftDrop').onclick = () => { store('apex_admin_draft', null); $('draftbar').hidden = true; toast('Черновик удалён') }
+}
 function changed() {
   const now = collectApp(true), old = saved ? JSON.parse(saved) : now
   const keys = Object.keys(PART).filter(k => JSON.stringify(now[k] ?? null) !== JSON.stringify(old[k] ?? null))
   $('savebar').classList.toggle('show', keys.length > 0)
   $('saveWhat').textContent = keys.map(k => PART[k][1]).join(', ')
-  document.querySelectorAll('.nav button').forEach(b => { const d = b.querySelector('.dot'); if (d) d.hidden = !keys.some(k => PART[k][0] === b.dataset.id) })
+  dirtyTabs = new Set(keys.map(k => PART[k][0]))
+  changedDots(); saveDraft(now, keys.length > 0); pushUndo(now)
   preview(now); overview(now)
 }
+let pvDev = load('apex_admin_pvdev') || 'phone'
 function preview(c) {
-  const now = Date.now()
-  const shown = c.banners.find(b => (!b.from || now >= b.from) && (!b.to || now < b.to) && (!b.devices.length || b.devices.includes('phone')))
+  const now = Date.now(), dev = pvDev
+  const shown = c.banners.find(b => (!b.from || now >= b.from) && (!b.to || now < b.to) && (!b.devices.length || b.devices.includes(dev)))
   const annOpen = !!document.querySelector('[data-tab=announce]:not([hidden])')
   document.querySelectorAll('[data-preview]').forEach(host => {
-    if (!host.firstElementChild) host.appendChild($('phoneTpl').content.cloneNode(true))
+    if (!host.querySelector('.phone')) host.appendChild($('phoneTpl').content.cloneNode(true))
+    const ph = host.querySelector('.phone'); ph.classList.toggle('tv', dev === 'tv'); ph.classList.toggle('watch', dev === 'watch')
     const bn = host.querySelector('[data-ph-banner]')
     bn.hidden = !shown; if (shown) { bn.dataset.l = shown.level; host.querySelector('[data-ph-icon]').textContent = lv(shown.level)[0]; host.querySelector('[data-ph-text]').textContent = shown.text }
     const rows = Object.entries(c.servers.status).map(([n, v]) => [n, v.state])
@@ -897,7 +1022,7 @@ function preview(c) {
       host.querySelector('[data-ph-ab]').textContent = a.url ? (a.button || 'Подробнее') : 'Понятно'
       const img = host.querySelector('[data-ph-img]'); img.hidden = !a.image; if (a.image && img.getAttribute('src') !== a.image) img.src = a.image
     }
-    host.querySelector('[data-ph-cap]').textContent = shown && shown.preview ? 'Этот баннер видят только телефоны с кодом предпросмотра' : ''
+    host.querySelector('[data-ph-cap]').textContent = (shown && shown.preview ? 'Этот баннер видят только телефоны с кодом предпросмотра. ' : '') + (dev === 'tv' ? 'Android TV: баннер вверху главного экрана.' : dev === 'watch' ? 'Часы: баннер приходит с телефона, объявление на часах не показывается.' : '')
   })
 }
 function overview(c) {
@@ -927,7 +1052,8 @@ function renderVersions() {
       ? ['Бета', beta.tag_name.replace(/^v/, ''), 'для «Бета-версии»']
       : ['Обязательно с', req ? 'сборки ' + req : 'не задано', req ? 'ниже — окно обновления' : 'все версии работают'],
   ]
-  $('vers').innerHTML = cards.map(([k, v, s]) => `<div><span>${k}</span><b>${esc(v)}</b><small>${esc(s)}</small></div>`).join('')
+  const go = ['help', 'update', 'update']
+  $('vers').innerHTML = cards.map(([k, v, s], i) => `<div data-go="${go[i]}" role="button" tabindex="0"><span>${k}</span><b>${esc(v)}</b><small>${esc(s)}</small></div>`).join('')
   $('railVer').textContent = 'Пульт ' + PANEL_VERSION + (stable ? ' · приложение ' + stable.tag_name.replace(/^v/, '') : '')
 }
 async function loadReleases() {
@@ -1131,8 +1257,10 @@ function collectSub() {
 
 // ── Навигация
 function showTab(id) {
+  if (!tabInfo(id)) id = 'home'
+  curTab = id
   document.querySelectorAll('[data-tab]').forEach(s => (s.hidden = s.dataset.tab !== id))
-  document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('on', b.dataset.id === id))
+  renderNav()
   store('apex_admin_tab', id); window.scrollTo({ top: 0 })
   if (id === 'history') loadHistory()
   if (id === 'checks' && !$('checkList').innerHTML) runChecks()
@@ -1140,16 +1268,20 @@ function showTab(id) {
 }
 async function loadAll() {
   const [app, sub, hide, site] = await Promise.all([getFile(APP), getFile(SUB), getFile(HIDE), getFile(SITE)])
-  fillApp(app); saved = JSON.stringify(collectApp(true)); changed()
+  fillApp(app); saved = JSON.stringify(collectApp(true)); undoStack = [saved]; offerDraft(); changed()
   fillSub(sub); $('hideJson').value = hide ? JSON.stringify(hide, null, 2) : ''; fillSite(site)
   renderVersions(); loadReleases()
 }
+let retryBtn = null
+window.addEventListener('offline', () => toast('Интернет пропал. Изменения не потеряются — сохраните, когда сеть вернётся', false))
+window.addEventListener('online', () => { if (retryBtn && !$('app').hidden) { const b = retryBtn; retryBtn = null; toast('Сеть вернулась — сохраняем ещё раз'); b.click() } })
 async function guarded(btn, fn) {
   btn.disabled = true
   try { await fn() } catch (e) {
     if (e.status === 409 || e.status === 422) { toast('Файл изменился на GitHub — данные обновлены, сохраните ещё раз', false); await loadAll() }
     else if (e.status === 403) toast('У токена нет права записи. Создайте новый токен: Only select repositories → apex-vpn, Add permissions → Contents: Read and write. Потом «Выйти» и войти с ним.', false)
     else if (e.status === 401) { toast('Токен не подошёл или истёк — войдите снова', false); logout() }
+    else if (e.status === 0) { toast(e.message, false); retryBtn = btn }
     else toast(e.message, false)
   } finally { btn.disabled = false }
 }
@@ -1174,9 +1306,88 @@ async function unlock() {
 function lock() { token = ''; $('app').hidden = true; $('savebar').classList.remove('show'); $('unlock').hidden = false; $('pin').focus() }
 function logout() { store('apex_admin_vault', null); store('apex_admin_token', null); token = ''; $('app').hidden = true; $('unlock').hidden = true; $('login').hidden = false; $('savebar').classList.remove('show') }
 
-$('nav').innerHTML = TABS.map(t => t === '-' ? '<div class="sep"></div>' : `<button data-id="${t[0]}"><span class="ic">${t[1]}</span>${t[2]}${APP_TABS.includes(t[0]) ? '<span class="dot" hidden></span>' : ''}</button>`).join('')
-$('nav').onclick = e => { const id = e.target.closest('button')?.dataset.id; if (id) showTab(id) }
+// Меню: свой порядок и скрытые вкладки — только в этом браузере
+function navPrefs() { try { return JSON.parse(load('apex_admin_nav') || '{}') } catch { return {} } }
+function groupTabs(g) {
+  const pr = navPrefs(), order = pr.order?.[g[0]] || []
+  return [...order.filter(id => g[3].includes(id)), ...g[3].filter(id => !order.includes(id))]
+}
+let curTab = 'home'
+function renderNav() {
+  const pr = navPrefs(), hid = pr.hidden || [], editing = $('nav').classList.contains('editing'), mobile = matchMedia('(max-width: 760px)').matches
+  const groups = mobile ? [groupOf(curTab)] : GROUPS
+  $('nav').innerHTML = groups.map(g => (mobile || g[0] === 'main' ? '' : `<div class="ngroup">${g[2]}</div>`) + groupTabs(g).map((id, i, arr) => {
+    const [, ic, name] = tabInfo(id)
+    return `<button data-id="${id}" class="${id === curTab ? 'on' : ''} ${hid.includes(id) && id !== 'home' ? 'hid' : ''}"><span class="ic">${ic}</span>${name}${APP_TABS.includes(id) ? '<span class="dot" hidden></span>' : ''}${g[3].length > 1 ? `<span class="edit"><span data-up title="Выше">${i ? '↑' : ''}</span><span data-down title="Ниже">${i < arr.length - 1 ? '↓' : ''}</span>${id === 'home' ? '' : `<span data-hide title="Скрыть или показать">${hid.includes(id) ? '🙈' : '👁'}</span>`}</span>` : ''}</button>`
+  }).join('')).join('')
+  $('bnav').innerHTML = GROUPS.map(g => `<button data-g="${g[0]}" class="${groupOf(curTab)[0] === g[0] ? 'on' : ''}"><b>${g[1]}</b>${g[2]}<i hidden></i></button>`).join('')
+  if (editing) $('nav').classList.add('editing')
+  changedDots()
+}
+function moveTab(id, d) {
+  const g = groupOf(id), arr = groupTabs(g), i = arr.indexOf(id), j = i + d; if (j < 0 || j >= arr.length) return
+  ;[arr[i], arr[j]] = [arr[j], arr[i]]; const pr = navPrefs(); pr.order = { ...(pr.order || {}), [g[0]]: arr }; store('apex_admin_nav', JSON.stringify(pr)); renderNav()
+}
+document.querySelectorAll('.phone-inline').forEach(h => h.insertAdjacentHTML('afterbegin', '<div class="devsw" role="group" aria-label="Устройство"><button data-dev="phone">📱 Телефон</button><button data-dev="tv">📺 ТВ</button><button data-dev="watch">⌚ Часы</button></div>'))
+document.querySelectorAll('.devsw [data-dev]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.dev === pvDev)))
+document.querySelectorAll('.devsw').forEach(sw => sw.addEventListener('click', e => {
+  const d = e.target.closest('[data-dev]')?.dataset.dev; if (!d) return; pvDev = d; store('apex_admin_pvdev', d)
+  document.querySelectorAll('.devsw [data-dev]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.dev === d))); preview(collectApp(true))
+}))
+$('nav').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return; const id = b.dataset.id
+  if (e.target.closest('[data-up]')) { e.stopPropagation(); return moveTab(id, -1) }
+  if (e.target.closest('[data-down]')) { e.stopPropagation(); return moveTab(id, 1) }
+  if (e.target.closest('[data-hide]')) { const pr = navPrefs(), h = new Set(pr.hidden || []); h.has(id) ? h.delete(id) : h.add(id); pr.hidden = [...h]; store('apex_admin_nav', JSON.stringify(pr)); return renderNav() }
+  showTab(id)
+}
+$('navEdit').onclick = () => { const on = !$('nav').classList.contains('editing'); $('nav').classList.toggle('editing', on); $('navEdit').setAttribute('aria-pressed', String(on)); renderNav(); toast(on ? 'Двигайте вкладки ↑↓, скрывайте 👁. Скрытые находятся через поиск. Ещё раз ✏️ — готово' : 'Меню сохранено в этом браузере') }
+$('bnav').onclick = e => {
+  const g = GROUPS.find(x => x[0] === e.target.closest('[data-g]')?.dataset.g); if (!g) return
+  const hid = navPrefs().hidden || [], first = groupTabs(g).find(id => !hid.includes(id)) || g[3][0]
+  showTab(groupOf(curTab)[0] === g[0] ? curTab : first)
+}
+matchMedia('(max-width: 760px)').addEventListener('change', renderNav)
+
+// Поиск по пульту: вкладки, заголовки блоков и подписи полей
+let qIndex = null
+function buildIndex() {
+  const out = []
+  document.querySelectorAll('section[data-tab]').forEach(sec => {
+    const id = sec.dataset.tab, t = tabInfo(id); if (!t) return
+    out.push({ id, text: t[2], where: groupOf(id)[2], el: null })
+    sec.querySelectorAll('h1, h2, label.f, .sw .t b').forEach(el => { const tx = el.textContent.trim(); if (tx && tx.length < 90) out.push({ id, text: tx, where: t[2], el }) })
+  })
+  const extra = [['update', 'обязательное обновление отзыв версия релиз описание'], ['preview', 'код предпросмотра черновик'], ['servers', 'обслуживание техработы медленно советуем скрыть lte обход'],
+    ['features', 'экстренно выключить hagezi реклама мошенники автообновление'], ['banner', 'авария баннер шаблон расписание страна'], ['site', 'сайт визитка порядок блоки вопросы faq кнопка'],
+    ['checks', 'проверка серверы пинг доступность'], ['history', 'история вернуть копия экспорт импорт что изменилось'], ['sub', 'домен подписка адрес переезд'], ['hide', 'скрыть vpn банки приложения шаблон']]
+  extra.forEach(([id, words]) => out.push({ id, text: tabInfo(id)[2], where: groupOf(id)[2], el: null, words }))
+  return out
+}
+let qSel = 0
+function runSearch() {
+  const q = $('q').value.trim().toLowerCase(); if (!q) { $('qres').hidden = true; return }
+  qIndex = qIndex || buildIndex()
+  const seen = new Set(), hits = qIndex.filter(x => (x.text + ' ' + (x.words || '')).toLowerCase().includes(q)).filter(x => { const k = x.id + x.text; if (seen.has(k)) return false; seen.add(k); return true }).slice(0, 12)
+  qSel = 0
+  $('qres').innerHTML = hits.length ? hits.map((h, i) => `<button data-i="${i}" class="${i ? '' : 'sel'}">${esc(h.text)}<span>${esc(h.where)}</span></button>`).join('') : '<p>Ничего не нашлось</p>'
+  $('qres').hidden = false; $('qres')._hits = hits
+}
+function goHit(h) {
+  if (!h) return; $('qres').hidden = true; $('q').value = ''; showTab(h.id)
+  if (h.el) { const box = h.el.closest('.block') || h.el; box.scrollIntoView({ behavior: 'smooth', block: 'center' }); box.classList.remove('flash'); void box.offsetWidth; box.classList.add('flash'); const inp = h.el.matches('label.f') ? $(h.el.getAttribute('for')) : null; if (inp) setTimeout(() => inp.focus({ preventScroll: true }), 400) }
+}
+$('q').addEventListener('input', runSearch)
+$('q').addEventListener('keydown', e => {
+  const hits = $('qres')._hits || []
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); qSel = (qSel + (e.key === 'ArrowDown' ? 1 : -1) + hits.length) % Math.max(1, hits.length); $('qres').querySelectorAll('button').forEach((b, i) => b.classList.toggle('sel', i === qSel)) }
+  else if (e.key === 'Enter') { e.preventDefault(); goHit(hits[qSel]) } else if (e.key === 'Escape') { $('qres').hidden = true; $('q').blur() }
+})
+$('qres').addEventListener('mousedown', e => { const b = e.target.closest('[data-i]'); if (b) { e.preventDefault(); goHit($('qres')._hits[+b.dataset.i]) } })
+$('q').addEventListener('blur', () => setTimeout(() => ($('qres').hidden = true), 150))
 $('liveList').onclick = e => { const id = e.target.closest('[data-go]')?.dataset.go; if (id) showTab(id) }
+document.querySelector('[data-tab=home]').addEventListener('click', e => { if (e.target.closest('#liveList, a, button')) return; const id = e.target.closest('#vers [data-go], .relblock')?.dataset.go; if (id) showTab(id) })
+document.querySelector('[data-tab=home]').addEventListener('keydown', e => { if (e.key === 'Enter') { const id = e.target.closest('#vers [data-go]')?.dataset.go; if (id) showTab(id) } })
 $('tpls').innerHTML = TEMPLATES.map(([t], i) => `<button class="pill" data-tpl="${i}">${t}</button>`).join('')
 $('tpls').onclick = e => { const i = e.target.closest('[data-tpl]')?.dataset.tpl; if (i == null) return; banners.unshift(newBanner(TEMPLATES[i][1])); renderBanners(); changed(); toast('Шаблон добавлен первым — проверьте текст и время') }
 $('addBanner').onclick = () => { banners.push(newBanner()); renderBanners(); changed() }
@@ -1250,11 +1461,25 @@ $('unlockBtn').onclick = unlock
 $('pin').onkeydown = e => { if (e.key === 'Enter') unlock() }
 $('forgot').onclick = logout
 $('lock').onclick = lock; $('lock2').onclick = lock; $('logout').onclick = logout
-$('discard').onclick = () => { fillApp(files[APP]?.data); changed(); toast('Изменения отменены') }
+$('discard').onclick = () => { fillApp(files[APP]?.data); changed(); store('apex_admin_draft', null); toast('Изменения отменены') }
+$('undoBtn').onclick = () => undo()
+window.addEventListener('beforeunload', e => { if (!$('app').hidden && ($('savebar').classList.contains('show') || otherDirty().size)) { e.preventDefault(); e.returnValue = '' } })
+document.addEventListener('keydown', e => {
+  if ($('app').hidden) return
+  const k = e.key.toLowerCase(), mod = e.ctrlKey || e.metaKey
+  if (mod && (k === 's' || k === 'ы')) {
+    e.preventDefault()
+    if ($('savebar').classList.contains('show')) return $('saveApp').click()
+    const own = { sub: 'saveSub', hide: 'saveHide', site: 'saveSite', update: 'relSave' }[curTab]
+    if (own && (curTab !== 'update' || $('relBody') === document.activeElement)) return $(own).click()
+    toast('Нечего сохранять')
+  } else if (mod && (k === 'k' || k === 'л')) { e.preventDefault(); $('q').focus(); $('q').select() }
+  else if (mod && (k === 'z' || k === 'я') && !e.shiftKey && !e.target.closest('input, textarea, select')) { e.preventDefault(); undo() }
+})
 $('saveApp').onclick = () => guarded($('saveApp'), async () => {
   if (annId === '' && ($('aTitle').value.trim() || $('aText').value.trim())) annId = 'a' + Date.now().toString(36)
   const data = collectApp(); await putFile(APP, data, 'Пульт: ' + $('saveWhat').textContent.toLowerCase())
-  saved = JSON.stringify(collectApp(true)); changed(); renderVersions(); toast('Сохранено — приложения получат изменения за несколько минут')
+  saved = JSON.stringify(collectApp(true)); store('apex_admin_draft', null); changed(); renderVersions(); toast('Сохранено — приложения получат изменения за несколько минут')
 })
 $('saveSub').onclick = () => guarded($('saveSub'), async () => { await putFile(SUB, collectSub(), 'Пульт: адрес подписки'); toast('Адрес подписки сохранён') })
 $('saveHide').onclick = () => guarded($('saveHide'), async () => {
