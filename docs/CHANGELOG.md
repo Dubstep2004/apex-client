@@ -2,6 +2,13 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.20.9 · 13 ноября 2026
+
+<img src="img/tags/fixed.svg" alt="Исправлено" height="22">
+
+- Ползунок «Затемнение» у своего фото показывал 0%, хотя экран затемнялся на 30% — теперь показывает честно
+- После обновления приложение больше не спрашивает про старые сбои прошлых версий — только про новые
+
 ## 3.20.8 · 13 ноября 2026
 
 <img src="img/tags/new.svg" alt="Новое" height="22">

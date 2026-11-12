@@ -1747,7 +1747,8 @@ private fun PhotoEffects(blur: Int, dim: Int, parallax: Boolean, onChange: (Int,
     var d by remember(dim) { mutableStateOf(dim.toFloat()) }
     Column(Modifier.fillMaxWidth().apexCard().padding(16.dp)) {
         EffectSlider("Размытие", "${b.toInt()}", b, 0f..24f, { b = it }) { onChange(b.toInt(), d.toInt(), parallax) }
-        EffectSlider("Затемнение", "${d.toInt()}%", d, 0f..90f, { d = it }) { onChange(b.toInt(), d.toInt(), parallax) }
+        // 3.20.9: как на главном экране — не меньше MIN_DIM (раньше ползунок показывал 0%, а экран всё равно затемнял на 30%)
+        EffectSlider("Затемнение", "${d.toInt().coerceAtLeast(MIN_DIM)}%", d.coerceAtLeast(MIN_DIM.toFloat()), MIN_DIM.toFloat()..90f, { d = it }) { onChange(b.toInt(), d.toInt().coerceAtLeast(MIN_DIM), parallax) }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("Движение при наклоне", color = Apex.Text, fontSize = 15.sp)

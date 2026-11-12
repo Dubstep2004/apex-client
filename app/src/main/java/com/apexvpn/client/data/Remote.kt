@@ -340,7 +340,9 @@ object CrashReporter {
     fun hasNew(context: Context): Boolean = runCatching {
         val last = dir(context).listFiles().orEmpty().filter { it.name.startsWith("crash-") }.maxOfOrNull { it.lastModified() } ?: return@runCatching false
         val seenAt = seen(context).takeIf { it.exists() }?.readText()?.trim()?.toLongOrNull() ?: 0L
-        last > seenAt
+        // 3.20.9: сбои старых версий (до последнего обновления) не показываем — их уже исправили
+        val updatedAt = runCatching { context.packageManager.getPackageInfo(context.packageName, 0).lastUpdateTime }.getOrDefault(0L)
+        last > maxOf(seenAt, updatedAt)
     }.getOrDefault(false)
 
     fun markSeen(context: Context) { runCatching { seen(context).writeText(System.currentTimeMillis().toString()) } }
