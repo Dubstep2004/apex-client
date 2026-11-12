@@ -44,6 +44,7 @@ fun DesignBackground(modifier: Modifier = Modifier) {
         Backdrop.Cosmos -> CosmosBackground(modifier, p)
         Backdrop.Japan -> Canvas(modifier.fillMaxSize()) { drawJapan(p) }
         Backdrop.Carbon, Backdrop.Sakura, Backdrop.Matrix, Backdrop.Luxe, Backdrop.Ocean, Backdrop.Custom -> NewBackdrop(p.backdrop, modifier, p)
+        Backdrop.Sunset, Backdrop.Forest, Backdrop.Arctic, Backdrop.Mocha -> NewBackdrop3(p.backdrop, modifier, p)
     }
 }
 

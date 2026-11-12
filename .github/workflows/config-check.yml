@@ -23,6 +23,13 @@ jobs:
           done
           jq -e '.hosts | type == "array" and length > 0' docs/config/subscription.json >/dev/null || { echo "::error file=docs/config/subscription.json::нужен непустой список hosts"; ok=0; }
           jq -e '.packages | type == "array"' docs/templates/hide-vpn.json >/dev/null || { echo "::error file=docs/templates/hide-vpn.json::нужен список packages"; ok=0; }
+          # 3.19.7: каталог живых обоев — у каждой записи id и ссылка, файлы из репозитория на месте
+          if [ -f docs/config/wallpapers.json ]; then
+            jq -e '.live | type == "array"' docs/config/wallpapers.json >/dev/null || { echo "::error file=docs/config/wallpapers.json::нужен список live"; ok=0; }
+            for u in $(jq -r '.live[] | .url, (.thumb // empty)' docs/config/wallpapers.json); do
+              case "$u" in https://*) ;; *..*|*://*) echo "::error file=docs/config/wallpapers.json::плохая ссылка $u"; ok=0 ;; *) [ -f "docs/$u" ] || { echo "::error file=docs/config/wallpapers.json::нет файла docs/$u"; ok=0; } ;; esac
+            done
+          fi
           if [ -f docs/config/app.json ]; then
             jq -e '(.banner.text // "" | length) <= 300' docs/config/app.json >/dev/null || { echo "::error file=docs/config/app.json::баннер длиннее 300 символов"; ok=0; }
             jq -e '[.links // {} | .[] | select(. != "" and (startswith("https://") | not))] | length == 0' docs/config/app.json >/dev/null || { echo "::error file=docs/config/app.json::ссылки должны начинаться с https://"; ok=0; }

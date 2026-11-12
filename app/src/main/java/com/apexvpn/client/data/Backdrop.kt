@@ -10,20 +10,24 @@ import java.io.File
 object Backdrop {
     private const val MAX = 1600
 
-    private fun file(context: Context) = File(context.filesDir, "backdrop.jpg")
+    fun file(context: Context) = File(context.filesDir, "backdrop.jpg")
 
     fun load(context: Context): Bitmap? = runCatching {
         file(context).takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path) }
     }.getOrNull()
 
     /** Копирует выбранное фото (уменьшая до 1600 px), true — получилось. */
-    fun save(context: Context, uri: Uri): Boolean = runCatching {
-        val cr = context.contentResolver
+    fun save(context: Context, uri: Uri): Boolean = save(context) { context.contentResolver.openInputStream(uri) }
+
+    /** 3.19.7. Обои из интернета: уже скачанный файл. */
+    fun save(context: Context, file: File): Boolean = save(context) { file.inputStream() }
+
+    private fun save(context: Context, open: () -> java.io.InputStream?): Boolean = runCatching {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        cr.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+        open()?.use { BitmapFactory.decodeStream(it, null, bounds) }
         var sample = 1
         while (bounds.outWidth / sample > MAX * 2 || bounds.outHeight / sample > MAX * 2) sample *= 2
-        val bmp = cr.openInputStream(uri)?.use {
+        val bmp = open()?.use {
             BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sample })
         } ?: return@runCatching false
         val scale = minOf(1f, MAX.toFloat() / maxOf(bmp.width, bmp.height))

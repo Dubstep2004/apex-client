@@ -28,6 +28,7 @@ fun signingValue(key: String, env: String): String? =
     keystoreProps.getProperty(key) ?: System.getenv(env)
 
 android {
+    testOptions { unitTests.isReturnDefaultValues = true }
     namespace = "com.apexvpn.client"
     compileSdk = 35
 
@@ -35,8 +36,8 @@ android {
         applicationId = "com.apexvpn.client"
         minSdk = 24
         targetSdk = 35
-        versionCode = 118
-        versionName = "3.19.6"
+        versionCode = 119
+        versionName = "3.19.7"
 
         buildConfigField("String", "SUBSCRIPTION_HOST", "\"$subscriptionHost\"")
         buildConfigField("String", "RULES_BASE_URL", "\"$rulesBaseUrl\"")
@@ -126,4 +127,8 @@ dependencies {
     implementation("com.google.android.gms:play-services-wearable:19.0.0")
     // Google Play Services тянет старый Fragment 1.0 — поднимаем (иначе ломаются запросы разрешений)
     implementation("androidx.fragment:fragment-ktx:1.8.5")
+
+    // 3.19.7. Автотесты логики (настройки из пульта, версии, объявления) — запускаются перед каждой сборкой
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303")
 }

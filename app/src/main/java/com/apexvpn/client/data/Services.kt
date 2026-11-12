@@ -143,6 +143,11 @@ enum class AccentColor(val id: String, val title: String, val argb: Long) {
     Green("green", "Зелёный", 0xFF22C55E),
     Turquoise("turquoise", "Бирюзовый", 0xFF14B8C4),
     Pink("pink", "Розовый", 0xFFEC4899),
+    /** 3.19.7. Новые цвета */
+    Orange("orange", "Оранжевый", 0xFFF97316),
+    Red("red", "Красный", 0xFFEF4444),
+    Amber("amber", "Янтарный", 0xFFF59E0B),
+    Indigo("indigo", "Индиго", 0xFF6366F1),
     /** 216. Любой цвет: значение в Settings.customAccent */
     Custom("custom", "Свой", 0xFF7B6CFF);
 
@@ -186,6 +191,11 @@ enum class Design(val id: String, val title: String, val subtitle: String) {
     Matrix("matrix", "Матрица", "Зелёный дождь символов на чёрном"),
     Luxe("luxe", "Люкс", "Чёрный бархат и золото"),
     Ocean("ocean", "Океан", "Глубокая синева и медленные волны"),
+    /** 3.19.7. Новые дизайны */
+    Sunset("sunset", "Закат", "Сливовое небо, тёплый горизонт и низкое солнце"),
+    Forest("forest", "Лес", "Хвоя, туман и янтарный свет"),
+    Arctic("arctic", "Арктика", "Светлый лёд и холодный синий"),
+    Mocha("mocha", "Мокко", "Тёплый кофе, сливки и карамель"),
     /** 3.13. Свой дизайн: цвета, скругления, стекло — в «Оформлении» */
     Custom("custom", "Свой дизайн", "Ваши цвета, скругления и стекло"),
     /** 387. Секретная тема — открывается 7 нажатиями на логотип */

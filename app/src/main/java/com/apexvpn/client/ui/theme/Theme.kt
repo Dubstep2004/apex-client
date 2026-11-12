@@ -23,7 +23,7 @@ import com.apexvpn.client.data.Design
 import com.apexvpn.client.data.ThemeMode
 
 /** Чем закрашен фон экранов. */
-enum class Backdrop { Solid, Glass, Aurora, Neon, Terminal, Pastel, Apex2, Steampunk, Synthwave, Cosmos, Japan, Carbon, Sakura, Matrix, Luxe, Ocean, Custom }
+enum class Backdrop { Solid, Glass, Aurora, Neon, Terminal, Pastel, Apex2, Steampunk, Synthwave, Cosmos, Japan, Carbon, Sakura, Matrix, Luxe, Ocean, Custom, Sunset, Forest, Arctic, Mocha }
 
 /** Всё, что определяет внешний вид: цвета, форма карточек, фон, шрифт, раскладка главного экрана. */
 data class Palette(
@@ -512,6 +512,10 @@ private fun basePaletteFor(
         Design.Matrix -> matrixPalette()
         Design.Luxe -> luxePalette()
         Design.Ocean -> oceanPalette()
+        Design.Sunset -> sunsetPalette()
+        Design.Forest -> forestPalette()
+        Design.Arctic -> arcticPalette()
+        Design.Mocha -> mochaPalette()
         Design.Custom -> customPalette(CustomSpec())
     }
 }

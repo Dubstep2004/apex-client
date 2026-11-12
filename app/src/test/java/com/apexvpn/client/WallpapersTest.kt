@@ -1,0 +1,57 @@
+package com.apexvpn.client
+
+import com.apexvpn.client.data.Wallpapers
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import java.io.File
+
+/** Каталог живых обоев (пульт → docs/config/wallpapers.json) и ответ Wikimedia Commons. */
+class WallpapersTest {
+    @Test fun realCatalogFromRepo() {
+        val f = listOf(File("../docs/config/wallpapers.json"), File("docs/config/wallpapers.json")).firstOrNull { it.exists() } ?: return
+        val list = Wallpapers.parseCatalog(f.readText())
+        assertTrue("каталог обоев пустой или битый", list.isNotEmpty())
+        list.forEach { w ->
+            if (!w.url.startsWith("https://")) {
+                val file = listOf(File("../docs/" + w.url), File("docs/" + w.url)).firstOrNull { it.exists() }
+                assertTrue("нет файла docs/${w.url}", file != null)
+            }
+        }
+    }
+
+    @Test fun catalogFiltersBadItems() {
+        val list = Wallpapers.parseCatalog("""{"live":[{"id":"ok","title":"Да","url":"wallpapers/a.mp4"},{"id":"Bad id","url":"x"},
+            {"id":"nourl"},{"id":"hid","url":"x.mp4","hidden":true},{"id":"ok","url":"dup.mp4"}]}""")
+        assertEquals(listOf("ok"), list.map { it.id })
+        assertEquals(emptyList<Wallpapers.Live>(), Wallpapers.parseCatalog("не json"))
+    }
+
+    @Test fun sourcesAreSafe() {
+        assertEquals(listOf("https://x.ru/a.mp4"), Wallpapers.sources("https://x.ru/a.mp4"))
+        assertTrue(Wallpapers.sources("http://x.ru/a.mp4").isEmpty())
+        assertTrue(Wallpapers.sources("../../etc").isEmpty())
+        assertTrue(Wallpapers.sources("wallpapers/a.mp4").all { it.startsWith("https://") && it.endsWith("/wallpapers/a.mp4") })
+        assertEquals("video:net:mesh", Wallpapers.key("mesh")); assertEquals("mesh", Wallpapers.idOf("video:net:mesh"))
+    }
+
+    @Test fun commonsAnswer() {
+        val json = """{"query":{"pages":{"5":{"index":2,"title":"File:Alps.jpg","imageinfo":[{"mime":"image/jpeg","url":"https://upload.wikimedia.org/a/Alps.jpg",
+            "thumburl":"https://upload.wikimedia.org/thumb/a/Alps.jpg/360px-Alps.jpg","extmetadata":{"Artist":{"value":"<a href='x'>Анна</a>"},"LicenseShortName":{"value":"CC BY-SA 4.0"}}}]},
+            "6":{"index":1,"title":"File:Map.svg","imageinfo":[{"mime":"image/svg+xml","thumburl":"https://x/360px-Map.png"}]}}}}"""
+        val p = Wallpapers.parsePhotos(json)
+        assertEquals(1, p.size)
+        assertEquals("Alps", p[0].title)
+        assertEquals("https://upload.wikimedia.org/thumb/a/Alps.jpg/1600px-Alps.jpg", p[0].full)
+        assertEquals("Анна · CC BY-SA 4.0", p[0].author)
+    }
+
+    @Test fun wallhavenOnlySafe() {
+        val json = """{"data":[{"purity":"sfw","path":"https://w.wallhaven.cc/full/ab/wallhaven-ab.jpg","resolution":"1080x1920","thumbs":{"original":"https://th.wallhaven.cc/orig/ab/ab.jpg"}},
+            {"purity":"sketchy","path":"https://w.wallhaven.cc/full/cd/x.jpg"},{"purity":"sfw","path":"http://bad"}]}"""
+        val p = Wallpapers.parseWallhaven(json)
+        assertEquals(1, p.size)
+        assertEquals("https://th.wallhaven.cc/orig/ab/ab.jpg", p[0].thumb)
+        assertTrue(Wallpapers.photoTopics.any { it.title == "Аниме" } && Wallpapers.photoTopics.any { it.title == "Игры" })
+    }
+}

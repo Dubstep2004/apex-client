@@ -78,6 +78,11 @@ object LiveVideos {
             val f = ownFile(context)
             if (!f.exists()) return null
             mp.setDataSource(f.absolutePath)
+        } else if (backdrop.startsWith("video:net:")) {
+            // 3.19.7. Живые обои из интернета — скачанный файл
+            val f = com.apexvpn.client.data.Wallpapers.file(context, backdrop.removePrefix("video:net:"))
+            if (!f.exists()) return null
+            mp.setDataSource(f.absolutePath)
         } else {
             val id = backdrop.removePrefix("video:")
             if (templates.none { it.id == id }) return null

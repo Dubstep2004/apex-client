@@ -1,0 +1,88 @@
+{
+  "live": [
+    {
+      "id": "neoncity",
+      "title": "Неон-город",
+      "url": "wallpapers/live/neoncity.mp4",
+      "thumb": "wallpapers/live/neoncity.jpg",
+      "sizeMb": 1.1
+    },
+    {
+      "id": "pixelsunset",
+      "title": "Пиксель-закат",
+      "url": "wallpapers/live/pixelsunset.mp4",
+      "thumb": "wallpapers/live/pixelsunset.jpg",
+      "sizeMb": 0.1
+    },
+    {
+      "id": "sakura",
+      "title": "Сакура ночью",
+      "url": "wallpapers/live/sakura.mp4",
+      "thumb": "wallpapers/live/sakura.jpg",
+      "sizeMb": 1.6
+    },
+    {
+      "id": "pixelspace",
+      "title": "Пиксель-космос",
+      "url": "wallpapers/live/pixelspace.mp4",
+      "thumb": "wallpapers/live/pixelspace.jpg",
+      "sizeMb": 0.9
+    },
+    {
+      "id": "aurora2",
+      "title": "Полярное сияние",
+      "url": "wallpapers/live/aurora2.mp4",
+      "thumb": "wallpapers/live/aurora2.jpg",
+      "sizeMb": 1.6
+    },
+    {
+      "id": "nebula",
+      "title": "Туманность",
+      "url": "wallpapers/live/nebula.mp4",
+      "thumb": "wallpapers/live/nebula.jpg",
+      "sizeMb": 4.9
+    },
+    {
+      "id": "hyper",
+      "title": "Гиперпрыжок",
+      "url": "wallpapers/live/hyper.mp4",
+      "thumb": "wallpapers/live/hyper.jpg",
+      "sizeMb": 5.1
+    },
+    {
+      "id": "waves",
+      "title": "Неоновые волны",
+      "url": "wallpapers/live/waves.mp4",
+      "thumb": "wallpapers/live/waves.jpg",
+      "sizeMb": 3.0
+    },
+    {
+      "id": "bokeh",
+      "title": "Боке",
+      "url": "wallpapers/live/bokeh.mp4",
+      "thumb": "wallpapers/live/bokeh.jpg",
+      "sizeMb": 2.7
+    },
+    {
+      "id": "fireflies",
+      "title": "Светлячки",
+      "url": "wallpapers/live/fireflies.mp4",
+      "thumb": "wallpapers/live/fireflies.jpg",
+      "sizeMb": 1.2
+    },
+    {
+      "id": "lava",
+      "title": "Лава-лампа",
+      "url": "wallpapers/live/lava.mp4",
+      "thumb": "wallpapers/live/lava.jpg",
+      "sizeMb": 2.0
+    },
+    {
+      "id": "mesh",
+      "title": "Переливы",
+      "url": "wallpapers/live/mesh.mp4",
+      "thumb": "wallpapers/live/mesh.jpg",
+      "sizeMb": 3.3
+    }
+  ]
+}

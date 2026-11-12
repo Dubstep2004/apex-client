@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@600;700&display=swap" rel="stylesheet">
 <style>
-  /* Оформления пульта: Ночь (по умолчанию), День, Аврора, Океан, Графит */
+  /* Оформления пульта: Ночь (по умолчанию), День, Аврора, Океан, Графит; 2.11 — Закат, Лес, Арктика, Мокко (как в приложении 3.19.7) */
   :root {
     --ink: #0e1220; --panel: #161b2e; --panel2: #1d2340; --line: #262d4a; --field: #0e1220;
     --text: #eef1fa; --dim: #8c93b0; --faint: #5b6283;
@@ -48,6 +48,26 @@
     --text: #f2f2f2; --dim: #9a9a9a; --faint: #666; --go1: #f2f2f2; --go2: #bdbdbd; --go-ink: #111;
     --glow1: transparent; --glow2: transparent;
   }
+  :root[data-design="sunset"] {
+    --ink: #1a0e26; --panel: #26142f; --panel2: #33193d; --line: #46224f; --field: #150b1f;
+    --text: #fff1e8; --dim: #c9a3ae; --faint: #8a6475; --go1: #ff7a59; --go2: #ffb547; --go-ink: #2a0c06;
+    --glow1: #ffb54726; --glow2: #ff7a5922;
+  }
+  :root[data-design="forest"] {
+    --ink: #08140f; --panel: #10231a; --panel2: #163024; --line: #1f3d2f; --field: #06100b;
+    --text: #eaf5ec; --dim: #8faf98; --faint: #5a7a64; --go1: #5cc98a; --go2: #e9b44c; --go-ink: #0a1d12;
+    --glow1: #e9b44c1c; --glow2: #5cc98a1c;
+  }
+  :root[data-design="arctic"] {
+    --ink: #f1f6fb; --panel: #ffffff; --panel2: #e4eef7; --line: #d3e2f0; --field: #f7fbfe;
+    --text: #0f1e2e; --dim: #5b7085; --faint: #8ea2b5; --go1: #2f7bef; --go2: #1aa6d6; --go-ink: #ffffff; --warn-text: #a8660a;
+    --glow1: #5fd0f52e; --glow2: #2f7bef14; --shadow: #1a3a5a22; color-scheme: light;
+  }
+  :root[data-design="mocha"] {
+    --ink: #16100c; --panel: #221913; --panel2: #2d2119; --line: #3b2c21; --field: #120d09;
+    --text: #f6ebdd; --dim: #b09a85; --faint: #7a6654; --go1: #d9a066; --go2: #f0d2a8; --go-ink: #24160a;
+    --glow1: #d9a06622; --glow2: #f0d2a812;
+  }
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
   body {
@@ -68,7 +88,7 @@
   .brand b { font-family: var(--display); font-size: 17px; display: block; }
   .brand span { color: var(--dim); font-size: 12.5px; display: block; }
   .icon-btn { margin-left: auto; border: 1px solid var(--line); background: var(--panel); border-radius: 12px; width: 38px; height: 38px; cursor: pointer; font-size: 16px; flex: 0 0 auto; }
-  .designs { position: absolute; top: 48px; right: 0; z-index: 25; background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 8px; width: 230px; box-shadow: 0 20px 50px var(--shadow); }
+  .designs { position: absolute; top: 48px; right: 0; z-index: 25; background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 8px; width: 230px; max-height: min(70vh, 520px); overflow: auto; box-shadow: 0 20px 50px var(--shadow); }
   .designs button { display: flex; align-items: center; gap: 12px; width: 100%; border: 0; background: none; border-radius: 12px; padding: 9px 10px; cursor: pointer; text-align: left; font-weight: 700; }
   .designs button:hover, .designs button.on { background: var(--panel2); }
   .designs i { width: 26px; height: 26px; border-radius: 50%; flex: 0 0 auto; border: 2px solid #ffffff22; }
@@ -124,6 +144,11 @@
   .tog input:focus-visible + i { outline: 2px solid var(--go2); outline-offset: 2px; }
 
   .item { border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px; margin: 0 0 12px; background: var(--panel); }
+  .wall { display: grid; grid-template-columns: 54px 1fr auto; gap: 12px; align-items: start; }
+  .wall img, .wall .noimg { width: 54px; height: 81px; object-fit: cover; border-radius: 10px; background: var(--panel2); display: block; }
+  .wall > * { min-width: 0; } .wall .f2 { display: grid; gap: 6px; } .wall .f2 input { padding: 9px 12px; min-width: 0; width: 100%; }
+  .wall .ctl { display: grid; gap: 2px; justify-items: center; }
+  .wall label.hid { display: flex; gap: 6px; align-items: center; color: var(--dim); font-size: 13px; }
   .item-head { display: flex; align-items: center; gap: 10px; margin: 0 0 4px; }
   .item-head b { flex: 1; font-weight: 700; }
   .badge { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 99px; background: var(--panel2); color: var(--dim); }
@@ -589,6 +614,21 @@
       <p class="help">Сайт подхватывает изменения за 1–5 минут. Английская версия берёт порядок и включённые блоки, тексты на ней свои.</p>
     </section>
 
+    <!-- Обои (2.11) -->
+    <section data-tab="walls" hidden>
+      <h1>Живые обои из интернета</h1>
+      <p class="lead">Каталог в приложении: «Настройки → Оформление → Живые обои из интернета» (с 3.19.7). Пользователь нажимает — видео скачивается, ненужные он удаляет сам.</p>
+      <div class="block"><h2>Каталог</h2><p class="note">Порядок — как в приложении. Скрытые не показываются, но у тех, кто уже скачал, остаются.</p>
+        <div id="wallList"></div>
+        <button class="add" id="wallAdd">Добавить обои по ссылке</button>
+      </div>
+      <div class="block"><h2>Где брать видео</h2>
+        <p class="note">Нужна прямая ссылка https://…/файл.mp4 (не страница сайта), вертикальное видео 1080×1920, 5–15 секунд, до 20 МБ. Подойдут бесплатные видео без обязательной подписи автора — Pexels, Pixabay, Mixkit: «Скачать» → правой кнопкой «Копировать адрес ссылки». Или положите файл в репозиторий в <code>docs/wallpapers/</code> и укажите путь <code>wallpapers/имя.mp4</code>.</p>
+      </div>
+      <button class="btn go" id="saveWalls" style="width:100%">Сохранить обои</button>
+      <p class="help">Приложения увидят новый каталог при следующем открытии «Оформления».</p>
+    </section>
+
     <!-- Справка -->
     <section data-tab="help" hidden class="helpdoc">
       <h1>Справка для владельца</h1>
@@ -636,6 +676,7 @@
           <tr><td>Функции</td><td>Экстренно выключить LTE-автопереход, HaGeZi, защиту от мошенников, автоустановку обновлений</td></tr>
           <tr><td>Предпросмотр</td><td>Черновики видны только на вашем телефоне</td></tr>
           <tr><td>История</td><td>Все сохранения, «Что изменилось» (было/стало), «Вернуть» прошлую версию, резервная копия в файл и загрузка из файла</td></tr>
+          <tr><td>Обои</td><td>Каталог живых обоев в приложении (с 3.19.7): добавить по ссылке на .mp4, порядок, скрыть, убрать. Картинки (аниме, игры, природа) пользователь ищет в приложении сам</td></tr>
           <tr><td>Визитка</td><td>Заголовок сайта, своя кнопка («Купить подписку»), счётчик и статус, какие блоки показывать и в каком порядке (перетаскиванием), свои вопросы и ответы</td></tr>
           <tr><td>Проверка</td><td>Открываются ли подписка и поддержка, дошёл ли файл до GitHub и зеркала. «Серверы» — грубая проверка адресов, список только в этом браузере</td></tr>
         </table></div>
@@ -773,7 +814,7 @@
 
       <div class="block"><details><summary>🆕 Что нового в пульте</summary>
         <div class="tbl"><table>
-          <tr><td>2.11</td><td>Карточка «Состояние» на «Обзоре» и красная полоса, если сборка или проверка упала. В справке: поиск, «Развернуть/Свернуть всё», готовые ответы пользователям, раздел про автопроверки, схемы, кнопки перехода на вкладки, шпаргалка для печати. Иконка 🏠 у «Обзора», поле поиска в цвет пульта</td></tr>
+          <tr><td>2.11</td><td>Новые оформления: Закат, Лес, Арктика, Мокко (🎨 в шапке) — такие же есть в приложении с 3.19.7. Вкладка «Обои» — каталог живых обоев приложения. Карточка «Состояние» на «Обзоре» и красная полоса, если сборка или проверка упала. В справке: поиск, «Развернуть/Свернуть всё», готовые ответы пользователям, раздел про автопроверки, схемы, кнопки перехода на вкладки, шпаргалка для печати. Иконка 🏠 у «Обзора», поле поиска в цвет пульта</td></tr>
           <tr><td>2.10</td><td>Название APEX CLIENT, своя иконка пульта, кнопка «Переименовать все версии», вкладка «Визитка», описание версии, проверка серверов</td></tr>
           <tr><td>2.6–2.9</td><td>Меню по группам и нижнее меню на телефоне, свой порядок вкладок, поиск, Ctrl+S и Ctrl+Z, черновики, предупреждение о сроке токена, предпросмотр на телефоне, ТВ и часах, пометки серверов по расписанию</td></tr>
           <tr><td>2.0–2.5</td><td>Вход по PIN, баннеры, объявление, серверы, обновления, функции, история с откатом</td></tr>
@@ -837,13 +878,18 @@
 'use strict'
 const PANEL_VERSION = '2.11', PANEL_DATE = '12 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
-const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json'
+const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
+let walls = [], wallsSaved = ''
 const DESIGNS = [
   ['night', 'Ночь', 'Тёмный, как приложение', 'linear-gradient(135deg,#2fd38b,#18b6c9)'],
   ['day', 'День', 'Светлый', 'linear-gradient(135deg,#ffffff,#d7dcea)'],
   ['aurora', 'Аврора', 'Фиолетовый и розовый', 'linear-gradient(135deg,#b06cff,#ff6cc4)'],
   ['ocean', 'Океан', 'Тёмно-синий', 'linear-gradient(135deg,#3fa9ff,#5ee7ff)'],
   ['graphite', 'Графит', 'Строгий, без цвета', 'linear-gradient(135deg,#f2f2f2,#6a6a6a)'],
+  ['sunset', 'Закат', 'Слива и тёплый горизонт', 'linear-gradient(135deg,#4a1a3e,#ff7a59 60%,#ffb547)'],
+  ['forest', 'Лес', 'Хвоя и янтарь', 'linear-gradient(135deg,#163024,#5cc98a 60%,#e9b44c)'],
+  ['arctic', 'Арктика', 'Светлый лёд и синий', 'linear-gradient(135deg,#ffffff,#5fd0f5 60%,#2f7bef)'],
+  ['mocha', 'Мокко', 'Кофе и карамель', 'linear-gradient(135deg,#2d2119,#d9a066 60%,#f0d2a8)'],
 ]
 const FEATURES = [
   ['whitelistAuto', 'Белые списки', 'Автопереход на LTE-обход, когда оператор включает белые списки'],
@@ -853,11 +899,11 @@ const FEATURES = [
 ]
 const TABS = [['home', '🏠', 'Обзор'], ['banner', '📢', 'Баннеры'], ['servers', '🖥', 'Серверы'], ['announce', '🪧', 'Объявление'],
   ['links', '🔗', 'Ссылки'], ['update', '📦', 'Обновления'], ['features', '⚙️', 'Функции'], ['preview', '👁', 'Предпросмотр'],
-  ['history', '🕘', 'История'], ['checks', '🩺', 'Проверка'], ['sub', '🔐', 'Подписка'], ['hide', '🧩', 'Скрыть VPN'], ['site', '🌐', 'Визитка'], ['help', '📖', 'Справка']]
+  ['history', '🕘', 'История'], ['checks', '🩺', 'Проверка'], ['sub', '🔐', 'Подписка'], ['hide', '🧩', 'Скрыть VPN'], ['site', '🌐', 'Визитка'], ['walls', '🖼', 'Обои'], ['help', '📖', 'Справка']]
 // 2.6: группы меню (и нижнее меню на телефоне)
 const GROUPS = [
   ['main', '🏠', 'Обзор', ['home']],
-  ['users', '📣', 'Пользователям', ['banner', 'announce', 'site']],
+  ['users', '📣', 'Пользователям', ['banner', 'announce', 'walls', 'site']],
   ['srv', '🖥', 'Серверы', ['servers', 'checks']],
   ['app', '📦', 'Приложение', ['update', 'features', 'links', 'preview', 'sub', 'hide']],
   ['more', '☰', 'Сервис', ['history', 'help']],
@@ -1090,6 +1136,7 @@ function otherDirty() {
   const d = new Set()
   if (files[SUB]) { try { if (JSON.stringify(collectSub()) !== JSON.stringify(files[SUB].data || null)) d.add('sub') } catch { if ($('sHosts').value.trim() || (files[SUB].data?.hosts || []).length) d.add('sub') } }
   if (typeof siteSaved === 'string' && siteSaved && JSON.stringify(collectSite()) !== siteSaved) d.add('site')
+  if (typeof wallsSaved === 'string' && wallsSaved && JSON.stringify(collectWalls()) !== wallsSaved) d.add('walls')
   if (files[HIDE] && $('hideJson').value.trim() && $('hideJson').value.trim() !== JSON.stringify(files[HIDE].data, null, 2).trim()) d.add('hide')
   return d
 }
@@ -1425,9 +1472,9 @@ function showTab(id) {
   preview(collectApp(true))
 }
 async function loadAll() {
-  const [app, sub, hide, site] = await Promise.all([getFile(APP), getFile(SUB), getFile(HIDE), getFile(SITE)])
+  const [app, sub, hide, site, wl] = await Promise.all([getFile(APP), getFile(SUB), getFile(HIDE), getFile(SITE), getFile(WALLS)])
   fillApp(app); saved = JSON.stringify(collectApp(true)); undoStack = [saved]; offerDraft(); changed()
-  fillSub(sub); $('hideJson').value = hide ? JSON.stringify(hide, null, 2) : ''; fillSite(site)
+  fillSub(sub); $('hideJson').value = hide ? JSON.stringify(hide, null, 2) : ''; fillSite(site); fillWalls(wl)
   renderVersions(); loadReleases(); loadCI()
 }
 let retryBtn = null
@@ -1518,7 +1565,7 @@ function buildIndex() {
   })
   const extra = [['update', 'обязательное обновление отзыв версия релиз описание'], ['preview', 'код предпросмотра черновик'], ['servers', 'обслуживание техработы медленно советуем скрыть lte обход'],
     ['features', 'экстренно выключить hagezi реклама мошенники автообновление'], ['banner', 'авария баннер шаблон расписание страна'], ['site', 'сайт визитка порядок блоки вопросы faq кнопка'],
-    ['checks', 'проверка серверы пинг доступность'], ['history', 'история вернуть копия экспорт импорт что изменилось'], ['sub', 'домен подписка адрес переезд'], ['hide', 'скрыть vpn банки приложения шаблон']]
+    ['checks', 'проверка серверы пинг доступность'], ['walls', 'обои живые видео фон каталог скачать'], ['history', 'история вернуть копия экспорт импорт что изменилось'], ['sub', 'домен подписка адрес переезд'], ['hide', 'скрыть vpn банки приложения шаблон']]
   extra.forEach(([id, words]) => out.push({ id, text: tabInfo(id)[2], where: groupOf(id)[2], el: null, words }))
   // 2.11: разделы справки ищутся по всему тексту («техработы» → нужный раздел)
   document.querySelectorAll('section[data-tab=help] > .block').forEach(b => { const h = b.querySelector('summary, h2'); if (h) out.push({ id: 'help', text: h.textContent.trim(), where: 'Справка', el: h, words: b.textContent.replace(/\s+/g, ' ') }) })
@@ -1537,6 +1584,39 @@ function goHit(h) {
   if (!h) return; $('qres').hidden = true; $('q').value = ''; showTab(h.id)
   if (h.el) { const d = h.el.closest('details'); if (d) d.open = true; const box = h.el.closest('.block') || h.el; box.scrollIntoView({ behavior: 'smooth', block: 'center' }); box.classList.remove('flash'); void box.offsetWidth; box.classList.add('flash'); const inp = h.el.matches('label.f') ? $(h.el.getAttribute('for')) : null; if (inp) setTimeout(() => inp.focus({ preventScroll: true }), 400) }
 }
+
+// ── 2.11: каталог живых обоев (docs/config/wallpapers.json)
+const wallSrc = u => /^https:\/\//.test(u) ? u : (u ? '../' + u.replace(/^\/+/, '') : '')
+function fillWalls(c) { walls = (c?.live || []).map(w => ({ ...w })); wallsSaved = JSON.stringify(collectWalls()); renderWalls() }
+function collectWalls() { return { live: walls.map(w => { const o = { id: w.id, title: w.title || w.id, url: w.url }; if (w.thumb) o.thumb = w.thumb; if (w.sizeMb) o.sizeMb = w.sizeMb; if (w.hidden) o.hidden = true; return o }) } }
+function renderWalls() {
+  $('wallList').innerHTML = walls.length ? walls.map((w, i) => `<div class="item wall" data-i="${i}">
+    ${w.thumb ? `<img src="${esc(wallSrc(w.thumb))}" alt="" loading="lazy">` : '<span class="noimg"></span>'}
+    <div class="f2"><input data-k="title" maxlength="30" value="${esc(w.title)}" placeholder="Название" aria-label="Название обоев">
+      <input data-k="url" value="${esc(w.url)}" placeholder="https://…/video.mp4 или wallpapers/имя.mp4" aria-label="Ссылка на видео">
+      <label class="hid"><input type="checkbox" data-k="hidden" ${w.hidden ? 'checked' : ''}> Скрыть в приложении</label></div>
+    <div class="ctl"><button class="x" data-up title="Выше" aria-label="Выше">↑</button><button class="x" data-down title="Ниже" aria-label="Ниже">↓</button><button class="x" data-del title="Удалить" aria-label="Удалить обои">×</button></div>
+  </div>`).join('') : '<p class="help">Каталог пуст — в приложении будут только встроенные живые видео.</p>'
+}
+$('wallList').addEventListener('input', e => { const i = +e.target.closest('[data-i]')?.dataset.i, k = e.target.dataset.k; if (isNaN(i) || !k) return; walls[i][k] = e.target.type === 'checkbox' ? e.target.checked : e.target.value; changedDots() })
+$('wallList').addEventListener('click', e => {
+  const box = e.target.closest('[data-i]'); if (!box) return; const i = +box.dataset.i
+  if (e.target.closest('[data-del]')) { if (!confirm('Убрать «' + (walls[i].title || walls[i].id) + '» из каталога?')) return; walls.splice(i, 1) }
+  else if (e.target.closest('[data-up]') && i > 0) [walls[i - 1], walls[i]] = [walls[i], walls[i - 1]]
+  else if (e.target.closest('[data-down]') && i < walls.length - 1) [walls[i + 1], walls[i]] = [walls[i], walls[i + 1]]
+  else return
+  renderWalls(); changedDots()
+})
+$('wallAdd').onclick = () => {
+  let id = 'w' + Date.now().toString(36); walls.push({ id, title: 'Новые обои', url: '' }); renderWalls(); changedDots()
+  $('wallList').lastElementChild.querySelector('[data-k=url]').focus()
+}
+$('saveWalls').onclick = () => guarded($('saveWalls'), async () => {
+  const c = collectWalls()
+  const bad = c.live.find(w => !w.url || (/^[a-z]+:/i.test(w.url) && !/^https:\/\//.test(w.url)) || w.url.includes('..'))
+  if (bad) throw new Error('У «' + bad.title + '» нужна ссылка https://…/файл.mp4 или путь wallpapers/имя.mp4')
+  await putFile(WALLS, c, 'Пульт: обои'); wallsSaved = JSON.stringify(c); changedDots(); toast('Обои сохранены — приложения увидят их при открытии «Оформления»')
+})
 
 // ── 2.11: справка — поиск, развернуть/свернуть, копирование ответов, переходы, шпаргалка
 const helpSec = document.querySelector('section[data-tab=help]')
@@ -1702,7 +1782,7 @@ document.addEventListener('keydown', e => {
   if (mod && (k === 's' || k === 'ы')) {
     e.preventDefault()
     if ($('savebar').classList.contains('show')) return $('saveApp').click()
-    const own = { sub: 'saveSub', hide: 'saveHide', site: 'saveSite', update: 'relSave' }[curTab]
+    const own = { sub: 'saveSub', hide: 'saveHide', site: 'saveSite', walls: 'saveWalls', update: 'relSave' }[curTab]
     if (own && (curTab !== 'update' || $('relBody') === document.activeElement)) return $(own).click()
     toast('Нечего сохранять')
   } else if (mod && (k === 'k' || k === 'л')) { e.preventDefault(); $('q').focus(); $('q').select() }

@@ -124,6 +124,24 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      # 3.19.7. Автотесты логики приложения: не прошли — версия не выходит, у пользователей остаётся прежняя
+      - name: Unit tests
+        run: |
+          set -o pipefail
+          if ! ./gradlew --no-daemon :app:testReleaseUnitTest 2>&1 | tee tests.log; then
+            for f in app/build/test-results/testReleaseUnitTest/*.xml; do
+              python3 - "$f" <<'PY' || true
+          import sys, xml.etree.ElementTree as ET
+          for tc in ET.parse(sys.argv[1]).iter('testcase'):
+              for fl in list(tc.findall('failure')) + list(tc.findall('error')):
+                  msg = (fl.get('message') or fl.text or '').strip().splitlines()[0][:300].replace('%', '%25')
+                  print(f"::error title=Автотест {tc.get('classname','').split('.')[-1]}.{tc.get('name')}::{msg}")
+          PY
+            done
+            grep -E "^e: |What went wrong" tests.log | head -40 | sed 's/^/::error title=Автотесты::/' || true
+            exit 1
+          fi
+
       - name: Build APK
         env:
           APEX_KEYSTORE_PASSWORD: ${{ secrets.APEX_KEYSTORE_PASSWORD }}

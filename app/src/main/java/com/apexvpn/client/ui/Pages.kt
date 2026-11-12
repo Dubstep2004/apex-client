@@ -1268,8 +1268,9 @@ private fun AppearancePage(viewModel: MainViewModel, onBack: () -> Unit) {
             if (designCat == null) Spacer(Modifier.height(6.dp))
         }
         Caption(s.design.subtitle + when (s.design) {
-            Design.Neon, Design.Terminal, Design.Steampunk, Design.Synthwave, Design.Cosmos, Design.Carbon, Design.Matrix, Design.Luxe, Design.Ocean -> ". Всегда тёмный."
-            Design.Pastel, Design.Japan, Design.Sakura -> ". Всегда светлый."
+            Design.Neon, Design.Terminal, Design.Steampunk, Design.Synthwave, Design.Cosmos, Design.Carbon, Design.Matrix, Design.Luxe, Design.Ocean,
+            Design.Sunset, Design.Forest, Design.Mocha -> ". Всегда тёмный."
+            Design.Pastel, Design.Japan, Design.Sakura, Design.Arctic -> ". Всегда светлый."
             Design.Custom -> ". Настройте ниже."
             Design.Expressive -> ". Цвет берётся из обоев (Android 12+)."
             else -> "."
@@ -1373,6 +1374,8 @@ private fun AppearancePage(viewModel: MainViewModel, onBack: () -> Unit) {
                 }
             }
         }
+        // 3.19.7. Обои из интернета: живые (скачать / удалить), по ссылке, фото по темам
+        NetWallpapers(viewModel, s)
         Spacer(Modifier.height(12.dp))
         // Своё фото и своё видео — одной группой
         Group {
@@ -1428,8 +1431,9 @@ private fun AppearancePage(viewModel: MainViewModel, onBack: () -> Unit) {
         }
 
         SectionLabel("Цвет")
-        Row(Modifier.fillMaxWidth()) {
-            AccentColor.entries.forEach { a ->
+        // 3.19.7: цветов стало 10 — два ряда по 5
+        AccentColor.entries.chunked(5).forEach { accRow -> Row(Modifier.fillMaxWidth()) {
+            accRow.forEach { a ->
                 val on = s.accent == a
                 Column(
                     Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).clickable { ThemeReveal.run { viewModel.change(reload = false) { copy(accent = a) } } }.padding(vertical = 8.dp),
@@ -1456,10 +1460,11 @@ private fun AppearancePage(viewModel: MainViewModel, onBack: () -> Unit) {
                         }
                     }
                     Spacer(Modifier.height(6.dp))
-                    Text(a.title, color = if (on) Apex.Text else Apex.TextDim, fontSize = 12.sp)
+                    Text(a.title, color = if (on) Apex.Text else Apex.TextDim, fontSize = 12.sp, maxLines = 1, softWrap = false)
                 }
             }
-        }
+            repeat(5 - accRow.size) { Spacer(Modifier.weight(1f)) }
+        } }
         // 216. Свой цвет: оттенок, насыщенность и яркость
         if (s.accent == AccentColor.Custom) {
             Spacer(Modifier.height(8.dp))
@@ -1804,6 +1809,10 @@ private fun DesignPreview(
                         Design.Matrix -> androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFF00331A), Color.Black))
                         Design.Luxe -> androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFF3A2F10), Color(0xFF07070A)))
                         Design.Ocean -> androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFF0B3A5C), Color(0xFF031526), Color(0xFF0E5A7A)))
+                        Design.Sunset -> androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFF140A22), Color(0xFF4A1A3E), Color(0xFFFF7A59)))
+                        Design.Forest -> androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFF1E3A2A), Color(0xFF08140F)))
+                        Design.Arctic -> androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.White, Color(0xFFCFE3F3)))
+                        Design.Mocha -> androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFF4A3220), Color(0xFF16100C)))
                         Design.Custom -> if (custom.glass) androidx.compose.ui.graphics.Brush.linearGradient(listOf(Color(custom.accent).copy(alpha = 0.6f), p.base, Color(custom.accent2).copy(alpha = 0.6f)))
                             else androidx.compose.ui.graphics.Brush.verticalGradient(listOf(p.base, p.base))
                         Design.Apex2 -> androidx.compose.ui.graphics.Brush.verticalGradient(listOf(p.brand1.copy(alpha = if (p.dark) 0.35f else 0.2f), p.base, p.base))
@@ -2274,6 +2283,7 @@ private val designGroups: List<Triple<String, String, List<Design>>> = listOf(
     Triple("brand", "Фирменные", listOf(Design.Apex2, Design.Classic, Design.Minimal, Design.Bento, Design.Expressive)),
     Triple("glass", "Стекло и неон", listOf(Design.Glass, Design.Aurora, Design.Neon, Design.Synthwave)),
     Triple("live", "Живые", listOf(Design.Cosmos, Design.Matrix, Design.Ocean, Design.Steampunk, Design.Terminal)),
+    Triple("new", "Новые", listOf(Design.Sunset, Design.Forest, Design.Arctic, Design.Mocha)),
     Triple("light", "Светлые", listOf(Design.Pastel, Design.Japan, Design.Sakura)),
     Triple("premium", "Премиум", listOf(Design.Carbon, Design.Luxe)),
     Triple("custom", "Свой", listOf(Design.Custom)),
