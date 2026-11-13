@@ -1,7 +1,7 @@
 """Картинки для Telegram (1280×720 PNG): «Вышла версия X» и опрос. Рисует Pillow, шрифты — docs/img/src/*.ttf (OFL).
 Проверка: python3 scripts/tg_card.py 3.21.0 "Пункт один" "Пункт два" > /tmp/card.png
 Опрос:    python3 scripts/tg_card.py --poll "Какой сервер добавить?" Япония США Турция > /tmp/poll.png"""
-import io, sys
+import io, re, sys
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 W, H = 1280, 720
@@ -24,7 +24,11 @@ def gradient(w, h, c1, c2):
     return g.resize((w, h))
 
 
+EMOJI = re.compile('[\U0001F000-\U0001FFFF\u2600-\u27BF\u2B00-\u2BFF\uFE0F\u200D]')  # в шрифтах нет — были бы квадратики
+
+
 def wrap(d, text, f, width, lines=2):
+    text = re.sub(r'\s+', ' ', EMOJI.sub('', str(text))).strip()
     words, out, cur = text.split(), [], ''
     for w in words:
         t = (cur + ' ' + w).strip()
@@ -118,8 +122,79 @@ def poll_card(question, options):
     buf = io.BytesIO(); im.save(buf, 'PNG', optimize=True); return buf.getvalue()
 
 
+THEMES = {  # пятна фона: (цвет, прямоугольник) — как праздничные темы визитки
+    None: [((60, 70, 200), (760, -120, 1400, 520)), ((20, 120, 120), (-260, 420, 380, 980)), ((70, 40, 140), (300, -260, 760, 120))],
+    'newyear': [((30, 90, 200), (760, -120, 1400, 520)), ((20, 140, 110), (-260, 420, 380, 980)), ((200, 60, 70), (300, -260, 760, 120))],
+    'valentine': [((200, 50, 110), (760, -120, 1400, 520)), ((140, 40, 120), (-260, 420, 380, 980)), ((230, 90, 120), (300, -260, 760, 120))],
+    'march8': [((210, 90, 160), (760, -120, 1400, 520)), ((90, 170, 120), (-260, 420, 380, 980)), ((230, 150, 190), (300, -260, 760, 120))],
+    'halloween': [((220, 110, 20), (760, -120, 1400, 520)), ((90, 30, 130), (-260, 420, 380, 980)), ((160, 60, 20), (300, -260, 760, 120))],
+}
+
+
+def base(theme=None, tag='APEX CLIENT'):
+    """Тёмный фон с цветными пятнами и логотипом — общий для всех карточек."""
+    im = Image.new('RGB', (W, H), (10, 13, 28))
+    glow = Image.new('RGB', (W, H), (10, 13, 28)); g = ImageDraw.Draw(glow)
+    for col, box in THEMES.get(theme, THEMES[None]): g.ellipse(box, fill=col)
+    im = Image.blend(im, glow.filter(ImageFilter.GaussianBlur(150)), .75)
+    d = ImageDraw.Draw(im)
+    sq = gradient(52, 52, (109, 92, 255), (45, 226, 230)); m = Image.new('L', (52, 52), 0); ImageDraw.Draw(m).rounded_rectangle((0, 0, 51, 51), 15, fill=255)
+    im.paste(sq, (80, 70), m); d.text((106, 96), 'A', font=font('Unbounded.ttf', 30, 800), fill='white', anchor='mm')
+    d.text((148, 96), tag, font=font('Manrope.ttf', 26, 800), fill=(201, 204, 234), anchor='lm')
+    return im, d
+
+
+def png(im):
+    buf = io.BytesIO(); im.save(buf, 'PNG', optimize=True); return buf.getvalue()
+
+
+def text_card(text, title=None, theme=None, tag='APEX CLIENT', foot='dubstep2004.github.io'):
+    """Карточка к любому посту: первая строка — заголовок крупно, дальше — до 6 строк текста."""
+    lines = [l.strip() for l in EMOJI.sub('', str(text)).splitlines() if l.strip()]
+    if title is None: title, lines = (lines[0] if lines else ''), lines[1:]
+    im, d = base(theme, tag)
+    for size in (64, 54, 46):
+        ft = font('Unbounded.ttf', size, 700); tl = wrap(d, title, ft, 1110, 3)
+        if len(tl) <= 2 or size == 46: break
+    y = 160
+    for l in tl: d.text((80, y), l, font=ft, fill=(243, 244, 255)); y += int(size * 1.3)
+    fb, y = font('Manrope.ttf', 30, 600), y + 26
+    for l in lines:
+        for w in wrap(d, l, fb, 1110, 2):
+            if y > 610: break
+            d.text((80, y), w, font=fb, fill=(214, 217, 238)); y += 44
+        y += 6
+    d.text((80, 676), foot, font=font('Manrope.ttf', 22, 600), fill=(150, 155, 190), anchor='lm')
+    return png(im)
+
+
+def results_card(question, rows):
+    """Итоги опроса: полоски с процентами. rows — [(вариант, голосов)]."""
+    im, d = base(None, 'APEX CLIENT · итоги опроса')
+    fq = font('Unbounded.ttf', 48, 700); y = 160
+    for l in wrap(d, question, fq, 1110, 2): d.text((80, y), l, font=fq, fill=(243, 244, 255)); y += 62
+    total = sum(c for _, c in rows) or 1; top = max([c for _, c in rows] or [0])
+    rows = rows[:6]; rh = min(78, (630 - y - 20) // max(1, len(rows))); y += 20
+    fo, fp = font('Manrope.ttf', 28, 700), font('Manrope.ttf', 28, 800)
+    for t, c in rows:
+        w = int(1110 * c / total)
+        d.rounded_rectangle((80, y, 1190, y + rh - 16), 18, fill=(28, 31, 58))
+        if w > 36:
+            bar = gradient(w, rh - 16, (109, 92, 255) if c == top else (70, 78, 140), (45, 226, 230) if c == top else (90, 100, 170))
+            mk = Image.new('L', bar.size, 0); ImageDraw.Draw(mk).rounded_rectangle((0, 0, w - 1, rh - 17), 18, fill=255); im.paste(bar, (80, y), mk)
+        cy = y + (rh - 16) // 2
+        d.text((104, cy), wrap(d, t, fo, 860, 1)[0], font=fo, fill='white', anchor='lm')
+        d.text((1166, cy), f'{round(100 * c / total)}%', font=fp, fill='white', anchor='rm'); y += rh
+    d.text((80, 676), f'Проголосовали: {sum(c for _, c in rows)} · спасибо!', font=font('Manrope.ttf', 22, 600), fill=(150, 155, 190), anchor='lm')
+    return png(im)
+
+
 if __name__ == '__main__':
-    if sys.argv[1] == '--poll':
+    if sys.argv[1] == '--text':
+        sys.stdout.buffer.write(text_card(sys.argv[2], theme=(sys.argv[3] if len(sys.argv) > 3 else None)))
+    elif sys.argv[1] == '--results':
+        sys.stdout.buffer.write(results_card(sys.argv[2], [(a.split('=')[0], int(a.split('=')[1])) for a in sys.argv[3:]]))
+    elif sys.argv[1] == '--poll':
         sys.stdout.buffer.write(poll_card(sys.argv[2], sys.argv[3:]))
     else:
         sys.stdout.buffer.write(card(sys.argv[1], sys.argv[2:]))

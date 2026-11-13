@@ -227,6 +227,19 @@
 
   .pill { border: 1px solid var(--line); background: none; color: var(--dim); border-radius: 99px; padding: 7px 12px; font-size: 13px; font-weight: 700; cursor: pointer; }
   .pill.on { border-color: var(--go2); color: var(--text); background: color-mix(in srgb, var(--go2) 14%, transparent); }
+  .tpw { display: inline-flex; gap: 2px; } .pill.x { padding: 7px 10px; }
+  .tgcount { text-align: right; margin-top: 4px; } .tgcount.bad { color: #f0616d; font-weight: 700; }
+  .tgchk { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 14px; } .tgchk label { display: inline-flex; gap: 6px; align-items: center; }
+  .tgph { display: inline-flex; align-items: center; gap: 6px; } .tgph img { height: 44px; border-radius: 8px; }
+  .tgprev { background: var(--field); border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px; }
+  .tgbub { max-width: 420px; background: #182533; color: #e9eef5; border-radius: 14px; overflow: hidden; font-size: 14.5px; line-height: 1.45; }
+  .tgbub img { display: block; width: 100%; } .tgbub p { margin: 0; padding: 10px 12px 2px; overflow-wrap: anywhere; } .tgbub i { display: block; text-align: right; font-style: normal; font-size: 12px; color: #8ea3b8; padding: 2px 12px 8px; }
+  .tgcard { aspect-ratio: 16 / 9; background: radial-gradient(circle at 85% 10%, #3c46c8, transparent 55%), radial-gradient(circle at 0% 100%, #147878, transparent 50%), #0a0d1c; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .tgcard small { font-weight: 800; color: #c9ccea; } .tgcard b { font-size: 19px; line-height: 1.2; color: #f3f4ff; }
+  .tgbtn { display: block; margin: 4px 8px; padding: 8px; text-align: center; background: #2b5278; border-radius: 8px; font-weight: 600; font-size: 13.5px; } .tgbtn:last-of-type { margin-bottom: 8px; }
+  .tglog { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 10px; align-items: start; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13.5px; }
+  .tglog span { color: var(--dim); overflow-wrap: anywhere; } .tglog time { color: var(--dim); font-size: 12px; white-space: nowrap; } .tglog.err b { color: #f0616d; } .tglog em { color: #f0616d; font-style: normal; }
+  @media (max-width: 500px) { .tglog { grid-template-columns: 1fr auto; } .tglog span { grid-column: 1 / -1; grid-row: 2; } }
   .pill.m.on { border-color: #f0616d99; background: #f0616d1f; } .pill.s.on { border-color: #f5b75999; background: #f5b7591f; }
 
   .sw { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-top: 1px solid var(--line); cursor: pointer; }
@@ -564,6 +577,7 @@
       <div class="block"><h2>Состояние</h2><p class="note" id="ciNote">Проверяем сборки и автопроверки…</p><ul class="ci" id="ciList"></ul>
         <div class="qact" style="margin-top:10px"><button class="btn quiet small" id="notifyBtn">🔔 Уведомлять, если сборка упала</button><button class="btn quiet small" id="bigBtn">📺 Большой экран</button></div></div>
       <div class="block"><h2>Неделя</h2><div class="relsum" id="weekSum"></div><p class="note" id="weekNote">Считаем…</p></div>
+      <div class="block" id="tgStatBlock" hidden><h2>Telegram-канал</h2><div class="relsum" id="tgStat"></div><p class="note">Робот считает подписчиков раз в день.</p></div>
       <div class="block"><h2>Резервная копия</h2><p class="note">Все настройки пульта одним файлом: баннеры, серверы, подписка, скрытые сайты, визитка, обои. Сохраните на компьютер — если что-то сломается, верните одной кнопкой.</p>
         <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn quiet small" id="bkSave" type="button">Скачать копию</button><button class="btn quiet small" id="bkLoad" type="button">Восстановить из файла</button><input type="file" id="bkFile" accept=".json,application/json" hidden></div>
         <p class="help" id="bkMsg"></p></div>
@@ -723,17 +737,42 @@
           <li>Готово. Первый раз робот только запомнит, что сейчас есть, и ничего не отправит — дальше будет писать о новом.</li>
         </ol>
       </div>
+      <div class="block" id="tgVerBanner" hidden><h2>🆕 <span id="tgVerText"></span></h2><p class="note">Робот обычно объявляет версию сам. Если пост не появился — отправьте одной кнопкой.</p><button class="btn go small" id="tgVerGo">Объявить в канале</button></div>
       <div class="block"><h2>Сообщение</h2>
         <div class="tpls" id="tgPick"></div>
-        <label class="f" for="tgText">Текст</label><textarea id="tgText" rows="5" maxlength="4000" placeholder="Сегодня с 22:00 до 23:00 техработы…"></textarea>
+        <label class="f" for="tgText">Текст</label><textarea id="tgText" rows="5" maxlength="4096" placeholder="Сегодня с 22:00 до 23:00 техработы…"></textarea>
+        <p class="help tgcount" id="tgCount"></p>
+        <label class="sw"><div class="t"><b>🖼 Карточка APEX</b><span>Первая строка — крупным заголовком на картинке в стиле канала, текст — подписью</span></div><span class="tog"><input type="checkbox" id="tgCard"><i></i></span></label>
+        <div class="rowx"><button class="btn quiet small" id="tgPhotoBtn" type="button">📷 Своё фото</button><input type="file" id="tgPhotoFile" accept="image/*" hidden>
+          <span id="tgPhotoBox" hidden class="tgph"><img id="tgPhotoImg" alt="Фото к посту"><button class="pill x" id="tgPhotoDel" type="button" aria-label="Убрать фото">×</button></span></div>
+        <p class="f" style="margin-top:12px">Кнопки под постом</p>
+        <div class="tgchk"><label><input type="checkbox" id="tgBDl"> 📥 Скачать</label><label><input type="checkbox" id="tgBHow"> ▶️ Как установить</label><label><input type="checkbox" id="tgBSup"> 💬 Поддержка</label></div>
+        <input id="tgBOwn" type="text" placeholder="Своя кнопка: Текст | https://…" style="width:100%;margin-top:8px">
+        <label class="sw"><div class="t"><b>📌 Закрепить</b><span>Пост повиснет наверху канала</span></div><span class="tog"><input type="checkbox" id="tgPin"><i></i></span></label>
+        <label class="sw"><div class="t"><b>🔕 Без звука</b><span>Подписчики не получат громкое уведомление — для мелких новостей и ночью</span></div><span class="tog"><input type="checkbox" id="tgSilent"><i></i></span></label>
+        <label class="f" for="tgWhen">⏰ Отправить позже (пусто — сразу)</label><input id="tgWhen" type="datetime-local">
+        <details style="margin-top:10px"><summary class="f">🇬🇧 Английский текст</summary><textarea id="tgEn" rows="3" maxlength="4096" placeholder="Maintenance tonight 22:00–23:00…" style="width:100%"></textarea><p class="help">Уйдёт в англоязычный канал из секрета <code>TG_CHAT_EN</code> — с теми же кнопками и картинкой.</p></details>
+        <p class="f" style="margin-top:12px">Предпросмотр</p><div class="tgprev" id="tgPrev"></div>
         <label class="sw" id="tgPhotoRow" hidden style="margin-top:10px"><div class="t"><b>🖼 С картинкой «Вышла версия»</b><span>Тот же пост, что робот пишет при выходе версии: картинка, список изменений и ссылки «Как обновить · Все изменения». Отправляет робот GitHub — до минуты, без VPN. Свой текст — снимите галочку</span></div><span class="tog"><input type="checkbox" id="tgPhoto" checked><i></i></span></label>
-        <button class="btn go" id="tgSend" style="margin-top:12px;width:100%">Отправить в канал</button></div>
+        <button class="btn go" id="tgSend" style="margin-top:12px;width:100%">Отправить в канал</button>
+        <p class="help">С картинкой, фото, кнопками, «закрепить», «без звука», «позже» или английским текстом пост отправляет робот GitHub — до минуты, VPN не нужен.</p></div>
+      <div class="block" id="tgSchedBlock" hidden><h2>⏰ Запланировано</h2><div id="tgSched"></div><p class="help">Робот проверяет каждые 10 минут — пост выйдет в пределах 10 минут от выбранного времени.</p></div>
       <div class="block"><h2>Опрос</h2><p class="note">Ответы видны в самом Telegram — у опроса будут проценты. Анонимный.</p>
         <label class="f" for="tgQ">Вопрос</label><input id="tgQ" type="text" maxlength="300" placeholder="Какой сервер добавить?">
         <label class="f" for="tgOpts">Варианты — по одному в строке (2–10)</label><textarea id="tgOpts" rows="4" placeholder="Япония&#10;США&#10;Турция"></textarea>
         <label class="sw" style="margin-top:8px"><div class="t"><b>Можно выбрать несколько</b></div><span class="tog"><input type="checkbox" id="tgMulti"><i></i></span></label>
         <label class="sw"><div class="t"><b>🖼 Картинка перед опросом</b><span>Вопрос и варианты крупно, в стиле канала. Telegram не даёт прикрепить фото к самому опросу — картинка уходит прямо перед ним. Отправляет робот GitHub, до минуты</span></div><span class="tog"><input type="checkbox" id="tgPollCard" checked><i></i></span></label>
+        <label class="f" for="tgPollRes">📊 Итоги опроса картинкой</label><select id="tgPollRes"><option value="0">Не публиковать</option><option value="24" selected>Через сутки</option><option value="48">Через 2 дня</option><option value="168">Через неделю</option></select>
+        <label class="sw"><div class="t"><b>📌 Закрепить опрос</b></div><span class="tog"><input type="checkbox" id="tgPollPin"><i></i></span></label>
         <button class="btn go" id="tgPoll" style="margin-top:12px;width:100%">Отправить опрос</button></div>
+      <div class="block"><h2>📒 Журнал канала</h2><p class="note" id="tgLast"></p>
+        <div class="rowx"><button class="btn quiet small" id="tgEdit">✏️ Исправить последний пост</button><button class="btn quiet small" id="tgDel">🗑 Удалить последний пост</button></div>
+        <div id="tgLog" style="margin-top:12px"></div></div>
+      <div class="block"><h2>🤖 Робот</h2><p class="note" id="tgRobot">Проверяем…</p>
+        <div class="rowx"><button class="btn quiet small" id="tgPing">Проверить робота</button></div>
+        <label class="sw" style="margin-top:10px"><div class="t"><b>📅 Дайджест по воскресеньям</b><span>В 18:00 МСК — итоги недели карточкой: версии, техработы, подписчики</span></div><span class="tog"><input type="checkbox" id="tgDigest"><i></i></span></label>
+        <label class="sw"><div class="t"><b>🎉 Праздничные открытки</b><span>31 декабря, 14 февраля, 8 марта и 31 октября — поздравление в праздничной теме</span></div><span class="tog"><input type="checkbox" id="tgHoliday"><i></i></span></label>
+        <p class="help"><b>Уведомления вам в личку</b> (упала сборка, в пульте сохранили изменения, ошибка робота): напишите своему боту /start, узнайте свой номер у @userinfobot и добавьте секрет <code>TG_OWNER</code> с этим номером. <b>Английский канал:</b> секрет <code>TG_CHAT_EN</code> — @имя канала.</p></div>
     </section>
 
     <!-- Ответы -->
@@ -876,7 +915,7 @@
     <!-- Справка -->
     <section data-tab="help" hidden class="helpdoc">
       <h1>Справка для владельца</h1>
-      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 13 ноября 2026 · приложение 3.20.15 · пульт 2.22.</p>
+      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 13 ноября 2026 · приложение 3.20.15 · пульт 2.23.</p>
       <div class="helptools">
         <input id="hq" type="search" placeholder="Найти в справке, например «техработы»" aria-label="Найти в справке" autocomplete="off">
         <button class="btn quiet small" id="hOpen" type="button">Развернуть всё</button>
@@ -1102,6 +1141,7 @@
 
       <div class="block"><details><summary>🆕 Что нового в пульте</summary>
         <div class="tbl"><table>
+          <tr><td>2.23</td><td>Telegram: отложенные посты, закрепить, без звука, кнопки под постом, своё фото, карточка к любому посту, предпросмотр, счётчик знаков, свои шаблоны, итоги опроса картинкой, удалить/исправить последний пост, журнал канала, проверка робота, дайджест по воскресеньям, праздничные открытки, подписчики в «Обзоре», уведомления в личку, английский канал, «Объявить версию»</td></tr>
           <tr><td>2.22</td><td>Telegram: перед опросом — картинка с вопросом и вариантами (рисует робот GitHub, без VPN)</td></tr>
           <tr><td>2.21</td><td>Telegram: «🆕 Новая версия» — с картинкой «Вышла версия», как у робота, и без звёздочек разметки в тексте</td></tr>
           <tr><td>2.20</td><td>Telegram без VPN: если Telegram не открывается или токен не сохранён в браузере, сообщения, опросы и «Проверить» идут через робота GitHub (до минуты)</td></tr>
@@ -1202,7 +1242,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.22', PANEL_DATE = '13 ноября 2026'
+const PANEL_VERSION = '2.23', PANEL_DATE = '13 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -1867,7 +1907,7 @@ function showTab(id) {
   store('apex_admin_tab', id); window.scrollTo({ top: 0 })
   const sec = document.querySelector('section[data-tab="' + id + '"]'); if (sec) { sec.classList.remove('enter'); void sec.offsetWidth; sec.classList.add('enter') }
   if (id === 'history') { loadJournal(); loadCompare() }
-  if (id === 'tg') { tgFill(); renderTgPick() }
+  if (id === 'tg') { tgFill(); tgOpen() }
   if (id === 'answers') renderAnswers()
   if (id === 'site') loadPresets()
   if (id === 'history') loadHistory()
@@ -2487,6 +2527,7 @@ async function renderWeek() {
   $('weekSum').innerHTML = [[dl === null ? '—' : dl.toLocaleString('ru'), 'скачиваний за 7 дней'], [rel.length, rel.length === 1 ? 'новая версия' : 'новых версий'], [saves, 'сохранений в пульте']].map(([n, t]) => `<div><b>${n}</b><span>${t}</span></div>`).join('')
   const c = collectApp(true), now = Date.now(), active = Object.values(c.servers.status).filter(v => !v.until || now < v.until).length
   $('weekNote').textContent = (rel.length ? 'Вышли: ' + rel.map(r => r.tag_name).join(', ') + '. ' : 'Новых версий не было. ') + (active ? 'Сейчас пометок серверов: ' + active + '.' : 'Все серверы без пометок.') + (dl === null ? ' Скачивания за неделю появятся, когда накопится статистика по дням.' : '')
+  renderTgStat().catch(() => {})
 }
 
 // 5. Отложенное сохранение: файл docs/config/pending.json, применяет робот GitHub (каждые 10 минут)
@@ -2618,19 +2659,23 @@ async function tg(method, body) {
 }
 // 2.20: отправка без VPN. Пульт кладёт задание в docs/tg/outbox.json, робот GitHub (секреты TG_BOT_TOKEN и TG_CHAT)
 // отправляет его со своих серверов и пишет итог в docs/stats/tg-state.json. GitHub из России открыт, Telegram — не всегда.
-const TG_BOX = 'docs/tg/outbox.json'
-async function tgRelay(method, body) {
+const TG_BOX = 'docs/tg/outbox.json', TG_SET = 'docs/tg/settings.json', TG_STATE = 'docs/stats/tg-state.json'
+async function tgReadState() { // свежий tg-state.json (без кэша браузера)
+  try { const f = await api('/contents/' + TG_STATE + '?ref=' + BRANCH, { cache: 'no-store' }); return JSON.parse(b64dec(f.content)) } catch { return null }
+}
+// 2.20: задание роботу GitHub; 2.23: opts — карточка, фото, кнопки, закрепить, без звука, позже (when), английский текст, итоги опроса
+async function tgRelay(method, body, opts = {}) {
   const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
-  const box = (await getFile(TG_BOX)) || {}
-  box.items = [...(box.items || []), { id, method, body, at: Date.now() }].slice(-20)
-  await putFile(TG_BOX, box, 'Telegram из пульта: ' + ({ sendMessage: 'сообщение', sendPoll: 'опрос', getChat: 'проверка' }[method] || method))
-  toast('Telegram не нужен VPN: отправляет робот GitHub, это до минуты…')
+  const box = (await getFile(TG_BOX)) || {}, now = Date.now()
+  const keep = (box.items || []).filter(x => (x.opts?.when || 0) > now), rest = (box.items || []).filter(x => !((x.opts?.when || 0) > now))
+  box.items = [...rest.slice(-20), ...keep, { id, method, body, opts, at: now }]
+  await putFile(TG_BOX, box, 'Telegram из пульта: ' + ({ sendMessage: 'сообщение', sendPoll: 'опрос', getChat: 'проверка', sendVersion: 'новая версия', deleteLast: 'удалить пост', editLast: 'исправить пост', ping: 'проверка робота' }[method] || method) + (opts.when ? ' на ' + new Date(opts.when).toLocaleString('ru', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''))
+  if (opts.when) { renderTgSched(); return { scheduled: true } }
+  toast('Отправляет робот GitHub (VPN не нужен) — до минуты…')
   for (let i = 0; i < 30; i++) {
     await new Promise(r => setTimeout(r, 5000))
-    let st = null
-    try { const f = await api('/contents/docs/stats/tg-state.json?ref=' + BRANCH, { cache: 'no-store' }); st = JSON.parse(b64dec(f.content)) } catch {}
-    const res = st?.results?.[id]
-    if (res) { if (res.ok) return { relay: true, done: res.done || [] }; throw new Error('Робот GitHub: ' + (res.error || 'не отправилось')) }
+    const st = await tgReadState(), res = st?.results?.[id]
+    if (res) { tgState = st; renderTgState(); if (res.ok) return { relay: true, done: res.done || [] }; throw new Error('Робот GitHub: ' + (res.error || 'не отправилось')) }
   }
   throw new Error('Робот ещё не ответил. Проверьте секреты TG_BOT_TOKEN и TG_CHAT и вкладку Actions → «Telegram-канал»')
 }
@@ -2653,6 +2698,9 @@ $('tgSave').onclick = () => guarded($('tgSave'), async () => {
 $('tgTest').onclick = () => guarded($('tgTest'), async () => { const c = await tgCfg(); const names = []; try { if (!c) throw Object.assign(new Error(), { net: true }); for (const ch of tgChats(c.chat)) { const me = await tgOne(c.tok, ch, 'getChat', {}); names.push((me.type === 'channel' ? 'канал ' : 'группа ') + (me.title || me.username || me.id)) } } catch (e) { if (!e.net) throw e; names.length = 0; names.push(...(await tgRelay('getChat', {})).done.map(n => n + ' (через GitHub)')) } toast('Найдено: ' + names.join(', ')) })
 $('tgForget').onclick = () => { store('apex_admin_tg', null); tgFill(); toast('Токен бота стёрт из этого браузера') }
 $('tgAuto').onchange = () => store('apex_admin_tg_auto', $('tgAuto').checked ? 'on' : null)
+// ── 2.23: Telegram — шаблоны, кнопки, фото, карточка, предпросмотр, счётчик, отложенные, журнал, робот
+let tgState = null, tgSet = null, tgPhotoName = ''
+const tgLinks = () => { const l = collectApp(true).links || {}; return { dl: 'https://dubstep2004.github.io', how: 'https://dubstep2004.github.io/update/', sup: /^https:\/\//.test(l.support || '') ? l.support : 'https://t.me/Apexx_support' } }
 function renderTgPick() {
   const c = collectApp(true), items = [...c.banners.map(b => ['📢 ' + (b.name || b.text).slice(0, 28), b.text + (b.url ? '\n' + b.url : '')]), ...(c.announce ? [['🪧 Объявление', [c.announce.title, c.announce.text, c.announce.url].filter(Boolean).join('\n\n')]] : [])]
   const st = releases.find(r => !r.prerelease && !r.draft)
@@ -2661,16 +2709,65 @@ function renderTgPick() {
     let t; for (let n = Math.min(8, pts.length); ; n--) { t = '🆕 Вышла версия ' + v + '\n\n' + pts.slice(0, n).join('\n') + (n < pts.length ? '\n• …и другое' : '') + '\n\nОбновление придёт само: плашка «Вышла версия» или окно «Доступна версия» → «Обновить».\nКак обновить: https://dubstep2004.github.io/update/'; if (t.length <= 1000 || n <= 1) break }
     items.push(['🆕 Новая версия', t, v])
   }
-  $('tgPick').innerHTML = items.map(([t], i) => `<button class="pill" data-tp="${i}">${esc(t)}</button>`).join(''); $('tgPick')._items = items
+  const own = (tgSet?.templates || []).map(x => ['⭐ ' + x.name, x.text, '', true])
+  const all = [...items, ...own]
+  $('tgPick').innerHTML = all.map(([t, , , mine], i) => `<span class="tpw"><button class="pill" data-tp="${i}">${esc(t)}</button>${mine ? `<button class="pill x" data-tdel="${i - items.length}" aria-label="Удалить шаблон">×</button>` : ''}</span>`).join('') + '<button class="pill" id="tgTplAdd">＋ Сохранить как шаблон</button>'
+  $('tgPick')._items = all
 }
-$('tgPick').onclick = e => { const i = e.target.closest('[data-tp]')?.dataset.tp; if (i == null) return; const it = $('tgPick')._items[i]; $('tgText').value = it[1]; $('tgText')._ver = it[2] || ''; $('tgPhotoRow').hidden = !it[2]; $('tgPhoto').checked = !!it[2] }
+$('tgPick').onclick = e => { const btn = e.target.closest('button'); if (!btn) return; guarded(btn, async () => {
+  if (e.target.id === 'tgTplAdd') {
+    const text = $('tgText').value.trim(); if (!text) throw new Error('Сначала напишите текст')
+    const name = (prompt('Название шаблона', text.split('\n')[0].slice(0, 24)) || '').trim(); if (!name) return
+    await tgSaveSettings(s => { s.templates = [...(s.templates || []).filter(x => x.name !== name), { name: name.slice(0, 30), text }].slice(-20) }); renderTgPick(); toast('Шаблон сохранён — он есть на всех устройствах'); return
+  }
+  const d = e.target.closest('[data-tdel]')?.dataset.tdel
+  if (d != null) { if (!confirm('Удалить шаблон?')) return; await tgSaveSettings(s => { s.templates.splice(+d, 1) }); renderTgPick(); return }
+  const i = e.target.closest('[data-tp]')?.dataset.tp; if (i == null) return; const it = $('tgPick')._items[i]
+  $('tgText').value = it[1]; $('tgText')._ver = it[2] || ''; $('tgPhotoRow').hidden = !it[2]; $('tgPhoto').checked = !!it[2]; tgPreview()
+}) }
+async function tgLoadSettings() { if (tgSet) return tgSet; tgSet = (await getFile(TG_SET).catch(() => null)) || {}; return tgSet }
+async function tgSaveSettings(fn) { const s = (await getFile(TG_SET).catch(() => null)) || {}; fn(s); await putFile(TG_SET, s, 'Пульт: настройки Telegram'); tgSet = s }
+function tgOpts() { // настройки поста из пульта
+  const L = tgLinks(), buttons = []
+  if ($('tgBDl').checked) buttons.push(['📥 Скачать', L.dl]); if ($('tgBHow').checked) buttons.push(['▶️ Как установить', L.how]); if ($('tgBSup').checked) buttons.push(['💬 Поддержка', L.sup])
+  const own = $('tgBOwn').value.split('|').map(x => x.trim()); if (own[0] && /^https:\/\/\S+$/.test(own[1] || '')) buttons.push([own[0], own[1]])
+  const o = {}; if (tgPhotoName) o.photo = tgPhotoName; else if ($('tgCard').checked) o.card = true
+  if (buttons.length) o.buttons = buttons; if ($('tgPin').checked) o.pin = true; if ($('tgSilent').checked) o.silent = true
+  const w = $('tgWhen').value ? new Date($('tgWhen').value).getTime() : 0; if (w) o.when = w
+  const en = $('tgEn').value.trim(); if (en) o.en = en
+  return o
+}
+function tgPreview() { // 13. как пост будет выглядеть в Telegram; 15. счётчик знаков
+  const t = $('tgText').value, o = tgOpts(), ver = $('tgText')._ver && $('tgPhoto').checked, lim = (o.card || o.photo || ver) ? 1024 : 4096
+  $('tgCount').textContent = ver ? 'Текст и картинку соберёт робот — как при выходе версии' : t.length + ' / ' + lim + (t.length > lim ? ' — длиннее на ' + (t.length - lim) : '')
+  $('tgCount').classList.toggle('bad', !ver && t.length > lim)
+  const lines = t.trim().split('\n'), img = o.photo ? `<img src="${esc($('tgPhotoImg').src)}" alt="">` : (o.card || ver) ? `<div class="tgcard"><small>APEX CLIENT</small><b>${esc(ver ? 'Вышла версия ' + $('tgText')._ver : lines[0] || '')}</b></div>` : ''
+  $('tgPrev').innerHTML = t.trim() || img ? `<div class="tgbub">${img}<p>${esc(t.trim()).replace(/\n/g, '<br>')}</p>${(o.buttons || []).map(([b]) => `<span class="tgbtn">${esc(b)}</span>`).join('')}<i>${o.silent ? '🔕 ' : ''}${o.pin ? '📌 ' : ''}${o.when ? '⏰ ' + new Date(o.when).toLocaleString('ru', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'сейчас'}</i></div>${o.en ? '<p class="note">+ английский пост в канал из секрета TG_CHAT_EN</p>' : ''}` : '<p class="note">Здесь будет видно, как пост выглядит в канале.</p>'
+}
+;['tgText', 'tgEn', 'tgBOwn', 'tgWhen'].forEach(id => $(id).addEventListener('input', tgPreview))
+;['tgCard', 'tgBDl', 'tgBHow', 'tgBSup', 'tgPin', 'tgSilent', 'tgPhoto'].forEach(id => $(id).addEventListener('change', tgPreview))
+$('tgPhotoBtn').onclick = () => $('tgPhotoFile').click()
+$('tgPhotoFile').onchange = () => guarded($('tgPhotoBtn'), async () => { // 5. своё фото: уменьшаем до 1600 px и кладём в репозиторий
+  const f = $('tgPhotoFile').files[0]; $('tgPhotoFile').value = ''; if (!f) return
+  if (!/^image\//.test(f.type)) throw new Error('Нужна картинка (JPG или PNG)')
+  const bmp = await createImageBitmap(f), k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height)), cv = document.createElement('canvas')
+  cv.width = Math.round(bmp.width * k); cv.height = Math.round(bmp.height * k); cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height)
+  const url = cv.toDataURL('image/jpeg', .85), name = 'p' + Date.now().toString(36) + '.jpg'
+  await api('/contents/docs/tg/media/' + name, { method: 'PUT', body: JSON.stringify({ message: 'Пульт: фото для Telegram', content: url.split(',')[1], branch: BRANCH }) })
+  tgPhotoName = name; $('tgPhotoImg').src = url; $('tgPhotoBox').hidden = false; tgPreview(); toast('Фото загружено — уйдёт вместе с текстом')
+})
+$('tgPhotoDel').onclick = () => { tgPhotoName = ''; $('tgPhotoBox').hidden = true; tgPreview() }
 $('tgSend').onclick = () => guarded($('tgSend'), async () => {
-  const t = $('tgText').value.trim(); if (!t) throw new Error('Напишите текст')
-  if (!confirm('Отправить в канал?\n\n' + t.slice(0, 300))) return
-  const ver = $('tgText')._ver
+  const t = $('tgText').value.trim(), ver = $('tgText')._ver; if (!t && !(ver && $('tgPhoto').checked)) throw new Error('Напишите текст')
+  const o = tgOpts()
   if (ver && $('tgPhoto').checked) { // пост собирает робот GitHub тем же кодом, что при выходе версии (картинка + ссылки) — и без VPN
+    if (!confirm('Отправить пост «Вышла версия ' + ver + '» в канал?')) return
     await tgRelay('sendVersion', { version: ver }); toast('Отправлено в канал с картинкой'); return
   }
+  if ((o.card || o.photo) && t.length > 1024) throw new Error('С картинкой подпись не длиннее 1024 знаков (сейчас ' + t.length + '). Сократите или выключите картинку')
+  if (o.when && o.when < Date.now() + 60000) throw new Error('Время «Позже» уже прошло — выберите будущее')
+  if (!confirm((o.when ? 'Запланировать пост?' : 'Отправить в канал?') + '\n\n' + t.slice(0, 300))) return
+  if (Object.keys(o).length) { const r = await tgRelay('sendMessage', { text: t }, o); toast(r.scheduled ? 'Запланировано — робот отправит в это время (±10 минут)' : 'Отправлено в канал'); if (r.scheduled) $('tgWhen').value = ''; return }
   await tg('sendMessage', { text: t, link_preview_options: { is_disabled: true } }); toast('Отправлено в канал')
 })
 $('tgPoll').onclick = () => guarded($('tgPoll'), async () => {
@@ -2678,9 +2775,60 @@ $('tgPoll').onclick = () => guarded($('tgPoll'), async () => {
   if (!q) throw new Error('Напишите вопрос'); if (opts.length < 2 || opts.length > 10) throw new Error('Нужно от 2 до 10 вариантов')
   if (opts.some(o => o.length > 100)) throw new Error('Вариант длиннее 100 символов')
   const poll = { question: q, options: opts.map(text => ({ text })), is_anonymous: true, allows_multiple_answers: $('tgMulti').checked }
-  if ($('tgPollCard').checked) { await tgRelay('sendPoll', { ...poll, card: true }); toast('Картинка и опрос отправлены в канал'); return } // картинку рисует робот GitHub
+  const o = { ...($('tgPollCard').checked ? { card: true } : {}), ...(+$('tgPollRes').value ? { results: +$('tgPollRes').value } : {}), ...($('tgPollPin').checked ? { pin: true } : {}) }
+  if (Object.keys(o).length) { await tgRelay('sendPoll', poll, o); toast(o.card ? 'Картинка и опрос отправлены в канал' : 'Опрос отправлен в канал'); return } // картинку и итоги делает робот GitHub
   await tg('sendPoll', poll); toast('Опрос отправлен в канал')
 })
+// Запланированные посты: из docs/tg/outbox.json — ещё не наступило время
+async function renderTgSched() {
+  const box = files[TG_BOX]?.data || (await getFile(TG_BOX).catch(() => null)) || {}, now = Date.now()
+  const list = (box.items || []).filter(x => (x.opts?.when || 0) > now).sort((a, b) => a.opts.when - b.opts.when)
+  $('tgSchedBlock').hidden = !list.length
+  $('tgSched').innerHTML = list.map(x => `<div class="tglog"><b>⏰ ${new Date(x.opts.when).toLocaleString('ru', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</b><span>${esc((x.body.text || x.body.question || '').slice(0, 120))}</span><button class="btn quiet small" data-unsched="${esc(x.id)}">Отменить</button></div>`).join('')
+}
+$('tgSched').onclick = e => { const id = e.target.dataset.unsched; if (!id) return; guarded(e.target, async () => {
+  if (!confirm('Отменить запланированный пост?')) return
+  const box = (await getFile(TG_BOX)) || {}; box.items = (box.items || []).filter(x => x.id !== id); await putFile(TG_BOX, box, 'Telegram из пульта: отмена отложенного поста'); renderTgSched(); toast('Отменено')
+}) }
+// Журнал, «последний пост», анонс версии, робот
+function renderTgState() {
+  const s = tgState || {}, log = (s.log || []).slice().reverse().slice(0, 30)
+  $('tgLog').innerHTML = log.length ? log.map(l => `<div class="tglog ${l.ok ? '' : 'err'}"><b>${l.ok ? '✓' : '✗'} ${esc(l.kind)}</b><span>${esc(l.text)}${l.err ? '<br><em>' + esc(l.err) + '</em>' : ''}</span><time>${new Date(l.at).toLocaleString('ru', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</time></div>`).join('') : '<p class="note">Пока пусто — здесь появятся все посты робота и пульта.</p>'
+  const last = (s.last || []).slice(-1)[0]
+  $('tgLast').textContent = last ? 'Последний пост: «' + last.text.slice(0, 80) + '» — ' + new Date(last.at).toLocaleString('ru', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Робот ещё не запомнил ни одного поста.'
+  $('tgDel').disabled = $('tgEdit').disabled = !last
+  const st = releases.find(r => !r.prerelease && !r.draft)
+  $('tgVerBanner').hidden = !(st && s.version !== undefined && s.version !== st.tag_name)
+  if (st) $('tgVerText').textContent = 'Версия ' + st.tag_name.replace(/^v/, '') + ' ещё не объявлена в канале'
+  renderTgStat()
+}
+async function tgOpen() { // при открытии вкладки
+  await tgLoadSettings().catch(() => {}); renderTgPick(); tgPreview(); renderTgSched().catch(() => {})
+  $('tgDigest').checked = tgSet?.digest !== false; $('tgHoliday').checked = tgSet?.holidays !== false
+  tgState = await tgReadState(); renderTgState()
+  api('/actions/workflows/telegram.yml/runs?per_page=1', { cache: 'no-store' }).then(r => { const x = r.workflow_runs?.[0]; $('tgRobot').textContent = x ? 'Последний запуск робота: ' + new Date(x.updated_at).toLocaleString('ru', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + ' — ' + ({ success: '✓ без ошибок', failure: '✗ ошибка', cancelled: 'отменён' }[x.conclusion] || 'идёт сейчас') : 'Робот ещё не запускался' }).catch(() => {})
+}
+$('tgDel').onclick = () => guarded($('tgDel'), async () => {
+  const last = (tgState?.last || []).slice(-1)[0]; if (!last || !confirm('Удалить из канала последний пост?\n\n«' + last.text.slice(0, 200) + '»\n\nTelegram даёт удалить только посты не старше 48 часов.')) return
+  await tgRelay('deleteLast', {}); toast('Пост удалён из канала')
+})
+$('tgEdit').onclick = () => guarded($('tgEdit'), async () => {
+  const last = (tgState?.last || []).slice(-1)[0]; if (!last) return
+  const t = prompt('Новый текст последнего поста', last.text); if (t == null || !t.trim() || t.trim() === last.text) return
+  await tgRelay('editLast', { text: t.trim() }); toast('Пост исправлен')
+})
+$('tgVerGo').onclick = () => guarded($('tgVerGo'), async () => { const st = releases.find(r => !r.prerelease && !r.draft); if (!st || !confirm('Объявить версию ' + st.tag_name.replace(/^v/, '') + ' в канале?')) return; await tgRelay('sendVersion', { version: st.tag_name.replace(/^v/, '') }); toast('Версия объявлена в канале') })
+$('tgPing').onclick = () => guarded($('tgPing'), async () => { const r = await tgRelay('ping', {}); toast((r.done || [])[0] || 'Робот работает') })
+$('tgDigest').onchange = () => guarded($('tgDigest'), async () => { await tgSaveSettings(s => { s.digest = $('tgDigest').checked }); toast($('tgDigest').checked ? 'Дайджест по воскресеньям включён' : 'Дайджест выключен') })
+$('tgHoliday').onchange = () => guarded($('tgHoliday'), async () => { await tgSaveSettings(s => { s.holidays = $('tgHoliday').checked }); toast($('tgHoliday').checked ? 'Праздничные открытки включены' : 'Праздничные открытки выключены') })
+// 16. Подписчики канала — в «Обзоре»
+async function renderTgStat() {
+  if (!tgState) tgState = await tgReadState()
+  const m = tgState?.members || {}, keys = Object.keys(m).filter(k => m[k]?.length); $('tgStatBlock').hidden = !keys.length; if (!keys.length) return
+  const wk = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10)
+  $('tgStat').innerHTML = keys.map(k => { const r = m[k], last = r[r.length - 1][1], old = (r.find(x => x[0] >= wk) || r[0])[1], d = last - old
+    return `<div><b>${last.toLocaleString('ru')}</b><span>${keys.length > 1 ? 'чат ' + k + ' · ' : ''}подписчиков${d ? (d > 0 ? ' · +' : ' · ') + d + ' за неделю' : ''}</span></div>` }).join('')
+}
 async function tgAfterSave(before, after) {
   if (load('apex_admin_tg_auto') !== 'on') return
   const old = new Set((before?.banners || []).map(b => b.text)), fresh = after.banners.filter(b => !b.preview && !old.has(b.text))

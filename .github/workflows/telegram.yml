@@ -31,6 +31,8 @@ jobs:
         env:
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           TG_CHAT: ${{ secrets.TG_CHAT }}
+          TG_CHAT_EN: ${{ secrets.TG_CHAT_EN }}
+          TG_OWNER: ${{ secrets.TG_OWNER }}
           GITHUB_TOKEN: ${{ github.token }}
         run: python3 scripts/tg_channel.py
       - name: Save state
