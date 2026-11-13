@@ -288,6 +288,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** 3.21.1: на каком сервере идёт (или шёл) тест — для подписи «Авто → …». */
+    private val _speedServer = MutableStateFlow<com.apexvpn.client.data.SpeedServer?>(null)
+    val speedServer = _speedServer.asStateFlow()
+
     fun runSpeedTest() {
         if (speedJob?.isActive == true) return
         speedJob = viewModelScope.launch {
@@ -295,13 +299,15 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             try {
                 _speed.value = SpeedState(SpeedPhase.Ping)
                 if (_speedMeta.value == null) loadSpeedMeta()
-                val (ping, jitter) = SpeedTest.ping()
+                val srv = SpeedTest.choose(AppSettings.value.speedServer)
+                _speedServer.value = srv
+                val (ping, jitter) = SpeedTest.ping(srv)
                 r = r.copy(pingMs = ping, jitterMs = jitter)
                 if (r.pingMs < 0) error("Нет связи с сервером теста")
                 // «Тип соединения»: множественное — 4 потока, одинарное — 1
                 val streams = if (AppSettings.value.speedMulti) 4 else 1
                 _speed.value = SpeedState(SpeedPhase.Download, result = r)
-                r = r.copy(downMbps = SpeedTest.download(streams) { v -> _speed.value = _speed.value.copy(live = v) })
+                r = r.copy(downMbps = SpeedTest.download(streams, srv) { v -> _speed.value = _speed.value.copy(live = v) })
                 _speed.value = SpeedState(SpeedPhase.Upload, result = r)
                 r = r.copy(upMbps = SpeedTest.upload(streams) { v -> _speed.value = _speed.value.copy(live = v) })
                 _speed.value = SpeedState(SpeedPhase.Done, result = r)
