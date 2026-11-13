@@ -802,7 +802,7 @@
       <h2 class="tgsec" id="tgs-log">📒 Запланировано и журнал</h2><p class="note tgsecn">Что ждёт отправки и что уже ушло — с исправлением и удалением последнего поста.</p>
       <div class="block" id="tgSchedBlock" hidden><h2>⏰ Запланировано</h2><div id="tgSched"></div><p class="help">Робот сам «просыпается» к выбранному времени — пост выйдет в течение 1–2 минут после него.</p></div>
       <div class="block"><h2>📒 Журнал канала</h2><p class="note" id="tgLast"></p>
-        <div class="rowx"><button class="btn quiet small" id="tgEdit">✏️ Исправить последний пост</button><button class="btn quiet small" id="tgDel">🗑 Удалить последний пост</button></div>
+        <div class="rowx"><button class="btn quiet small" id="tgEdit">✏️ Исправить последний пост</button><button class="btn quiet small" id="tgDel">🗑 Удалить последний пост</button><button class="btn quiet small" id="tgRefVer">🔄 Обновить посты о версиях</button></div>
         <div id="tgLog" style="margin-top:12px"></div></div>
       <div class="block" id="tgViewsBlock" hidden><h2>👁 Просмотры постов</h2><p class="note" id="tgViewsNote"></p><div id="tgViews"></div></div>
       <h2 class="tgsec" id="tgs-auto">🤖 Автопосты</h2><p class="note tgsecn">Что робот GitHub публикует без вас — каждое можно выключить.</p>
@@ -989,7 +989,7 @@
     <!-- Справка -->
     <section data-tab="help" hidden class="helpdoc">
       <h1>Справка для владельца</h1>
-      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 13 ноября 2026 · приложение 3.21.3 · пульт 2.27.</p>
+      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 13 ноября 2026 · приложение 3.21.3 · пульт 2.28.</p>
       <div class="helptools">
         <input id="hq" type="search" placeholder="Найти в справке, например «техработы»" aria-label="Найти в справке" autocomplete="off">
         <button class="btn quiet small" id="hOpen" type="button">Развернуть всё</button>
@@ -1215,6 +1215,7 @@
 
       <div class="block"><details><summary>🆕 Что нового в пульте</summary>
         <div class="tbl"><table>
+          <tr><td>2.28</td><td>Пост о версии — по разделам «Новое / Улучшено / Исправлено», со ссылками «Сообщить об ошибке» и «Наш канал»; кнопка «Обновить посты о версиях» переписывает прошлые посты</td></tr>
           <tr><td>2.27</td><td>«Сохранить» видна на каждой вкладке; лента событий и «Готово к выпуску?»; подстановки в ответах ({имя}, {версия}…); резервная копия с Telegram и ответами; конкурсы, перевод на английский, просмотры постов, напоминания о техработах и сводка после них, кнопки под постом о версии, нагрузка серверов, бот отвечает сам (Cloudflare)</td></tr>
           <tr><td>2.26</td><td>Telegram: вкладка разложена по разделам (Отправить · Запланировано и журнал · Автопосты · Настройка) с оглавлением; автопосты «Новая версия», видео «Что нового» и «Техработы» можно выключить</td></tr>
           <tr><td>2.25</td><td>«Ссылки» → «Проверка сети — приложения»: свой список сервисов, которые приложение проверяет напрямую и через VPN</td></tr>
@@ -1320,7 +1321,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.27', PANEL_DATE = '13 ноября 2026'
+const PANEL_VERSION = '2.28', PANEL_DATE = '13 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -2940,6 +2941,10 @@ $('tgEdit').onclick = () => guarded($('tgEdit'), async () => {
   await tgRelay('editLast', { text: t.trim() }); toast('Пост исправлен')
 })
 $('tgVerGo').onclick = () => guarded($('tgVerGo'), async () => { const st = releases.find(r => !r.prerelease && !r.draft); if (!st || !confirm('Объявить версию ' + st.tag_name.replace(/^v/, '') + ' в канале?')) return; await tgRelay('sendVersion', { version: st.tag_name.replace(/^v/, '') }); toast('Версия объявлена в канале') })
+$('tgRefVer').onclick = () => guarded($('tgRefVer'), async () => { // 2.28: переписать прошлые посты о версиях в новом виде (разделы, ссылки, кнопки)
+  if (!confirm('Переписать уже опубликованные посты о версиях в новом виде: «Новое / Улучшено / Исправлено», «Сообщить об ошибке», «Наш канал» и кнопки?')) return
+  const r = await tgRelay('refreshVersions', {}); toast('Обновлены посты: ' + ([...new Set(r.done || [])].join(', ') || 'нет'))
+})
 $('tgPing').onclick = () => guarded($('tgPing'), async () => { const r = await tgRelay('ping', {}); toast((r.done || [])[0] || 'Робот работает') })
 document.querySelector('.tgtoc').addEventListener('click', e => { const a = e.target.closest('a'); if (!a) return; e.preventDefault(); document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }) })
 // 2.26: какие автопосты робот публикует сам (docs/tg/settings.json: version, video, maint, digest, holidays)

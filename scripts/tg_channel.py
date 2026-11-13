@@ -234,17 +234,40 @@ def broadcast(kind, text, chats, fn):
     return done, errs
 
 
+def channel_url():
+    """Ссылка на канал для подписи: из пульта («Ссылки» → «Канал»), иначе из TG_CHAT (@имя)."""
+    u = ((app.get('links') or {}).get('channel') or '').strip()
+    if u.startswith('https://t.me/'): return u
+    at = next((c for c in CHATS if c.startswith('@')), '')
+    return 'https://t.me/' + at[1:] if at else ''
+
+
 def version_post(rel):
-    """Пост «Вышла версия X»: картинка и подпись с пунктами из описания релиза. Тот же и у робота, и в пульте."""
+    """Пост «Вышла версия X»: картинка и подпись по разделам «Новое / Улучшено / Исправлено» из описания релиза.
+    Тот же пост и у робота, и в пульте, и при «Обновить посты о версиях». Нет Pillow — картинка None."""
     body = (rel.get('body') or '').split('\n---')[0]
-    items = [re.sub(r'\*\*|`', '', l[2:]).strip() for l in body.splitlines() if l.startswith('- ')][:8]
+    sections, cur = [], None  # [(«🟢», «Новое», [пункты])]
+    for l in body.splitlines():
+        m = re.match(r'^(\S+)\s+\*\*(.+?)\*\*\s*$', l.strip())
+        if m: cur = (m.group(1), m.group(2), []); sections.append(cur); continue
+        if l.startswith('- '):
+            if cur is None: cur = ('🟢', 'Новое', []); sections.append(cur)
+            cur[2].append(re.sub(r'\*\*|`', '', l[2:]).strip())
     v = rel.get('tag_name', '').lstrip('v')
-    tail = f'\n\nОбновление придёт само — плашка «Вышла версия» или окно «Доступна версия» → «Обновить».\n<a href="{SITE}/update/">Как обновить</a> · <a href="{SITE}/versions/">Все изменения</a>'
-    while True:  # подпись к картинке — до 1024 символов: убираем пункты целиком
-        text = f'🆕 <b>Вышла версия {esc(v)}</b>\n\n' + '\n'.join('• ' + esc(i) for i in items) + tail
-        if len(text) <= 1000 or len(items) <= 1: break
-        items = items[:-1]
+    ch = channel_url()
+    tail = (f'\n\nОбновление придёт само — плашка «Вышла версия» или окно «Доступна версия» → «Обновить».'
+            f'\n<a href="{SITE}/update/">Как обновить</a> · <a href="{SITE}/versions/">Все изменения</a> · <a href="{esc(SUPPORT)}">🐞 Сообщить об ошибке</a>'
+            + (f'\n📣 <a href="{esc(ch)}">Наш канал</a> — подпишитесь, чтобы не пропускать обновления' if ch else ''))
+    keep = [list(x[2]) for x in sections]
+    def build():
+        parts = [f'{e} <b>{esc(t)}</b>\n' + '\n'.join('• ' + esc(i) for i in keep[k]) for k, (e, t, _) in enumerate(sections) if keep[k]]
+        return f'🆕 <b>Вышла версия {esc(v)}</b>\n\n' + '\n\n'.join(parts) + tail
+    text = build()
+    # подпись к картинке — до 1024 символов: убираем пункты с конца самого длинного раздела, а не режем посередине разметки
+    while len(text) > 1000 and sum(map(len, keep)) > 1:
+        k = max(range(len(keep)), key=lambda i: len(keep[i])); keep[k].pop(); text = build()
     if len(text) > 1000: text = f'🆕 <b>Вышла версия {esc(v)}</b>' + tail
+    items = [i for x in keep for i in x][:8]
     return v, (tg_card.card(v, items) if tg_card else None), text
 
 
@@ -270,7 +293,7 @@ SUPPORT = SUPPORT if SUPPORT.startswith('https://') else 'https://t.me/Apexx_sup
 
 # ── 0. Задания из пульта (docs/tg/outbox.json). Пульт ждёт итог в state['results'][id].
 ALLOWED = {'sendMessage': {'text', 'link_preview_options'}, 'sendPoll': {'question', 'options', 'is_anonymous', 'allows_multiple_answers'},
-           'getChat': set(), 'sendVersion': {'version'}, 'deleteLast': set(), 'editLast': {'text'}, 'ping': set(), 'translate': {'text'}, 'contest': {'text', 'until', 'n', 'button'}}
+           'getChat': set(), 'sendVersion': {'version'}, 'deleteLast': set(), 'editLast': {'text'}, 'ping': set(), 'translate': {'text'}, 'contest': {'text', 'until', 'n', 'button'}, 'refreshVersions': set()}
 box = read(E('TG_OUTBOX', 'docs/tg/outbox.json'), {})
 results = state['results']
 for it in (box.get('items') or [])[-40:]:
@@ -313,6 +336,34 @@ for it in (box.get('items') or [])[-40:]:
             done, errs = broadcast('Конкурс', text, CHATS, lambda chat: [tg('sendMessage', chat_id=chat, text=text, reply_markup=kb, link_preview_options={'is_disabled': True}).get('message_id')])
             if not errs:
                 state.setdefault('contests', []).append({'cid': cid, 'until': until, 'n': max(1, min(int(body.get('n') or 1), 10)), 'title': text[:80], 'ids': (state['last'][-1]['ids'] if state['last'] else {}), 'drawn': False})
+        elif method == 'refreshVersions':  # 2.28: переписать уже опубликованные посты о версиях в новом виде
+            found = {}  # версия → {ключ чата: номер сообщения}
+            for g in state['last']:
+                m = re.search(r'Вышла версия ([\d.]+)', g.get('text', ''))
+                if g.get('kind') == 'Новая версия' and m:
+                    for k, ids in g['ids'].items(): found.setdefault(m.group(1), {})[k] = ids[-1]
+            vk = next((key(c) for c in CHATS if c.startswith('@')), '')  # открытая страница канала — номера старых постов
+            for pv in state.get('views') or []:
+                m = re.search(r'Вышла версия ([\d.]+)', pv.get('text', ''))
+                if m and vk and pv.get('id', '').isdigit(): found.setdefault(m.group(1), {}).setdefault(vk, int(pv['id']))
+            kb = keyboard([['⬇️ Как обновить', SITE + '/update/'], ['🐞 Нашёл ошибку', SUPPORT]]) if settings.get('buttons', True) else None
+            for ver, where in sorted(found.items()):
+                try: r_ = gh('/releases/tags/v' + re.sub(r'[^\d.]', '', ver))
+                except Exception: errs.append(f'{ver}: нет такого релиза'); continue
+                _, _, cap = version_post(r_)
+                for k, mid in where.items():
+                    chat = chat_of(k)
+                    try:
+                        try: tg('editMessageCaption', chat_id=chat, message_id=mid, caption=cap, parse_mode='HTML', reply_markup=kb)
+                        except TgError as e:
+                            if 'caption' not in str(e).lower() and 'no text' not in str(e).lower(): raise
+                            tg('editMessageText', chat_id=chat, message_id=mid, text=cap, parse_mode='HTML', reply_markup=kb, link_preview_options={'is_disabled': True})
+                        done.append(ver)
+                    except TgError as e:
+                        if 'not modified' in str(e).lower() or 'нечего менять' in str(e): done.append(ver)
+                        else: errs.append(f'{ver}: {e}')
+            if not found: errs.append('не нашёл постов о версиях — откройте пульт позже (робот собирает их номера раз в 3 часа)')
+            log('Обновлены посты о версиях', ', '.join(sorted(set(done))), not errs, '; '.join(errs))
         elif method == 'ping':
             done = [f'робот работает · чатов: {len(CHATS)} · английский канал: {"да" if CHATS_EN else "нет"} · личка владельца: {"да" if OWNER else "нет"} · картинки: {"да" if tg_card else "нет"}']
         elif method == 'sendVersion':
@@ -565,7 +616,8 @@ if not first and now - int(state.get('vat') or 0) > 3 * 3600_000:
                 if not mv: continue
                 n = float(mv.group(1).replace(',', '.')) * {'': 1, 'K': 1000, 'M': 1_000_000}[mv.group(2)]
                 text = re.sub(r'<[^>]+>', ' ', mt.group(1)) if mt else '(картинка или видео)'
-                text = re.sub(r'\s+', ' ', text.replace('&nbsp;', ' ').replace('&amp;', '&').replace('&quot;', '"').replace('&#39;', "'")).strip()[:90]
+                import html as _html
+                text = re.sub(r'\s+', ' ', _html.unescape(text)).strip()[:90]
                 posts.append({'id': pid.split('/')[-1], 'text': text, 'views': int(n), 'at': (md.group(1) if md else '')[:16]})
             if posts:
                 state['views'] = posts[-30:]; state['vat'] = now; changed = True
