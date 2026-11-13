@@ -138,6 +138,25 @@ async function dragRow(p, rowSel, from, to) { // перетащить строк
     if (!(await p.isVisible('#tgVerBanner'))) bad(W, 'нет плашки «версия не объявлена»')
     if (!(await p.textContent('#tgStat')).includes('120')) bad(W, 'подписчики не посчитаны')
     await edges(p, W + ' → Telegram 2.23')
+    // 2.24: «Пользователи» — зашифрованная статистика из панели
+    {
+      const enc = await p.evaluate(async () => {
+        const data = { at: Date.now(), total: 420, status: { ACTIVE: 380 }, online: { now: 55, day: 210, week: 350 }, appsWeek: [['APEX CLIENT', 300], ['Happ', 80]], versions: [['3.21.1', 200], ['3.21.0', 100]], apexWeek: 300, apexDay: 90, days: [{ d: '2026-11-13', apexWeek: 280, onlineDay: 200 }, { d: '2026-11-14', apexWeek: 300, onlineDay: 210 }] }
+        const key = await crypto.subtle.importKey('raw', await crypto.subtle.digest('SHA-256', te.encode('apex-users:testkey123456')), 'AES-GCM', false, ['encrypt'])
+        const iv = crypto.getRandomValues(new Uint8Array(12))
+        return { v: 1, i: b2s(iv), c: b2s(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, te.encode(JSON.stringify(data)))) }
+      })
+      await p.route('https://api.github.com/**/contents/docs/stats/users.enc.json*', rt => rt.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ sha: 'u', content: Buffer.from(JSON.stringify(enc)).toString('base64') }) }))
+      await p.evaluate(async () => { store('apex_admin_users', null); await renderUsers() })
+      if (!(await p.isVisible('#usersSetup').catch(() => false)) && !(await p.$eval('#usersSetup', e => !e.hidden))) bad(W, 'Пользователи: нет настройки без ключа')
+      await p.evaluate(async () => { await usSaveKey('testkey123456'); await renderUsers() })
+      const sum = await p.$eval('#usersSum', e => e.textContent)
+      if (!sum.includes('420') || !sum.includes('55')) bad(W, 'Пользователи: не расшифровались цифры: ' + sum.slice(0, 80))
+      if (!(await p.$eval('#usersVer', e => e.textContent)).includes('3.21.1')) bad(W, 'Пользователи: нет версий')
+      await p.evaluate(async () => { await usSaveKey('wrongkey99999'); await renderUsers() })
+      if (!(await p.$eval('#usersNote', e => e.textContent)).includes('Ключ не подходит')) bad(W, 'Пользователи: неверный ключ не распознан')
+      await p.evaluate(() => store('apex_admin_users', null))
+    }
     if (process.env.SHOT) { await p.evaluate(() => { $('tgText').value = 'Техработы сегодня\nС 22:00 до 23:00 сервер Германия недоступен'; $('tgCard').checked = $('tgBDl').checked = $('tgBHow').checked = true; tgPreview(); document.querySelector('section[data-tab=tg] .block:nth-of-type(4)')?.scrollIntoView() }); await p.screenshot({ path: process.env.SHOT + '-' + width + '.png', fullPage: true }) }
     await p.unroute('https://api.telegram.org/**')
     await p.evaluate(() => showTab('history')); await p.waitForTimeout(600)
