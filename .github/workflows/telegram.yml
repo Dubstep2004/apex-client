@@ -25,6 +25,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Pillow for the version picture
+        run: python3 -m pip install --quiet --break-system-packages pillow || python3 -m pip install --quiet pillow || true
       - name: Post to channel
         env:
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}

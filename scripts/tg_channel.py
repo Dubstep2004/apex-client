@@ -33,6 +33,27 @@ def tg(method, **params):
 CHATS = [c for c in re.split(r'[\s,;]+', CHAT) if c]  # канал и/или группа через запятую
 
 
+def photo(png, caption):
+    """Пост с картинкой (multipart) во все чаты; не вышло — обычным сообщением."""
+    import uuid
+    for chat in CHATS:
+        if DRY:
+            print('→ sendPhoto', chat, len(png), 'байт,', caption[:80]); continue
+        b = uuid.uuid4().hex; parts = []
+        for k, v in {'chat_id': chat, 'caption': caption, 'parse_mode': 'HTML'}.items():
+            parts.append(f'--{b}\r\nContent-Disposition: form-data; name="{k}"\r\n\r\n{v}\r\n'.encode())
+        parts.append(f'--{b}\r\nContent-Disposition: form-data; name="photo"; filename="version.png"\r\nContent-Type: image/png\r\n\r\n'.encode() + png + b'\r\n')
+        parts.append(f'--{b}--\r\n'.encode())
+        try:
+            req = urllib.request.Request(f'https://api.telegram.org/bot{TOKEN}/sendPhoto', b''.join(parts), {'Content-Type': 'multipart/form-data; boundary=' + b})
+            with urllib.request.urlopen(req, timeout=60) as r:
+                if not json.load(r).get('ok'): raise ValueError('не ok')
+        except Exception as e:
+            print(chat, 'картинка не ушла:', e, '— отправляю текстом')
+            try: tg('sendMessage', chat_id=chat, text=caption, parse_mode='HTML', link_preview_options={'is_disabled': True})
+            except SystemExit as e2: print(chat, '—', e2)
+
+
 def post(text):
     for chat in CHATS:
         try:
@@ -70,7 +91,12 @@ if tag and tag != state['version']:
         v = tag.lstrip('v')
         text = f'🆕 <b>Вышла версия {esc(v)}</b>\n\n' + '\n'.join('• ' + esc(i) for i in items)
         text += f'\n\nОбновление придёт само — плашка «Вышла версия» или окно «Доступна версия» → «Обновить».\n<a href="{SITE}/update/">Как обновить</a> · <a href="{SITE}/versions/">Все изменения</a>'
-        post(text)
+        try:  # картинка «Вышла версия X» (scripts/tg_card.py); нет Pillow — просто текст
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            import tg_card
+            photo(tg_card.card(v, items), text[:1024])
+        except ImportError as e:
+            print('без картинки:', e); post(text)
         if v.endswith('.0'):  # новая X.Y — ещё и видео «Что нового», если уже готово
             try:
                 for chat in CHATS: tg('sendVideo', chat_id=chat, video=f'{SITE}/media/whatsnew-ru.mp4', caption=f'Главное в {esc(".".join(v.split(".")[:2]))} — за 12 секунд')
