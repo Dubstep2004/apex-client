@@ -804,6 +804,11 @@
       <div class="block"><h2>📒 Журнал канала</h2><p class="note" id="tgLast"></p>
         <div class="rowx"><button class="btn quiet small" id="tgEdit">✏️ Исправить последний пост</button><button class="btn quiet small" id="tgDel">🗑 Удалить последний пост</button><button class="btn quiet small" id="tgRefVer">🔄 Обновить посты о версиях</button></div>
         <div id="tgLog" style="margin-top:12px"></div></div>
+      <div class="block"><h2>🔘 Кнопки к посту</h2><p class="note">Кнопки-ссылки под любым постом канала — например, под приветственным. Бот должен быть администратором с правом «Редактировать сообщения».</p>
+        <label class="f" for="pbPost">Пост</label><select id="pbPost"><option value="">Список появится, когда робот соберёт посты (раз в 3 часа)</option></select>
+        <div class="tgchk" style="margin-top:10px"><label><input type="checkbox" id="pbDl" checked> 📥 Скачать</label><label><input type="checkbox" id="pbHow" checked> ▶️ Как установить</label><label><input type="checkbox" id="pbSt" checked> 🟢 Статус серверов</label><label><input type="checkbox" id="pbSup" checked> 💬 Поддержка</label><label><input type="checkbox" id="pbCh"> 📣 Канал</label></div>
+        <input id="pbOwn" type="text" placeholder="Своя кнопка: Текст | https://…" style="width:100%;margin-top:8px">
+        <div class="rowx" style="margin-top:10px"><button class="btn go small" id="pbSet">Поставить кнопки</button><button class="btn quiet small" id="pbDel">Убрать кнопки</button></div></div>
       <div class="block" id="tgViewsBlock" hidden><h2>👁 Просмотры постов</h2><p class="note" id="tgViewsNote"></p><div id="tgViews"></div></div>
       <h2 class="tgsec" id="tgs-auto">🤖 Автопосты</h2><p class="note tgsecn">Что робот GitHub публикует без вас — каждое можно выключить.</p>
       <div class="block"><h2>🤖 Что робот публикует сам</h2><p class="note" id="tgRobot">Проверяем…</p>
@@ -989,7 +994,7 @@
     <!-- Справка -->
     <section data-tab="help" hidden class="helpdoc">
       <h1>Справка для владельца</h1>
-      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 13 ноября 2026 · приложение 3.21.3 · пульт 2.28.</p>
+      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 13 ноября 2026 · приложение 3.21.3 · пульт 2.29.</p>
       <div class="helptools">
         <input id="hq" type="search" placeholder="Найти в справке, например «техработы»" aria-label="Найти в справке" autocomplete="off">
         <button class="btn quiet small" id="hOpen" type="button">Развернуть всё</button>
@@ -1215,6 +1220,7 @@
 
       <div class="block"><details><summary>🆕 Что нового в пульте</summary>
         <div class="tbl"><table>
+          <tr><td>2.29</td><td>Telegram → Журнал → «Кнопки к посту»: кнопки-ссылки (Скачать, Как установить, Статус, Поддержка, своя) под любым постом канала</td></tr>
           <tr><td>2.28</td><td>Пост о версии — по разделам «Новое / Улучшено / Исправлено», со ссылками «Сообщить об ошибке» и «Наш канал»; кнопка «Обновить посты о версиях» переписывает прошлые посты</td></tr>
           <tr><td>2.27</td><td>«Сохранить» видна на каждой вкладке; лента событий и «Готово к выпуску?»; подстановки в ответах ({имя}, {версия}…); резервная копия с Telegram и ответами; конкурсы, перевод на английский, просмотры постов, напоминания о техработах и сводка после них, кнопки под постом о версии, нагрузка серверов, бот отвечает сам (Cloudflare)</td></tr>
           <tr><td>2.26</td><td>Telegram: вкладка разложена по разделам (Отправить · Запланировано и журнал · Автопосты · Настройка) с оглавлением; автопосты «Новая версия», видео «Что нового» и «Техработы» можно выключить</td></tr>
@@ -1321,7 +1327,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.28', PANEL_DATE = '13 ноября 2026'
+const PANEL_VERSION = '2.29', PANEL_DATE = '13 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -2921,6 +2927,10 @@ function renderTgState() {
     $('tgViewsNote').textContent = 'Самые просматриваемые из последних ' + s.views.length + ' постов. Берётся с открытой страницы канала, обновляется раз в 3 часа.'
     $('tgViews').innerHTML = usBars(vw.map(v => [v.text || 'пост №' + v.id, v.views]), vw[0].views)
   }
+  // 2.29: посты для «Кнопки к посту» — из собранных просмотров (номер и начало текста)
+  const pbSel = $('pbPost'), pbWas = pbSel.value
+  if ((s.views || []).length) pbSel.innerHTML = s.views.slice().reverse().map(v => `<option value="${esc(v.id)}">№${esc(v.id)} · ${esc((v.text || '').slice(0, 60))}</option>`).join('')
+  if (pbWas) pbSel.value = pbWas
   $('ctList').innerHTML = (s.contests || []).slice().reverse().map(c => `<div class="tglog"><b>🎁</b><span>${esc(c.title.split('\n')[0].slice(0, 70))}${c.result ? '<br>Участников: ' + c.result.count + (c.result.winners ? ' · победители: ' + esc(c.result.winners) : '') : ''}</span><time>${c.drawn ? 'итоги подведены' : 'итоги ' + fmt(c.until)}</time></div>`).join('')
   renderTgStat()
 }
@@ -2941,6 +2951,24 @@ $('tgEdit').onclick = () => guarded($('tgEdit'), async () => {
   await tgRelay('editLast', { text: t.trim() }); toast('Пост исправлен')
 })
 $('tgVerGo').onclick = () => guarded($('tgVerGo'), async () => { const st = releases.find(r => !r.prerelease && !r.draft); if (!st || !confirm('Объявить версию ' + st.tag_name.replace(/^v/, '') + ' в канале?')) return; await tgRelay('sendVersion', { version: st.tag_name.replace(/^v/, '') }); toast('Версия объявлена в канале') })
+// 2.29: кнопки-ссылки под постом канала (через робота GitHub)
+function pbButtons() {
+  const L = tgLinks(), c = collectApp(true), out = []
+  if ($('pbDl').checked) out.push(['📥 Скачать', L.dl]); if ($('pbHow').checked) out.push(['▶️ Как установить', L.how])
+  if ($('pbSt').checked) out.push(['🟢 Статус серверов', 'https://dubstep2004.github.io/status/']); if ($('pbSup').checked) out.push(['💬 Поддержка', L.sup])
+  if ($('pbCh').checked && /^https:\/\/t\.me\//.test(c.links.channel || '')) out.push(['📣 Канал', c.links.channel])
+  const own = $('pbOwn').value.split('|').map(x => x.trim()); if (own[0] && /^https:\/\/\S+$/.test(own[1] || '')) out.push([own[0], own[1]])
+  return out.slice(0, 6)
+}
+$('pbSet').onclick = () => guarded($('pbSet'), async () => {
+  const mid = +$('pbPost').value; if (!mid) throw new Error('Выберите пост'); const b = pbButtons(); if (!b.length) throw new Error('Отметьте хотя бы одну кнопку')
+  if (!confirm('Поставить под пост №' + mid + ' кнопки: ' + b.map(x => x[0]).join(', ') + '?')) return
+  await tgRelay('setButtons', { mid, buttons: b }); toast('Кнопки добавлены под пост')
+})
+$('pbDel').onclick = () => guarded($('pbDel'), async () => {
+  const mid = +$('pbPost').value; if (!mid) throw new Error('Выберите пост'); if (!confirm('Убрать кнопки под постом №' + mid + '?')) return
+  await tgRelay('setButtons', { mid, buttons: [] }); toast('Кнопки убраны')
+})
 $('tgRefVer').onclick = () => guarded($('tgRefVer'), async () => { // 2.28: переписать прошлые посты о версиях в новом виде (разделы, ссылки, кнопки)
   if (!confirm('Переписать уже опубликованные посты о версиях в новом виде: «Новое / Улучшено / Исправлено», «Сообщить об ошибке», «Наш канал» и кнопки?')) return
   const r = await tgRelay('refreshVersions', {}); toast('Обновлены посты: ' + ([...new Set(r.done || [])].join(', ') || 'нет'))

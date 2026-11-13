@@ -194,8 +194,9 @@ def remember(kind, text, ids):
         state['last'] = (state['last'] + [{'at': now, 'kind': kind, 'text': str(text)[:300], 'ids': ids}])[-10:]; changed = True
 
 
-def keyboard(buttons):
-    rows = [[{'text': str(t)[:40], 'url': u}] for t, u in (buttons or [])[:4] if isinstance(u, str) and u.startswith('https://')]
+def keyboard(buttons, cols=1):
+    ok = [{'text': str(t)[:40], 'url': u} for t, u in (buttons or [])[:6] if isinstance(u, str) and u.startswith('https://')]
+    rows = [ok[i:i + cols] for i in range(0, len(ok), cols)]
     return {'inline_keyboard': rows} if rows else None
 
 
@@ -293,7 +294,7 @@ SUPPORT = SUPPORT if SUPPORT.startswith('https://') else 'https://t.me/Apexx_sup
 
 # ── 0. Задания из пульта (docs/tg/outbox.json). Пульт ждёт итог в state['results'][id].
 ALLOWED = {'sendMessage': {'text', 'link_preview_options'}, 'sendPoll': {'question', 'options', 'is_anonymous', 'allows_multiple_answers'},
-           'getChat': set(), 'sendVersion': {'version'}, 'deleteLast': set(), 'editLast': {'text'}, 'ping': set(), 'translate': {'text'}, 'contest': {'text', 'until', 'n', 'button'}, 'refreshVersions': set()}
+           'getChat': set(), 'sendVersion': {'version'}, 'deleteLast': set(), 'editLast': {'text'}, 'ping': set(), 'translate': {'text'}, 'contest': {'text', 'until', 'n', 'button'}, 'refreshVersions': set(), 'setButtons': {'mid', 'buttons'}}
 box = read(E('TG_OUTBOX', 'docs/tg/outbox.json'), {})
 results = state['results']
 for it in (box.get('items') or [])[-40:]:
@@ -336,6 +337,13 @@ for it in (box.get('items') or [])[-40:]:
             done, errs = broadcast('Конкурс', text, CHATS, lambda chat: [tg('sendMessage', chat_id=chat, text=text, reply_markup=kb, link_preview_options={'is_disabled': True}).get('message_id')])
             if not errs:
                 state.setdefault('contests', []).append({'cid': cid, 'until': until, 'n': max(1, min(int(body.get('n') or 1), 10)), 'title': text[:80], 'ids': (state['last'][-1]['ids'] if state['last'] else {}), 'drawn': False})
+        elif method == 'setButtons':  # 2.29: кнопки-ссылки под любым постом канала (номер поста — из «Просмотров» в пульте)
+            mid = int(body.get('mid') or 0)
+            if mid <= 0: raise TgError('нет номера поста')
+            kb = keyboard(body.get('buttons') or [], cols=2) or {'inline_keyboard': []}  # по две в ряд; пустой список — убрать кнопки
+            for k, chat in [(key(c), c) for c in CHATS if c.startswith('@')][:1] or [(key(CHATS[0]), CHATS[0])]:
+                tg('editMessageReplyMarkup', chat_id=chat, message_id=mid, reply_markup=kb); done.append(str(mid))
+            log('Кнопки к посту', f'пост №{mid}: ' + (', '.join(str(t) for t, _ in (body.get('buttons') or [])) or 'кнопки убраны'))
         elif method == 'refreshVersions':  # 2.28: переписать уже опубликованные посты о версиях в новом виде
             found = {}  # версия → {ключ чата: номер сообщения}
             for g in state['last']:
