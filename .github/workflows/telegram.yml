@@ -10,7 +10,7 @@ on:
     types: [completed]
   push:
     branches: [main]
-    paths: ["docs/config/app.json"]
+    paths: ["docs/config/app.json", "docs/tg/outbox.json"]
   workflow_dispatch:
 
 permissions:

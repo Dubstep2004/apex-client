@@ -24,7 +24,7 @@ if not (TOKEN and CHAT) and not DRY:
 def tg(method, **params):
     if DRY:
         print('→', method, json.dumps(params, ensure_ascii=False)[:600]); return {}
-    data = urllib.parse.urlencode({k: (json.dumps(v) if isinstance(v, (dict, list)) else v) for k, v in params.items()}).encode()
+    data = urllib.parse.urlencode({k: (json.dumps(v) if isinstance(v, (dict, list, bool)) else v) for k, v in params.items()}).encode()
     with urllib.request.urlopen(urllib.request.Request(f'https://api.telegram.org/bot{TOKEN}/{method}', data), timeout=30) as r:
         res = json.load(r)
     if not res.get('ok'):
@@ -89,6 +89,39 @@ first = state is None
 state = state or {'version': '', 'marks': {}}
 changed = first
 now = int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000)
+
+# 0. Отправки из пульта через GitHub (2.20): без VPN — в России api.telegram.org из браузера часто закрыт.
+# Пульт дописывает задание в docs/tg/outbox.json, робот отправляет его в чаты из TG_CHAT и пишет итог
+# в state['results'][id] — пульт читает его и показывает «Отправлено» или ошибку.
+ALLOWED = {'sendMessage': {'text', 'link_preview_options'}, 'sendPoll': {'question', 'options', 'is_anonymous', 'allows_multiple_answers'}, 'getChat': set()}
+try:
+    box = json.load(open(os.environ.get('TG_OUTBOX', 'docs/tg/outbox.json')))
+except (OSError, ValueError):
+    box = {}
+results = state.setdefault('results', {})
+for it in (box.get('items') or [])[-20:]:
+    rid = str(it.get('id', ''))[:40]
+    if not rid or rid in results or not isinstance(it.get('body', {}), dict):
+        continue
+    if now - int(it.get('at') or 0) > 6 * 3600 * 1000:
+        results[rid] = {'ok': False, 'error': 'задание устарело — отправьте ещё раз'}; changed = True; continue
+    method = it.get('method')
+    if method not in ALLOWED:
+        results[rid] = {'ok': False, 'error': 'неизвестное действие'}; changed = True; continue
+    body = {k: v for k, v in it['body'].items() if k in ALLOWED[method]}
+    done, errs = [], []
+    for i, chat in enumerate(CHATS, 1):
+        try:
+            r = tg(method, chat_id=chat, **body)
+            done.append(('канал ' if r.get('type') == 'channel' else 'группа ') + str(r.get('title') or r.get('username') or i) if method == 'getChat' else str(i))
+        except SystemExit as e:
+            errs.append(f'чат {i}: ' + str(e).replace('Telegram: ', ''))
+        except Exception as e:  # сеть — пробуем остальные
+            errs.append(f'чат {i}: {e}')
+    print(f'из пульта: {method} — отправлено {len(done)}, ошибок {len(errs)}')
+    results[rid] = {'ok': not errs, 'done': done, 'error': '; '.join(errs)[:300], 'at': now}; changed = True
+if len(results) > 30:  # храним только последние итоги
+    state['results'] = dict(sorted(results.items(), key=lambda kv: kv[1].get('at') or 0)[-30:])
 
 # 1. Новая версия (не бета): номер и пункты «- …» из описания релиза
 rel = gh('/releases/latest')

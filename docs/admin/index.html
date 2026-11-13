@@ -711,6 +711,7 @@
         <label class="f" for="tgTok">Токен бота</label><input id="tgTok" type="password" autocomplete="off" placeholder="123456789:AA…">
         <label class="f" for="tgChat">Канал и/или группа</label><input id="tgChat" type="text" placeholder="@apex_news, @apex_chat или -100…">
         <p class="help">Токен хранится только в этом браузере, зашифрованный вашим входом в пульт, и на GitHub не попадает. Где взять: в Telegram откройте @BotFather → /newbot → скопируйте токен. Затем в канале: Управление → Администраторы → добавить бота.</p>
+        <p class="help"><b>Без VPN:</b> если Telegram не открывается (в России так бывает) или токен здесь не сохранён, пульт отправит через робота GitHub — до минуты, в чаты из секрета <code>TG_CHAT</code> (см. «Сам, без пульта» ниже).</p>
         <div class="rowx" style="margin-top:10px"><button class="btn quiet small" id="tgSave">Запомнить</button><button class="btn quiet small" id="tgTest">Проверить</button><button class="btn quiet small" id="tgForget">Забыть</button></div>
         <label class="sw" style="margin-top:12px"><div class="t"><b>Предлагать отправить новый баннер</b><span>После «Сохранить» пульт спросит, отправить ли новые баннеры в канал</span></div><span class="tog"><input type="checkbox" id="tgAuto"><i></i></span></label>
       </div>
@@ -873,7 +874,7 @@
     <!-- Справка -->
     <section data-tab="help" hidden class="helpdoc">
       <h1>Справка для владельца</h1>
-      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 13 ноября 2026 · приложение 3.20.15 · пульт 2.19.</p>
+      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 13 ноября 2026 · приложение 3.20.15 · пульт 2.20.</p>
       <div class="helptools">
         <input id="hq" type="search" placeholder="Найти в справке, например «техработы»" aria-label="Найти в справке" autocomplete="off">
         <button class="btn quiet small" id="hOpen" type="button">Развернуть всё</button>
@@ -1099,6 +1100,7 @@
 
       <div class="block"><details><summary>🆕 Что нового в пульте</summary>
         <div class="tbl"><table>
+          <tr><td>2.20</td><td>Telegram без VPN: если Telegram не открывается или токен не сохранён в браузере, сообщения, опросы и «Проверить» идут через робота GitHub (до минуты)</td></tr>
           <tr><td>2.19</td><td>Telegram: канал, группа или оба сразу (через запятую) — сообщения, опросы и робот GitHub пишут в каждый. «Проверить» показывает, что нашлось: канал или группа</td></tr>
           <tr><td>2.18</td><td>Перетаскивание за ⠿ везде: баннеры (выше — важнее: приложение показывает первый подходящий), пометки серверов, меню пульта (в режиме ✏️), виды визитки и свои ответы. Строка едет за пальцем, остальные расступаются</td></tr>
           <tr><td>2.17</td><td>«Баннеры» → «🎉 Праздник: баннер + визитка» — одной кнопкой праздничный баннер в приложении (сам исчезнет после праздника) и оформление визитки. «Визитка» → «Виды визитки»: сохранить текущий вид под именем и вернуть его одной кнопкой</td></tr>
@@ -1196,7 +1198,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.19', PANEL_DATE = '13 ноября 2026'
+const PANEL_VERSION = '2.20', PANEL_DATE = '13 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -2603,18 +2605,37 @@ async function tgCfg() {
 }
 const tgChats = c => String(c || '').split(/[\s,;]+/).filter(Boolean)
 async function tg(method, body) {
-  const c = await tgCfg(); if (!c) throw new Error('Сначала впишите токен бота и канал или группу и нажмите «Запомнить»')
+  const c = await tgCfg(); if (!c) return tgRelay(method, body) // 2.20: токена в браузере нет — через робота GitHub
   // 2.19: канал и группа — можно оба через запятую; отправляем в каждый
   let last
-  for (const chat of tgChats(c.chat)) last = await tgOne(c.tok, chat, method, body)
+  try { for (const chat of tgChats(c.chat)) last = await tgOne(c.tok, chat, method, body) }
+  catch (e) { if (!e.net) throw e; return tgRelay(method, body) } // Telegram не открылся (в России без VPN) — через GitHub
   return last
+}
+// 2.20: отправка без VPN. Пульт кладёт задание в docs/tg/outbox.json, робот GitHub (секреты TG_BOT_TOKEN и TG_CHAT)
+// отправляет его со своих серверов и пишет итог в docs/stats/tg-state.json. GitHub из России открыт, Telegram — не всегда.
+const TG_BOX = 'docs/tg/outbox.json'
+async function tgRelay(method, body) {
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
+  const box = (await getFile(TG_BOX)) || {}
+  box.items = [...(box.items || []), { id, method, body, at: Date.now() }].slice(-20)
+  await putFile(TG_BOX, box, 'Telegram из пульта: ' + ({ sendMessage: 'сообщение', sendPoll: 'опрос', getChat: 'проверка' }[method] || method))
+  toast('Telegram не нужен VPN: отправляет робот GitHub, это до минуты…')
+  for (let i = 0; i < 30; i++) {
+    await new Promise(r => setTimeout(r, 5000))
+    let st = null
+    try { const f = await api('/contents/docs/stats/tg-state.json?ref=' + BRANCH, { cache: 'no-store' }); st = JSON.parse(b64dec(f.content)) } catch {}
+    const res = st?.results?.[id]
+    if (res) { if (res.ok) return { relay: true, done: res.done || [] }; throw new Error('Робот GitHub: ' + (res.error || 'не отправилось')) }
+  }
+  throw new Error('Робот ещё не ответил. Проверьте секреты TG_BOT_TOKEN и TG_CHAT и вкладку Actions → «Telegram-канал»')
 }
 async function tgOne(tok, chat, method, body) {
   const c = { tok, chat }
   let r; try { // Обычная форма, а не JSON: так браузер не делает предварительный запрос (на него Telegram отвечает 501 и отправка бы не прошла)
     const form = new URLSearchParams(); Object.entries({ chat_id: c.chat, ...body }).forEach(([k, v]) => form.append(k, typeof v === 'object' ? JSON.stringify(v) : String(v)))
     r = await fetch('https://api.telegram.org/bot' + c.tok + '/' + method, { method: 'POST', body: form }).then(x => x.json()) }
-  catch { throw new Error('Нет связи с Telegram — проверьте интернет или включите VPN') }
+  catch { const e = new Error('Нет связи с Telegram'); e.net = true; throw e }
   if (!r.ok) throw new Error(c.chat + ': ' + ({ 401: 'Telegram не узнал токен бота', 400: (r.description || 'ошибка').replace('Bad Request: chat not found', 'чат не найден — проверьте @имя или номер и что бот добавлен'), 403: 'бот не может писать — добавьте его в группу или сделайте администратором канала' }[r.error_code] || (r.description || 'ошибка')))
   return r.result
 }
@@ -2625,7 +2646,7 @@ $('tgSave').onclick = () => guarded($('tgSave'), async () => {
   if (!tgChats(chat).length || !tgChats(chat).every(x => /^(@[\w]{4,}|-?\d{5,})$/.test(x))) throw new Error('Канал или группа: @имя или числовой id (-100…). Несколько — через запятую')
   await tgSaveCfg(tok, chat); tgFill(); toast('Бот запомнен в этом браузере')
 })
-$('tgTest').onclick = () => guarded($('tgTest'), async () => { const c = await tgCfg(); if (!c) throw new Error('Сначала «Запомнить»'); const names = []; for (const ch of tgChats(c.chat)) { const me = await tgOne(c.tok, ch, 'getChat', {}); names.push((me.type === 'channel' ? 'канал ' : 'группа ') + (me.title || me.username || me.id)) } toast('Найдено: ' + names.join(', ')) })
+$('tgTest').onclick = () => guarded($('tgTest'), async () => { const c = await tgCfg(); const names = []; try { if (!c) throw Object.assign(new Error(), { net: true }); for (const ch of tgChats(c.chat)) { const me = await tgOne(c.tok, ch, 'getChat', {}); names.push((me.type === 'channel' ? 'канал ' : 'группа ') + (me.title || me.username || me.id)) } } catch (e) { if (!e.net) throw e; names.length = 0; names.push(...(await tgRelay('getChat', {})).done.map(n => n + ' (через GitHub)')) } toast('Найдено: ' + names.join(', ')) })
 $('tgForget').onclick = () => { store('apex_admin_tg', null); tgFill(); toast('Токен бота стёрт из этого браузера') }
 $('tgAuto').onchange = () => store('apex_admin_tg_auto', $('tgAuto').checked ? 'on' : null)
 function renderTgPick() {
@@ -2647,7 +2668,7 @@ $('tgPoll').onclick = () => guarded($('tgPoll'), async () => {
   await tg('sendPoll', { question: q, options: opts.map(text => ({ text })), is_anonymous: true, allows_multiple_answers: $('tgMulti').checked }); toast('Опрос отправлен в канал')
 })
 async function tgAfterSave(before, after) {
-  if (load('apex_admin_tg_auto') !== 'on' || !(await tgCfg())) return
+  if (load('apex_admin_tg_auto') !== 'on') return
   const old = new Set((before?.banners || []).map(b => b.text)), fresh = after.banners.filter(b => !b.preview && !old.has(b.text))
   for (const b of fresh) if (confirm('Отправить новый баннер в Telegram-канал?\n\n' + b.text)) { try { await tg('sendMessage', { text: b.text + (b.url ? '\n' + b.url : ''), link_preview_options: { is_disabled: true } }); toast('Баннер отправлен в канал') } catch (e) { toast(e.message, false) } }
 }
