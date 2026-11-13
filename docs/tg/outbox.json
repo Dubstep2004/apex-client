@@ -22,6 +22,33 @@
       "body": {},
       "opts": {},
       "at": 1794610044376
+    },
+    {
+      "id": "pbwelcome08300",
+      "method": "setButtons",
+      "body": {
+        "mid": 3,
+        "buttons": [
+          [
+            "📥 Скачать",
+            "https://dubstep2004.github.io"
+          ],
+          [
+            "▶️ Как установить",
+            "https://dubstep2004.github.io/update/"
+          ],
+          [
+            "🟢 Статус серверов",
+            "https://dubstep2004.github.io/status/"
+          ],
+          [
+            "💬 Поддержка",
+            "https://t.me/Apexx_support"
+          ]
+        ]
+      },
+      "opts": {},
+      "at": 1794610508300
     }
   ]
 }
