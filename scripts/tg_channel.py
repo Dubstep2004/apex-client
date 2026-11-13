@@ -133,6 +133,17 @@ def log(kind, text, ok=True, err=''):
     if not ok: errors.append(f'{kind}: {err}')
 
 
+def key(chat):
+    """Чат в публичном tg-state.json — номером ('1', 'en1'), а не адресом: номера групп -100… не светим."""
+    return ('en' + str(CHATS_EN.index(chat) + 1)) if chat in CHATS_EN and chat not in CHATS else str(CHATS.index(chat) + 1) if chat in CHATS else ''
+
+
+def chat_of(k):
+    k = str(k)
+    try: return CHATS_EN[int(k[2:]) - 1] if k.startswith('en') else CHATS[int(k) - 1]
+    except (ValueError, IndexError): return k if k.startswith('@') or k.lstrip('-').isdigit() else ''  # старая запись — адресом
+
+
 def remember(kind, text, ids):
     """Запомнить последний пост (по чатам) — для «Удалить» и «Исправить» в пульте."""
     global changed
@@ -172,7 +183,7 @@ def broadcast(kind, text, chats, fn):
     done, errs, ids = [], [], {}
     for i, chat in enumerate(chats, 1):
         try:
-            ids[chat] = fn(chat); done.append(str(i))
+            ids[key(chat)] = fn(chat); done.append(str(i))
         except Exception as e:
             errs.append(f'чат {i}: {e}')
     remember(kind, text, ids)
@@ -249,7 +260,10 @@ for it in (box.get('items') or [])[-40:]:
             if en:  # 20: английский текст — в англоязычный канал
                 if not CHATS_EN: errs.append('английский: нет секрета TG_CHAT_EN')
                 else:
+                    ru = state['last'][-1] if state['last'] else None
                     d2, e2 = broadcast('Сообщение (EN)', en, CHATS_EN, lambda chat: send_one(chat, en, o)); done += ['EN ' + x for x in d2]; errs += e2
+                    if ru is not None and state['last'] and state['last'][-1] is not ru and ru in state['last'][:-1]:  # английский — в ту же запись, что русский
+                        g_en = state['last'].pop(); ru['en'] = g_en['ids']
         elif method == 'sendPoll':
             q = str(body.get('question', ''))[:300]
             opts = [o2 for o2 in (body.get('options') or []) if isinstance(o2, dict)][:10]
@@ -265,13 +279,14 @@ for it in (box.get('items') or [])[-40:]:
                     except TgError as e: errors.append('закрепить: ' + str(e))
                 h = int(o.get('results') or 0)
                 if h > 0:  # 3: итоги опроса через h часов
-                    state['polls'].append({'chat': chat, 'mid': m.get('message_id'), 'q': q, 'until': now + min(h, 168) * 3600 * 1000})
+                    state['polls'].append({'chat': key(chat), 'mid': m.get('message_id'), 'q': q, 'until': now + min(h, 168) * 3600 * 1000})
                 return ids
             done, errs = broadcast('Опрос', q, CHATS, poll)
         elif method == 'deleteLast':  # 10: удалить последний пост (все его сообщения во всех чатах)
             if not state['last']: raise TgError('нет постов, которые можно удалить')
             g = state['last'][-1]
-            for chat, ids in g['ids'].items():
+            for k, ids in {**g['ids'], **g.get('en', {})}.items():
+                chat = chat_of(k)
                 for mid in ids:
                     try: tg('deleteMessage', chat_id=chat, message_id=mid); done.append(str(mid))
                     except TgError as e: errs.append(str(e))
@@ -281,8 +296,8 @@ for it in (box.get('items') or [])[-40:]:
             if not state['last']: raise TgError('нет постов, которые можно исправить')
             g, text = state['last'][-1], str(body.get('text', ''))[:4096]
             if g['kind'] in ('Опрос', 'Новая версия'): raise TgError('опрос и пост «Новая версия» исправить нельзя — удалите и отправьте заново')
-            for chat, ids in g['ids'].items():
-                mid = ids[-1]
+            for k, ids in g['ids'].items():
+                chat, mid = chat_of(k), ids[-1]
                 try:
                     try: tg('editMessageText', chat_id=chat, message_id=mid, text=text, link_preview_options={'is_disabled': True})
                     except TgError as e:
@@ -353,12 +368,12 @@ for p in list(state['polls']):
         continue
     state['polls'].remove(p); changed = True
     try:
-        r = tg('stopPoll', chat_id=p['chat'], message_id=p['mid'])
+        chat = chat_of(p['chat']); r = tg('stopPoll', chat_id=chat, message_id=p['mid'])
         rows = [(x.get('text', ''), int(x.get('voter_count') or 0)) for x in r.get('options', [])] if not DRY else [('Да', 3), ('Нет', 1)]
         total = sum(c for _, c in rows)
         cap = f'📊 Итоги опроса: {p["q"]}\n\n' + '\n'.join(f'{t} — {round(100 * c / (total or 1))}%' for t, c in sorted(rows, key=lambda x: -x[1])) + f'\n\nПроголосовали: {total}. Спасибо!'
-        m = send_photo(p['chat'], tg_card.results_card(p['q'], rows), cap, reply_to_message_id=p['mid']) if tg_card else tg('sendMessage', chat_id=p['chat'], text=cap, reply_to_message_id=p['mid'])
-        remember('Итоги опроса', cap, {p['chat']: [m.get('message_id')]}); log('Итоги опроса', p['q'])
+        m = send_photo(chat, tg_card.results_card(p['q'], rows), cap, reply_to_message_id=p['mid']) if tg_card else tg('sendMessage', chat_id=chat, text=cap, reply_to_message_id=p['mid'])
+        remember('Итоги опроса', cap, {key(chat): [m.get('message_id')]}); log('Итоги опроса', p['q'])
     except Exception as e:
         log('Итоги опроса', p['q'], False, e)
 
