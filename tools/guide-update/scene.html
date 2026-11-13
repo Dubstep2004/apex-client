@@ -1,0 +1,126 @@
+<!doctype html>
+<!-- Картинки-инструкции README: «Скачайте и установите» (?s=install) и «Как приходит обновление» (?s=update).
+     Кадр задаётся через window.frame(t), t от 0 до 1. Сборка: node render.js -->
+<html lang="ru"><head><meta charset="utf-8">
+<style>
+:root{--bg:#0b0c14;--card:#1c1d26;--line:#2c2e3a;--text:#f2f3f7;--dim:#9a9db0;--violet:#7c6cff;--gold:#e0a73c;--green:#38c98a;--blue:#6aa8ff}
+*{box-sizing:border-box;margin:0}
+body{width:1280px;height:760px;overflow:hidden;background:var(--bg);font-family:Inter,sans-serif;color:var(--text);position:relative}
+.glow1{position:absolute;left:0;top:0;width:400px;height:350px;background:linear-gradient(135deg,#3a2f8a,transparent 80%);opacity:.75}
+.glow2{position:absolute;right:0;bottom:0;width:360px;height:330px;background:linear-gradient(315deg,#0f4a52,transparent 80%);opacity:.8}
+.head{position:absolute;left:44px;top:40px;display:flex;gap:18px;align-items:center}
+.num{width:60px;height:60px;border-radius:50%;background:var(--violet);display:grid;place-items:center;font-size:28px;font-weight:700}
+h1{font-size:30px;font-weight:700;letter-spacing:-.3px}
+.sub{color:var(--dim);font-size:18px;margin-top:6px}
+.phone{position:absolute;top:138px;width:334px;height:604px;border-radius:44px;border:3px solid #3a3c48;background:#050507;padding:52px 18px 18px;overflow:hidden}
+.phone:before{content:"";position:absolute;left:50%;top:14px;width:96px;height:20px;margin-left:-48px;border-radius:12px;background:#1e1f27}
+.p1{left:68px}.p2{left:473px}.p3{left:878px}
+.badge{position:absolute;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:18px;border:3px solid #fff;transform:scale(0);transition:none;z-index:3}
+.dlg{background:var(--card);border-radius:24px;padding:24px 22px}
+.dlg h2{font-size:21px;font-weight:700}
+.small{color:var(--dim);font-size:13.5px;line-height:1.5}
+.btns{display:flex;justify-content:flex-end;gap:16px;align-items:center;margin-top:22px}
+.btn{padding:10px 14px;border-radius:10px;font-weight:600;font-size:15.5px}
+.ghost{color:var(--dim)}
+.ring{outline:3px solid transparent;outline-offset:3px;border-radius:12px}
+.center{text-align:center}
+.bar{height:8px;border-radius:5px;background:#2c2e3a;overflow:hidden;margin:10px 0 4px}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--violet),var(--blue))}
+.check{color:var(--green);font-size:14px;margin-top:8px;opacity:0}
+.pill{display:flex;align-items:center;gap:10px;background:#23242f;border-radius:30px;padding:8px 10px 8px 8px;font-size:13.5px;font-weight:600}
+.pill .ic{width:28px;height:28px;border-radius:50%;background:#e9eaf2;display:grid;place-items:center;color:#1a1b22;font-size:15px}
+.pill .go{margin-left:auto;color:var(--dim)}
+.sys{position:absolute;left:18px;right:18px;bottom:92px;background:#202129;border-radius:24px;padding:24px 22px 18px}
+.app{display:flex;gap:16px;align-items:center;font-size:19px;font-weight:600}
+.logo{width:38px;height:38px;border-radius:9px;background:#22264a;display:grid;place-items:center;color:#4fd1e8;font-weight:800}
+.sysbtn{color:#aab4ff;font-weight:600;font-size:16px}
+.site{background:linear-gradient(160deg,#1d1840,#0b0c14 70%);border-radius:22px;padding:22px 18px;height:100%}
+.url{background:#1c1d26;border-radius:14px;padding:8px;text-align:center;font-size:13px;color:#c9cbd6;margin-bottom:22px}
+.shield{width:92px;height:104px;margin:16px auto 12px;background:linear-gradient(160deg,#8b7dff,#4d3fd6);clip-path:path('M46 0 L92 18 L92 52 C92 80 70 96 46 104 C22 96 0 80 0 52 L0 18 Z');display:grid;place-items:center;font-size:40px}
+.dlbtn{background:var(--violet);border-radius:14px;padding:14px;text-align:center;font-weight:700;font-size:16px;margin-top:22px}
+.file{background:var(--card);border-radius:16px;padding:16px 18px}
+.file b{font-size:16px}
+.tip{border:1.5px solid #7a5a2a;background:#2a2116;border-radius:16px;padding:16px 18px;font-size:15px;line-height:1.5}
+</style></head><body>
+<div class="glow1"></div><div class="glow2"></div>
+<div id="root"></div>
+<script>
+const V = '3.20.15', OLD = '3.20.14';
+const S = new URLSearchParams(location.search).get('s') || 'update';
+const B = (n, color, x, y) => `<div class="badge" id="b${n}" style="background:${color};left:${x}px;top:${y}px">${n}</div>`;
+const scenes = {
+install: `
+<div class="head"><div class="num">1</div><div><h1>Скачайте и установите</h1>
+<div class="sub">Сайт dubstep2004.github.io → «Скачать для телефона» → установить</div></div></div>
+<div class="phone p1"><div class="site">
+  <div class="url">dubstep2004.github.io</div>
+  <div class="shield">✓</div>
+  <div class="center" style="font-size:24px;font-weight:800">APEX CLIENT</div>
+  <div class="center small" style="margin-top:6px">Своё приложение для вашей подписки</div>
+  <div class="dlbtn ring" id="r1">Скачать для телефона</div>
+  <div class="center small" style="margin-top:10px">Версия ${V} · Android 7+</div>
+  <div class="center small" style="margin-top:18px;opacity:.7">Для часов — отдельная кнопка</div>
+</div></div>
+<div class="phone p2">
+  <div class="center small" style="font-size:16px;color:#d6d8e2;margin-bottom:22px">Загрузки</div>
+  <div class="file ring" id="r2"><b>apex-client-${V}.apk</b><div class="small" style="margin-top:4px">Только что</div></div>
+  <div class="center small" style="margin:40px 0;font-size:15px">Нажмите на скачанный файл<br>в загрузках или в уведомлении</div>
+  <div class="tip">Первый раз телефон спросит разрешение «Установка из браузера» — разрешите.</div>
+</div>
+<div class="phone p3">
+  <div class="center small" style="font-size:15.5px;margin-top:40px">Ставили старую версию<br>с другой подписью — удалите её</div>
+  <div class="sys"><div class="app"><div class="logo">A</div>APEX CLIENT</div>
+  <div style="margin:18px 0 44px;font-size:16px">Установить это приложение?</div>
+  <div class="btns"><span class="sysbtn">Отмена</span><span class="sysbtn btn ring" id="r3">Установить</span></div></div>
+</div>
+${B(1, 'var(--gold)', 352, 476)}${B(2, 'var(--violet)', 772, 222)}${B(3, 'var(--green)', 1160, 562)}`,
+update: `
+<div class="head"><div class="num">2</div><div><h1>Как приходит обновление</h1>
+<div class="sub">Приложение само находит новую версию, скачивает и проверяет файл — вы нажимаете «Обновить»</div></div></div>
+<div class="phone p1">
+  <div class="pill"><div class="ic">↓</div>Вышла версия ${V}<span class="go">Обновить</span></div>
+  <div class="dlg" style="margin-top:40px"><h2>Доступна версия ${V}</h2>
+  <div class="small" style="margin-top:6px">Установлена версия ${OLD}</div>
+  <div style="font-size:15px;line-height:1.7;margin-top:14px">• Новое и улучшения<br>• Исправления</div>
+  <div class="btns"><span class="btn ghost">Позже</span><span class="btn ring" id="r1" style="background:var(--violet)">Обновить</span></div></div>
+  <div class="center small" style="margin-top:22px">Нажали «Позже» — плашка<br>«Вышла версия» ждёт на главном</div>
+</div>
+<div class="phone p2">
+  <div class="dlg ring" id="r2" style="margin-top:60px"><h2>Доступна версия ${V}</h2>
+  <div style="font-size:14px;margin-top:20px" id="pct">Загрузка обновления 0%</div>
+  <div class="bar"><i id="bar"></i></div>
+  <div class="small">С докачкой при обрыве связи</div>
+  <div class="check" id="c1">✓ Файл целый (SHA-256)</div>
+  <div class="check" id="c2">✓ Подпись APEX — официальная сборка</div>
+  <div class="btns"><span class="btn ghost" id="st">Загрузка…</span></div></div>
+  <div class="center small" style="margin-top:26px">Повреждённый или чужой<br>файл не ставится</div>
+</div>
+<div class="phone p3">
+  <div class="center small" style="font-size:15.5px;margin-top:40px">Настройки и подписка сохранятся,<br>VPN включится снова сам</div>
+  <div class="sys"><div class="app"><div class="logo">A</div>APEX CLIENT</div>
+  <div style="margin:18px 0 44px;font-size:16px">Обновить это приложение?</div>
+  <div class="btns"><span class="sysbtn">Отмена</span><span class="sysbtn btn ring" id="r3">Обновить</span></div></div>
+</div>
+${B(1, 'var(--violet)', 344, 444)}${B(2, 'var(--gold)', 772, 230)}${B(3, 'var(--green)', 1160, 562)}`};
+document.getElementById('root').innerHTML = scenes[S];
+const colors = S === 'install' ? ['var(--gold)', 'var(--violet)', 'var(--green)'] : ['var(--violet)', 'var(--gold)', 'var(--green)'];
+const pop = (x) => x <= 0 ? 0 : x >= 1 ? 1 : 1 + 0.25 * Math.sin(Math.PI * x) * (1 - x) * 3 - 0.0;
+window.frame = (t) => {
+  const starts = [0.04, 0.32, 0.66];
+  starts.forEach((s, i) => {
+    const k = Math.min(1, Math.max(0, (t - s) / 0.08));
+    document.getElementById('b' + (i + 1)).style.transform = `scale(${k <= 0 ? 0 : pop(k)})`;
+    const r = document.getElementById('r' + (i + 1));
+    r.style.outlineColor = k > 0 ? colors[i] : 'transparent';
+  });
+  if (S === 'update') {
+    const p = Math.min(1, Math.max(0, (t - 0.34) / 0.2));
+    document.getElementById('bar').style.width = (p * 100) + '%';
+    document.getElementById('pct').textContent = 'Загрузка обновления ' + Math.round(p * 100) + '%';
+    document.getElementById('c1').style.opacity = t > 0.56 ? 1 : 0;
+    document.getElementById('c2').style.opacity = t > 0.61 ? 1 : 0;
+    document.getElementById('st').textContent = t > 0.64 ? 'Установка…' : 'Загрузка…';
+  }
+};
+window.frame(1);
+</script></body></html>
