@@ -551,6 +551,40 @@ private fun SpeedTestPage(viewModel: MainViewModel, onBack: () -> Unit) {
     val meta by viewModel.speedMeta.collectAsStateWithLifecycle()
     val metaLoading by viewModel.speedMetaLoading.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { if (meta == null) viewModel.loadSpeedMeta() }
+    val usedServer by viewModel.speedServer.collectAsStateWithLifecycle()
+    var pickServer by remember { mutableStateOf(false) }
+    // 3.21.1: выбор сервера теста — авто (быстрейший), Cloudflare, Hetzner, OVH
+    if (pickServer) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { pickServer = false },
+            containerColor = Apex.Dialog,
+            title = { Text("Сервер теста", color = Apex.Text) },
+            text = {
+                Column {
+                    (listOf(com.apexvpn.client.data.SpeedServer("auto", "Авто", "самый быстрый из списка")) + com.apexvpn.client.data.SpeedTest.servers).forEach { srv ->
+                        Row(
+                            Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+                                .clickable { viewModel.change(reload = false) { copy(speedServer = srv.id) }; pickServer = false }
+                                .padding(vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            androidx.compose.material3.RadioButton(
+                                selected = set.speedServer == srv.id,
+                                onClick = { viewModel.change(reload = false) { copy(speedServer = srv.id) }; pickServer = false },
+                                colors = androidx.compose.material3.RadioButtonDefaults.colors(selectedColor = Apex.Accent),
+                            )
+                            Column {
+                                Text(srv.title, color = Apex.Text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                                Text(srv.place, color = Apex.TextDim, fontSize = 13.sp)
+                            }
+                        }
+                    }
+                    Text("Hetzner и OVH меряют только загрузку — отдача всегда через Cloudflare.", color = Apex.TextDim, fontSize = 12.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 8.dp))
+                }
+            },
+            confirmButton = { androidx.compose.material3.TextButton(onClick = { pickServer = false }) { Text("Закрыть", color = Apex.TextDim) } },
+        )
+    }
     PageScaffold("Тест скорости", { viewModel.cancelSpeedTest(); onBack() }) {
         Spacer(Modifier.height(8.dp))
         val shown = when (st.phase) {
@@ -627,11 +661,19 @@ private fun SpeedTestPage(viewModel: MainViewModel, onBack: () -> Unit) {
                 onClick = { viewModel.loadSpeedMeta() },
             )
             GroupDivider()
+            // Выбранный сервер; «Авто» — после теста показывает, какой оказался быстрее
+            val chosen = com.apexvpn.client.data.SpeedTest.servers.find { it.id == set.speedServer }
+            val shownSrv = chosen ?: usedServer
             ListRow(
-                if (metaLoading && meta == null) "Поиск сервера…" else "Cloudflare" + (meta?.colo?.takeIf { it.isNotEmpty() }?.let { " · $it" } ?: ""),
-                "Сервер теста — ближайший узел Cloudflare",
-                leading = { if (metaLoading) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.5.dp, color = Apex.Accent) else IconTile(Apex.SurfaceHigh) { Text("🌐", fontSize = 20.sp) } },
-            )
+                when {
+                    shownSrv == null -> "Авто — самый быстрый сервер"
+                    shownSrv.isCloudflare -> "Cloudflare" + (meta?.colo?.takeIf { it.isNotEmpty() && it.length <= 40 }?.let { " · $it" } ?: "")
+                    else -> shownSrv.title + " · " + shownSrv.place
+                },
+                (if (chosen == null) "Авто" + (usedServer?.let { " → " + it.title } ?: "") + " · " else "") + "Сервер теста — нажмите, чтобы выбрать",
+                leading = { if (metaLoading && meta == null) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.5.dp, color = Apex.Accent) else IconTile(Apex.SurfaceHigh) { Text("🌐", fontSize = 20.sp) } },
+                onClick = { if (!running) pickServer = true },
+            ) { Chevron() }
         }
         Caption("Если VPN включён, видно провайдера сервера VPN — так и должно быть. Тест расходует около 50–150 МБ трафика.")
 

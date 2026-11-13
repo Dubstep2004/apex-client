@@ -5,6 +5,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
@@ -26,6 +28,14 @@ data class SpeedResult(
 /** Провайдер и сервер теста: кто вас видит (через VPN — сервер VPN) и ближайший узел Cloudflare. */
 data class SpeedMeta(val provider: String, val ip: String, val city: String, val country: String, val colo: String)
 
+/**
+ * 3.21.1: сервер теста скорости. Cloudflare — ближайший узел, загрузка и отдача; остальные —
+ * известные большие файлы хостингов (только загрузка: отдачу у них не измерить, она идёт через Cloudflare).
+ */
+data class SpeedServer(val id: String, val title: String, val place: String, val file: String = "") {
+    val isCloudflare get() = file.isEmpty()
+}
+
 /** Замер через серверы Cloudflare. Если VPN включён — меряется скорость через VPN. */
 object SpeedTest {
     private const val BASE = "https://speed.cloudflare.com"
@@ -37,7 +47,11 @@ object SpeedTest {
     suspend fun meta(): SpeedMeta? = withContext(Dispatchers.IO) {
         val cf = runCatching {
             json("$BASE/meta")?.let { o ->
-                SpeedMeta(o.optString("asOrganization"), o.optString("clientIp"), o.optString("city"), o.optString("country"), o.optString("colo"))
+                // 3.21.1: Cloudflare стал отдавать узел объектом {"iata":"FRA","city":"Frankfurt",…} — раньше
+                // он целиком попадал в название сервера. Берём город узла, иначе код аэропорта
+                val c = o.optJSONObject("colo")
+                val colo = if (c != null) c.optString("city").ifBlank { c.optString("iata") } else o.optString("colo")
+                SpeedMeta(o.optString("asOrganization"), o.optString("clientIp"), o.optString("city"), o.optString("country"), colo)
             }
         }.getOrNull()
         if (cf != null && cf.provider.isNotBlank() && cf.colo.isNotBlank()) return@withContext cf
@@ -86,8 +100,42 @@ object SpeedTest {
         }
     }
 
+    val servers = listOf(
+        SpeedServer("cf", "Cloudflare", "ближайший к вам узел"),
+        SpeedServer("hetzner-de", "Hetzner", "Германия, Фалькенштайн", "https://fsn1-speed.hetzner.com/100MB.bin"),
+        SpeedServer("hetzner-fi", "Hetzner", "Финляндия, Хельсинки", "https://hel1-speed.hetzner.com/100MB.bin"),
+        SpeedServer("ovh", "OVH", "Франция, Рубе", "https://proof.ovh.net/files/100Mb.dat"),
+    )
+
+    /** Сервер по выбору в настройках; «auto» — тот, что быстрее всех ответил (по одному короткому запросу). */
+    suspend fun choose(id: String): SpeedServer = withContext(Dispatchers.IO) {
+        servers.find { it.id == id }?.let { return@withContext it }
+        servers.map { s -> async { s to (runCatching { probe(s) }.getOrDefault(-1)) } }.awaitAll()
+            .filter { it.second > 0 }.minByOrNull { it.second }?.first ?: servers[0]
+    }
+
+    /** Один короткий запрос к серверу теста: мс или исключение. */
+    private fun probe(s: SpeedServer): Int {
+        val c = open(if (s.isCloudflare) "$BASE/__down?bytes=0" else s.file)
+        if (!s.isCloudflare) c.setRequestProperty("Range", "bytes=0-0")
+        val t = System.nanoTime()
+        try {
+            if (c.responseCode !in 200..299) error("HTTP ${c.responseCode}")
+            c.inputStream.use { it.readBytes() }
+        } finally {
+            c.disconnect()
+        }
+        return ((System.nanoTime() - t) / 1_000_000).toInt()
+    }
+
     /** Пинг и джиттер: 8 коротких запросов, первый (с установкой соединения) не считаем. */
-    suspend fun ping(): Pair<Int, Int> = withContext(Dispatchers.IO) {
+    suspend fun ping(server: SpeedServer = servers[0]): Pair<Int, Int> = withContext(Dispatchers.IO) {
+        if (!server.isCloudflare) {
+            val samples = (1..8).mapNotNull { runCatching { probe(server) }.getOrNull() }
+            val warm = if (samples.size > 2) samples.drop(1) else samples
+            val jitter = if (warm.size < 2) -1 else warm.zipWithNext { a, b -> kotlin.math.abs(a - b) }.average().toInt()
+            return@withContext (warm.minOrNull() ?: -1) to jitter
+        }
         val samples = (1..8).mapNotNull {
             runCatching {
                 val c = open("$BASE/__down?bytes=0")
@@ -110,7 +158,8 @@ object SpeedTest {
      * Загрузка до 10 секунд. [streams] — сколько соединений одновременно: 1 — «одинарное»,
      * 4 — «множественное» (как в Speedtest: лучше показывает ширину канала).
      */
-    suspend fun download(streams: Int = 4, progress: (Double) -> Unit): Double = withContext(Dispatchers.IO) {
+    suspend fun download(streams: Int = 4, server: SpeedServer = servers[0], progress: (Double) -> Unit): Double = withContext(Dispatchers.IO) {
+        val url = if (server.isCloudflare) "$BASE/__down?bytes=25000000" else server.file
         val total = java.util.concurrent.atomic.AtomicLong()
         val start = System.nanoTime()
         val limit = 10_000_000_000L
@@ -118,7 +167,7 @@ object SpeedTest {
             val jobs = (1..streams.coerceIn(1, 8)).map {
                 launch {
                     while (System.nanoTime() - start < limit) {
-                        val c = open("$BASE/__down?bytes=25000000")
+                        val c = open(url)
                         try {
                             c.inputStream.use { input ->
                                 val buf = ByteArray(64 * 1024)
