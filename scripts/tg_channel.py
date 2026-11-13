@@ -52,6 +52,7 @@ def photo(png, caption):
             req = urllib.request.Request(f'https://api.telegram.org/bot{TOKEN}/sendPhoto', b''.join(parts), {'Content-Type': 'multipart/form-data; boundary=' + b})
             with urllib.request.urlopen(req, timeout=60) as r:
                 if not json.load(r).get('ok'): raise ValueError('не ok')
+            print(f'картинка отправлена в чат {CHATS.index(chat) + 1} из {len(CHATS)}')
         except Exception as e:
             print(chat, 'картинка не ушла:', e, '— отправляю текстом')
             try: tg('sendMessage', chat_id=chat, text=caption, parse_mode='HTML', link_preview_options={'is_disabled': True})
@@ -66,6 +67,7 @@ def post(text):
     for chat in CHATS:
         try:
             tg('sendMessage', chat_id=chat, text=text, parse_mode='HTML', link_preview_options={'is_disabled': True})
+            print(f'пост отправлен в чат {CHATS.index(chat) + 1} из {len(CHATS)}')
         except SystemExit as e:
             print(chat, '—', e)  # один чат не принял — в остальные всё равно отправим
 
