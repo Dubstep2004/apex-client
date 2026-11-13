@@ -578,7 +578,7 @@
       <p class="lead">Показывается первый подходящий по времени, устройству, стране и версии. Пользователь может закрыть баннер — новый текст покажется снова.</p>
       <div class="phone-inline" data-preview></div>
       <div class="tpls" id="tpls"></div>
-      <div class="qact" style="margin:-4px 0 14px"><button class="btn quiet small" id="oldVerBtn">⏳ Баннер «обновитесь» для старых версий</button></div>
+      <div class="qact" style="margin:-4px 0 14px"><button class="btn quiet small" id="holBtn">🎉 Праздник: баннер + визитка</button><button class="btn quiet small" id="oldVerBtn">⏳ Баннер «обновитесь» для старых версий</button></div>
       <div id="banners"></div>
       <button class="add" id="addBanner">Добавить баннер</button>
     </section>
@@ -807,6 +807,9 @@
         <div class="rowx"><button class="add" id="faqAdd">Добавить вопрос</button><button class="btn quiet small" id="faqDefaults">Взять стандартные</button></div>
       </div>
       <button class="btn go" id="saveSite" style="width:100%">Сохранить визитку</button>
+      <div class="block" style="margin-top:18px"><h2>Виды визитки</h2><p class="note">Сохраните текущий вид (блоки, тексты, кнопку, праздник) под именем и возвращайтесь к нему одной кнопкой — например «Обычный», «Акция», «Новый год». Хранится в репозитории, видно на любом устройстве.</p>
+        <div class="rowx"><input id="presetName" type="text" maxlength="40" placeholder="Название, например «Акция»" style="flex:1;min-width:160px"><button class="btn quiet small" id="presetAdd">Сохранить вид</button></div>
+        <div id="presetList" class="journal" style="margin-top:10px"></div></div>
       <p class="help">Сайт подхватывает изменения за 1–5 минут. Английская версия берёт порядок и включённые блоки, тексты на ней свои.</p>
     </section>
 
@@ -1035,6 +1038,7 @@
 
       <div class="block"><details><summary>🆕 Что нового в пульте</summary>
         <div class="tbl"><table>
+          <tr><td>2.17</td><td>«Баннеры» → «🎉 Праздник: баннер + визитка» — одной кнопкой праздничный баннер в приложении (сам исчезнет после праздника) и оформление визитки. «Визитка» → «Виды визитки»: сохранить текущий вид под именем и вернуть его одной кнопкой</td></tr>
           <tr><td>2.16</td><td>«Визитка» → «Праздничное оформление»: Новый год, 14 февраля, 8 Марта, весна, лето, осень, Хэллоуин, конфетти или «само по календарю». Плавная сортировка перетаскиванием во всех списках: блоки и вопросы визитки, обои, темы, источники — строка едет за пальцем, остальные расступаются, у края экрана список прокручивается сам</td></tr>
           <tr><td>2.15</td><td>Вкладки «Telegram» (сообщения и опросы в ваш канал) и «Ответы» (живые ответы пользователям). «⏰ Сохранить позже» — изменения выйдут сами в нужное время. На «Обзоре»: неделя, скачивания по дням, большой экран для ТВ (клавиша B), уведомления браузера о красной сборке и сроке токена. «История»: журнал всех изменений с поиском и сравнение двух сохранений. Проверка всех ссылок. Баннер «обновитесь» только для старых версий. Живая визитка во вкладке «Визитка». Свои цвета и анимации в 🎨. Горячие клавиши 1–9 и «?»</td></tr>
           <tr><td>2.14</td><td>Оформления 2026 года: «Стекло 2026» (тёмное) и «Облако 2026» (светлое) — полупрозрачные карточки с размытием поверх яркого цветного фона (🎨 в шапке)</td></tr>
@@ -1079,6 +1083,14 @@
 </div>
 
 
+<dialog id="holDlg">
+  <h2>🎉 Праздник одной кнопкой</h2>
+  <p>Пульт добавит праздничный баннер в приложение (сам исчезнет после праздника) и включит оформление на визитке.</p>
+  <div class="tpls" id="holKinds"></div>
+  <label class="f" for="holText">Текст баннера</label><textarea id="holText" rows="2" maxlength="240"></textarea>
+  <p class="help" id="holWhen"></p>
+  <div class="acts"><button class="btn quiet" id="holNo">Отмена</button><button class="btn go" id="holOk">Включить праздник</button></div>
+</dialog>
 <dialog id="laterDlg">
   <h2>Сохранить позже</h2>
   <p>Изменения сохранятся сами в выбранное время (робот GitHub проверяет каждые 10 минут, возможна задержка до 15 минут). Пульт можно закрыть.</p>
@@ -1121,7 +1133,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.16', PANEL_DATE = '13 ноября 2026'
+const PANEL_VERSION = '2.17', PANEL_DATE = '13 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -1778,6 +1790,7 @@ function showTab(id) {
   if (id === 'history') { loadJournal(); loadCompare() }
   if (id === 'tg') { tgFill(); renderTgPick() }
   if (id === 'answers') renderAnswers()
+  if (id === 'site') loadPresets()
   if (id === 'history') loadHistory()
   if (id === 'checks' && !$('checkList').innerHTML) runChecks()
   preview(collectApp(true))
@@ -2622,6 +2635,68 @@ document.addEventListener('keydown', e => {
   }
   if (e.key === 'b' || e.key === 'и') { e.preventDefault(); $('big').hidden ? openBig() : closeBig() }
 })
+
+// ══ 2.17 ══ 10. Праздник одной кнопкой: баннер в приложении + оформление визитки
+const HOLS = {
+  newyear: ['🎄 Новый год', '🎄 С наступающим Новым годом! Спасибо, что вы с APEX CLIENT', [1, 14]],
+  valentine: ['💘 14 февраля', '💘 С Днём святого Валентина! Тёплых сообщений без перебоев', [2, 15]],
+  march8: ['🌷 8 Марта', '🌷 С 8 Марта! Весеннего настроения и быстрого интернета', [3, 9]],
+  halloween: ['🎃 Хэллоуин', '🎃 Счастливого Хэллоуина! Страшно только без VPN', [11, 1]],
+  spring: ['🌸 Весна', '🌸 Весна пришла — APEX CLIENT желает отличного настроения!', 14],
+  summer: ['🦋 Лето', '🦋 Хорошего лета! Отдыхайте — APEX сам найдёт дорогу', 14],
+  autumn: ['🍁 Осень', '🍁 Уютной осени! Мы рядом, когда нужен быстрый интернет', 14],
+  party: ['🎉 Праздник', '🎉 У нас праздник! Спасибо, что вы с APEX CLIENT', 3],
+}
+let holKind = ''
+function holEnd(k) {
+  const e = HOLS[k][2], now = new Date()
+  if (typeof e === 'number') return Date.now() + e * 864e5
+  const d = new Date(now.getFullYear(), e[0] - 1, e[1], 23, 59)
+  if (d.getTime() < Date.now()) d.setFullYear(d.getFullYear() + 1)
+  return d.getTime()
+}
+function holPick(k) {
+  holKind = k; $('holText').value = HOLS[k][1]
+  $('holKinds').querySelectorAll('[data-hk]').forEach(b => b.classList.toggle('on', b.dataset.hk === k))
+  const auto = ['newyear', 'valentine', 'march8', 'halloween'].includes(k)
+  $('holWhen').textContent = 'Баннер — до ' + fmt(holEnd(k)) + '. Визитка: ' + (auto ? '«Само по календарю» — оформление выключится само после праздника.' : HOLS[k][0] + ' — выключите во вкладке «Визитка», когда надоест.')
+}
+$('holKinds').innerHTML = Object.entries(HOLS).map(([k, [t]]) => `<button class="pill" data-hk="${k}">${t}</button>`).join('')
+$('holKinds').onclick = e => { const k = e.target.closest('[data-hk]')?.dataset.hk; if (k) holPick(k) }
+$('holBtn').onclick = () => { const m = new Date().getMonth() + 1; holPick(m === 12 || m === 1 ? 'newyear' : m === 2 ? 'valentine' : m === 3 ? 'march8' : m === 10 ? 'halloween' : m >= 4 && m <= 5 ? 'spring' : m <= 8 ? 'summer' : 'autumn'); $('holDlg').showModal() }
+$('holNo').onclick = () => $('holDlg').close()
+$('holOk').onclick = () => guarded($('holOk'), async () => {
+  const text = $('holText').value.trim(); if (!text) throw new Error('Напишите текст баннера')
+  const dirtyApp = saved && JSON.stringify(collectApp(true)) !== saved
+  banners.unshift(newBanner({ name: HOLS[holKind][0], text, level: 'info', to: holEnd(holKind) })); renderBanners()
+  $('sHoliday').value = ['newyear', 'valentine', 'march8', 'halloween'].includes(holKind) ? 'auto' : holKind; sitePrev()
+  $('holDlg').close()
+  if (dirtyApp) { changed(); return toast('Баннер и праздник добавлены. Были другие несохранённые правки — проверьте и нажмите «Сохранить» и «Сохранить визитку»') }
+  await putFile(APP, collectApp(), 'Пульт: праздник — ' + HOLS[holKind][0]); saved = JSON.stringify(collectApp(true))
+  const sc = collectSite(); await putFile(SITE, sc, 'Пульт: визитка — ' + HOLS[holKind][0]); siteSaved = JSON.stringify(sc)
+  changed(); renderVersions(); toast('Праздник включён: баннер в приложении и оформление визитки')
+})
+
+// 13. Виды визитки: docs/config/site-presets.json
+const PRESETS = 'docs/config/site-presets.json'
+let presets = []
+async function loadPresets() { try { presets = (await getFile(PRESETS))?.presets || [] } catch { presets = [] } renderPresets() }
+function renderPresets() {
+  $('presetList').innerHTML = presets.length ? presets.map((x, i) => `<div><span><b>${esc(x.name)}</b><small> · ${esc(fmt(x.at))}</small></span><span class="rowx" style="gap:6px"><button class="btn quiet small" data-pa="${i}">Применить</button><button class="btn quiet small" data-pd="${i}" aria-label="Удалить вид">×</button></span></div>`).join('') : '<p class="note">Пока нет сохранённых видов.</p>'
+}
+async function savePresets(msg) { await getFile(PRESETS).catch(() => {}); await putFile(PRESETS, { presets }, msg); renderPresets() }
+$('presetAdd').onclick = () => guarded($('presetAdd'), async () => {
+  const name = $('presetName').value.trim(); if (!name) throw new Error('Впишите название вида')
+  await loadPresets()
+  const i = presets.findIndex(x => x.name.toLowerCase() === name.toLowerCase()), item = { name, at: Date.now(), site: collectSite() }
+  if (i >= 0) { if (!confirm('Вид «' + name + '» уже есть. Заменить?')) return; presets[i] = item } else presets.unshift(item)
+  presets = presets.slice(0, 20); await savePresets('Пульт: вид визитки «' + name + '»'); $('presetName').value = ''; toast('Вид «' + name + '» сохранён')
+})
+$('presetList').onclick = e => {
+  const a = e.target.closest('[data-pa]'), d = e.target.closest('[data-pd]')
+  if (a) { const x = presets[+a.dataset.pa]; fillSite(x.site); changed(); toast('Вид «' + x.name + '» подставлен — проверьте и нажмите «Сохранить визитку»') }
+  if (d) guarded(d, async () => { const x = presets[+d.dataset.pd]; if (!confirm('Удалить вид «' + x.name + '»?')) return; presets.splice(+d.dataset.pd, 1); await savePresets('Пульт: удалён вид визитки «' + x.name + '»') })
+}
 
 // Старт: зашифрованный токен — экран PIN; старый незашифрованный — подставить и попросить PIN
 if (load('apex_admin_vault')) { $('unlock').hidden = false } else { $('login').hidden = false; const old = load('apex_admin_token'); if (old) $('token').value = old }

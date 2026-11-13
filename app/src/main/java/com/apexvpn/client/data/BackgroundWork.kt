@@ -222,6 +222,12 @@ object ExpiryAlerts {
         }
     }
 
+    /** Куда вести «Продлить»: личный кабинет из подписки, иначе чат поддержки. */
+    fun renewUrl(): String {
+        val sub = Subscription.state.value
+        return sub.webPageUrl.ifBlank { sub.supportUrl }.ifBlank { Links.support() }
+    }
+
     private fun notify(context: Context, text: String, stage: Int) {
         val nm = context.getSystemService<NotificationManager>() ?: return
         val pi = PendingIntent.getActivity(
@@ -236,17 +242,24 @@ object ExpiryAlerts {
         }
         // 3.17.4: кнопка «Продлить» — личный кабинет из подписки, иначе чат поддержки
         val sub = Subscription.state.value
-        val renewUrl = sub.webPageUrl.ifBlank { sub.supportUrl }.ifBlank { Links.support() }
-        val renew = runCatching {
-            PendingIntent.getActivity(
-                context, 12, Intent(Intent.ACTION_VIEW, android.net.Uri.parse(renewUrl)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-            )
-        }.getOrNull()
+        val renewUrl = renewUrl()
+        val view = { code: Int, url: String ->
+            runCatching {
+                PendingIntent.getActivity(
+                    context, code, Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                )
+            }.getOrNull()
+        }
+        val renew = view(12, renewUrl)
+        // 3.20.11: вторая кнопка — «Написать в поддержку» (если продление ведёт не в чат)
+        val chatUrl = sub.supportUrl.ifBlank { Links.support() }
+        val chat = if (chatUrl.isNotBlank() && chatUrl != renewUrl) view(13, chatUrl) else null
         nm.notify(
             4,
             NotificationCompat.Builder(context, ApexApp.CHANNEL_ALERTS)
                 .apply { if (stage >= 0 && renew != null) addAction(0, "Продлить", renew) }
+                .apply { if (chat != null) addAction(0, "Написать в поддержку", chat) }
                 .setSmallIcon(R.drawable.ic_stat_apex)
                 .setContentTitle(title)
                 .setContentText(if (stage >= 0) "$text. Продлите в личном кабинете, чтобы VPN не отключился." else text)

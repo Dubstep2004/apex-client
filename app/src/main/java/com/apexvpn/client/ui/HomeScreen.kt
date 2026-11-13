@@ -201,8 +201,15 @@ fun HomeScreen(
 
         // 13. Подписка заканчивается
         ExpiryAlerts.warning(sub)?.let { w ->
+            // 3.20.11: нажатие — продлить (личный кабинет из подписки, иначе чат поддержки)
+            val renew = ExpiryAlerts.renewUrl()
             Spacer(Modifier.height(10.dp))
-            Banner(Icons.Rounded.WarningAmber, Apex.Warn, null, w, onClick = null, onClose = null)
+            Banner(
+                Icons.Rounded.WarningAmber, Apex.Warn, null,
+                if (renew.startsWith("http") || renew.startsWith("tg:")) "$w · нажмите, чтобы продлить" else w,
+                onClick = renew.takeIf { it.startsWith("http") || it.startsWith("tg:") }?.let { u -> { openUrl(context, u) } },
+                onClose = null,
+            )
         }
 
         val selected = sub.nodes.find { it.tag == sub.selectedTag }

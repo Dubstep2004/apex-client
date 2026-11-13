@@ -101,6 +101,13 @@ async function edges(page, where) {
     if (await p.evaluate(f => sects[0].id === f || sects.findIndex(x => x.id === f) !== 2, first)) bad(W, 'перетаскивание блоков визитки не поменяло порядок: ' + await p.evaluate(() => sects.map(x => x.id).join(',')))
     await p.evaluate(() => { $('sectsReset').click(); $('sHoliday').value = 'march8' }); if ((await p.evaluate(() => collectSite().show.holiday)) !== 'march8') bad(W, 'праздничное оформление не попадает в настройки визитки')
     await p.evaluate(() => { fillSite(files[SITE]?.data) })
+    // 2.17: праздник одной кнопкой, виды визитки
+    await p.evaluate(() => showTab('banner')); await p.click('#holBtn'); await p.click('#holKinds [data-hk="march8"]'); await p.click('#holOk'); await p.waitForTimeout(500)
+    if (!(await p.evaluate(() => banners.some(b => b.name.includes('8 Марта') && b.to > Date.now()) && $('sHoliday').value === 'auto'))) bad(W, '«Праздник одной кнопкой» не добавил баннер или оформление')
+    await p.evaluate(() => { banners = banners.filter(b => !b.name.includes('8 Марта')); renderBanners(); changed(); showTab('site') }); await p.waitForTimeout(300)
+    await p.fill('#presetName', 'Проверка'); await p.click('#presetAdd'); await p.waitForTimeout(400)
+    if (!(await p.textContent('#presetList')).includes('Проверка')) bad(W, 'вид визитки не сохранился')
+    await edges(p, W + ' → визитка с видами')
     await p.evaluate(() => showTab('banner')); await p.click('#oldVerBtn'); await p.waitForTimeout(300)
     if (!(await p.evaluate(() => banners[0]?.maxCode > 0))) bad(W, 'баннер для старых версий без ограничения версии')
     await p.evaluate(() => { banners.shift(); renderBanners(); changed(); showTab('home') })
