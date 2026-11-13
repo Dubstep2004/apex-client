@@ -2,6 +2,16 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.21.1 · 14 ноября 2026
+
+<img src="img/tags/new.svg" alt="Новое" height="22">
+
+- Тест скорости: выбор сервера — авто (самый быстрый), Cloudflare, Hetzner в Германии и Финляндии или OVH во Франции
+
+<img src="img/tags/fixed.svg" alt="Исправлено" height="22">
+
+- Тест скорости: вместо города сервера Cloudflare показывался служебный текст
+
 ## 3.21.0 · 14 ноября 2026
 
 <img src="img/tags/new.svg" alt="Новое" height="22">
