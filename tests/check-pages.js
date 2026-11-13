@@ -116,6 +116,10 @@ async function dragRow(p, rowSel, from, to) { // перетащить строк
       await p.waitForFunction(() => /с картинкой/.test(document.querySelector('#toast').textContent), null, { timeout: 15000 }).catch(() => bad(W, '«Новая версия» с картинкой не ушла'))
       if (ids.length <= n0) bad(W, '«Новая версия»: нет задания для робота')
     }
+    // 2.22: опрос с картинкой — через робота
+    await p.fill('#tgQ', 'Какой сервер добавить?'); await p.fill('#tgOpts', 'Япония\nСША'); const n1 = ids.length; await p.click('#tgPoll')
+    await p.waitForFunction(() => /Картинка и опрос/.test(document.querySelector('#toast').textContent), null, { timeout: 15000 }).catch(() => bad(W, 'опрос с картинкой не ушёл'))
+    if (ids.length <= n1) bad(W, 'опрос с картинкой: нет задания для робота')
     await p.unroute('https://api.telegram.org/**')
     await p.evaluate(() => showTab('history')); await p.waitForTimeout(600)
     if (!(await p.$$('#journal > div')).length) bad(W, 'журнал изменений пустой')

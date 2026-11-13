@@ -732,6 +732,7 @@
         <label class="f" for="tgQ">Вопрос</label><input id="tgQ" type="text" maxlength="300" placeholder="Какой сервер добавить?">
         <label class="f" for="tgOpts">Варианты — по одному в строке (2–10)</label><textarea id="tgOpts" rows="4" placeholder="Япония&#10;США&#10;Турция"></textarea>
         <label class="sw" style="margin-top:8px"><div class="t"><b>Можно выбрать несколько</b></div><span class="tog"><input type="checkbox" id="tgMulti"><i></i></span></label>
+        <label class="sw"><div class="t"><b>🖼 Картинка перед опросом</b><span>Вопрос и варианты крупно, в стиле канала. Telegram не даёт прикрепить фото к самому опросу — картинка уходит прямо перед ним. Отправляет робот GitHub, до минуты</span></div><span class="tog"><input type="checkbox" id="tgPollCard" checked><i></i></span></label>
         <button class="btn go" id="tgPoll" style="margin-top:12px;width:100%">Отправить опрос</button></div>
     </section>
 
@@ -875,7 +876,7 @@
     <!-- Справка -->
     <section data-tab="help" hidden class="helpdoc">
       <h1>Справка для владельца</h1>
-      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 13 ноября 2026 · приложение 3.20.15 · пульт 2.21.</p>
+      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 13 ноября 2026 · приложение 3.20.15 · пульт 2.22.</p>
       <div class="helptools">
         <input id="hq" type="search" placeholder="Найти в справке, например «техработы»" aria-label="Найти в справке" autocomplete="off">
         <button class="btn quiet small" id="hOpen" type="button">Развернуть всё</button>
@@ -1101,6 +1102,7 @@
 
       <div class="block"><details><summary>🆕 Что нового в пульте</summary>
         <div class="tbl"><table>
+          <tr><td>2.22</td><td>Telegram: перед опросом — картинка с вопросом и вариантами (рисует робот GitHub, без VPN)</td></tr>
           <tr><td>2.21</td><td>Telegram: «🆕 Новая версия» — с картинкой «Вышла версия», как у робота, и без звёздочек разметки в тексте</td></tr>
           <tr><td>2.20</td><td>Telegram без VPN: если Telegram не открывается или токен не сохранён в браузере, сообщения, опросы и «Проверить» идут через робота GitHub (до минуты)</td></tr>
           <tr><td>2.19</td><td>Telegram: канал, группа или оба сразу (через запятую) — сообщения, опросы и робот GitHub пишут в каждый. «Проверить» показывает, что нашлось: канал или группа</td></tr>
@@ -1200,7 +1202,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.21', PANEL_DATE = '13 ноября 2026'
+const PANEL_VERSION = '2.22', PANEL_DATE = '13 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -2675,7 +2677,9 @@ $('tgPoll').onclick = () => guarded($('tgPoll'), async () => {
   const q = $('tgQ').value.trim(), opts = $('tgOpts').value.split('\n').map(x => x.trim()).filter(Boolean)
   if (!q) throw new Error('Напишите вопрос'); if (opts.length < 2 || opts.length > 10) throw new Error('Нужно от 2 до 10 вариантов')
   if (opts.some(o => o.length > 100)) throw new Error('Вариант длиннее 100 символов')
-  await tg('sendPoll', { question: q, options: opts.map(text => ({ text })), is_anonymous: true, allows_multiple_answers: $('tgMulti').checked }); toast('Опрос отправлен в канал')
+  const poll = { question: q, options: opts.map(text => ({ text })), is_anonymous: true, allows_multiple_answers: $('tgMulti').checked }
+  if ($('tgPollCard').checked) { await tgRelay('sendPoll', { ...poll, card: true }); toast('Картинка и опрос отправлены в канал'); return } // картинку рисует робот GitHub
+  await tg('sendPoll', poll); toast('Опрос отправлен в канал')
 })
 async function tgAfterSave(before, after) {
   if (load('apex_admin_tg_auto') !== 'on') return

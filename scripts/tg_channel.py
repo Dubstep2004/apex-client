@@ -126,7 +126,7 @@ def version_post(rel):
 # 0. Отправки из пульта через GitHub (2.20): без VPN — в России api.telegram.org из браузера часто закрыт.
 # Пульт дописывает задание в docs/tg/outbox.json, робот отправляет его в чаты из TG_CHAT и пишет итог
 # в state['results'][id] — пульт читает его и показывает «Отправлено» или ошибку.
-ALLOWED = {'sendMessage': {'text', 'link_preview_options'}, 'sendPoll': {'question', 'options', 'is_anonymous', 'allows_multiple_answers'}, 'getChat': set(), 'sendVersion': {'version'}}
+ALLOWED = {'sendMessage': {'text', 'link_preview_options'}, 'sendPoll': {'question', 'options', 'is_anonymous', 'allows_multiple_answers', 'card'}, 'getChat': set(), 'sendVersion': {'version'}}
 try:
     box = json.load(open(os.environ.get('TG_OUTBOX', 'docs/tg/outbox.json')))
 except (OSError, ValueError):
@@ -152,7 +152,13 @@ for it in (box.get('items') or [])[-20:]:
                 _, png, cap = it['vp']
                 r = send_photo(chat, png, cap) if png else tg('sendMessage', chat_id=chat, text=cap, parse_mode='HTML', link_preview_options={'is_disabled': True})
             else:
-                r = tg(method, chat_id=chat, **body)
+                if method == 'sendPoll' and body.get('card'):  # 2.22: перед опросом — картинка с вопросом и вариантами
+                    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+                    import tg_card
+                    q = str(body.get('question', ''))[:300]
+                    try: send_photo(chat, tg_card.poll_card(q, [str(o.get('text', '')) if isinstance(o, dict) else str(o) for o in body.get('options') or []]), '📊 ' + q, html=False)
+                    except Exception as e: print('картинка опроса не ушла:', e)  # опрос всё равно отправим
+                r = tg(method, chat_id=chat, **{k: v for k, v in body.items() if k != 'card'})
             done.append(('канал ' if r.get('type') == 'channel' else 'группа ') + str(r.get('title') or r.get('username') or i) if method == 'getChat' else str(i))
         except SystemExit as e:
             errs.append(f'чат {i}: ' + str(e).replace('Telegram: ', ''))
