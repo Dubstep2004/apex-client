@@ -706,10 +706,10 @@
     <!-- Telegram -->
     <section data-tab="tg" hidden>
       <h1>Telegram-канал</h1>
-      <p class="lead">Новости и опросы в ваш канал прямо из пульта. Нужен свой бот, добавленный в канал администратором с правом публиковать.</p>
+      <p class="lead">Новости и опросы в ваш канал или группу (можно в оба сразу — через запятую) прямо из пульта. Нужен свой бот: в канале — администратор с правом публиковать, в группе — просто участник.</p>
       <div class="block"><h2>Бот</h2>
         <label class="f" for="tgTok">Токен бота</label><input id="tgTok" type="password" autocomplete="off" placeholder="123456789:AA…">
-        <label class="f" for="tgChat">Канал</label><input id="tgChat" type="text" placeholder="@apex_news или -100…">
+        <label class="f" for="tgChat">Канал и/или группа</label><input id="tgChat" type="text" placeholder="@apex_news, @apex_chat или -100…">
         <p class="help">Токен хранится только в этом браузере, зашифрованный вашим входом в пульт, и на GitHub не попадает. Где взять: в Telegram откройте @BotFather → /newbot → скопируйте токен. Затем в канале: Управление → Администраторы → добавить бота.</p>
         <div class="rowx" style="margin-top:10px"><button class="btn quiet small" id="tgSave">Запомнить</button><button class="btn quiet small" id="tgTest">Проверить</button><button class="btn quiet small" id="tgForget">Забыть</button></div>
         <label class="sw" style="margin-top:12px"><div class="t"><b>Предлагать отправить новый баннер</b><span>После «Сохранить» пульт спросит, отправить ли новые баннеры в канал</span></div><span class="tog"><input type="checkbox" id="tgAuto"><i></i></span></label>
@@ -718,7 +718,7 @@
         <p class="note">Робот GitHub сам пишет в канал: <b>о новой версии</b> (номер и список изменений) и <b>о техработах</b> — когда вы ставите пометку «Обслуживание» на сервер, когда меняете время и когда работы закончились. Проверяет каждые 10 минут и сразу после «Сохранить».</p>
         <ol class="note" style="margin:8px 0 0;padding-left:20px">
           <li>GitHub → репозиторий apex-client → Settings → Secrets and variables → Actions → <b>New repository secret</b>.</li>
-          <li>Имя <code>TG_BOT_TOKEN</code> — токен бота. Ещё один: <code>TG_CHAT</code> — <code>@имя_канала</code>.</li>
+          <li>Имя <code>TG_BOT_TOKEN</code> — токен бота. Ещё один: <code>TG_CHAT</code> — <code>@имя_канала</code>, группа — <code>@имя_группы</code> или номер <code>-100…</code>; оба — через запятую.</li>
           <li>Готово. Первый раз робот только запомнит, что сейчас есть, и ничего не отправит — дальше будет писать о новом.</li>
         </ol>
       </div>
@@ -873,7 +873,7 @@
     <!-- Справка -->
     <section data-tab="help" hidden class="helpdoc">
       <h1>Справка для владельца</h1>
-      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 13 ноября 2026 · приложение 3.20.14 · пульт 2.18.</p>
+      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 13 ноября 2026 · приложение 3.20.14 · пульт 2.19.</p>
       <div class="helptools">
         <input id="hq" type="search" placeholder="Найти в справке, например «техработы»" aria-label="Найти в справке" autocomplete="off">
         <button class="btn quiet small" id="hOpen" type="button">Развернуть всё</button>
@@ -1099,6 +1099,7 @@
 
       <div class="block"><details><summary>🆕 Что нового в пульте</summary>
         <div class="tbl"><table>
+          <tr><td>2.19</td><td>Telegram: канал, группа или оба сразу (через запятую) — сообщения, опросы и робот GitHub пишут в каждый. «Проверить» показывает, что нашлось: канал или группа</td></tr>
           <tr><td>2.18</td><td>Перетаскивание за ⠿ везде: баннеры (выше — важнее: приложение показывает первый подходящий), пометки серверов, меню пульта (в режиме ✏️), виды визитки и свои ответы. Строка едет за пальцем, остальные расступаются</td></tr>
           <tr><td>2.17</td><td>«Баннеры» → «🎉 Праздник: баннер + визитка» — одной кнопкой праздничный баннер в приложении (сам исчезнет после праздника) и оформление визитки. «Визитка» → «Виды визитки»: сохранить текущий вид под именем и вернуть его одной кнопкой</td></tr>
           <tr><td>2.16</td><td>«Визитка» → «Праздничное оформление»: Новый год, 14 февраля, 8 Марта, весна, лето, осень, Хэллоуин, конфетти или «само по календарю». Плавная сортировка перетаскиванием во всех списках: блоки и вопросы визитки, обои, темы, источники — строка едет за пальцем, остальные расступаются, у края экрана список прокручивается сам</td></tr>
@@ -1195,7 +1196,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.18', PANEL_DATE = '13 ноября 2026'
+const PANEL_VERSION = '2.19', PANEL_DATE = '13 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -2600,23 +2601,31 @@ async function tgSaveCfg(tok, chat) {
 async function tgCfg() {
   try { const v = JSON.parse(load('apex_admin_tg') || 'null'); if (!v) return null; return { tok: td.decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: s2b(v.i) }, await tgKey(), s2b(v.c))), chat: v.chat } } catch { return null }
 }
+const tgChats = c => String(c || '').split(/[\s,;]+/).filter(Boolean)
 async function tg(method, body) {
-  const c = await tgCfg(); if (!c) throw new Error('Сначала впишите токен бота и канал и нажмите «Запомнить»')
+  const c = await tgCfg(); if (!c) throw new Error('Сначала впишите токен бота и канал или группу и нажмите «Запомнить»')
+  // 2.19: канал и группа — можно оба через запятую; отправляем в каждый
+  let last
+  for (const chat of tgChats(c.chat)) last = await tgOne(c.tok, chat, method, body)
+  return last
+}
+async function tgOne(tok, chat, method, body) {
+  const c = { tok, chat }
   let r; try { // Обычная форма, а не JSON: так браузер не делает предварительный запрос (на него Telegram отвечает 501 и отправка бы не прошла)
     const form = new URLSearchParams(); Object.entries({ chat_id: c.chat, ...body }).forEach(([k, v]) => form.append(k, typeof v === 'object' ? JSON.stringify(v) : String(v)))
     r = await fetch('https://api.telegram.org/bot' + c.tok + '/' + method, { method: 'POST', body: form }).then(x => x.json()) }
   catch { throw new Error('Нет связи с Telegram — проверьте интернет или включите VPN') }
-  if (!r.ok) throw new Error({ 401: 'Telegram не узнал токен бота', 400: 'Telegram: ' + (r.description || 'ошибка'), 403: 'Бот не может писать в канал — сделайте его администратором' }[r.error_code] || 'Telegram: ' + (r.description || 'ошибка'))
+  if (!r.ok) throw new Error(c.chat + ': ' + ({ 401: 'Telegram не узнал токен бота', 400: (r.description || 'ошибка').replace('Bad Request: chat not found', 'чат не найден — проверьте @имя или номер и что бот добавлен'), 403: 'бот не может писать — добавьте его в группу или сделайте администратором канала' }[r.error_code] || (r.description || 'ошибка')))
   return r.result
 }
 async function tgFill() { const c = await tgCfg(); $('tgChat').value = c?.chat || ''; $('tgTok').value = ''; $('tgTok').placeholder = c ? 'Токен сохранён — впишите новый, чтобы заменить' : '123456789:AA…'; $('tgAuto').checked = load('apex_admin_tg_auto') === 'on' }
 $('tgSave').onclick = () => guarded($('tgSave'), async () => {
   const old = await tgCfg(), tok = $('tgTok').value.trim() || old?.tok || '', chat = $('tgChat').value.trim()
   if (!/^\d+:[\w-]{20,}$/.test(tok)) throw new Error('Токен бота выглядит как 123456789:AA… — скопируйте у @BotFather целиком')
-  if (!/^(@[\w]{4,}|-?\d{5,})$/.test(chat)) throw new Error('Канал: @имя_канала или числовой id')
+  if (!tgChats(chat).length || !tgChats(chat).every(x => /^(@[\w]{4,}|-?\d{5,})$/.test(x))) throw new Error('Канал или группа: @имя или числовой id (-100…). Несколько — через запятую')
   await tgSaveCfg(tok, chat); tgFill(); toast('Бот запомнен в этом браузере')
 })
-$('tgTest').onclick = () => guarded($('tgTest'), async () => { const me = await tg('getChat', {}); toast('Канал найден: ' + (me.title || me.username || me.id)) })
+$('tgTest').onclick = () => guarded($('tgTest'), async () => { const c = await tgCfg(); if (!c) throw new Error('Сначала «Запомнить»'); const names = []; for (const ch of tgChats(c.chat)) { const me = await tgOne(c.tok, ch, 'getChat', {}); names.push((me.type === 'channel' ? 'канал ' : 'группа ') + (me.title || me.username || me.id)) } toast('Найдено: ' + names.join(', ')) })
 $('tgForget').onclick = () => { store('apex_admin_tg', null); tgFill(); toast('Токен бота стёрт из этого браузера') }
 $('tgAuto').onchange = () => store('apex_admin_tg_auto', $('tgAuto').checked ? 'on' : null)
 function renderTgPick() {

@@ -1,7 +1,7 @@
 """Робот Telegram-канала: сам пишет в канал о новой версии и о техработах на серверах.
 
 Запускается из .github/workflows/telegram.yml (каждые 10 минут, после сборки и после сохранения в пульте).
-Нужны секреты репозитория: TG_BOT_TOKEN (токен бота от @BotFather) и TG_CHAT (@имя_канала или -100…).
+Нужны секреты репозитория: TG_BOT_TOKEN (токен бота от @BotFather) и TG_CHAT (@канал, @группа или -100…; несколько — через запятую).
 Нет секретов — тихо ничего не делает.
 
 Что помнит (docs/stats/tg-state.json): последнюю объявленную версию и техработы, о которых уже написал.
@@ -30,8 +30,15 @@ def tg(method, **params):
     return res['result']
 
 
+CHATS = [c for c in re.split(r'[\s,;]+', CHAT) if c]  # канал и/или группа через запятую
+
+
 def post(text):
-    tg('sendMessage', chat_id=CHAT, text=text, parse_mode='HTML', link_preview_options={'is_disabled': True})
+    for chat in CHATS:
+        try:
+            tg('sendMessage', chat_id=chat, text=text, parse_mode='HTML', link_preview_options={'is_disabled': True})
+        except SystemExit as e:
+            print(chat, '—', e)  # один чат не принял — в остальные всё равно отправим
 
 
 def gh(path):
@@ -66,7 +73,7 @@ if tag and tag != state['version']:
         post(text)
         if v.endswith('.0'):  # новая X.Y — ещё и видео «Что нового», если уже готово
             try:
-                tg('sendVideo', chat_id=CHAT, video=f'{SITE}/media/whatsnew-ru.mp4', caption=f'Главное в {esc(".".join(v.split(".")[:2]))} — за 12 секунд')
+                for chat in CHATS: tg('sendVideo', chat_id=chat, video=f'{SITE}/media/whatsnew-ru.mp4', caption=f'Главное в {esc(".".join(v.split(".")[:2]))} — за 12 секунд')
             except SystemExit as e:
                 print('видео не отправилось:', e)
     state['version'] = tag; changed = True
