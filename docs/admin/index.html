@@ -151,6 +151,12 @@
   @keyframes tabin { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   @keyframes drift { 0% { transform: translate(0, 0) rotate(0); } 50% { transform: translate(4%, -3%) rotate(8deg); } 100% { transform: translate(-4%, 3%) rotate(-6deg); } }
   @media (max-width: 560px) { .savebar .btn#discard { font-size: 0; padding: 10px 12px; } .savebar .btn#discard::before { content: '✕'; font-size: 15px; } .savebar .btn#saveLater { padding: 10px; } .savebar p { min-width: 0; flex: 1; } }
+  .drag-ph { border: 2px dashed var(--go2); border-radius: 16px; background: color-mix(in srgb, var(--go2) 8%, transparent); margin: 0 0 8px; }
+  .sects .drag-ph { margin: 0; }
+  .lifted { box-shadow: 0 22px 50px var(--shadow), 0 0 0 2px var(--go2) !important; transform: scale(1.02) rotate(-.4deg); cursor: grabbing; background: var(--panel2) !important; }
+  .grip { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .sect .grip { font-size: 22px; padding: 8px 6px; margin: -8px -2px -8px -6px; }
+  .faqi .grip { color: var(--faint); font-size: 20px; padding: 4px 6px 4px 0; }
   .warnlist { margin: 0; padding-left: 18px; } .warnlist li { margin: 6px 0; } .warnlist li.crit { color: var(--alert); font-weight: 700; }
   @media (max-width: 560px) { .cal .row { grid-template-columns: 1fr; gap: 2px; } .cal .days { margin-left: 0; } .relsum { grid-template-columns: 1fr 1fr; } }
   body {
@@ -777,7 +783,20 @@
         <p class="help">Пусто — на сайте остаётся текст по умолчанию. Кнопка появится рядом с «Скачать», только если указана ссылка https://.</p>
         <label class="sw"><div class="t"><b>Счётчик скачиваний</b><span>«скачали 1 234 раза» под кнопкой</span></div><span class="tog"><input type="checkbox" id="sDownloads" checked><i></i></span></label>
         <label class="sw"><div class="t"><b>Статус серверов</b><span>«🟢 Все серверы работают» по пометкам из пульта</span></div><span class="tog"><input type="checkbox" id="sStatus" checked><i></i></span></label>
-        <label class="sw"><div class="t"><b>Новогоднее оформление</b><span>Снег и гирлянда на визитке. Включите в декабре, выключите после праздников</span></div><span class="tog"><input type="checkbox" id="sHoliday"><i></i></span></label>
+        <label class="f" for="sHoliday">Праздничное оформление</label>
+        <select id="sHoliday">
+          <option value="">Выключено</option>
+          <option value="auto">🗓 Само по календарю — Новый год, 14 февраля, 8 Марта, Хэллоуин</option>
+          <option value="newyear">🎄 Новый год — снег и гирлянда</option>
+          <option value="valentine">💘 14 февраля — сердечки</option>
+          <option value="march8">🌷 8 Марта — цветы</option>
+          <option value="spring">🌸 Весна — лепестки сакуры</option>
+          <option value="summer">🦋 Лето — бабочки</option>
+          <option value="autumn">🍁 Осень — листья</option>
+          <option value="halloween">🎃 Хэллоуин — летучие мыши и тыквы</option>
+          <option value="party">🎉 Праздник — конфетти</option>
+        </select>
+        <p class="help" id="sHolNote">«Само по календарю»: Новый год с 15 декабря по 14 января, 10–15 февраля, 5–9 марта, 25 октября — 1 ноября. В остальные дни сайт обычный. Кто включил в телефоне «меньше анимации», праздника не увидит.</p>
       </div>
       <div class="block"><h2>Блоки и порядок</h2><p class="note">Перетащите за ⠿ или двигайте стрелками. Выключенный блок на сайте не показывается.</p>
         <div class="sects" id="sects"></div>
@@ -1016,6 +1035,7 @@
 
       <div class="block"><details><summary>🆕 Что нового в пульте</summary>
         <div class="tbl"><table>
+          <tr><td>2.16</td><td>«Визитка» → «Праздничное оформление»: Новый год, 14 февраля, 8 Марта, весна, лето, осень, Хэллоуин, конфетти или «само по календарю». Плавная сортировка перетаскиванием во всех списках: блоки и вопросы визитки, обои, темы, источники — строка едет за пальцем, остальные расступаются, у края экрана список прокручивается сам</td></tr>
           <tr><td>2.15</td><td>Вкладки «Telegram» (сообщения и опросы в ваш канал) и «Ответы» (живые ответы пользователям). «⏰ Сохранить позже» — изменения выйдут сами в нужное время. На «Обзоре»: неделя, скачивания по дням, большой экран для ТВ (клавиша B), уведомления браузера о красной сборке и сроке токена. «История»: журнал всех изменений с поиском и сравнение двух сохранений. Проверка всех ссылок. Баннер «обновитесь» только для старых версий. Живая визитка во вкладке «Визитка». Свои цвета и анимации в 🎨. Горячие клавиши 1–9 и «?»</td></tr>
           <tr><td>2.14</td><td>Оформления 2026 года: «Стекло 2026» (тёмное) и «Облако 2026» (светлое) — полупрозрачные карточки с размытием поверх яркого цветного фона (🎨 в шапке)</td></tr>
           <tr><td>2.13</td><td>«Обзор»: календарь на 2 недели, быстрые действия (убрать все баннеры, снять пометки, удалить закончившееся, вернуть как до последнего сохранения), итоги скачиваний за всё время. Проверка перед сохранением — предупредит о закончившихся баннерах, техработах без срока и опасном «обязательном обновлении». Поиск находит тексты баннеров, серверы и обои. Шаблоны объявления. Оформления «Неон» и «Авто» (днём светлое, вечером тёмное). Пульт можно установить как приложение и открыть без интернета</td></tr>
@@ -1101,7 +1121,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.15', PANEL_DATE = '13 ноября 2026'
+const PANEL_VERSION = '2.16', PANEL_DATE = '13 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -1598,7 +1618,7 @@ function fillSite(c) {
   c = c || {}
   $('sTitle').value = c.hero?.title || ''; $('sSub').value = c.hero?.sub || ''
   $('sBtnText').value = c.cta?.text || ''; $('sBtnUrl').value = c.cta?.url || ''
-  $('sDownloads').checked = c.show?.downloads !== false; $('sStatus').checked = c.show?.status !== false; $('sHoliday').checked = c.show?.holiday === true
+  $('sDownloads').checked = c.show?.downloads !== false; $('sStatus').checked = c.show?.status !== false; $('sHoliday').value = c.show?.holiday === true ? 'newyear' : (c.show?.holiday || '')
   const known = SECTS.map(x => x[0]), given = (c.sections || []).filter(x => known.includes(x.id))
   sects = [...given.map(x => ({ id: x.id, on: x.on !== false })), ...known.filter(id => !given.some(g => g.id === id)).map(id => ({ id, on: true }))]
   faq = (c.faq || []).map(x => ({ q: x.q || '', a: x.a || '' }))
@@ -1609,7 +1629,7 @@ function collectSite() {
   return {
     hero: { title: $('sTitle').value.trim(), sub: $('sSub').value.trim() },
     cta: url ? { text: $('sBtnText').value.trim() || 'Подробнее', url } : null,
-    show: { downloads: $('sDownloads').checked, status: $('sStatus').checked, ...($('sHoliday').checked ? { holiday: true } : {}) },
+    show: { downloads: $('sDownloads').checked, status: $('sStatus').checked, ...($('sHoliday').value ? { holiday: $('sHoliday').value } : {}) },
     sections: sects.map(x => ({ id: x.id, on: x.on })),
     faq: faq.filter(x => x.q.trim() && x.a.trim()).map(x => ({ q: x.q.trim(), a: x.a.trim() })),
   }
@@ -1628,22 +1648,12 @@ $('sects').addEventListener('click', e => {
   ;[sects[i], sects[j]] = [sects[j], sects[i]]; renderSects(); sitePrev()
 })
 $('sects').addEventListener('change', e => { if (!e.target.matches('[data-on]')) return; sects[+e.target.closest('.sect').dataset.i].on = e.target.checked; renderSects(); sitePrev() })
-// Перетаскивание за ⠿ (мышь и палец)
-$('sects').addEventListener('pointerdown', e => {
-  const grip = e.target.closest('.grip'); if (!grip) return
-  e.preventDefault(); const row = grip.closest('.sect'); let from = +row.dataset.i; row.classList.add('drag')
-  const move = ev => {
-    const over = document.elementsFromPoint(ev.clientX, ev.clientY).find(el => el.classList?.contains('sect') && el !== row)
-    if (!over) return; const to = +over.dataset.i; if (to === from) return
-    const [x] = sects.splice(from, 1); sects.splice(to, 0, x); from = to; renderSects()
-    const now = $('sects').children[to]; now.classList.add('drag')
-  }
-  const up = () => { document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); renderSects(); sitePrev() }
-  document.addEventListener('pointermove', move); document.addEventListener('pointerup', up)
-})
+// Перетаскивание за ⠿ — плавное, как во всех списках пульта
+setTimeout(() => dragSort($('sects'), '.sect', () => sects, () => { renderSects(); sitePrev() }), 0)
+setTimeout(() => dragSort($('faqList'), '.faqi', () => faq, () => { renderFaq(); sitePrev() }), 0)
 $('sectsReset').onclick = () => { sects = SECTS.map(([id]) => ({ id, on: true })); renderSects(); sitePrev() }
 function renderFaq() {
-  $('faqList').innerHTML = faq.length ? faq.map((x, i) => `<div class="faqi" data-i="${i}"><div class="row"><b>Вопрос ${i + 1}</b>
+  $('faqList').innerHTML = faq.length ? faq.map((x, i) => `<div class="faqi" data-i="${i}"><div class="row"><span class="grip" title="Перетащить" aria-hidden="true">⠿</span><b>Вопрос ${i + 1}</b>
     <button data-fm="-1" ${i === 0 ? 'disabled' : ''} aria-label="Выше">↑</button><button data-fm="1" ${i === faq.length - 1 ? 'disabled' : ''} aria-label="Ниже">↓</button><button data-fd aria-label="Удалить">×</button></div>
     <input type="text" data-k="q" maxlength="120" value="${esc(x.q)}" placeholder="Вопрос"><textarea data-k="a" maxlength="600" placeholder="Ответ" style="margin-top:8px">${esc(x.a)}</textarea></div>`).join('')
     : '<p class="note">Сейчас на сайте стандартные вопросы.</p>'
@@ -1930,18 +1940,41 @@ $('srcList').addEventListener('click', e => {
   const i = +b.closest('.src').dataset.i, j = i + +b.dataset.mv; if (j < 0 || j >= srcOrder.length) return
   ;[srcOrder[i], srcOrder[j]] = [srcOrder[j], srcOrder[i]]; renderSrcs(); changedDots()
 })
-// Перетаскивание за ⠿ — общий помощник для источников и каталога
+// 2.16: плавная сортировка перетаскиванием — общий помощник для всех списков пульта.
+// Строка «поднимается» и едет за пальцем или мышью, остальные плавно расступаются, у края экрана список сам прокручивается.
 function dragSort(list, rowSel, arr, render) {
   list.addEventListener('pointerdown', e => {
-    const grip = e.target.closest('.grip'); if (!grip) return
-    e.preventDefault(); const row = grip.closest(rowSel); let from = +row.dataset.i; row.classList.add('drag')
-    const move = ev => {
-      const over = document.elementsFromPoint(ev.clientX, ev.clientY).map(el => el.closest?.(rowSel)).find(el => el && el.parentElement === list && el !== list.children[from])
-      if (!over) return; const to = +over.dataset.i; if (to === from || isNaN(to)) return
-      const a = arr(); const [x] = a.splice(from, 1); a.splice(to, 0, x); from = to; render(); list.children[to]?.classList.add('drag')
+    const grip = e.target.closest('.grip'); if (!grip || e.button > 0) return
+    const row = grip.closest(rowSel); if (!row || row.parentElement !== list) return
+    e.preventDefault()
+    const rows = () => [...list.children].filter(x => x.matches(rowSel) && x !== row)
+    const from = [...list.children].filter(x => x.matches(rowSel)).indexOf(row)
+    const r0 = row.getBoundingClientRect(), dy = e.clientY - r0.top
+    const ph = document.createElement('div'); ph.className = 'drag-ph'; ph.style.height = r0.height + 'px'; row.after(ph)
+    row.classList.add('lifted'); Object.assign(row.style, { position: 'fixed', left: r0.left + 'px', top: r0.top + 'px', width: r0.width + 'px', zIndex: 70, pointerEvents: 'none', margin: 0 })
+    try { navigator.vibrate?.(12) } catch {}
+    let y = e.clientY, live = true
+    const flip = fn => {
+      const items = rows(), before = new Map(items.map(x => [x, x.getBoundingClientRect().top])); fn()
+      if (!document.documentElement.classList.contains('nomotion')) items.forEach(x => { const d = before.get(x) - x.getBoundingClientRect().top; if (d) x.animate([{ transform: `translateY(${d}px)` }, { transform: 'none' }], { duration: 170, easing: 'cubic-bezier(.2,.8,.2,1)' }) })
     }
-    const up = () => { document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); render(); changedDots() }
-    document.addEventListener('pointermove', move); document.addEventListener('pointerup', up)
+    const place = () => {
+      row.style.top = (y - dy) + 'px'
+      const items = rows(), target = items.find(x => { const b = x.getBoundingClientRect(); return y < b.top + b.height / 2 })
+      if (target ? ph.nextElementSibling !== target : items.length && items[items.length - 1].nextElementSibling !== ph) flip(() => target ? list.insertBefore(ph, target) : items[items.length - 1].after(ph))
+    }
+    const loop = () => { if (!live) return; if (y < 70) scrollBy(0, -Math.ceil((70 - y) / 6)); else if (y > innerHeight - 90) scrollBy(0, Math.ceil((y - innerHeight + 90) / 6)); place(); requestAnimationFrame(loop) }
+    requestAnimationFrame(loop)
+    const move = ev => { y = ev.clientY; place() }
+    const up = () => {
+      place(); live = false; document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); document.removeEventListener('pointercancel', up)
+      const to = [...list.children].filter(x => x === ph || (x.matches(rowSel) && x !== row)).indexOf(ph)
+      row.removeAttribute('style'); row.classList.remove('lifted'); ph.replaceWith(row)
+      if (to >= 0 && to !== from) { const a = arr(); const [x] = a.splice(from, 1); a.splice(to, 0, x) }
+      render(); changedDots()
+      const moved = [...list.children].filter(x => x.matches(rowSel))[to]; if (moved && to !== from) { moved.classList.add('flash'); setTimeout(() => moved.classList.remove('flash'), 700) }
+    }
+    document.addEventListener('pointermove', move); document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up)
   })
 }
 dragSort($('srcList'), '.src', () => srcOrder, renderSrcs)

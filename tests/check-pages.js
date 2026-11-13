@@ -91,6 +91,16 @@ async function edges(page, where) {
     await p.evaluate(() => { $('myC1').value = '#ff0000'; $('myC1').dispatchEvent(new Event('input')) })
     if ((await p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--go1').trim())) !== '#ff0000') bad(W, 'свои цвета не применились')
     await p.evaluate(() => $('myCOff').click())
+    // 2.16: сортировка перетаскиванием (блоки визитки) и праздничное оформление
+    await p.evaluate(() => showTab('site')); await p.waitForTimeout(200)
+    await p.evaluate(() => $('sects').children[1].scrollIntoView({ block: 'center' })); await p.waitForTimeout(100)
+    const first = await p.evaluate(() => sects[0].id), g = await p.$('#sects .sect:first-child .grip'), gb = await g.boundingBox(), third = await (await p.$('#sects .sect:nth-child(3)')).boundingBox()
+    await p.mouse.move(gb.x + gb.width / 2, gb.y + gb.height / 2); await p.mouse.down()
+    for (let k = 1; k <= 12; k++) { await p.mouse.move(gb.x + gb.width / 2, gb.y + (third.y + third.height * .75 - gb.y) * k / 12); await p.waitForTimeout(30) }
+    await p.mouse.up(); await p.waitForTimeout(250)
+    if (await p.evaluate(f => sects[0].id === f || sects.findIndex(x => x.id === f) !== 2, first)) bad(W, 'перетаскивание блоков визитки не поменяло порядок: ' + await p.evaluate(() => sects.map(x => x.id).join(',')))
+    await p.evaluate(() => { $('sectsReset').click(); $('sHoliday').value = 'march8' }); if ((await p.evaluate(() => collectSite().show.holiday)) !== 'march8') bad(W, 'праздничное оформление не попадает в настройки визитки')
+    await p.evaluate(() => { fillSite(files[SITE]?.data) })
     await p.evaluate(() => showTab('banner')); await p.click('#oldVerBtn'); await p.waitForTimeout(300)
     if (!(await p.evaluate(() => banners[0]?.maxCode > 0))) bad(W, 'баннер для старых версий без ограничения версии')
     await p.evaluate(() => { banners.shift(); renderBanners(); changed(); showTab('home') })
