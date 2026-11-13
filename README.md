@@ -34,6 +34,12 @@
 
 <img src="docs/img/ui/setup.webp" alt="Установка и обновления" width="100%">
 
+<div align="center">
+<a href="https://dubstep2004.github.io/#install"><img src="docs/img/install-video.webp" alt="Видео-инструкция: установка APEX CLIENT по шагам" width="280"></a><br>
+<sub>▶ <b>Видео-инструкция</b> — 6 шагов за 35 секунд: скачать, разрешить, установить, добавить подписку, нажать на щит, обновляться одной кнопкой.<br>
+<a href="https://dubstep2004.github.io/media/install-ru.mp4">Открыть видео</a> · <a href="https://dubstep2004.github.io/media/install-en.mp4">English</a> · <a href="https://dubstep2004.github.io/update/">Как обновить</a></sub>
+</div>
+
 <table>
 <tr>
 <td width="33%" valign="top">
