@@ -7,7 +7,7 @@
   "show": {
     "downloads": true,
     "status": true,
-    "holiday": true
+    "holiday": "auto"
   },
   "sections": [
     {
