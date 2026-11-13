@@ -347,11 +347,11 @@ if len(results) > 40:  # храним только последние итоги
 
 # ── 1. Новая версия (не бета)
 if tag and tag != state['version']:
-    if not first and not rel.get('prerelease'):
+    if not first and not rel.get('prerelease') and settings.get('version', True):  # пульт: «Автопосты → Новая версия»
         sent += 1
         send_version(rel, CHATS)
         v = tag.lstrip('v')
-        if v.endswith('.0'):  # новая X.Y — ещё и видео «Что нового», если уже готово
+        if v.endswith('.0') and settings.get('video', True):  # пульт: «Видео „Что нового“»  # новая X.Y — ещё и видео «Что нового», если уже готово
             for chat in CHATS:
                 try: tg('sendVideo', chat_id=chat, video=f'{SITE}/media/whatsnew-ru.mp4', caption=f'Главное в {esc(".".join(v.split(".")[:2]))} — за 12 секунд')
                 except TgError as e: print('видео не отправилось:', e)
@@ -378,7 +378,7 @@ for name, v in marks.items():
         continue
     if not first and sent >= MAX_POSTS:
         continue  # не запоминаем — напишем в следующий запуск
-    if not first:
+    if not first and settings.get('maint', True):  # пульт: «Автопосты → Техработы» (выключено — только запоминаем)
         start = v.get('from') or 0
         head = f'🔧 <b>Изменилось время техработ: {esc(name)}</b>' if name in state['marks'] else f'🔧 <b>Запланированы техработы: {esc(name)}</b>' if start > now else f'🔧 <b>Техработы: {esc(name)}</b>'
         span = (f'С {when(start)}' if start > now else 'Сейчас') + (f' до {when(v["until"])}' if v.get('until') else ' до окончания работ')
@@ -389,7 +389,7 @@ for name in list(state['marks']):
     if name not in marks:
         if not first and sent >= MAX_POSTS:
             continue
-        if not first:
+        if not first and settings.get('maint', True):
             post('Техработы закончены', f'✅ <b>Работы закончены: {esc(name)}</b>\nСервер снова работает. Спасибо за терпение!')
         del state['marks'][name]; changed = True
 

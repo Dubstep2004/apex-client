@@ -65,6 +65,11 @@ object AppConfigJson {
             features = feats?.keys()?.asSequence()?.associate { it to feats.optBoolean(it, true) }.orEmpty(),
             announce = an,
             previewCode = o.optString("previewCode"),
+            netApps = o.optJSONArray("netCheck")?.let { a ->
+                (0 until a.length()).mapNotNull { i -> a.optJSONObject(i) }
+                    .map { it.optString("name").trim().take(30) to it.optString("url").trim() }
+                    .filter { (n, u) -> n.isNotEmpty() && u.startsWith("https://") && u.length < 200 }.take(16)
+            }.orEmpty(),
         )
     }.getOrNull()
 

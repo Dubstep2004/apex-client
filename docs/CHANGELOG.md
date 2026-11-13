@@ -2,6 +2,12 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.21.2 · 14 ноября 2026
+
+<img src="img/tags/new.svg" alt="Новое" height="22">
+
+- «Проверка сети»: новый этап «Приложения» — YouTube, Instagram, WhatsApp, ChatGPT, Discord, TikTok и другие: открываются ли напрямую и через VPN
+
 ## 3.21.1 · 14 ноября 2026
 
 <img src="img/tags/new.svg" alt="Новое" height="22">

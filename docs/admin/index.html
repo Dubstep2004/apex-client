@@ -234,6 +234,8 @@
 
   .pill { border: 1px solid var(--line); background: none; color: var(--dim); border-radius: 99px; padding: 7px 12px; font-size: 13px; font-weight: 700; cursor: pointer; }
   .pill.on { border-color: var(--go2); color: var(--text); background: color-mix(in srgb, var(--go2) 14%, transparent); }
+  .tgtoc { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 6px; } .tgtoc a { padding: 7px 12px; border-radius: 999px; background: var(--field); border: 1px solid var(--line); color: inherit; text-decoration: none; font-size: 13.5px; font-weight: 600; }
+  .tgsec { margin: 26px 0 2px; font-size: 19px; scroll-margin-top: 80px; } .tgsecn { margin: 0 0 8px; }
   .tpw { display: inline-flex; gap: 2px; } .pill.x { padding: 7px 10px; }
   .tgcount { text-align: right; margin-top: 4px; } .tgcount.bad { color: #f0616d; font-weight: 700; }
   .tgchk { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 14px; } .tgchk label { display: inline-flex; gap: 6px; align-items: center; }
@@ -686,6 +688,11 @@
         <label class="f" for="lChannel">Telegram-канал</label><input id="lChannel" type="url" placeholder="Пусто — строки не будет">
         <label class="f" for="lSite">Сайт</label><input id="lSite" type="url" placeholder="https://…">
       </div>
+      <div class="block"><h2>Проверка сети — приложения</h2>
+        <p class="note">Какие сервисы приложение проверяет в «Проверке сети» (открываются ли напрямую и через VPN). По одному в строке: <code>Название | https://адрес</code>, до 16. Пусто — встроенный список.</p>
+        <textarea id="netApps" rows="6" placeholder="YouTube | https://www.youtube.com&#10;Instagram | https://www.instagram.com&#10;WhatsApp | https://web.whatsapp.com&#10;ChatGPT | https://chatgpt.com&#10;Discord | https://discord.com&#10;TikTok | https://www.tiktok.com&#10;X (Twitter) | https://x.com&#10;Spotify | https://open.spotify.com"></textarea>
+        <p class="help">Приложения 3.21.2 и новее подхватят список через несколько минут после «Сохранить».</p>
+      </div>
     </section>
 
     <!-- Обновления -->
@@ -749,22 +756,10 @@
     <section data-tab="tg" hidden>
       <h1>Telegram-канал</h1>
       <p class="lead">Новости и опросы в ваш канал или группу (можно в оба сразу — через запятую) прямо из пульта. Нужен свой бот: в канале — администратор с правом публиковать, в группе — просто участник.</p>
-      <div class="block"><h2>Бот</h2>
-        <label class="f" for="tgTok">Токен бота</label><input id="tgTok" type="password" autocomplete="off" placeholder="123456789:AA…">
-        <label class="f" for="tgChat">Канал и/или группа</label><input id="tgChat" type="text" placeholder="@apex_news, @apex_chat или -100…">
-        <p class="help">Токен хранится только в этом браузере, зашифрованный вашим входом в пульт, и на GitHub не попадает. Где взять: в Telegram откройте @BotFather → /newbot → скопируйте токен. Затем в канале: Управление → Администраторы → добавить бота.</p>
-        <p class="help"><b>Без VPN:</b> если Telegram не открывается (в России так бывает) или токен здесь не сохранён, пульт отправит через робота GitHub — до минуты, в чаты из секрета <code>TG_CHAT</code> (см. «Сам, без пульта» ниже).</p>
-        <div class="rowx" style="margin-top:10px"><button class="btn quiet small" id="tgSave">Запомнить</button><button class="btn quiet small" id="tgTest">Проверить</button><button class="btn quiet small" id="tgForget">Забыть</button></div>
-        <label class="sw" style="margin-top:12px"><div class="t"><b>Предлагать отправить новый баннер</b><span>После «Сохранить» пульт спросит, отправить ли новые баннеры в канал</span></div><span class="tog"><input type="checkbox" id="tgAuto"><i></i></span></label>
-      </div>
-      <div class="block"><h2>🤖 Сам, без пульта</h2>
-        <p class="note">Робот GitHub сам пишет в канал: <b>о новой версии</b> (номер и список изменений) и <b>о техработах</b> — когда вы ставите пометку «Обслуживание» на сервер, когда меняете время и когда работы закончились. Срабатывает сразу после «Сохранить» и сам «просыпается» к концу техработ.</p>
-        <ol class="note" style="margin:8px 0 0;padding-left:20px">
-          <li>GitHub → репозиторий apex-client → Settings → Secrets and variables → Actions → <b>New repository secret</b>.</li>
-          <li>Имя <code>TG_BOT_TOKEN</code> — токен бота. Ещё один: <code>TG_CHAT</code> — <code>@имя_канала</code>, группа — <code>@имя_группы</code> или номер <code>-100…</code>; оба — через запятую.</li>
-          <li>Готово. Первый раз робот только запомнит, что сейчас есть, и ничего не отправит — дальше будет писать о новом.</li>
-        </ol>
-      </div>
+      <nav class="tgtoc" aria-label="Разделы">
+        <a href="#tgs-send">✉️ Отправить</a><a href="#tgs-log">📒 Запланировано и журнал</a><a href="#tgs-auto">🤖 Автопосты</a><a href="#tgs-setup">⚙️ Настройка</a>
+      </nav>
+      <h2 class="tgsec" id="tgs-send">✉️ Отправить</h2><p class="note tgsecn">Пост или опрос в канал — сейчас или позже.</p>
       <div class="block" id="tgVerBanner" hidden><h2>🆕 <span id="tgVerText"></span></h2><p class="note">Робот обычно объявляет версию сам. Если пост не появился — отправьте одной кнопкой.</p><button class="btn go small" id="tgVerGo">Объявить в канале</button></div>
       <div class="block"><h2>Сообщение</h2>
         <div class="tpls" id="tgPick"></div>
@@ -784,7 +779,6 @@
         <label class="sw" id="tgPhotoRow" hidden style="margin-top:10px"><div class="t"><b>🖼 С картинкой «Вышла версия»</b><span>Тот же пост, что робот пишет при выходе версии: картинка, список изменений и ссылки «Как обновить · Все изменения». Отправляет робот GitHub — до минуты, без VPN. Свой текст — снимите галочку</span></div><span class="tog"><input type="checkbox" id="tgPhoto" checked><i></i></span></label>
         <button class="btn go" id="tgSend" style="margin-top:12px;width:100%">Отправить в канал</button>
         <p class="help">С картинкой, фото, кнопками, «закрепить», «без звука», «позже» или английским текстом пост отправляет робот GitHub — до минуты, VPN не нужен.</p></div>
-      <div class="block" id="tgSchedBlock" hidden><h2>⏰ Запланировано</h2><div id="tgSched"></div><p class="help">Робот сам «просыпается» к выбранному времени — пост выйдет в течение 1–2 минут после него.</p></div>
       <div class="block"><h2>Опрос</h2><p class="note">Ответы видны в самом Telegram — у опроса будут проценты. Анонимный.</p>
         <label class="f" for="tgQ">Вопрос</label><input id="tgQ" type="text" maxlength="300" placeholder="Какой сервер добавить?">
         <label class="f" for="tgOpts">Варианты — по одному в строке (2–10)</label><textarea id="tgOpts" rows="4" placeholder="Япония&#10;США&#10;Турция"></textarea>
@@ -793,14 +787,37 @@
         <label class="f" for="tgPollRes">📊 Итоги опроса картинкой</label><select id="tgPollRes"><option value="0">Не публиковать</option><option value="24" selected>Через сутки</option><option value="48">Через 2 дня</option><option value="168">Через неделю</option></select>
         <label class="sw"><div class="t"><b>📌 Закрепить опрос</b></div><span class="tog"><input type="checkbox" id="tgPollPin"><i></i></span></label>
         <button class="btn go" id="tgPoll" style="margin-top:12px;width:100%">Отправить опрос</button></div>
+      <h2 class="tgsec" id="tgs-log">📒 Запланировано и журнал</h2><p class="note tgsecn">Что ждёт отправки и что уже ушло — с исправлением и удалением последнего поста.</p>
+      <div class="block" id="tgSchedBlock" hidden><h2>⏰ Запланировано</h2><div id="tgSched"></div><p class="help">Робот сам «просыпается» к выбранному времени — пост выйдет в течение 1–2 минут после него.</p></div>
       <div class="block"><h2>📒 Журнал канала</h2><p class="note" id="tgLast"></p>
         <div class="rowx"><button class="btn quiet small" id="tgEdit">✏️ Исправить последний пост</button><button class="btn quiet small" id="tgDel">🗑 Удалить последний пост</button></div>
         <div id="tgLog" style="margin-top:12px"></div></div>
-      <div class="block"><h2>🤖 Робот</h2><p class="note" id="tgRobot">Проверяем…</p>
+      <h2 class="tgsec" id="tgs-auto">🤖 Автопосты</h2><p class="note tgsecn">Что робот GitHub публикует без вас — каждое можно выключить.</p>
+      <div class="block"><h2>🤖 Что робот публикует сам</h2><p class="note" id="tgRobot">Проверяем…</p>
         <div class="rowx"><button class="btn quiet small" id="tgPing">Проверить робота</button></div>
-        <label class="sw" style="margin-top:10px"><div class="t"><b>📅 Дайджест по воскресеньям</b><span>В 18:00 МСК — итоги недели карточкой: версии, техработы, подписчики</span></div><span class="tog"><input type="checkbox" id="tgDigest"><i></i></span></label>
+        <label class="sw" style="margin-top:10px"><div class="t"><b>🆕 Новая версия</b><span>Пост с картинкой «Вышла версия X» сразу после выпуска. Выключите — объявите сами кнопкой в разделе «Отправить»</span></div><span class="tog"><input type="checkbox" id="tgAutoVer"><i></i></span></label>
+        <label class="sw"><div class="t"><b>🎬 Видео «Что нового»</b><span>Для версий X.Y.0 — 12-секундное видео следом за постом о версии</span></div><span class="tog"><input type="checkbox" id="tgAutoVideo"><i></i></span></label>
+        <label class="sw"><div class="t"><b>🔧 Техработы</b><span>Когда ставите пометку «Обслуживание», меняете время и когда работы закончились</span></div><span class="tog"><input type="checkbox" id="tgAutoMaint"><i></i></span></label>
+        <label class="sw"><div class="t"><b>📅 Дайджест по воскресеньям</b><span>В 18:00 МСК — итоги недели карточкой: версии, техработы, подписчики</span></div><span class="tog"><input type="checkbox" id="tgDigest"><i></i></span></label>
         <label class="sw"><div class="t"><b>🎉 Праздничные открытки</b><span>31 декабря, 14 февраля, 8 марта и 31 октября — поздравление в праздничной теме</span></div><span class="tog"><input type="checkbox" id="tgHoliday"><i></i></span></label>
         <p class="help"><b>Уведомления вам в личку</b> (упала сборка, в пульте сохранили изменения, ошибка робота): напишите своему боту /start, узнайте свой номер у @userinfobot и добавьте секрет <code>TG_OWNER</code> с этим номером. <b>Английский канал:</b> секрет <code>TG_CHAT_EN</code> — @имя канала.</p></div>
+      <h2 class="tgsec" id="tgs-setup">⚙️ Настройка</h2><p class="note tgsecn">Один раз: бот и секреты GitHub.</p>
+      <div class="block"><h2>Бот</h2>
+        <label class="f" for="tgTok">Токен бота</label><input id="tgTok" type="password" autocomplete="off" placeholder="123456789:AA…">
+        <label class="f" for="tgChat">Канал и/или группа</label><input id="tgChat" type="text" placeholder="@apex_news, @apex_chat или -100…">
+        <p class="help">Токен хранится только в этом браузере, зашифрованный вашим входом в пульт, и на GitHub не попадает. Где взять: в Telegram откройте @BotFather → /newbot → скопируйте токен. Затем в канале: Управление → Администраторы → добавить бота.</p>
+        <p class="help"><b>Без VPN:</b> если Telegram не открывается (в России так бывает) или токен здесь не сохранён, пульт отправит через робота GitHub — до минуты, в чаты из секрета <code>TG_CHAT</code> (см. «Сам, без пульта» ниже).</p>
+        <div class="rowx" style="margin-top:10px"><button class="btn quiet small" id="tgSave">Запомнить</button><button class="btn quiet small" id="tgTest">Проверить</button><button class="btn quiet small" id="tgForget">Забыть</button></div>
+        <label class="sw" style="margin-top:12px"><div class="t"><b>Предлагать отправить новый баннер</b><span>После «Сохранить» пульт спросит, отправить ли новые баннеры в канал</span></div><span class="tog"><input type="checkbox" id="tgAuto"><i></i></span></label>
+      </div>
+      <div class="block"><h2>🤖 Сам, без пульта</h2>
+        <p class="note">Робот GitHub сам пишет в канал: <b>о новой версии</b> (номер и список изменений) и <b>о техработах</b> — когда вы ставите пометку «Обслуживание» на сервер, когда меняете время и когда работы закончились. Срабатывает сразу после «Сохранить» и сам «просыпается» к концу техработ.</p>
+        <ol class="note" style="margin:8px 0 0;padding-left:20px">
+          <li>GitHub → репозиторий apex-client → Settings → Secrets and variables → Actions → <b>New repository secret</b>.</li>
+          <li>Имя <code>TG_BOT_TOKEN</code> — токен бота. Ещё один: <code>TG_CHAT</code> — <code>@имя_канала</code>, группа — <code>@имя_группы</code> или номер <code>-100…</code>; оба — через запятую.</li>
+          <li>Готово. Первый раз робот только запомнит, что сейчас есть, и ничего не отправит — дальше будет писать о новом.</li>
+        </ol>
+      </div>
     </section>
 
     <!-- Ответы -->
@@ -943,7 +960,7 @@
     <!-- Справка -->
     <section data-tab="help" hidden class="helpdoc">
       <h1>Справка для владельца</h1>
-      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 13 ноября 2026 · приложение 3.21.1 · пульт 2.24.</p>
+      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 13 ноября 2026 · приложение 3.21.2 · пульт 2.26.</p>
       <div class="helptools">
         <input id="hq" type="search" placeholder="Найти в справке, например «техработы»" aria-label="Найти в справке" autocomplete="off">
         <button class="btn quiet small" id="hOpen" type="button">Развернуть всё</button>
@@ -1169,6 +1186,8 @@
 
       <div class="block"><details><summary>🆕 Что нового в пульте</summary>
         <div class="tbl"><table>
+          <tr><td>2.26</td><td>Telegram: вкладка разложена по разделам (Отправить · Запланировано и журнал · Автопосты · Настройка) с оглавлением; автопосты «Новая версия», видео «Что нового» и «Техработы» можно выключить</td></tr>
+          <tr><td>2.25</td><td>«Ссылки» → «Проверка сети — приложения»: свой список сервисов, которые приложение проверяет напрямую и через VPN</td></tr>
           <tr><td>2.24</td><td>«Обзор» → «Пользователи»: сколько человек в приложении, онлайн сейчас, за сутки и неделю, версии APEX CLIENT и другие приложения — по данным панели Remnawave (зашифровано)</td></tr>
           <tr><td>2.23</td><td>Telegram: отложенные посты, закрепить, без звука, кнопки под постом, своё фото, карточка к любому посту, предпросмотр, счётчик знаков, свои шаблоны, итоги опроса картинкой, удалить/исправить последний пост, журнал канала, проверка робота, дайджест по воскресеньям, праздничные открытки, подписчики в «Обзоре», уведомления в личку, английский канал, «Объявить версию»</td></tr>
           <tr><td>2.22</td><td>Telegram: перед опросом — картинка с вопросом и вариантами (рисует робот GitHub, без VPN)</td></tr>
@@ -1271,7 +1290,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.24', PANEL_DATE = '13 ноября 2026'
+const PANEL_VERSION = '2.26', PANEL_DATE = '13 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -1511,6 +1530,7 @@ function fillApp(c) {
   $('aMin').value = a.minCode || ''; $('aMax').value = a.maxCode || ''; $('aPreview').checked = !!a.preview
   $('aFrom').value = toLocal(a.from); $('aTo').value = toLocal(a.to)
   const l = c.links || {}; $('lSupport').value = l.support || ''; $('lChannel').value = l.channel || ''; $('lSite').value = l.site || ''
+  $('netApps').value = (c.netCheck || []).map(x => x.name + ' | ' + x.url).join('\n')
   const u = c.update || {}; $('uRequired').value = u.required || ''; $('uRevoked').value = (u.revoked || []).join(', ')
   const f = c.features || {}
   $('feats').innerHTML = FEATURES.map(([id, t, d], i) => `<label class="sw ${i ? '' : 'first'}"><div class="t"><b>${t}</b><span>${d}</span></div><span class="tog"><input type="checkbox" id="f_${id}" ${f[id] === false ? '' : 'checked'}><i></i></span></label>`).join('')
@@ -1537,7 +1557,16 @@ function collectApp(loose = false) {
     update: { required: int($('uRequired').value), revoked: $('uRevoked').value.split(/[,\s]+/).map(x => parseInt(x, 10)).filter(x => x > 0) },
     features: Object.fromEntries(FEATURES.map(([id]) => [id, $('f_' + id)?.checked !== false])),
     previewCode: $('pCode').value.trim(),
+    ...netAppsList(loose),
   }
+}
+// 2.25: список приложений для «Проверки сети» (app.json → netCheck). Пусто — ключа нет, приложение берёт встроенный
+function netAppsList(loose) {
+  const rows = $('netApps').value.split('\n').map(l => l.trim()).filter(Boolean).map(l => { const i = l.lastIndexOf('|'); return i < 0 ? { name: '', url: l } : { name: l.slice(0, i).trim(), url: l.slice(i + 1).trim() } })
+  if (!loose) rows.forEach(r => { if (!r.name || !/^https:\/\/\S+$/.test(r.url)) throw new Error('Проверка сети: строка «' + (r.name || r.url) + '» — нужно «Название | https://адрес»') })
+  if (!loose && rows.length > 16) throw new Error('Проверка сети: не больше 16 приложений')
+  const ok = rows.filter(r => r.name && /^https:\/\/\S+$/.test(r.url)).slice(0, 16).map(r => ({ name: r.name.slice(0, 30), url: r.url }))
+  return ok.length ? { netCheck: ok } : {}
 }
 
 // ── Изменения, превью, обзор
@@ -2835,6 +2864,7 @@ function renderTgState() {
 async function tgOpen() { // при открытии вкладки
   await tgLoadSettings().catch(() => {}); renderTgPick(); tgPreview(); renderTgSched().catch(() => {})
   $('tgDigest').checked = tgSet?.digest !== false; $('tgHoliday').checked = tgSet?.holidays !== false
+  $('tgAutoVer').checked = tgSet?.version !== false; $('tgAutoVideo').checked = tgSet?.video !== false; $('tgAutoMaint').checked = tgSet?.maint !== false
   tgState = await tgReadState(); renderTgState()
   api('/actions/workflows/telegram.yml/runs?per_page=1', { cache: 'no-store' }).then(r => { const x = r.workflow_runs?.[0]; $('tgRobot').textContent = x ? 'Последний запуск робота: ' + new Date(x.updated_at).toLocaleString('ru', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + ' — ' + ({ success: '✓ без ошибок', failure: '✗ ошибка — откройте Actions → «Telegram-канал»', cancelled: '✓ без ошибок' }[x.conclusion] || '⏰ работает и ждёт следующего дела (отложенный пост, конец техработ, итоги опроса)') : 'Робот ещё не запускался' }).catch(() => {})
 }
@@ -2849,6 +2879,11 @@ $('tgEdit').onclick = () => guarded($('tgEdit'), async () => {
 })
 $('tgVerGo').onclick = () => guarded($('tgVerGo'), async () => { const st = releases.find(r => !r.prerelease && !r.draft); if (!st || !confirm('Объявить версию ' + st.tag_name.replace(/^v/, '') + ' в канале?')) return; await tgRelay('sendVersion', { version: st.tag_name.replace(/^v/, '') }); toast('Версия объявлена в канале') })
 $('tgPing').onclick = () => guarded($('tgPing'), async () => { const r = await tgRelay('ping', {}); toast((r.done || [])[0] || 'Робот работает') })
+document.querySelector('.tgtoc').addEventListener('click', e => { const a = e.target.closest('a'); if (!a) return; e.preventDefault(); document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }) })
+// 2.26: какие автопосты робот публикует сам (docs/tg/settings.json: version, video, maint, digest, holidays)
+;[['tgAutoVer', 'version', 'Пост о новой версии'], ['tgAutoVideo', 'video', 'Видео «Что нового»'], ['tgAutoMaint', 'maint', 'Посты о техработах']].forEach(([id, key, name]) => {
+  $(id).onchange = () => guarded($(id), async () => { await tgSaveSettings(s => { s[key] = $(id).checked }); toast(name + ($(id).checked ? ' — включено' : ' — выключено')) })
+})
 $('tgDigest').onchange = () => guarded($('tgDigest'), async () => { await tgSaveSettings(s => { s.digest = $('tgDigest').checked }); toast($('tgDigest').checked ? 'Дайджест по воскресеньям включён' : 'Дайджест выключен') })
 $('tgHoliday').onchange = () => guarded($('tgHoliday'), async () => { await tgSaveSettings(s => { s.holidays = $('tgHoliday').checked }); toast($('tgHoliday').checked ? 'Праздничные открытки включены' : 'Праздничные открытки выключены') })
 // 16. Подписчики канала — в «Обзоре»

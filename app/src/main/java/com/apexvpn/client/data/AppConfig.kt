@@ -52,6 +52,8 @@ object AppConfig {
         val features: Map<String, Boolean> = emptyMap(),
         val announce: Announce? = null,
         val previewCode: String = "",
+        /** 3.21.2: список приложений для «Проверки сети» из пульта (название → https-адрес); пусто — встроенный */
+        val netApps: List<Pair<String, String>> = emptyList(),
         val rev: Int = 0, // меняется, когда ввели код предпросмотра — чтобы экраны пересчитались
     ) {
         /** Функция включена (по умолчанию — да). */

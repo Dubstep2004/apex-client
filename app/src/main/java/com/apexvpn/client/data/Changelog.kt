@@ -25,6 +25,12 @@ private fun d(text: String) = Change(ChangeKind.Removed, text)  // Удален�
 object Changelog {
     val releases = listOf(
         Release(
+            "3.21.2", 140, "14 ноября 2026",
+            listOf(
+                n("«Проверка сети»: новый этап «Приложения» — YouTube, Instagram, WhatsApp, ChatGPT, Discord, TikTok и другие: открываются ли напрямую и через VPN"),
+            ),
+        ),
+        Release(
             "3.21.1", 139, "14 ноября 2026",
             listOf(
                 n("Тест скорости: выбор сервера — авто (самый быстрый), Cloudflare, Hetzner в Германии и Финляндии или OVH во Франции"),

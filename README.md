@@ -17,7 +17,7 @@
 <p><b>Два ядра</b> · все популярные протоколы · <b>свои списки</b> с шаблонами · <b>3D-глобус</b> · <b>13 дизайнов</b>, палитры и <b>живое видео на фоне</b><br>
 автопилот с белыми списками · DNS «Авто» для каждой сети · базы сайтов каждый день · часы Wear OS</p>
 
-<sub>📱 Android — <b>3.21.1</b> (Android 7+) · sing-box 1.13 · Xray 26</sub><br>
+<sub>📱 Android — <b>3.21.2</b> (Android 7+) · sing-box 1.13 · Xray 26</sub><br>
 <sub>🌐 Сайт: <a href="https://dubstep2004.github.io">dubstep2004.github.io</a> · 💬 Поддержка: <a href="https://t.me/Apexx_support">@Apexx_support</a></sub>
 
 </div>
@@ -868,7 +868,18 @@ core/apexcore/          Go: разбор подписки → конфиги sin
 
 <img src="docs/img/tags/new.svg" alt="Новое" height="22"> <img src="docs/img/tags/improved.svg" alt="Улучшено" height="22"> <img src="docs/img/tags/changed.svg" alt="Изменено" height="22"> <img src="docs/img/tags/fixed.svg" alt="Исправлено" height="22"> <img src="docs/img/tags/removed.svg" alt="Удалено" height="22">
 
-### 3.21.1 · 14 ноября 2026
+### 3.21.2 · 14 ноября 2026
+
+<img src="docs/img/tags/new.svg" alt="Новое" height="22">
+
+- «Проверка сети»: новый этап «Приложения» — YouTube, Instagram, WhatsApp, ChatGPT, Discord, TikTok и другие: открываются ли напрямую и через VPN
+
+#### 📚 Все версии (140)
+
+Каждая версия — отдельная вкладка.
+
+<details>
+<summary><b>3.21.1</b> · 14 ноября 2026</summary>
 
 <img src="docs/img/tags/new.svg" alt="Новое" height="22">
 
@@ -878,9 +889,7 @@ core/apexcore/          Go: разбор подписки → конфиги sin
 
 - Тест скорости: вместо города сервера Cloudflare показывался служебный текст
 
-#### 📚 Все версии (139)
-
-Каждая версия — отдельная вкладка.
+</details>
 
 <details>
 <summary><b>3.21.0</b> · 14 ноября 2026</summary>

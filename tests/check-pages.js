@@ -138,6 +138,11 @@ async function dragRow(p, rowSel, from, to) { // перетащить строк
     if (!(await p.isVisible('#tgVerBanner'))) bad(W, 'нет плашки «версия не объявлена»')
     if (!(await p.textContent('#tgStat')).includes('120')) bad(W, 'подписчики не посчитаны')
     await edges(p, W + ' → Telegram 2.23')
+    // 2.25: список приложений для «Проверки сети»
+    {
+      const r = await p.evaluate(() => { const old = $('netApps').value; $('netApps').value = 'YouTube | https://www.youtube.com\nVK Видео | https://vkvideo.ru'; const c = collectApp(); let err = ''; $('netApps').value = 'плохо'; try { collectApp() } catch (e) { err = e.message } $('netApps').value = ''; const empty = collectApp(); $('netApps').value = old; return { n: (c.netCheck || []).length, err, emptyKey: 'netCheck' in empty } })
+      if (r.n !== 2) bad(W, 'Проверка сети: список приложений не собрался'); if (!r.err.includes('Проверка сети')) bad(W, 'Проверка сети: неверная строка не найдена'); if (r.emptyKey) bad(W, 'Проверка сети: пустой список попал в app.json')
+    }
     // 2.24: «Пользователи» — зашифрованная статистика из панели
     {
       const enc = await p.evaluate(async () => {

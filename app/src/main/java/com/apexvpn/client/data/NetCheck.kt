@@ -62,6 +62,12 @@ object NetCheck {
     val state = _state.asStateFlow()
 
     private val ru = listOf("Яндекс" to "https://ya.ru", "Госуслуги" to "https://www.gosuslugi.ru", "ВКонтакте" to "https://vk.com")
+    /** 3.21.2: популярные приложения — открываются ли напрямую и через VPN. Пульт может заменить список (netCheck в app.json) */
+    val defaultApps = listOf(
+        "YouTube" to "https://www.youtube.com", "Instagram" to "https://www.instagram.com", "WhatsApp" to "https://web.whatsapp.com",
+        "ChatGPT" to "https://chatgpt.com", "Discord" to "https://discord.com", "TikTok" to "https://www.tiktok.com",
+        "X (Twitter)" to "https://x.com", "Spotify" to "https://open.spotify.com",
+    )
     private val world = listOf("Google" to "https://www.google.com/generate_204", "Cloudflare" to "https://1.1.1.1", "Telegram" to "https://telegram.org")
 
     private fun stage(i: Int, s: Stage) {
@@ -116,7 +122,7 @@ object NetCheck {
         val vpnOn = VpnState.status.value == VpnStatus.Started
         _state.value = State(
             running = true,
-            stages = listOf(Stage("Российские сайты"), Stage("Зарубежные сайты"), Stage("Серверы APEX"), Stage("Протоколы")),
+            stages = listOf(Stage("Российские сайты"), Stage("Зарубежные сайты"), Stage("Приложения"), Stage("Серверы APEX"), Stage("Протоколы")),
         )
         // 1–2. Сайты напрямую
         val ruItems = sites(ru); stage(0, Stage("Российские сайты", ruItems))
@@ -144,7 +150,7 @@ object NetCheck {
                 ),
             )
         }
-        stage(2, Stage("Серверы APEX", serverItems, if (nodes.isEmpty()) "Нет подписки — добавьте ссылку подписки" else ""))
+        stage(3, Stage("Серверы APEX", serverItems, if (nodes.isEmpty()) "Нет подписки — добавьте ссылку подписки" else ""))
         // 4. Протоколы: настоящий запрос через ядро по 3 живых сервера каждого протокола
         val proto = mutableListOf<Item>()
         if (vpnOn) {
@@ -160,7 +166,25 @@ object NetCheck {
                 }.awaitAll()
             }.sortedBy { it.mark != Mark.Fail }
         }
-        stage(3, Stage("Протоколы", proto, if (!vpnOn) "Включите VPN, чтобы проверить, какие протоколы глушат" else if (proto.isEmpty()) "Нет отвечающих серверов для проверки" else ""))
+        // 3.21.2. Приложения: напрямую и через VPN (через сервер, который сейчас работает)
+        val apps = AppConfig.state.value.netApps.ifEmpty { defaultApps }
+        val fastest = (normalOk + lteOk).minByOrNull { pings[it.tag] ?: Int.MAX_VALUE }?.tag
+        val viaTag: String? = when {
+            !vpnOn -> null
+            Prefs.selectedTag == AUTO_TAG -> runCatching { Pinger.autopilotNow() }.getOrNull() ?: fastest
+            else -> Prefs.selectedTag
+        }
+        val appItems = coroutineScope {
+            apps.map { (name, url) ->
+                async(Dispatchers.IO) {
+                    val d = direct(url)
+                    val v = viaTag?.let { t -> runCatching { io.nekohasekai.apexcore.Apexcore.proxyPing(t, url, "HEAD", "default", 7000) }.getOrDefault(-1) } ?: -1
+                    appItem(name, d, v, vpnOn)
+                }
+            }.awaitAll()
+        }
+        stage(2, Stage("Приложения", appItems, if (!vpnOn) "Включите VPN — проверим, открываются ли они через VPN" else ""))
+        stage(4, Stage("Протоколы", proto, if (!vpnOn) "Включите VPN, чтобы проверить, какие протоколы глушат" else if (proto.isEmpty()) "Нет отвечающих серверов для проверки" else ""))
 
         val kind = verdict(
             ruOk = ruItems.any { it.ms > 0 }, worldOk = worldItems.any { it.ms > 0 },
@@ -187,6 +211,16 @@ object NetCheck {
             lteTag = if (kind == Kind.WhiteList && !WhiteList.active) lteOk.minByOrNull { pings[it.tag] ?: Int.MAX_VALUE }?.tag else null,
             suggestAuto = !auto && (kind == Kind.Jammed || kind == Kind.JamPartial) && proto.any { it.title == selCat && it.mark == Mark.Fail },
         )
+    }
+
+    /** Строка приложения: напрямую [direct] и через VPN [vpn] (мс или -1). Отдельно — для автотестов. */
+    internal fun appItem(name: String, direct: Int, vpn: Int, vpnOn: Boolean): Item = when {
+        !vpnOn && direct > 0 -> Item(name, Mark.Ok, "открывается напрямую", direct)
+        !vpnOn -> Item(name, Mark.Fail, "напрямую не открывается — включите VPN")
+        vpn > 0 && direct > 0 -> Item(name, Mark.Ok, "открывается напрямую и через VPN", vpn)
+        vpn > 0 -> Item(name, Mark.Ok, "напрямую заблокирован · через VPN работает", vpn)
+        direct > 0 -> Item(name, Mark.Slow, "через VPN не открывается — только напрямую", direct)
+        else -> Item(name, Mark.Fail, "не открывается ни напрямую, ни через VPN")
     }
 
     /** Итог по результатам этапов — отдельно, чтобы проверять автотестами. */
