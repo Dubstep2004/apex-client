@@ -89,12 +89,16 @@
     background-image: radial-gradient(60vw 50vh at 85% -5%, var(--glow1), transparent 62%), radial-gradient(55vw 45vh at -5% 25%, var(--glow2), transparent 60%),
       radial-gradient(50vw 45vh at 70% 105%, var(--glow3), transparent 60%), radial-gradient(40vw 35vh at 20% 95%, var(--glow4), transparent 60%);
   }
-  :root[data-design^="glass"] :is(.block, dialog, .designs, .login .card, .draftbar, .savebar, .bnav, .item, .src, .live) {
+  :root[data-design^="glass"] :is(.block, dialog, .login .card, .draftbar, .savebar, .bnav, .item, .src, .live) {
     -webkit-backdrop-filter: blur(22px) saturate(170%); backdrop-filter: blur(22px) saturate(170%);
     box-shadow: inset 0 1px 0 rgba(255,255,255,.22), inset 0 -1px 0 rgba(255,255,255,.04), 0 18px 50px var(--shadow);
   }
   :root[data-design="glasslight"] :is(.block, dialog, .designs, .login .card, .savebar, .bnav) { box-shadow: inset 0 1px 0 #fff, 0 18px 50px var(--shadow); }
   :root[data-design^="glass"] .live { background: var(--line); }
+  /* 2.18: меню оформлений в «Стекле» было прозрачным, и карточки страницы просвечивали и налезали на него */
+  :root[data-design="glass"] :is(.designs, .sres) { background: #15132b; } :root[data-design="glasslight"] :is(.designs, .sres) { background: #f7f8fd; } .sres { z-index: 90; }
+  .designs { z-index: 90; } .brand { position: relative; z-index: 60; }
+  @media (max-width: 760px) { .rail { z-index: 40 !important; } }
   :root[data-design^="glass"] .btn.go { box-shadow: 0 10px 30px var(--glow1), inset 0 1px 0 rgba(255,255,255,.35); }
   :root[data-design^="glass"] dialog::backdrop { background: rgba(10,8,30,.35); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
   * { box-sizing: border-box; }
@@ -156,6 +160,10 @@
   .lifted { box-shadow: 0 22px 50px var(--shadow), 0 0 0 2px var(--go2) !important; transform: scale(1.02) rotate(-.4deg); cursor: grabbing; background: var(--panel2) !important; }
   .grip { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
   .sect .grip { font-size: 22px; padding: 8px 6px; margin: -8px -2px -8px -6px; }
+  .item-head .grip, .mark .top .grip { color: var(--faint); font-size: 20px; padding: 4px 4px 4px 0; }
+  .prow .grip, .ansi .grip { color: var(--faint); font-size: 18px; }
+  .ngrp { display: flex; flex-direction: column; gap: 2px; } .nav .grip { color: var(--faint); font-size: 16px; margin: 0 -4px 0 -4px; }
+  .nav .drag-ph { margin: 0; border-radius: 12px; }
   .faqi .grip { color: var(--faint); font-size: 20px; padding: 4px 6px 4px 0; }
   .warnlist { margin: 0; padding-left: 18px; } .warnlist li { margin: 6px 0; } .warnlist li.crit { color: var(--alert); font-weight: 700; }
   @media (max-width: 560px) { .cal .row { grid-template-columns: 1fr; gap: 2px; } .cal .days { margin-left: 0; } .relsum { grid-template-columns: 1fr 1fr; } }
@@ -723,6 +731,7 @@
       <p class="lead">Частые вопросы из поддержки. «Скопировать» — и вставьте в чат. Ответы про техработы и версию сами подставляют то, что сейчас в пульте.</p>
       <input id="ansQ" type="search" placeholder="Поиск по ответам" style="width:100%;margin-bottom:14px">
       <div class="block" id="ansList"></div>
+      <div class="block" id="ansOwnBlock" hidden><h2>Мои ответы</h2><p class="note">Порядок — перетаскиванием за ⠿.</p><div id="ansOwn"></div></div>
       <div class="block"><h2>Свой ответ</h2><p class="note">Хранится только в этом браузере.</p>
         <label class="f" for="ansT">Вопрос</label><input id="ansT" type="text" maxlength="80" placeholder="Как сменить сервер">
         <label class="f" for="ansX">Ответ</label><textarea id="ansX" rows="3" maxlength="1500"></textarea>
@@ -1038,6 +1047,7 @@
 
       <div class="block"><details><summary>🆕 Что нового в пульте</summary>
         <div class="tbl"><table>
+          <tr><td>2.18</td><td>Перетаскивание за ⠿ везде: баннеры (выше — важнее: приложение показывает первый подходящий), пометки серверов, меню пульта (в режиме ✏️), виды визитки и свои ответы. Строка едет за пальцем, остальные расступаются</td></tr>
           <tr><td>2.17</td><td>«Баннеры» → «🎉 Праздник: баннер + визитка» — одной кнопкой праздничный баннер в приложении (сам исчезнет после праздника) и оформление визитки. «Визитка» → «Виды визитки»: сохранить текущий вид под именем и вернуть его одной кнопкой</td></tr>
           <tr><td>2.16</td><td>«Визитка» → «Праздничное оформление»: Новый год, 14 февраля, 8 Марта, весна, лето, осень, Хэллоуин, конфетти или «само по календарю». Плавная сортировка перетаскиванием во всех списках: блоки и вопросы визитки, обои, темы, источники — строка едет за пальцем, остальные расступаются, у края экрана список прокручивается сам</td></tr>
           <tr><td>2.15</td><td>Вкладки «Telegram» (сообщения и опросы в ваш канал) и «Ответы» (живые ответы пользователям). «⏰ Сохранить позже» — изменения выйдут сами в нужное время. На «Обзоре»: неделя, скачивания по дням, большой экран для ТВ (клавиша B), уведомления браузера о красной сборке и сроке токена. «История»: журнал всех изменений с поиском и сравнение двух сохранений. Проверка всех ссылок. Баннер «обновитесь» только для старых версий. Живая визитка во вкладке «Визитка». Свои цвета и анимации в 🎨. Горячие клавиши 1–9 и «?»</td></tr>
@@ -1133,7 +1143,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.17', PANEL_DATE = '13 ноября 2026'
+const PANEL_VERSION = '2.18', PANEL_DATE = '13 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -1297,7 +1307,7 @@ function renderBanners() {
   banners.forEach((b, i) => {
     const [st, cls] = bannerState(b)
     const d = document.createElement('div'); d.className = 'item'
-    d.innerHTML = `<div class="item-head"><input class="bname" data-k="name" maxlength="60" value="${esc(b.name)}" placeholder="Баннер ${i + 1} — название для себя"><span class="badge ${cls}">${esc(st)}</span><button class="x" data-del aria-label="Удалить баннер">×</button></div>
+    d.innerHTML = `<div class="item-head"><span class="grip" title="Перетащить — выше важнее" aria-hidden="true">⠿</span><input class="bname" data-k="name" maxlength="60" value="${esc(b.name)}" placeholder="Баннер ${i + 1} — название для себя"><span class="badge ${cls}">${esc(st)}</span><button class="x" data-del aria-label="Удалить баннер">×</button></div>
       <label class="f">Текст</label><textarea data-k="text" maxlength="300" placeholder="Сегодня с 22:00 до 23:00 технические работы">${esc(b.text)}</textarea>
       <label class="f">Вид</label><div class="seg">${Object.entries(LEVEL).map(([v, [, t]]) => `<button data-level="${v}" class="${b.level === v ? 'on' : ''}" data-v="${v}">${t}</button>`).join('')}</div>
       <div class="two"><div><label class="f">Показывать с</label><input type="datetime-local" data-k="from" value="${toLocal(b.from)}"></div>
@@ -1335,7 +1345,7 @@ function renderMarks() {
   marks.forEach((m, i) => {
     const d = document.createElement('div'); d.className = 'mark'
     const expired = m.until && Date.now() >= m.until
-    d.innerHTML = `<div class="top"><input class="n" type="text" placeholder="Часть названия, например Германия" value="${esc(m.name)}" data-k="name">
+    d.innerHTML = `<div class="top"><span class="grip" title="Перетащить" aria-hidden="true">⠿</span><input class="n" type="text" placeholder="Часть названия, например Германия" value="${esc(m.name)}" data-k="name">
       <button class="x" data-del aria-label="Убрать пометку">×</button></div>
       <div class="rowx"><button class="pill m ${m.state === 'maintenance' ? 'on' : ''}" data-st="maintenance">🔧 Обслуживание</button><button class="pill s ${m.state === 'slow' ? 'on' : ''}" data-st="slow">🐢 Медленно</button>
       ${expired ? '<span class="st">срок вышел</span>' : ''}</div>
@@ -1664,6 +1674,13 @@ $('sects').addEventListener('click', e => {
 })
 $('sects').addEventListener('change', e => { if (!e.target.matches('[data-on]')) return; sects[+e.target.closest('.sect').dataset.i].on = e.target.checked; renderSects(); sitePrev() })
 // Перетаскивание за ⠿ — плавное, как во всех списках пульта
+setTimeout(() => {
+  // 2.18: сортировка перетаскиванием и в баннерах, пометках серверов, видах визитки, своих ответах
+  dragSort($('banners'), '.item', () => banners, () => { renderBanners(); changed() })
+  dragSort($('marks'), '.mark', () => marks, () => { renderMarks(); changed() })
+  dragSort($('presetList'), '.prow', () => presets, () => { renderPresets(); savePresets('Пульт: порядок видов визитки').catch(e => toast(e.message, false)) })
+  dragSort($('ansOwn'), '.ansi', () => ownAnswersRef, () => { store('apex_admin_answers', JSON.stringify(ownAnswersRef)); renderAnswers() })
+}, 0)
 setTimeout(() => dragSort($('sects'), '.sect', () => sects, () => { renderSects(); sitePrev() }), 0)
 setTimeout(() => dragSort($('faqList'), '.faqi', () => faq, () => { renderFaq(); sitePrev() }), 0)
 $('sectsReset').onclick = () => { sects = SECTS.map(([id]) => ({ id, on: true })); renderSects(); sitePrev() }
@@ -1848,10 +1865,15 @@ let curTab = 'home'
 function renderNav() {
   const pr = navPrefs(), hid = pr.hidden || [], editing = $('nav').classList.contains('editing'), mobile = matchMedia('(max-width: 760px)').matches
   const groups = mobile ? [groupOf(curTab)] : GROUPS
-  $('nav').innerHTML = groups.map(g => (mobile || g[0] === 'main' ? '' : `<div class="ngroup">${g[2]}</div>`) + groupTabs(g).map((id, i, arr) => {
+  const drag = editing && !mobile
+  $('nav').innerHTML = groups.map(g => (mobile || g[0] === 'main' ? '' : `<div class="ngroup">${g[2]}</div>`) + (drag ? `<div class="ngrp" data-g="${g[0]}">` : '') + groupTabs(g).map((id, i, arr) => {
     const [, ic, name] = tabInfo(id)
-    return `<button data-id="${id}" class="${id === curTab ? 'on' : ''} ${hid.includes(id) && id !== 'home' ? 'hid' : ''}"><span class="ic">${ic}</span>${name}${APP_TABS.includes(id) ? '<span class="dot" hidden></span>' : ''}${g[3].length > 1 ? `<span class="edit"><span data-up title="Выше">${i ? '↑' : ''}</span><span data-down title="Ниже">${i < arr.length - 1 ? '↓' : ''}</span>${id === 'home' ? '' : `<span data-hide title="Скрыть или показать">${hid.includes(id) ? '🙈' : '👁'}</span>`}</span>` : ''}</button>`
-  }).join('')).join('')
+    return `<button data-id="${id}" class="${id === curTab ? 'on' : ''} ${hid.includes(id) && id !== 'home' ? 'hid' : ''}">${drag && g[3].length > 1 ? '<span class="grip" title="Перетащить" aria-hidden="true">⠿</span>' : ''}<span class="ic">${ic}</span>${name}${APP_TABS.includes(id) ? '<span class="dot" hidden></span>' : ''}${g[3].length > 1 ? `<span class="edit"><span data-up title="Выше">${i ? '↑' : ''}</span><span data-down title="Ниже">${i < arr.length - 1 ? '↓' : ''}</span>${id === 'home' ? '' : `<span data-hide title="Скрыть или показать">${hid.includes(id) ? '🙈' : '👁'}</span>`}</span>` : ''}</button>`
+  }).join('') + (drag ? '</div>' : '')).join('')
+  if (drag) document.querySelectorAll('#nav .ngrp').forEach(box => {
+    const g = GROUPS.find(x => x[0] === box.dataset.g), ref = groupTabs(g); if (g[3].length < 2) return
+    dragSort(box, 'button', () => ref, () => { const pr = navPrefs(); pr.order = { ...(pr.order || {}), [g[0]]: ref }; store('apex_admin_nav', JSON.stringify(pr)); renderNav() })
+  })
   $('bnav').innerHTML = GROUPS.map(g => `<button data-g="${g[0]}" class="${groupOf(curTab)[0] === g[0] ? 'on' : ''}"><b>${g[1]}</b>${g[2]}<i hidden></i></button>`).join('')
   if (editing) $('nav').classList.add('editing')
   changedDots()
@@ -1867,7 +1889,7 @@ document.querySelectorAll('.devsw').forEach(sw => sw.addEventListener('click', e
   document.querySelectorAll('.devsw [data-dev]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.dev === d))); preview(collectApp(true))
 }))
 $('nav').onclick = e => {
-  const b = e.target.closest('button'); if (!b) return; const id = b.dataset.id
+  const b = e.target.closest('button'); if (!b || e.target.closest('.grip')) return; const id = b.dataset.id
   if (e.target.closest('[data-up]')) { e.stopPropagation(); return moveTab(id, -1) }
   if (e.target.closest('[data-down]')) { e.stopPropagation(); return moveTab(id, 1) }
   if (e.target.closest('[data-hide]')) { const pr = navPrefs(), h = new Set(pr.hidden || []); h.has(id) ? h.delete(id) : h.add(id); pr.hidden = [...h]; store('apex_admin_nav', JSON.stringify(pr)); return renderNav() }
@@ -2583,12 +2605,17 @@ const ANSWERS = [
   ['Приложение называется по-другому', () => 'APEX VPN теперь называется APEX CLIENT — это то же приложение, подписка и настройки на месте.'],
 ]
 function ownAnswers() { try { return JSON.parse(load('apex_admin_answers') || '[]') } catch { return [] } }
+let ownAnswersRef = []
 function renderAnswers() {
-  const q = $('ansQ').value.trim().toLowerCase(), own = ownAnswers()
-  const all = [...ANSWERS.map(([t, f]) => [t, f(), -1]), ...own.map(([t, x], i) => [t, x, i])].filter(([t, x]) => !q || (t + ' ' + x).toLowerCase().includes(q))
-  $('ansList').innerHTML = all.length ? all.map(([t, x, i]) => `<div class="ansi"><b>${esc(t)}</b><p>${esc(x)}</p><div class="rowx"><button class="btn quiet small" data-acopy>Скопировать</button>${i >= 0 ? `<button class="btn quiet small" data-adel="${i}">Удалить</button>` : ''}</div></div>`).join('') : '<p class="note">Ничего не нашлось.</p>'
+  const q = $('ansQ').value.trim().toLowerCase(); ownAnswersRef = ownAnswers()
+  const hit = ([t, x]) => !q || (t + ' ' + x).toLowerCase().includes(q)
+  const row = (t, x, i) => `<div class="ansi"><b>${i >= 0 && !q ? '<span class="grip" title="Перетащить" aria-hidden="true">⠿</span> ' : ''}${esc(t)}</b><p>${esc(x)}</p><div class="rowx"><button class="btn quiet small" data-acopy>Скопировать</button>${i >= 0 ? `<button class="btn quiet small" data-adel="${i}">Удалить</button>` : ''}</div></div>`
+  const base = ANSWERS.map(([t, f]) => [t, f()]).filter(hit), own = ownAnswersRef.map((a, i) => [...a, i]).filter(hit)
+  $('ansList').innerHTML = base.length ? base.map(([t, x]) => row(t, x, -1)).join('') : '<p class="note">В готовых ответах ничего не нашлось.</p>'
+  $('ansOwnBlock').hidden = !own.length; $('ansOwn').innerHTML = own.map(([t, x, i]) => row(t, x, i)).join('')
 }
 $('ansQ').oninput = renderAnswers
+$('ansOwn').onclick = e => $('ansList').onclick(e)
 $('ansList').onclick = e => {
   const c = e.target.closest('[data-acopy]')
   if (c) { const t = c.closest('.ansi').querySelector('p').textContent; navigator.clipboard?.writeText(t).then(() => toast('Ответ скопирован — вставьте в чат'), () => toast(t, false)); return }
@@ -2685,7 +2712,7 @@ const PRESETS = 'docs/config/site-presets.json'
 let presets = []
 async function loadPresets() { try { presets = (await getFile(PRESETS))?.presets || [] } catch { presets = [] } renderPresets() }
 function renderPresets() {
-  $('presetList').innerHTML = presets.length ? presets.map((x, i) => `<div><span><b>${esc(x.name)}</b><small> · ${esc(fmt(x.at))}</small></span><span class="rowx" style="gap:6px"><button class="btn quiet small" data-pa="${i}">Применить</button><button class="btn quiet small" data-pd="${i}" aria-label="Удалить вид">×</button></span></div>`).join('') : '<p class="note">Пока нет сохранённых видов.</p>'
+  $('presetList').innerHTML = presets.length ? presets.map((x, i) => `<div class="prow"><span><span class="grip" title="Перетащить" aria-hidden="true">⠿</span> <b>${esc(x.name)}</b><small> · ${esc(fmt(x.at))}</small></span><span class="rowx" style="gap:6px"><button class="btn quiet small" data-pa="${i}">Применить</button><button class="btn quiet small" data-pd="${i}" aria-label="Удалить вид">×</button></span></div>`).join('') : '<p class="note">Пока нет сохранённых видов.</p>'
 }
 async function savePresets(msg) { await getFile(PRESETS).catch(() => {}); await putFile(PRESETS, { presets }, msg); renderPresets() }
 $('presetAdd').onclick = () => guarded($('presetAdd'), async () => {

@@ -41,6 +41,18 @@ async function edges(page, where) {
   for (const h of links) if (!file(new URL(h, page.url()).pathname)) bad(where, 'битая ссылка ' + h)
 }
 
+async function dragRow(p, rowSel, from, to) { // перетащить строку from на место to (за ⠿); у края экрана ждёт автопрокрутку
+  await p.evaluate(([s, f]) => document.querySelectorAll(s)[f].querySelector('.grip').scrollIntoView({ block: 'center' }), [rowSel, from]); await p.waitForTimeout(100)
+  const H = p.viewportSize().height, g = await (await p.$$(rowSel + ' .grip'))[from].boundingBox(), x = g.x + g.width / 2
+  let y = g.y + g.height / 2; await p.mouse.move(x, y); await p.mouse.down()
+  for (let k = 0; k < 120; k++) {
+    const tb = await (await p.$$(rowSel))[to].boundingBox(), want = to > from ? tb.y + tb.height * .8 : tb.y + tb.height * .2
+    const goal = Math.min(H - 5, Math.max(5, want)); y += Math.sign(goal - y) * Math.min(40, Math.abs(goal - y))
+    await p.mouse.move(x, y); await p.waitForTimeout(30)
+    if (Math.abs(want - y) < 3) break
+  }
+  await p.mouse.up(); await p.waitForTimeout(250)
+}
 ;(async () => {
   await new Promise(r => srv.listen(8199, r))
   const b = await chromium.launch()
@@ -75,7 +87,7 @@ async function edges(page, where) {
     if (!(await p.$$('#weekSum div')).length) bad(W, 'нет блока «Неделя»')
     await p.evaluate(() => showTab('answers')); await p.waitForTimeout(100)
     if ((await p.$$('#ansList .ansi')).length < 5) bad(W, 'вкладка «Ответы» пустая')
-    await p.fill('#ansT', 'Тест'); await p.fill('#ansX', 'Ответ'); await p.click('#ansAdd'); if (!(await p.textContent('#ansList')).includes('Тест')) bad(W, 'свой ответ не добавился')
+    await p.fill('#ansT', 'Тест'); await p.fill('#ansX', 'Ответ'); await p.click('#ansAdd'); if (!(await p.textContent('#ansOwn')).includes('Тест')) bad(W, 'свой ответ не добавился')
     await edges(p, W + ' → ответы')
     await p.evaluate(() => showTab('tg')); await p.waitForTimeout(100); await edges(p, W + ' → Telegram')
     await p.evaluate(() => showTab('history')); await p.waitForTimeout(600)
@@ -101,6 +113,19 @@ async function edges(page, where) {
     if (await p.evaluate(f => sects[0].id === f || sects.findIndex(x => x.id === f) !== 2, first)) bad(W, 'перетаскивание блоков визитки не поменяло порядок: ' + await p.evaluate(() => sects.map(x => x.id).join(',')))
     await p.evaluate(() => { $('sectsReset').click(); $('sHoliday').value = 'march8' }); if ((await p.evaluate(() => collectSite().show.holiday)) !== 'march8') bad(W, 'праздничное оформление не попадает в настройки визитки')
     await p.evaluate(() => { fillSite(files[SITE]?.data) })
+    // 2.18: перетаскивание баннеров и вкладок меню
+    await p.evaluate(() => { banners.unshift(newBanner({ text: 'Б-первый' }), newBanner({ text: 'Б-второй' })); renderBanners(); changed(); showTab('banner') }); await p.waitForTimeout(200)
+    await dragRow(p, '#banners > .item', 0, 1)
+    if (!(await p.evaluate(() => banners[0].text === 'Б-второй' && banners[1].text === 'Б-первый'))) bad(W, 'перетаскивание баннеров не работает: ' + await p.evaluate(() => banners.slice(0, 2).map(b => b.text).join(',')))
+    await p.evaluate(() => { banners = banners.filter(b => !b.text.startsWith('Б-')); renderBanners(); changed() })
+    if (width > 760) {
+      await p.click('#navEdit'); await p.waitForTimeout(200)
+      const sel = '#nav .ngrp[data-g="users"] > button', before = await p.$$eval(sel, b => b.map(x => x.dataset.id))
+      await dragRow(p, sel, 0, 2)
+      const after = await p.$$eval(sel, b => b.map(x => x.dataset.id))
+      if (after[2] !== before[0]) bad(W, 'перетаскивание вкладок меню не работает: ' + after.join(','))
+      await p.evaluate(() => { localStorage.removeItem('apex_admin_nav'); $('nav').classList.remove('editing'); renderNav() })
+    }
     // 2.17: праздник одной кнопкой, виды визитки
     await p.evaluate(() => showTab('banner')); await p.click('#holBtn'); await p.click('#holKinds [data-hk="march8"]'); await p.click('#holOk'); await p.waitForTimeout(500)
     if (!(await p.evaluate(() => banners.some(b => b.name.includes('8 Марта') && b.to > Date.now()) && $('sHoliday').value === 'auto'))) bad(W, '«Праздник одной кнопкой» не добавил баннер или оформление')
