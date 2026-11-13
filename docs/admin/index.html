@@ -345,6 +345,10 @@
   .savebar { position: fixed; left: 50%; bottom: 18px; transform: translate(-50%, 140%); transition: transform .28s cubic-bezier(.2,.8,.2,1); display: flex; gap: 10px; align-items: center;
     background: var(--panel2); border: 1px solid var(--line); border-radius: 18px; padding: 10px 10px 10px 18px; box-shadow: 0 16px 50px var(--shadow); z-index: 20; width: min(560px, calc(100% - 32px)); }
   .savebar:not(.show) { visibility: hidden; } .savebar.show { transform: translate(-50%, 0); }
+  /* 2.27: полоса «Сохранить» видна всегда: нет изменений — «✓ Всё сохранено», кнопка неактивна */
+  .savebar.idle:not(.show) { visibility: visible; transform: translate(-50%, 0); } .savebar.idle:not(.show) :is(#undoBtn, #discard, #saveLater) { display: none; }
+  .savebar.idle:not(.show) #saveApp:disabled { opacity: .45; } .savebar.idle:not(.show) p { color: var(--dim); font-weight: 600; }
+  main { padding-bottom: 96px; }
   .savebar p { flex: 1; margin: 0; font-weight: 700; } .savebar p small { display: block; color: var(--dim); font-weight: 500; }
 
   .phone-col { position: sticky; top: 28px; align-self: start; }
@@ -512,7 +516,7 @@
     .bnav button { flex: 1; background: none; border: 0; color: var(--faint); font: inherit; font-size: 11px; font-weight: 700; display: grid; gap: 2px; justify-items: center; padding: 6px 2px; border-radius: 12px; cursor: pointer; position: relative; }
     .bnav button b { font-size: 19px; font-weight: 400; line-height: 1; } .bnav button.on { color: var(--text); background: var(--panel2); }
     .bnav button i { position: absolute; top: 4px; right: 22%; width: 7px; height: 7px; border-radius: 50%; background: var(--warn); }
-    .savebar { bottom: calc(70px + env(safe-area-inset-bottom)); left: 8px; right: 8px; width: auto; max-width: none; transform: translateY(160%); } .savebar.show { transform: none; }
+    .savebar { bottom: calc(70px + env(safe-area-inset-bottom)); left: 8px; right: 8px; width: auto; max-width: none; transform: translateY(160%); } .savebar.show { transform: none; } .savebar.idle:not(.show) { transform: none; }
     .savebar p { font-size: 13px; } .savebar #discard { padding: 10px; font-size: 13px; } .savebar #undoBtn { padding: 10px 12px; }
     .toast { top: 12px; }
   }
@@ -587,6 +591,7 @@
         <div class="qact" style="margin-top:10px"><button class="btn quiet small" id="notifyBtn">🔔 Уведомлять, если сборка упала</button><button class="btn quiet small" id="bigBtn">📺 Большой экран</button></div></div>
       <div class="block"><h2>Неделя</h2><div class="relsum" id="weekSum"></div><p class="note" id="weekNote">Считаем…</p></div>
       <div class="block" id="tgStatBlock" hidden><h2>Telegram-канал</h2><div class="relsum" id="tgStat"></div><p class="note">Робот считает подписчиков раз в день.</p></div>
+      <div class="block" id="feedBlock"><h2>Лента событий</h2><p class="note">Всё важное за 3 дня: версии, сборки, посты в канале, сохранения пульта, техработы.</p><div id="feed"><p class="note">Загружаем…</p></div></div>
       <div class="block" id="usersBlock"><h2>Пользователи</h2>
         <div id="usersSetup" hidden>
           <p class="note">Сколько человек пользуются приложением — по данным вашей панели Remnawave. Робот GitHub раз в день заходит в панель, считает только числа (без имён и адресов) и шифрует их ключом, который знает только этот браузер. Настройка — один раз:</p>
@@ -603,12 +608,13 @@
           <div class="relsum" id="usersSum"></div>
           <p class="note" id="usersApex"></p>
           <div class="us-cols"><div><h3 class="us-h">Версии APEX CLIENT · неделя</h3><div id="usersVer"></div></div><div><h3 class="us-h">Приложения · неделя</h3><div id="usersApps"></div></div></div>
+          <h3 class="us-h">Нагрузка серверов · онлайн сейчас</h3><div id="usersNodes"></div>
           <h3 class="us-h">По дням: APEX CLIENT за неделю и онлайн за сутки</h3><div id="usersChart"></div>
         </div>
         <p class="note" id="usersNote"></p>
         <div class="rowx"><button class="btn quiet small" id="usersRefresh">Обновить</button><button class="btn quiet small" id="usersForget" hidden>Забыть ключ</button></div>
       </div>
-      <div class="block"><h2>Резервная копия</h2><p class="note">Все настройки пульта одним файлом: баннеры, серверы, подписка, скрытые сайты, визитка, обои. Сохраните на компьютер — если что-то сломается, верните одной кнопкой.</p>
+      <div class="block"><h2>Резервная копия</h2><p class="note">Все настройки пульта одним файлом: баннеры, серверы, подписка, скрытые сайты, визитка, обои, Telegram (автопосты, шаблоны) и ваши ответы. Сохраните на компьютер — если что-то сломается, верните одной кнопкой.</p>
         <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn quiet small" id="bkSave" type="button">Скачать копию</button><button class="btn quiet small" id="bkLoad" type="button">Восстановить из файла</button><input type="file" id="bkFile" accept=".json,application/json" hidden></div>
         <p class="help" id="bkMsg"></p></div>
       <div class="block"><h2>Разбор отчёта о сбое</h2><p class="note">Пользователь прислал «отчёт для поддержки»? Вставьте текст — пульт покажет главное. Подписки и адресов в отчёте нет.</p>
@@ -774,7 +780,7 @@
         <label class="sw"><div class="t"><b>📌 Закрепить</b><span>Пост повиснет наверху канала</span></div><span class="tog"><input type="checkbox" id="tgPin"><i></i></span></label>
         <label class="sw"><div class="t"><b>🔕 Без звука</b><span>Подписчики не получат громкое уведомление — для мелких новостей и ночью</span></div><span class="tog"><input type="checkbox" id="tgSilent"><i></i></span></label>
         <label class="f" for="tgWhen">⏰ Отправить позже (пусто — сразу)</label><input id="tgWhen" type="datetime-local">
-        <details style="margin-top:10px"><summary class="f">🇬🇧 Английский текст</summary><textarea id="tgEn" rows="3" maxlength="4096" placeholder="Maintenance tonight 22:00–23:00…" style="width:100%"></textarea><p class="help">Уйдёт в англоязычный канал из секрета <code>TG_CHAT_EN</code> — с теми же кнопками и картинкой.</p></details>
+        <details style="margin-top:10px"><summary class="f">🇬🇧 Английский текст</summary><textarea id="tgEn" rows="3" maxlength="4096" placeholder="Maintenance tonight 22:00–23:00…" style="width:100%"></textarea><p class="help">Уйдёт в англоязычный канал из секрета <code>TG_CHAT_EN</code> — с теми же кнопками и картинкой.</p><button class="btn quiet small" id="tgTr" type="button" style="margin-top:6px">🌐 Перевести с русского</button></details>
         <p class="f" style="margin-top:12px">Предпросмотр</p><div class="tgprev" id="tgPrev"></div>
         <label class="sw" id="tgPhotoRow" hidden style="margin-top:10px"><div class="t"><b>🖼 С картинкой «Вышла версия»</b><span>Тот же пост, что робот пишет при выходе версии: картинка, список изменений и ссылки «Как обновить · Все изменения». Отправляет робот GitHub — до минуты, без VPN. Свой текст — снимите галочку</span></div><span class="tog"><input type="checkbox" id="tgPhoto" checked><i></i></span></label>
         <button class="btn go" id="tgSend" style="margin-top:12px;width:100%">Отправить в канал</button>
@@ -787,17 +793,26 @@
         <label class="f" for="tgPollRes">📊 Итоги опроса картинкой</label><select id="tgPollRes"><option value="0">Не публиковать</option><option value="24" selected>Через сутки</option><option value="48">Через 2 дня</option><option value="168">Через неделю</option></select>
         <label class="sw"><div class="t"><b>📌 Закрепить опрос</b></div><span class="tog"><input type="checkbox" id="tgPollPin"><i></i></span></label>
         <button class="btn go" id="tgPoll" style="margin-top:12px;width:100%">Отправить опрос</button></div>
+      <div class="block"><h2>🎁 Конкурс</h2><p class="note">Пост с кнопкой «Участвую». В назначенное время победители выбираются случайно и честно, итоги — ответом на пост. Нужен «Бот отвечает сам» (раздел «Настройка»): он принимает нажатия.</p>
+        <label class="f" for="ctText">Что разыгрываем и условия</label><textarea id="ctText" rows="3" maxlength="3000" placeholder="Разыгрываем месяц подписки! Нужно быть подписанным на канал."></textarea>
+        <div class="rowx" style="margin-top:8px"><div style="flex:1"><label class="f" for="ctUntil">Итоги</label><input id="ctUntil" type="datetime-local" style="width:100%"></div><div style="width:110px"><label class="f" for="ctN">Победителей</label><input id="ctN" type="number" min="1" max="10" value="1" style="width:100%"></div></div>
+        <label class="f" for="ctBtn">Текст кнопки</label><input id="ctBtn" type="text" maxlength="30" value="🎉 Участвую">
+        <button class="btn go" id="ctSend" style="margin-top:12px;width:100%">Запустить конкурс</button>
+        <div id="ctList" style="margin-top:10px"></div></div>
       <h2 class="tgsec" id="tgs-log">📒 Запланировано и журнал</h2><p class="note tgsecn">Что ждёт отправки и что уже ушло — с исправлением и удалением последнего поста.</p>
       <div class="block" id="tgSchedBlock" hidden><h2>⏰ Запланировано</h2><div id="tgSched"></div><p class="help">Робот сам «просыпается» к выбранному времени — пост выйдет в течение 1–2 минут после него.</p></div>
       <div class="block"><h2>📒 Журнал канала</h2><p class="note" id="tgLast"></p>
         <div class="rowx"><button class="btn quiet small" id="tgEdit">✏️ Исправить последний пост</button><button class="btn quiet small" id="tgDel">🗑 Удалить последний пост</button></div>
         <div id="tgLog" style="margin-top:12px"></div></div>
+      <div class="block" id="tgViewsBlock" hidden><h2>👁 Просмотры постов</h2><p class="note" id="tgViewsNote"></p><div id="tgViews"></div></div>
       <h2 class="tgsec" id="tgs-auto">🤖 Автопосты</h2><p class="note tgsecn">Что робот GitHub публикует без вас — каждое можно выключить.</p>
       <div class="block"><h2>🤖 Что робот публикует сам</h2><p class="note" id="tgRobot">Проверяем…</p>
         <div class="rowx"><button class="btn quiet small" id="tgPing">Проверить робота</button></div>
         <label class="sw" style="margin-top:10px"><div class="t"><b>🆕 Новая версия</b><span>Пост с картинкой «Вышла версия X» сразу после выпуска. Выключите — объявите сами кнопкой в разделе «Отправить»</span></div><span class="tog"><input type="checkbox" id="tgAutoVer"><i></i></span></label>
         <label class="sw"><div class="t"><b>🎬 Видео «Что нового»</b><span>Для версий X.Y.0 — 12-секундное видео следом за постом о версии</span></div><span class="tog"><input type="checkbox" id="tgAutoVideo"><i></i></span></label>
-        <label class="sw"><div class="t"><b>🔧 Техработы</b><span>Когда ставите пометку «Обслуживание», меняете время и когда работы закончились</span></div><span class="tog"><input type="checkbox" id="tgAutoMaint"><i></i></span></label>
+        <label class="sw"><div class="t"><b>🔘 Кнопки под постом о версии</b><span>«⬇️ Как обновить» и «🐞 Нашёл ошибку» (ведёт в поддержку). Реакции 👍 включаются в настройках самого канала</span></div><span class="tog"><input type="checkbox" id="tgAutoBtn"><i></i></span></label>
+        <label class="sw"><div class="t"><b>🔧 Техработы</b><span>Когда ставите пометку «Обслуживание», меняете время, и сводка с картинкой, когда работы закончились («шли 40 минут»)</span></div><span class="tog"><input type="checkbox" id="tgAutoMaint"><i></i></span></label>
+        <label class="sw"><div class="t"><b>⏰ Напоминания о техработах</b><span>За сутки и за час до начала — робот сам «просыпается» к этому времени</span></div><span class="tog"><input type="checkbox" id="tgAutoRemind"><i></i></span></label>
         <label class="sw"><div class="t"><b>📅 Дайджест по воскресеньям</b><span>В 18:00 МСК — итоги недели карточкой: версии, техработы, подписчики</span></div><span class="tog"><input type="checkbox" id="tgDigest"><i></i></span></label>
         <label class="sw"><div class="t"><b>🎉 Праздничные открытки</b><span>31 декабря, 14 февраля, 8 марта и 31 октября — поздравление в праздничной теме</span></div><span class="tog"><input type="checkbox" id="tgHoliday"><i></i></span></label>
         <p class="help"><b>Уведомления вам в личку</b> (упала сборка, в пульте сохранили изменения, ошибка робота): напишите своему боту /start, узнайте свой номер у @userinfobot и добавьте секрет <code>TG_OWNER</code> с этим номером. <b>Английский канал:</b> секрет <code>TG_CHAT_EN</code> — @имя канала.</p></div>
@@ -810,6 +825,19 @@
         <div class="rowx" style="margin-top:10px"><button class="btn quiet small" id="tgSave">Запомнить</button><button class="btn quiet small" id="tgTest">Проверить</button><button class="btn quiet small" id="tgForget">Забыть</button></div>
         <label class="sw" style="margin-top:12px"><div class="t"><b>Предлагать отправить новый баннер</b><span>После «Сохранить» пульт спросит, отправить ли новые баннеры в канал</span></div><span class="tog"><input type="checkbox" id="tgAuto"><i></i></span></label>
       </div>
+      <div class="block"><h2>💬 Бот отвечает сам (Cloudflare)</h2>
+        <p class="note">Бот в личке отвечает на частые вопросы (установить, не подключается, обновить, медленно, белые списки, поддержка) и принимает нажатия «Участвую» в конкурсах. Работает на бесплатном Cloudflare Workers — круглосуточно, без вашего компьютера. Настройка ~5 минут:</p>
+        <ol class="note us-steps">
+          <li>Зарегистрируйтесь на <b>dash.cloudflare.com</b> (бесплатно) → Workers &amp; Pages → Create → Worker → имя <code>apex-bot</code> → Deploy.</li>
+          <li>Edit code → удалите всё и вставьте код бота: <button class="btn quiet small" id="botCode" type="button">Скопировать код бота</button> → Deploy.</li>
+          <li>Settings → Variables and Secrets: секрет <code>BOT_TOKEN</code> — токен бота; секрет <code>WEBHOOK_SECRET</code> — слово: <button class="btn quiet small" id="botKeyGen" type="button">Создать слово</button> <input id="botKey" readonly style="width:100%;margin-top:6px" placeholder="здесь появится слово">; по желанию <code>OWNER_ID</code> — ваш номер (команды /draw и /contests).</li>
+          <li>Для конкурсов: Storage → KV → Create namespace <code>apex-bot</code>; затем в Worker → Settings → Bindings → KV namespace, имя <code>APEX_KV</code>.</li>
+          <li>Откройте в браузере <code>https://apex-bot.&lt;ваше-имя&gt;.workers.dev/setup?key=СЛОВО</code> — увидите «Готово! Бот отвечает».</li>
+          <li>Для итогов конкурсов по расписанию — секреты GitHub (как TG_BOT_TOKEN): <code>BOT_WORKER_URL</code> = адрес Worker (https://…workers.dev) и <code>BOT_WORKER_KEY</code> = то же слово.</li>
+        </ol>
+        <p class="help">Токен бота хранится только в секретах Cloudflare. Робот GitHub продолжает публиковать посты как раньше.</p></div>
+      <div class="block"><h2>🌐 Перевод на английский</h2>
+        <p class="note">Кнопка «Перевести с русского» у английского текста — бесплатный переводчик Cloudflare. Один раз добавьте секреты GitHub: <code>CF_ACCOUNT_ID</code> (Cloudflare → Workers &amp; Pages → справа «Account ID») и <code>CF_AI_TOKEN</code> (My Profile → API Tokens → Create Token → шаблон «Workers AI»). Перевод всегда показывается вам перед отправкой.</p></div>
       <div class="block"><h2>🤖 Сам, без пульта</h2>
         <p class="note">Робот GitHub сам пишет в канал: <b>о новой версии</b> (номер и список изменений) и <b>о техработах</b> — когда вы ставите пометку «Обслуживание» на сервер, когда меняете время и когда работы закончились. Срабатывает сразу после «Сохранить» и сам «просыпается» к концу техработ.</p>
         <ol class="note" style="margin:8px 0 0;padding-left:20px">
@@ -827,7 +855,7 @@
       <input id="ansQ" type="search" placeholder="Поиск по ответам" style="width:100%;margin-bottom:14px">
       <div class="block" id="ansList"></div>
       <div class="block" id="ansOwnBlock" hidden><h2>Мои ответы</h2><p class="note">Порядок — перетаскиванием за ⠿.</p><div id="ansOwn"></div></div>
-      <div class="block"><h2>Свой ответ</h2><p class="note">Хранится только в этом браузере.</p>
+      <div class="block"><h2>Свой ответ</h2><p class="note">Хранится только в этом браузере (и в резервной копии). Можно писать подстановки — при копировании они заменятся: <code>{имя}</code> (пульт спросит), <code>{версия}</code>, <code>{сайт}</code>, <code>{как_обновить}</code>, <code>{канал}</code>, <code>{поддержка}</code>.</p>
         <label class="f" for="ansT">Вопрос</label><input id="ansT" type="text" maxlength="80" placeholder="Как сменить сервер">
         <label class="f" for="ansX">Ответ</label><textarea id="ansX" rows="3" maxlength="1500"></textarea>
         <button class="btn quiet" id="ansAdd" style="margin-top:10px;width:100%">Добавить</button></div>
@@ -837,6 +865,7 @@
     <section data-tab="checks" hidden>
       <h1>Проверка</h1>
       <p class="lead">Проверяется из вашего браузера и вашей сети. Если у вас включён VPN, результат может отличаться от того, что видят пользователи без него.</p>
+      <div class="block"><h2>Готово к выпуску?</h2><p class="note">Перед выпуском и после него: сборки зелёные, всё сохранено, версия везде одна, справка, видео «Что нового» и канал в порядке.</p><div id="relReady"></div><button class="btn go" id="relReadyGo" style="margin-top:12px;width:100%">Проверить готовность</button></div>
       <div class="block"><div id="checkList"></div><button class="btn go" id="runChecks" style="margin-top:12px;width:100%">Проверить</button></div>
       <div class="block"><h2>Ссылки в пульте</h2><p class="note">Все ссылки из баннеров, объявления, «Ссылок» и визитки: правильно ли написаны и открываются ли. Из браузера видно только «сайт отвечает или нет» — страницу «не найдено» на живом сайте так не поймать.</p>
         <div id="linkList"></div><button class="btn quiet" id="linkCheck" style="margin-top:12px;width:100%">Проверить ссылки</button></div>
@@ -960,7 +989,7 @@
     <!-- Справка -->
     <section data-tab="help" hidden class="helpdoc">
       <h1>Справка для владельца</h1>
-      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 13 ноября 2026 · приложение 3.21.2 · пульт 2.26.</p>
+      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 13 ноября 2026 · приложение 3.21.3 · пульт 2.27.</p>
       <div class="helptools">
         <input id="hq" type="search" placeholder="Найти в справке, например «техработы»" aria-label="Найти в справке" autocomplete="off">
         <button class="btn quiet small" id="hOpen" type="button">Развернуть всё</button>
@@ -1186,6 +1215,7 @@
 
       <div class="block"><details><summary>🆕 Что нового в пульте</summary>
         <div class="tbl"><table>
+          <tr><td>2.27</td><td>«Сохранить» видна на каждой вкладке; лента событий и «Готово к выпуску?»; подстановки в ответах ({имя}, {версия}…); резервная копия с Telegram и ответами; конкурсы, перевод на английский, просмотры постов, напоминания о техработах и сводка после них, кнопки под постом о версии, нагрузка серверов, бот отвечает сам (Cloudflare)</td></tr>
           <tr><td>2.26</td><td>Telegram: вкладка разложена по разделам (Отправить · Запланировано и журнал · Автопосты · Настройка) с оглавлением; автопосты «Новая версия», видео «Что нового» и «Техработы» можно выключить</td></tr>
           <tr><td>2.25</td><td>«Ссылки» → «Проверка сети — приложения»: свой список сервисов, которые приложение проверяет напрямую и через VPN</td></tr>
           <tr><td>2.24</td><td>«Обзор» → «Пользователи»: сколько человек в приложении, онлайн сейчас, за сутки и неделю, версии APEX CLIENT и другие приложения — по данным панели Remnawave (зашифровано)</td></tr>
@@ -1219,7 +1249,7 @@
 </div>
 
 <div class="savebar" id="savebar">
-  <p>Есть несохранённые изменения<small id="saveWhat"></small></p>
+  <p><span id="saveMsg">Есть несохранённые изменения</span><small id="saveWhat"></small></p>
   <button class="btn quiet" id="undoBtn" title="Отменить последнее изменение (Ctrl+Z)" aria-label="Отменить последнее изменение">↶</button>
   <button class="btn quiet" id="discard">Сбросить</button>
   <button class="btn quiet" id="saveLater" title="Сохранить в выбранное время">⏰</button>
@@ -1290,7 +1320,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.26', PANEL_DATE = '13 ноября 2026'
+const PANEL_VERSION = '2.27', PANEL_DATE = '13 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -1579,7 +1609,26 @@ function otherDirty() {
   if (files[HIDE] && $('hideJson').value.trim() && $('hideJson').value.trim() !== JSON.stringify(files[HIDE].data, null, 2).trim()) d.add('hide')
   return d
 }
+// 2.27: «Сохранить» видна на каждой вкладке. Изменения в настройках приложения — обычная полоса; на вкладках со своей
+// кнопкой (подписка, «Скрыть VPN», визитка, обои) — та же кнопка сохраняет их; нет изменений — «✓ Всё сохранено»
+const OWN_SAVE = { sub: 'saveSub', hide: 'saveHide', site: 'saveSite', walls: 'saveWalls' }
+const INSTANT_TABS = { tg: 'Telegram сохраняется сразу', answers: 'Ответы сохраняются сразу', home: 'Здесь всё сохраняется сразу', history: 'Здесь только просмотр', checks: 'Здесь только проверка' }
+function saveBarState() {
+  const sb = $('savebar'); if (!sb || !token || $('app').hidden) { sb?.classList.remove('idle'); return }
+  sb.classList.add('idle')
+  if (sb.classList.contains('show')) { sb.dataset.mode = 'app'; $('saveApp').disabled = false; return }
+  const own = OWN_SAVE[curTab], dirtyOwn = own && files[SUB] && otherDirty().has(curTab)
+  sb.dataset.mode = dirtyOwn ? 'own' : 'idle'
+  $('saveApp').disabled = !dirtyOwn
+  $('saveMsg').textContent = dirtyOwn ? 'Есть несохранённые изменения на этой вкладке' : '✓ ' + (INSTANT_TABS[curTab] || 'Всё сохранено')
+  $('saveWhat').textContent = ''
+}
+$('savebar').addEventListener('click', e => { // «Сохранить» на вкладке со своей кнопкой — жмёт её
+  if (e.target.closest('#saveApp') && $('savebar').dataset.mode === 'own') { e.stopImmediatePropagation(); $(OWN_SAVE[curTab])?.click(); setTimeout(saveBarState, 1500) }
+}, true)
+;['input', 'change'].forEach(t => document.addEventListener(t, () => queueMicrotask(saveBarState)))
 function changedDots() {
+  queueMicrotask(saveBarState)
   const all = new Set([...dirtyTabs, ...(files[SUB] ? otherDirty() : [])])
   document.querySelectorAll('.nav button[data-id]').forEach(b => { let d = b.querySelector('.dot'); if (!d) { d = document.createElement('span'); d.className = 'dot'; b.insertBefore(d, b.querySelector('.edit')) } d.hidden = !all.has(b.dataset.id) })
   document.querySelectorAll('.bnav button').forEach(b => { b.querySelector('i').hidden = !GROUPS.find(g => g[0] === b.dataset.g)[3].some(id => all.has(id)) })
@@ -1620,6 +1669,7 @@ function changed() {
   const now = collectApp(true), old = saved ? JSON.parse(saved) : now
   const keys = Object.keys(PART).filter(k => JSON.stringify(now[k] ?? null) !== JSON.stringify(old[k] ?? null))
   $('savebar').classList.toggle('show', keys.length > 0)
+  $('saveMsg').textContent = 'Есть несохранённые изменения'
   $('saveWhat').textContent = keys.map(k => PART[k][1]).join(', ')
   dirtyTabs = new Set(keys.map(k => PART[k][0]))
   changedDots(); saveDraft(now, keys.length > 0); pushUndo(now)
@@ -1971,6 +2021,7 @@ function showTab(id) {
   if (id === 'history') loadHistory()
   if (id === 'checks' && !$('checkList').innerHTML) runChecks()
   preview(collectApp(true))
+  saveBarState()
 }
 async function loadAll() {
   const [app, sub, hide, site, wl] = await Promise.all([getFile(APP), getFile(SUB), getFile(HIDE), getFile(SITE), getFile(WALLS)])
@@ -2009,8 +2060,8 @@ async function unlock() {
   try { token = await unseal($('pin').value.trim()); $('pin').value = '' } catch { $('pin').value = ''; return toast('Неверный PIN', false) }
   try { await enter() } catch (e) { toast('Не удалось войти: ' + e.message, false); if (e.status === 401) logout() }
 }
-function lock() { token = ''; $('app').hidden = true; $('savebar').classList.remove('show'); $('unlock').hidden = false; $('pin').focus() }
-function logout() { store('apex_admin_vault', null); store('apex_admin_token', null); token = ''; $('app').hidden = true; $('unlock').hidden = true; $('login').hidden = false; $('savebar').classList.remove('show') }
+function lock() { token = ''; $('app').hidden = true; $('savebar').classList.remove('show', 'idle'); $('unlock').hidden = false; $('pin').focus() }
+function logout() { store('apex_admin_vault', null); store('apex_admin_token', null); token = ''; $('app').hidden = true; $('unlock').hidden = true; $('login').hidden = false; $('savebar').classList.remove('show', 'idle') }
 
 // Меню: свой порядок и скрытые вкладки — только в этом браузере
 function navPrefs() { try { return JSON.parse(load('apex_admin_nav') || '{}') } catch { return {} } }
@@ -2251,10 +2302,11 @@ $('saveWalls').onclick = () => guarded($('saveWalls'), async () => {
 })
 
 // ── 2.12: резервная копия всех настроек пульта
-const BK_FILES = () => [APP, SUB, HIDE, SITE, WALLS]
+const BK_FILES = () => [APP, SUB, HIDE, SITE, WALLS, TG_SET]
 $('bkSave').onclick = () => guarded($('bkSave'), async () => {
   const out = { app: 'APEX CLIENT · пульт', made: new Date().toISOString(), files: {} }
-  for (const f of BK_FILES()) { const d = await getFile(f); if (d) out.files[f] = d }
+  for (const f of BK_FILES()) { const d = await getFile(f).catch(() => null); if (d) out.files[f] = d }
+  out.local = { answers: load('apex_admin_answers') } // 2.27: свои ответы — они только в этом браузере
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' }))
   a.download = 'apex-client-pult-' + new Date().toISOString().slice(0, 10) + '.json'; a.click(); URL.revokeObjectURL(a.href)
   $('bkMsg').textContent = 'Копия скачана: ' + Object.keys(out.files).length + ' файлов. Ключи обоев (Pixabay, GIPHY) тоже внутри — не выкладывайте файл в открытый доступ.'
@@ -2267,7 +2319,8 @@ $('bkFile').onchange = async e => {
   if (!names.length) { toast('В файле нет настроек пульта', false); return }
   if (!confirm('Восстановить ' + names.length + ' файлов из копии от ' + (c.made || '?').slice(0, 10) + '? Текущие настройки заменятся (их можно вернуть в «Истории»).')) return
   await guarded($('bkLoad'), async () => {
-    for (const f of names) { await getFile(f); await putFile(f, c.files[f], 'Пульт: восстановлено из копии') }
+    for (const f of names) { await getFile(f).catch(() => null); await putFile(f, c.files[f], 'Пульт: восстановлено из копии') }
+    if (c.local?.answers) store('apex_admin_answers', c.local.answers)
     await loadAll(); toast('Восстановлено из копии')
   })
 }
@@ -2587,6 +2640,7 @@ async function renderWeek() {
   $('weekNote').textContent = (rel.length ? 'Вышли: ' + rel.map(r => r.tag_name).join(', ') + '. ' : 'Новых версий не было. ') + (active ? 'Сейчас пометок серверов: ' + active + '.' : 'Все серверы без пометок.') + (dl === null ? ' Скачивания за неделю появятся, когда накопится статистика по дням.' : '')
   renderTgStat().catch(() => {})
   renderUsers().catch(() => {})
+  renderFeed().catch(() => {})
 }
 
 // 5. Отложенное сохранение: файл docs/config/pending.json, применяет робот GitHub (его будит «будильник» из telegram.yml)
@@ -2859,12 +2913,20 @@ function renderTgState() {
   const st = releases.find(r => !r.prerelease && !r.draft)
   $('tgVerBanner').hidden = !(st && s.version !== undefined && s.version !== st.tag_name)
   if (st) $('tgVerText').textContent = 'Версия ' + st.tag_name.replace(/^v/, '') + ' ещё не объявлена в канале'
+  // 2.27: просмотры постов (с открытой страницы канала) и конкурсы
+  const vw = (s.views || []).slice().sort((a, b) => b.views - a.views).slice(0, 10)
+  $('tgViewsBlock').hidden = !vw.length
+  if (vw.length) {
+    $('tgViewsNote').textContent = 'Самые просматриваемые из последних ' + s.views.length + ' постов. Берётся с открытой страницы канала, обновляется раз в 3 часа.'
+    $('tgViews').innerHTML = usBars(vw.map(v => [v.text || 'пост №' + v.id, v.views]), vw[0].views)
+  }
+  $('ctList').innerHTML = (s.contests || []).slice().reverse().map(c => `<div class="tglog"><b>🎁</b><span>${esc(c.title.split('\n')[0].slice(0, 70))}${c.result ? '<br>Участников: ' + c.result.count + (c.result.winners ? ' · победители: ' + esc(c.result.winners) : '') : ''}</span><time>${c.drawn ? 'итоги подведены' : 'итоги ' + fmt(c.until)}</time></div>`).join('')
   renderTgStat()
 }
 async function tgOpen() { // при открытии вкладки
   await tgLoadSettings().catch(() => {}); renderTgPick(); tgPreview(); renderTgSched().catch(() => {})
   $('tgDigest').checked = tgSet?.digest !== false; $('tgHoliday').checked = tgSet?.holidays !== false
-  $('tgAutoVer').checked = tgSet?.version !== false; $('tgAutoVideo').checked = tgSet?.video !== false; $('tgAutoMaint').checked = tgSet?.maint !== false
+  $('tgAutoVer').checked = tgSet?.version !== false; $('tgAutoVideo').checked = tgSet?.video !== false; $('tgAutoMaint').checked = tgSet?.maint !== false; $('tgAutoBtn').checked = tgSet?.buttons !== false; $('tgAutoRemind').checked = tgSet?.remind !== false
   tgState = await tgReadState(); renderTgState()
   api('/actions/workflows/telegram.yml/runs?per_page=1', { cache: 'no-store' }).then(r => { const x = r.workflow_runs?.[0]; $('tgRobot').textContent = x ? 'Последний запуск робота: ' + new Date(x.updated_at).toLocaleString('ru', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + ' — ' + ({ success: '✓ без ошибок', failure: '✗ ошибка — откройте Actions → «Telegram-канал»', cancelled: '✓ без ошибок' }[x.conclusion] || '⏰ работает и ждёт следующего дела (отложенный пост, конец техработ, итоги опроса)') : 'Робот ещё не запускался' }).catch(() => {})
 }
@@ -2881,7 +2943,7 @@ $('tgVerGo').onclick = () => guarded($('tgVerGo'), async () => { const st = rele
 $('tgPing').onclick = () => guarded($('tgPing'), async () => { const r = await tgRelay('ping', {}); toast((r.done || [])[0] || 'Робот работает') })
 document.querySelector('.tgtoc').addEventListener('click', e => { const a = e.target.closest('a'); if (!a) return; e.preventDefault(); document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }) })
 // 2.26: какие автопосты робот публикует сам (docs/tg/settings.json: version, video, maint, digest, holidays)
-;[['tgAutoVer', 'version', 'Пост о новой версии'], ['tgAutoVideo', 'video', 'Видео «Что нового»'], ['tgAutoMaint', 'maint', 'Посты о техработах']].forEach(([id, key, name]) => {
+;[['tgAutoVer', 'version', 'Пост о новой версии'], ['tgAutoVideo', 'video', 'Видео «Что нового»'], ['tgAutoMaint', 'maint', 'Посты о техработах'], ['tgAutoBtn', 'buttons', 'Кнопки под постом о версии'], ['tgAutoRemind', 'remind', 'Напоминания о техработах']].forEach(([id, key, name]) => {
   $(id).onchange = () => guarded($(id), async () => { await tgSaveSettings(s => { s[key] = $(id).checked }); toast(name + ($(id).checked ? ' — включено' : ' — выключено')) })
 })
 $('tgDigest').onchange = () => guarded($('tgDigest'), async () => { await tgSaveSettings(s => { s.digest = $('tgDigest').checked }); toast($('tgDigest').checked ? 'Дайджест по воскресеньям включён' : 'Дайджест выключен') })
@@ -2893,6 +2955,69 @@ async function renderTgStat() {
   const wk = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10)
   $('tgStat').innerHTML = keys.map(k => { const r = m[k], last = r[r.length - 1][1], old = (r.find(x => x[0] >= wk) || r[0])[1], d = last - old
     return `<div><b>${last.toLocaleString('ru')}</b><span>${keys.length > 1 ? 'чат ' + k + ' · ' : ''}подписчиков${d ? (d > 0 ? ' · +' : ' · ') + d + ' за неделю' : ''}</span></div>` }).join('')
+}
+// 2.27: лента событий за 3 дня — версии, сборки, сохранения пульта, посты робота, техработы
+async function renderFeed() {
+  const since = Date.now() - 3 * 864e5, ev = []
+  releases.filter(r => !r.draft && Date.parse(r.published_at) > since).forEach(r => ev.push([Date.parse(r.published_at), '🆕', 'Вышла версия ' + r.tag_name.replace(/^v/, '') + (r.prerelease ? ' (бета)' : '')]))
+  try {
+    const runs = (await api('/actions/runs?per_page=30', { cache: 'no-store' })).workflow_runs || []
+    runs.filter(x => x.name === 'Build APEX CLIENT' && ['success', 'failure'].includes(x.conclusion) && Date.parse(x.updated_at) > since)
+      .forEach(x => ev.push([Date.parse(x.updated_at), x.conclusion === 'success' ? '✅' : '❌', (x.conclusion === 'success' ? 'Сборка прошла: ' : 'Сборка не прошла: ') + (x.display_title || '').slice(0, 70)]))
+  } catch {}
+  try {
+    const cm = await api('/commits?path=' + APP + '&per_page=15', { cache: 'no-store' })
+    cm.filter(c => Date.parse(c.commit.author.date) > since).forEach(c => ev.push([Date.parse(c.commit.author.date), '💾', c.commit.message.split('\n')[0].slice(0, 90)]))
+  } catch {}
+  const st = tgState || await tgReadState()
+  ;(st?.log || []).filter(l => l.at > since).forEach(l => ev.push([l.at, l.ok ? '📣' : '⚠️', 'Канал — ' + l.kind + (l.text ? ': ' + l.text.slice(0, 60) : '') + (l.ok ? '' : ' (' + l.err + ')')]))
+  Object.entries(collectApp(true).servers.status).forEach(([n, v]) => { if (v.state === 'maintenance') ev.push([v.from || Date.now(), '🔧', (v.from > Date.now() ? 'Впереди техработы: ' : 'Техработы: ') + n + (v.until ? ' до ' + fmt(v.until) : '')]) })
+  ev.sort((a, b) => b[0] - a[0])
+  $('feed').innerHTML = ev.length ? ev.slice(0, 25).map(([t, i, x]) => `<div class="tglog"><b>${i}</b><span>${esc(x)}</span><time>${fmt(t)}</time></div>`).join('') : '<p class="note">За 3 дня событий не было.</p>'
+}
+// 2.27: «Готово к выпуску?» — проверки перед выпуском и после него
+$('relReadyGo').onclick = () => guarded($('relReadyGo'), async () => {
+  const st = releases.find(r => !r.prerelease && !r.draft), v = st?.tag_name.replace(/^v/, '') || '', rows = []
+  const add = (t, ok, d) => rows.push(`<div class="check"><div class="t"><b>${esc(t)}</b><span>${esc(d || '')}</span></div><span class="st ${ok === true ? 'ok' : ok === false ? 'bad' : 'warn'}">${ok === true ? 'да' : ok === false ? 'нет' : 'проверьте'}</span></div>`)
+  $('relReady').innerHTML = '<p class="note">Проверяем…</p>'
+  let runs = []; try { runs = (await api('/actions/runs?per_page=40', { cache: 'no-store' })).workflow_runs || [] } catch {}
+  const last = n => runs.find(x => x.name === n && x.status === 'completed' && x.conclusion !== 'cancelled' && x.conclusion !== 'skipped')
+  const b = last('Build APEX CLIENT'); add('Последняя сборка приложения прошла', b ? b.conclusion === 'success' : null, b ? (b.display_title || '').slice(0, 60) : 'нет данных')
+  const pc = last('Проверка пульта и страниц'); add('Проверка пульта и страниц прошла', pc ? pc.conclusion === 'success' : null, pc ? fmt(Date.parse(pc.updated_at)) : 'нет данных')
+  const unsaved = $('savebar').classList.contains('show') || otherDirty().size > 0; add('Всё сохранено в пульте', !unsaved, unsaved ? 'есть несохранённые изменения' : '')
+  try { const rd = b64dec((await api('/contents/README.md?ref=' + BRANCH, { cache: 'no-store' })).content); add('README: версия ' + v, rd.includes('Android — <b>' + v + '</b>'), 'строка «📱 Android» в README') } catch { add('README', null, 'не открылся') }
+  add('Справка пульта знает версию ' + v, document.querySelector('[data-tab=help]')?.textContent.includes('приложение ' + v) ?? null, 'строка «Обновлено … · приложение X»')
+  try { const wn = await (await fetch('https://dubstep2004.github.io/tools/whatsnew-video/data.json', { cache: 'no-store' })).json(); const mm = v.split('.').slice(0, 2).join('.'); add('Видео «Что нового» для ' + mm, wn.version === mm, 'в видео сейчас: ' + wn.version) } catch { add('Видео «Что нового»', null, 'не открылось') }
+  const ts = tgState || await tgReadState(); add('Версия объявлена в канале', ts ? ts.version === st?.tag_name : null, ts ? 'робот помнит: ' + (ts.version || '—') : 'робот ещё не запускался')
+  const live = Object.entries(collectApp(true).servers.status).filter(([, x]) => x.state === 'maintenance'); add('Нет идущих техработ', !live.length, live.map(([n]) => n).join(', '))
+  $('relReady').innerHTML = rows.join('')
+})
+// 2.27: подстановки в своих ответах
+function fillPh(t) {
+  const c = collectApp(true), site = c.links.site || 'https://dubstep2004.github.io', v = releases.find(r => !r.prerelease && !r.draft)?.tag_name.replace(/^v/, '') || ''
+  if (t.includes('{имя}')) { const n = (prompt('Имя пользователя (можно оставить пустым)') || '').trim(); t = t.replace(/,?\s*\{имя\}/g, n ? ', ' + n : '') }
+  return t.replace(/\{версия\}/g, v).replace(/\{сайт\}/g, site).replace(/\{как_обновить\}/g, site.replace(/\/$/, '') + '/update/')
+    .replace(/\{канал\}/g, c.links.channel || '').replace(/\{поддержка\}/g, c.links.support || 'https://t.me/Apexx_support')
+}
+// 2.27: конкурс и перевод — через робота GitHub
+$('ctSend').onclick = () => guarded($('ctSend'), async () => {
+  const text = $('ctText').value.trim(), until = $('ctUntil').value ? new Date($('ctUntil').value).getTime() : 0, n = Math.min(10, Math.max(1, +$('ctN').value || 1))
+  if (!text) throw new Error('Напишите, что разыгрываете'); if (until < Date.now() + 10 * 60000) throw new Error('Итоги — хотя бы через 10 минут')
+  if (!confirm('Запустить конкурс в канале? Итоги ' + fmt(until) + ', победителей: ' + n)) return
+  await tgRelay('contest', { text, until, n, button: $('ctBtn').value.trim() || '🎉 Участвую' }); $('ctText').value = ''; toast('Конкурс запущен — итоги робот подведёт сам')
+})
+$('tgTr').onclick = () => guarded($('tgTr'), async () => {
+  const t = $('tgText').value.trim(); if (!t) throw new Error('Сначала напишите русский текст')
+  const r = await tgRelay('translate', { text: t }); $('tgEn').value = (r.done || [])[0] || ''; tgPreview(); toast('Перевод готов — проверьте перед отправкой')
+})
+// 2.27: код бота для Cloudflare и секретное слово
+$('botCode').onclick = () => guarded($('botCode'), async () => {
+  const code = b64dec((await api('/contents/tools/tg-bot/worker.js?ref=' + BRANCH)).content)
+  try { await navigator.clipboard.writeText(code); toast('Код бота скопирован — вставьте его в Cloudflare') } catch { toast('Не удалось скопировать — откройте tools/tg-bot/worker.js на GitHub', false) }
+})
+$('botKeyGen').onclick = async () => {
+  const k = b2s(crypto.getRandomValues(new Uint8Array(24))).replace(/[+/=]/g, '').slice(0, 32); $('botKey').value = k; $('botKey').select()
+  try { await navigator.clipboard.writeText(k); toast('Слово создано и скопировано — это WEBHOOK_SECRET и BOT_WORKER_KEY') } catch { toast('Слово создано — скопируйте его') }
 }
 // 2.24: «Пользователи» — сколько человек в приложении, по данным панели Remnawave. Робот GitHub (stats.yml,
 // tools/users-stats) шифрует числа ключом STATS_KEY; ключ хранится в этом браузере зашифрованным входом в пульт
@@ -2924,6 +3049,7 @@ async function renderUsers() {
   const n = v => (v || 0).toLocaleString('ru'), active = (d.status || {}).ACTIVE || 0, allWeek = (d.appsWeek || []).reduce((a, x) => a + x[1], 0)
   $('usersSum').innerHTML = [[n(d.total), 'всего в панели'], [n(active), 'активных'], [n(d.online?.now), 'онлайн сейчас'], [n(d.online?.day), 'онлайн за сутки'], [n(d.online?.week), 'за неделю'], [n(d.apexWeek), 'в APEX CLIENT']].map(([b, s]) => `<div><b>${b}</b><span>${s}</span></div>`).join('')
   $('usersApex').textContent = `APEX CLIENT за неделю: ${n(d.apexWeek)} чел.` + (allWeek ? ` — ${Math.round(100 * (d.apexWeek || 0) / allWeek)}% из тех, кто обновлял подписку` : '') + `, за сутки: ${n(d.apexDay)}.`
+  const nd = d.nodes || []; $('usersNodes').innerHTML = nd.length ? usBars(nd.map(x => [x.name + (x.up ? '' : ' · не в сети'), x.online]), Math.max(1, ...nd.map(x => x.online))) : '<p class="note">Нет данных о серверах (старая версия панели или нет прав у токена).</p>'
   $('usersVer').innerHTML = usBars(d.versions || [], d.apexWeek); $('usersApps').innerHTML = usBars(d.appsWeek || [], allWeek); $('usersChart').innerHTML = usChart(d.days)
   $('usersView').hidden = false
   $('usersNote').textContent = 'Обновлено: ' + new Date(d.at).toLocaleString('ru', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + '. Робот обновляет раз в день; «Обновить» — сейчас.'
@@ -2979,7 +3105,7 @@ $('ansQ').oninput = renderAnswers
 $('ansOwn').onclick = e => $('ansList').onclick(e)
 $('ansList').onclick = e => {
   const c = e.target.closest('[data-acopy]')
-  if (c) { const t = c.closest('.ansi').querySelector('p').textContent; navigator.clipboard?.writeText(t).then(() => toast('Ответ скопирован — вставьте в чат'), () => toast(t, false)); return }
+  if (c) { const t = fillPh(c.closest('.ansi').querySelector('p').textContent); navigator.clipboard?.writeText(t).then(() => toast('Ответ скопирован — вставьте в чат'), () => toast(t, false)); return }
   const d = e.target.closest('[data-adel]'); if (!d) return
   const own = ownAnswers(); own.splice(Number(d.dataset.adel), 1); store('apex_admin_answers', JSON.stringify(own)); renderAnswers()
 }

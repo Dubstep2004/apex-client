@@ -11,6 +11,7 @@
 Что считает — только числа, без имён, почты, адресов и ссылок подписки:
   всего пользователей и активных, онлайн сейчас / за сутки / за неделю (из панели);
   каким приложением обновляют подписку за сутки и неделю (уникальные пользователи);
+  нагрузка серверов: сколько человек онлайн на каждом узле (название и страна, без адреса);
   версии APEX CLIENT за неделю; итог дня для графика (до 120 дней).
 Файл docs/stats/users.enc.json зашифрован (AES-GCM, ключ из STATS_KEY): репозиторий открытый,
 а сколько у вас пользователей — не для всех. Пульт расшифровывает его ключом, который хранит у себя.
@@ -87,6 +88,16 @@ while start < 60000:
     start += size
     if not recs or (total is not None and start >= total): break
 
+# 2.27: нагрузка серверов — сколько человек онлайн на каждом (только название и страна узла, без адреса)
+nodes = []
+try:
+    for nd in api('/api/nodes') or []:
+        nodes.append({'name': str(nd.get('name', ''))[:40], 'cc': str(nd.get('countryCode', ''))[:4], 'online': int(nd.get('usersOnline') or 0),
+                      'up': bool(nd.get('isConnected')) and not nd.get('isDisabled'), 'traffic': int(nd.get('trafficUsedBytes') or 0)})
+    nodes.sort(key=lambda x: -x['online'])
+except SystemExit as e:
+    print('узлы:', e)  # старая панель или нет прав — без нагрузки, остальное считаем
+
 versions = {}
 for at, app, ver in last.values():
     if app == 'APEX CLIENT': versions[ver or '?'] = versions.get(ver or '?', 0) + 1
@@ -107,6 +118,7 @@ data = {
     'appsWeek': sorted(([a, len(u)] for a, u in apps_week.items()), key=lambda x: -x[1])[:12],
     'versions': sorted(([v, n] for v, n in versions.items()), key=lambda x: [int(p) if p.isdigit() else 0 for p in re.split(r'[.\-]', x[0])], reverse=True)[:12],
     'apexDay': apex_day, 'apexWeek': apex_week,
+    'nodes': nodes[:40],
     'days': days[-120:],
 }
 iv = os.urandom(12)

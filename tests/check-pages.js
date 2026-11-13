@@ -138,6 +138,26 @@ async function dragRow(p, rowSel, from, to) { // перетащить строк
     if (!(await p.isVisible('#tgVerBanner'))) bad(W, 'нет плашки «версия не объявлена»')
     if (!(await p.textContent('#tgStat')).includes('120')) bad(W, 'подписчики не посчитаны')
     await edges(p, W + ' → Telegram 2.23')
+    // 2.27: «Сохранить» на каждой вкладке, конкурс, перевод, подстановки, лента и готовность к выпуску
+    {
+      const bar = await p.evaluate(() => { saveBarState(); const sb = $('savebar'); return { vis: getComputedStyle(sb).visibility, msg: $('saveMsg').textContent, dis: $('saveApp').disabled } })
+      if (bar.vis !== 'visible' || !bar.msg.includes('✓') || !bar.dis) bad(W, '«Сохранить» не видна на вкладке Telegram: ' + JSON.stringify(bar))
+      const n0 = ids.length
+      await p.evaluate(() => { const d = new Date(Date.now() + 86400e3); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); $('ctUntil').value = d.toISOString().slice(0, 16); $('ctText').value = 'Разыгрываем месяц подписки' })
+      await p.click('#ctSend'); await p.waitForFunction(() => /Конкурс запущен/.test(document.querySelector('#toast').textContent), null, { timeout: 15000 }).catch(() => bad(W, 'конкурс не запустился'))
+      if (ids.length <= n0) bad(W, 'конкурс: нет задания для робота')
+      await p.fill('#tgText', 'Привет'); await p.evaluate(() => { $('tgTr').closest('details').open = true }); await p.click('#tgTr'); await p.waitForFunction(() => $('tgEn').value.length > 0, null, { timeout: 15000 }).catch(() => bad(W, 'перевод не подставился'))
+      await p.evaluate(() => { $('tgEn').value = ''; $('tgText').value = '' })
+      const ph = await p.evaluate(() => { window.prompt = () => 'Анна'; return fillPh('Привет, {имя}! Обновитесь до {версия}: {как_обновить}') })
+      if (!ph.includes('Привет, Анна!') || ph.includes('{')) bad(W, 'подстановки в ответах: ' + ph)
+      await p.evaluate(() => { tgState = { ...(tgState || {}), views: [{ id: '5', text: 'Вышла версия', views: 1200 }], contests: [{ cid: 'c', title: 'Конкурс', until: Date.now() + 1e6, drawn: false }] }; renderTgState() })
+      if (!(await p.$eval('#tgViews', e => e.textContent)).includes('1200')) bad(W, 'просмотры постов не показаны')
+      if (!(await p.$eval('#ctList', e => e.textContent)).includes('Конкурс')) bad(W, 'список конкурсов не показан')
+      await p.evaluate(() => renderFeed()); if (!(await p.$eval('#feed', e => e.textContent)).length) bad(W, 'лента событий пустая')
+      await p.evaluate(() => showTab('checks')); await p.click('#relReadyGo')
+      await p.waitForFunction(() => document.querySelectorAll('#relReady .check').length >= 7, null, { timeout: 20000 }).catch(() => bad(W, '«Готово к выпуску?» не показал проверки'))
+      await edges(p, W + ' → Проверка 2.27'); await p.evaluate(() => showTab('tg'))
+    }
     // 2.25: список приложений для «Проверки сети»
     {
       const r = await p.evaluate(() => { const old = $('netApps').value; $('netApps').value = 'YouTube | https://www.youtube.com\nVK Видео | https://vkvideo.ru'; const c = collectApp(); let err = ''; $('netApps').value = 'плохо'; try { collectApp() } catch (e) { err = e.message } $('netApps').value = ''; const empty = collectApp(); $('netApps').value = old; return { n: (c.netCheck || []).length, err, emptyKey: 'netCheck' in empty } })

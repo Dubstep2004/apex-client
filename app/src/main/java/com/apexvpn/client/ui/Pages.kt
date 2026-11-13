@@ -1631,6 +1631,29 @@ private fun AppearancePage(viewModel: MainViewModel, onBack: () -> Unit) {
         // Плавность
         SectionLabel("Плавность")
         Group {
+            // 3.21.3: одна кнопка для слабых телефонов — выключает всё тяжёлое; выключили — возвращает как было
+            val lite = s.smoothMode && !s.glassBlur && !s.liveMap && !s.animatedFlags && !s.photoParallax && !s.photoMotion && s.wallFx == "none" && s.wallAuto != "live"
+            ListRow("Режим для слабых телефонов", if (lite) "Включён: без анимаций, размытия, живых обоев и эффектов — быстрее и экономнее" else "Одна кнопка: выключить анимации, размытие, живые обои и эффекты") {
+                ApexSwitch(lite, { on ->
+                    if (on) {
+                        com.apexvpn.client.data.Prefs.liteBackup = org.json.JSONObject().put("smooth", s.smoothMode).put("blur", s.glassBlur).put("map", s.liveMap)
+                            .put("flags", s.animatedFlags).put("parallax", s.photoParallax).put("motion", s.photoMotion).put("fx", s.wallFx).put("auto", s.wallAuto).toString()
+                        viewModel.change(reload = false) {
+                            copy(smoothMode = true, glassBlur = false, liveMap = false, animatedFlags = false, photoParallax = false, photoMotion = false, wallFx = "none", wallAuto = if (wallAuto == "live") "off" else wallAuto)
+                        }
+                    } else {
+                        val b = runCatching { org.json.JSONObject(com.apexvpn.client.data.Prefs.liteBackup) }.getOrNull()
+                        viewModel.change(reload = false) {
+                            copy(
+                                smoothMode = b?.optBoolean("smooth", false) ?: false, glassBlur = b?.optBoolean("blur", true) ?: true, liveMap = b?.optBoolean("map", true) ?: true,
+                                animatedFlags = b?.optBoolean("flags", true) ?: true, photoParallax = b?.optBoolean("parallax", true) ?: true, photoMotion = b?.optBoolean("motion", false) ?: false,
+                                wallFx = b?.optString("fx", "none") ?: "none", wallAuto = b?.optString("auto", wallAuto) ?: wallAuto,
+                            )
+                        }
+                    }
+                })
+            }
+            GroupDivider()
             ListRow("Плавный режим", "Меньше анимаций и свечения — для слабых телефонов и экономии батареи") {
                 ApexSwitch(s.smoothMode, { v -> viewModel.change(reload = false) { copy(smoothMode = v) } })
             }

@@ -12,6 +12,11 @@ object Prefs {
         sp = context.getSharedPreferences("apex", Context.MODE_PRIVATE)
     }
 
+    /** 3.21.3: настройки до «Режима для слабых телефонов» — чтобы вернуть как было */
+    var liteBackup: String
+        get() = sp.getString("lite_backup", "") ?: ""
+        set(v) = sp.edit { putString("lite_backup", v) }
+
     /** 3.21: история «Проверки сети» — последние 20 итогов (JSON) */
     var netHistory: String
         get() = sp.getString("net_history", "[]") ?: "[]"

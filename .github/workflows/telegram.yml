@@ -36,6 +36,10 @@ jobs:
           TG_CHAT: ${{ secrets.TG_CHAT }}
           TG_CHAT_EN: ${{ secrets.TG_CHAT_EN }}
           TG_OWNER: ${{ secrets.TG_OWNER }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_AI_TOKEN: ${{ secrets.CF_AI_TOKEN }}
+          BOT_WORKER_URL: ${{ secrets.BOT_WORKER_URL }}
+          BOT_WORKER_KEY: ${{ secrets.BOT_WORKER_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
         run: python3 scripts/tg_channel.py
       - name: Save state
@@ -43,7 +47,7 @@ jobs:
           [ -f docs/stats/tg-state.json ] || exit 0
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/stats/tg-state.json
+          git add docs/stats/tg-state.json docs/stats/tg-members.svg 2>/dev/null || git add docs/stats/tg-state.json
           git diff --cached --quiet && exit 0
           git commit -m "Telegram-канал: состояние робота"
           for i in 1 2 3; do git push && exit 0; git pull --rebase -q; done

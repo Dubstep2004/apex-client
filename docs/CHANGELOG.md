@@ -2,6 +2,16 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.21.3 · 14 ноября 2026
+
+<img src="img/tags/new.svg" alt="Новое" height="22">
+
+- «Режим для слабых телефонов» в «Оформлении»: одна кнопка выключает анимации, размытие, живые обои и эффекты; выключили — всё вернётся как было
+
+<img src="img/tags/improved.svg" alt="Улучшено" height="22">
+
+- Поиск в настройках находит «Проверку сети» и режим для слабых телефонов по словам «глушилка», «тормозит», «батарея»
+
 ## 3.21.2 · 14 ноября 2026
 
 <img src="img/tags/new.svg" alt="Новое" height="22">

@@ -17,8 +17,9 @@
 <p><b>Два ядра</b> · все популярные протоколы · <b>свои списки</b> с шаблонами · <b>3D-глобус</b> · <b>13 дизайнов</b>, палитры и <b>живое видео на фоне</b><br>
 автопилот с белыми списками · DNS «Авто» для каждой сети · базы сайтов каждый день · часы Wear OS</p>
 
-<sub>📱 Android — <b>3.21.2</b> (Android 7+) · sing-box 1.13 · Xray 26</sub><br>
-<sub>🌐 Сайт: <a href="https://dubstep2004.github.io">dubstep2004.github.io</a> · 💬 Поддержка: <a href="https://t.me/Apexx_support">@Apexx_support</a></sub>
+<sub>📱 Android — <b>3.21.3</b> (Android 7+) · sing-box 1.13 · Xray 26</sub><br>
+<sub>🌐 Сайт: <a href="https://dubstep2004.github.io">dubstep2004.github.io</a> · 💬 Поддержка: <a href="https://t.me/Apexx_support">@Apexx_support</a></sub><br>
+<a href="https://t.me/apex_client_news"><img src="docs/stats/tg-members.svg" alt="Канал APEX CLIENT в Telegram" height="22"></a>
 
 </div>
 
@@ -868,15 +869,28 @@ core/apexcore/          Go: разбор подписки → конфиги sin
 
 <img src="docs/img/tags/new.svg" alt="Новое" height="22"> <img src="docs/img/tags/improved.svg" alt="Улучшено" height="22"> <img src="docs/img/tags/changed.svg" alt="Изменено" height="22"> <img src="docs/img/tags/fixed.svg" alt="Исправлено" height="22"> <img src="docs/img/tags/removed.svg" alt="Удалено" height="22">
 
-### 3.21.2 · 14 ноября 2026
+### 3.21.3 · 14 ноября 2026
+
+<img src="docs/img/tags/new.svg" alt="Новое" height="22">
+
+- «Режим для слабых телефонов» в «Оформлении»: одна кнопка выключает анимации, размытие, живые обои и эффекты; выключили — всё вернётся как было
+
+<img src="docs/img/tags/improved.svg" alt="Улучшено" height="22">
+
+- Поиск в настройках находит «Проверку сети» и режим для слабых телефонов по словам «глушилка», «тормозит», «батарея»
+
+#### 📚 Все версии (141)
+
+Каждая версия — отдельная вкладка.
+
+<details>
+<summary><b>3.21.2</b> · 14 ноября 2026</summary>
 
 <img src="docs/img/tags/new.svg" alt="Новое" height="22">
 
 - «Проверка сети»: новый этап «Приложения» — YouTube, Instagram, WhatsApp, ChatGPT, Discord, TikTok и другие: открываются ли напрямую и через VPN
 
-#### 📚 Все версии (140)
-
-Каждая версия — отдельная вкладка.
+</details>
 
 <details>
 <summary><b>3.21.1</b> · 14 ноября 2026</summary>

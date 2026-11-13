@@ -52,7 +52,11 @@ def next_due():
         if w > t and str(it.get('id')) not in (st.get('results') or {}): due.append((w, 'telegram'))
     for v in ((app.get('servers') or {}).get('status') or {}).values():
         if isinstance(v, dict) and v.get('state') == 'maintenance' and (v.get('until') or 0) > t: due.append((v['until'] + 30000, 'telegram'))
+        if isinstance(v, dict) and v.get('state') == 'maintenance' and (v.get('from') or 0) > t:  # напоминания за сутки и за час
+            due += [(v['from'] - 86400_000 + 20000, 'telegram'), (v['from'] - 3600_000 + 20000, 'telegram')]
     for p in st.get('polls') or []: due.append((p.get('until') or 0, 'telegram'))
+    for c in st.get('contests') or []:
+        if not c.get('drawn'): due.append((c.get('until') or 0, 'telegram'))
     pend = read('docs/config/pending.json', {})
     if pend.get('at') and not pend.get('error'): due.append((max(pend['at'], t), 'apply-pending'))
     m = datetime.datetime.now(MSK)
@@ -144,6 +148,14 @@ def gh(path):
 
 esc = lambda s: str(s).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
 when = lambda ms: datetime.datetime.fromtimestamp(ms / 1000, MSK).strftime('%d.%m %H:%M') + ' МСК'
+
+
+def dur_text(ms):
+    m = max(1, round(ms / 60000))
+    if m < 60:
+        return f'{m} ' + ('минуту' if m % 10 == 1 and m % 100 != 11 else 'минуты' if m % 10 in (2, 3, 4) and m % 100 not in (12, 13, 14) else 'минут')
+    h, m = divmod(m, 60)
+    return f'{h} ч' + (f' {m} мин' if m else '')
 
 state = read(STATE, None)
 first = state is None
@@ -238,9 +250,11 @@ def version_post(rel):
 
 def send_version(rel, chats, extra_note=''):
     v, png, text = version_post(rel)
+    # 2.27: кнопки под постом — как обновить и сообщить об ошибке (реакции 👍 — встроенные в канале)
+    kb = keyboard([['⬇️ Как обновить', SITE + '/update/'], ['🐞 Нашёл ошибку', SUPPORT]]) if settings.get('buttons', True) else None
     def one(chat):
         try:
-            return [(send_photo(chat, png, text, html=True) if png else tg('sendMessage', chat_id=chat, text=text, parse_mode='HTML', link_preview_options={'is_disabled': True})).get('message_id')]
+            return [(send_photo(chat, png, text, html=True, reply_markup=kb) if png else tg('sendMessage', chat_id=chat, text=text, parse_mode='HTML', link_preview_options={'is_disabled': True}, reply_markup=kb)).get('message_id')]
         except TgError as e:
             if not png: raise
             print('картинка не ушла:', e, '— отправляю текстом')
@@ -250,10 +264,13 @@ def send_version(rel, chats, extra_note=''):
 
 rel = gh('/releases/latest')
 tag = rel.get('tag_name', '')
+app = read(E('TG_APP', 'docs/config/app.json'), {})
+SUPPORT = ((app.get('links') or {}).get('support') or '').strip()
+SUPPORT = SUPPORT if SUPPORT.startswith('https://') else 'https://t.me/Apexx_support'
 
 # ── 0. Задания из пульта (docs/tg/outbox.json). Пульт ждёт итог в state['results'][id].
 ALLOWED = {'sendMessage': {'text', 'link_preview_options'}, 'sendPoll': {'question', 'options', 'is_anonymous', 'allows_multiple_answers'},
-           'getChat': set(), 'sendVersion': {'version'}, 'deleteLast': set(), 'editLast': {'text'}, 'ping': set()}
+           'getChat': set(), 'sendVersion': {'version'}, 'deleteLast': set(), 'editLast': {'text'}, 'ping': set(), 'translate': {'text'}, 'contest': {'text', 'until', 'n', 'button'}}
 box = read(E('TG_OUTBOX', 'docs/tg/outbox.json'), {})
 results = state['results']
 for it in (box.get('items') or [])[-40:]:
@@ -276,6 +293,26 @@ for it in (box.get('items') or [])[-40:]:
             for i, chat in enumerate(CHATS, 1):
                 try: r = tg('getChat', chat_id=chat); done.append(('канал ' if r.get('type') == 'channel' else 'группа ') + str(r.get('title') or r.get('username') or i))
                 except Exception as e: errs.append(f'чат {i}: {e}')
+        elif method == 'translate':  # 2.27: перевод на английский — бесплатный переводчик Cloudflare Workers AI
+            acc, key = E('CF_ACCOUNT_ID', ''), E('CF_AI_TOKEN', '')
+            if not (acc and key): raise TgError('нет секретов CF_ACCOUNT_ID и CF_AI_TOKEN — см. пульт → Telegram → Настройка')
+            body_t = json.dumps({'text': str(body.get('text', ''))[:4000], 'source_lang': 'russian', 'target_lang': 'english'}).encode()
+            req = urllib.request.Request(f'https://api.cloudflare.com/client/v4/accounts/{acc}/ai/run/@cf/meta/m2m100-1.2b', body_t, {'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json'})
+            try:
+                with urllib.request.urlopen(req, timeout=60) as r: tr = json.load(r)
+            except urllib.error.HTTPError as e: raise TgError(f'переводчик ответил {e.code}' + (' — проверьте CF_AI_TOKEN' if e.code in (401, 403) else ''))
+            done = [str((tr.get('result') or {}).get('translated_text') or '')[:4096]]
+            if not done[0]: raise TgError('переводчик вернул пустой текст')
+        elif method == 'contest':  # 2.27: конкурс — пост с кнопкой «Участвую» (нажатия принимает бот на Cloudflare)
+            until = int(body.get('until') or 0)
+            if until < now + 10 * 60_000: raise TgError('время итогов должно быть хотя бы через 10 минут')
+            cid = re.sub(r'[^\w-]', '', rid)[:24]
+            text = str(body.get('text', ''))[:3500] + f'\n\n🎁 Итоги — {when(until)}. Нажмите «Участвую»: победителей выберем случайно и честно.'
+            btn = str(body.get('button') or '🎉 Участвую')[:30]
+            kb = {'inline_keyboard': [[{'text': btn, 'callback_data': 'join:' + cid}]]}
+            done, errs = broadcast('Конкурс', text, CHATS, lambda chat: [tg('sendMessage', chat_id=chat, text=text, reply_markup=kb, link_preview_options={'is_disabled': True}).get('message_id')])
+            if not errs:
+                state.setdefault('contests', []).append({'cid': cid, 'until': until, 'n': max(1, min(int(body.get('n') or 1), 10)), 'title': text[:80], 'ids': (state['last'][-1]['ids'] if state['last'] else {}), 'drawn': False})
         elif method == 'ping':
             done = [f'робот работает · чатов: {len(CHATS)} · английский канал: {"да" if CHATS_EN else "нет"} · личка владельца: {"да" if OWNER else "нет"} · картинки: {"да" if tg_card else "нет"}']
         elif method == 'sendVersion':
@@ -369,11 +406,25 @@ def post(kind, text):
 
 
 # ── 2. Техработы на серверах (пометки «обслуживание» из пульта, кроме предпросмотра)
-app = read(E('TG_APP', 'docs/config/app.json'), {})
 marks = {n: v for n, v in ((app.get('servers') or {}).get('status') or {}).items()
          if isinstance(v, dict) and v.get('state') == 'maintenance' and not v.get('preview') and (not v.get('until') or v['until'] > now)}
+state.setdefault('mstart', {}); state.setdefault('remind', {})
 for name, v in marks.items():
     key = f"{v.get('from') or 0}-{v.get('until') or 0}"
+    start = v.get('from') or 0
+    # 2.27: когда работы фактически начались — для сводки «шли 40 минут»
+    if start <= now and name not in state['mstart']:
+        state['mstart'][name] = start or now; changed = True
+    # 2.27: напоминания за сутки и за час до начала (будильник робота просыпается к этому времени)
+    rk = f'{name}|{key}'
+    if not first and start > now and settings.get('maint', True) and settings.get('remind', True) and state['marks'].get(name) == key:
+        done = state['remind'].get(rk, [])
+        left = start - now
+        for tag_r, lim, txt in (('hour', 3600_000, 'через час'), ('day', 86400_000, 'завтра' if datetime.datetime.fromtimestamp(start / 1000, MSK).date() != msk.date() else 'сегодня')):
+            if left <= lim and tag_r not in done and sent < MAX_POSTS:
+                post('Техработы: напоминание', f'⏰ <b>Напоминание: {txt} техработы — {esc(name)}</b>\nС {when(start)}' + (f' до {when(v["until"])}' if v.get('until') else '') + '.\nАвтопилот сам переключит вас на рабочий сервер.')
+                state['remind'][rk] = done + ['day', 'hour'] if tag_r == 'hour' else done + ['day']; changed = True
+                break
     if state['marks'].get(name) == key:
         continue
     if not first and sent >= MAX_POSTS:
@@ -384,14 +435,22 @@ for name, v in marks.items():
         span = (f'С {when(start)}' if start > now else 'Сейчас') + (f' до {when(v["until"])}' if v.get('until') else ' до окончания работ')
         note = f'\n{esc(v["note"])}' if v.get('note') else ''
         post('Техработы', f'{head}\n{span}.{note}\n\nАвтопилот сам переключит вас на рабочий сервер — ничего делать не нужно.\n<a href="{SITE}/status/">Статус серверов</a>')
+        # напоминания, чьё время уже наступило, не нужны — о работах только что написали
+        state['remind'][f'{name}|{key}'] = (['day'] if start - now <= 86400_000 else []) + (['hour'] if start - now <= 3600_000 else [])
     state['marks'][name] = key; changed = True
 for name in list(state['marks']):
     if name not in marks:
         if not first and sent >= MAX_POSTS:
             continue
         if not first and settings.get('maint', True):
-            post('Техработы закончены', f'✅ <b>Работы закончены: {esc(name)}</b>\nСервер снова работает. Спасибо за терпение!')
-        del state['marks'][name]; changed = True
+            # 2.27: сводка с картинкой — сколько шли работы
+            began = state['mstart'].get(name)
+            dur = dur_text(now - began) if began else ''
+            text = f'✅ Работы закончены: {name}\n' + (f'Шли {dur}. ' if dur else '') + 'Сервер снова работает — спасибо за терпение!'
+            sent += 1
+            broadcast('Техработы закончены', text, CHATS, lambda chat: send_one(chat, text, {'card': True}))
+        del state['marks'][name]; state['mstart'].pop(name, None); changed = True
+        for k in [k for k in state['remind'] if k.startswith(name + '|')]: del state['remind'][k]
 
 # ── 3a. Итоги опросов (3): закрываем опрос и публикуем картинку с процентами ответом на него
 for p in list(state['polls']):
@@ -418,6 +477,16 @@ if state.get('mday') != today:
         except Exception as e:
             print('подписчики:', e)
     state['mday'] = today; changed = True
+    # 2.27: значок «📣 Канал · N подписчиков» для README (docs/stats/tg-members.svg); сайт берёт число из tg-state.json
+    n1 = (state['members'].get('1') or [[0, 0]])[-1][1]
+    if n1 and not DRY:
+        word = 'подписчик' if n1 % 10 == 1 and n1 % 100 != 11 else 'подписчика' if n1 % 10 in (2, 3, 4) and n1 % 100 not in (12, 13, 14) else 'подписчиков'
+        label, val = 'Канал', f'{n1} {word}'
+        lw, vw = 80, 18 + int(8.4 * len(val))
+        open('docs/stats/tg-members.svg', 'w').write(
+            f'<svg xmlns="http://www.w3.org/2000/svg" width="{lw + vw}" height="24" role="img" aria-label="{label}: {val}">'
+            f'<rect width="{lw + vw}" height="24" rx="12" fill="#1d1f33"/><rect x="{lw}" width="{vw}" height="24" rx="12" fill="#229ED9"/><rect x="{lw}" width="12" height="24" fill="#229ED9"/>'
+            f'<g font-family="Verdana,DejaVu Sans,sans-serif" font-size="12" fill="#fff"><text x="12" y="16">📣 {label}</text><text x="{lw + 8}" y="16" font-weight="bold">{val}</text></g></svg>\n')
 
 
 def members_week():
@@ -455,6 +524,54 @@ h = HOLIDAYS.get(msk.strftime('%m-%d'))
 if h and settings.get('holidays', True) and not first and msk.hour >= 10 and state['holidays'].get(h[0]) != msk.year:
     state['holidays'][h[0]] = msk.year; changed = True
     broadcast('Праздник', h[1], CHATS, lambda chat: send_one(chat, h[1], {'card': True, 'theme': h[0]}))
+
+# ── 3f. Итоги конкурсов (38): в назначенное время просим бота на Cloudflare выбрать победителей и пишем ответом на пост
+for c in state.get('contests', []):
+    if c.get('drawn') or c['until'] > now: continue
+    c['drawn'] = True; changed = True
+    wurl, wkey = E('BOT_WORKER_URL', '').rstrip('/'), E('BOT_WORKER_KEY', '')
+    try:
+        if not (wurl.startswith('https://') and wkey): raise TgError('нет секретов BOT_WORKER_URL и BOT_WORKER_KEY — итоги можно подвести командой /draw ' + c['cid'] + ' в личке бота')
+        req = urllib.request.Request(wurl + '/api/draw', json.dumps({'cid': c['cid'], 'n': c.get('n', 1)}).encode(), {'x-key': wkey, 'content-type': 'application/json'})
+        r = json.load(urllib.request.urlopen(req, timeout=30)) if not DRY else {'count': 3, 'winners': [{'username': 'test'}]}
+        if r.get('error'): raise TgError(r['error'])
+        wins = ', '.join('@' + w['username'] if w.get('username') else (w.get('name') or 'участник') for w in r.get('winners') or [])
+        text = f'🏆 Итоги конкурса\nУчастников: {r.get("count", 0)}\n' + (f'Победители: {wins}\nПоздравляем! Напишем вам в личку.' if wins else 'Участников не было — конкурс не состоялся.')
+        for k, mids in (c.get('ids') or {}).items():
+            chat = chat_of(k)
+            try:
+                tg('sendMessage', chat_id=chat, text=text, reply_to_message_id=mids[-1])
+                tg('editMessageReplyMarkup', chat_id=chat, message_id=mids[-1], reply_markup={'inline_keyboard': []})
+            except TgError as e: errors.append('итоги конкурса: ' + str(e))
+        c['result'] = {'count': r.get('count', 0), 'winners': wins}
+        log('Итоги конкурса', text)
+    except Exception as e:
+        log('Итоги конкурса', c.get('title', ''), False, e)
+state['contests'] = [c for c in state.get('contests', []) if not c.get('drawn') or now - c['until'] < 30 * 86400_000][-20:]
+
+# ── 3e. Просмотры постов (37): у бота нет доступа к просмотрам — берём с открытой страницы t.me/s/канал (раз в 3 часа)
+if not first and now - int(state.get('vat') or 0) > 3 * 3600_000:
+    for chat in CHATS:
+        if not chat.startswith('@'): continue  # группы и закрытые каналы — нет открытой страницы
+        try:
+            req = urllib.request.Request(f'https://t.me/s/{chat[1:]}', headers={'User-Agent': 'Mozilla/5.0 (Linux; Android 14) Chrome/130.0 Mobile Safari/537.36'})
+            html = urllib.request.urlopen(req, timeout=20).read().decode('utf-8', 'replace') if not DRY else ''
+            posts = []
+            for part in html.split('data-post="')[1:]:
+                pid = part.split('"', 1)[0]
+                mt = re.search(r'tgme_widget_message_text[^>]*>(.*?)</div>', part, re.S)
+                mv = re.search(r'tgme_widget_message_views">([\d.,]+)([KM]?)<', part)
+                md = re.search(r'datetime="([^"]+)"', part)
+                if not mv: continue
+                n = float(mv.group(1).replace(',', '.')) * {'': 1, 'K': 1000, 'M': 1_000_000}[mv.group(2)]
+                text = re.sub(r'<[^>]+>', ' ', mt.group(1)) if mt else '(картинка или видео)'
+                text = re.sub(r'\s+', ' ', text.replace('&nbsp;', ' ').replace('&amp;', '&').replace('&quot;', '"').replace('&#39;', "'")).strip()[:90]
+                posts.append({'id': pid.split('/')[-1], 'text': text, 'views': int(n), 'at': (md.group(1) if md else '')[:16]})
+            if posts:
+                state['views'] = posts[-30:]; state['vat'] = now; changed = True
+        except Exception as e:
+            print('просмотры:', type(e).__name__)
+        break  # хватит первого публичного канала
 
 # ── 4. Владельцу в личку (17): упала сборка, сохранили в пульте, ошибки робота
 def notify(text):

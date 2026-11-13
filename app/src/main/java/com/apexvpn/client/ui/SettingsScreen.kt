@@ -1267,6 +1267,8 @@ private val settingsSearch = listOf(
     SearchItem("Живое уведомление", "look", null, ""),
     SearchItem("Конец подписки", "look", null, ""),
     SearchItem("Дизайн, тема и иконка", "look", Page.Appearance, "оформление тёмная цвет фон обои"),
+    SearchItem("Режим для слабых телефонов", "look", Page.Appearance, "медленно тормозит батарея анимации плавный экономия"),
+    SearchItem("Проверка сети", "tools", Page.NetCheck, "глушилка белые списки не работает оператор блокировка"),
     SearchItem("Проверять автоматически", "updates", null, ""),
     SearchItem("Ставить само", "updates", null, "автообновление установка"),
     SearchItem("Бета-версии", "updates", null, "тестовые ранний доступ"),
