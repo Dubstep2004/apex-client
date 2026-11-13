@@ -1,0 +1,42 @@
+name: Telegram-канал
+
+# Робот сам пишет в канал: о новой версии и о техработах на серверах (scripts/tg_channel.py).
+# Нужны секреты репозитория TG_BOT_TOKEN и TG_CHAT — без них ничего не делает.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_run:
+    workflows: ["Build APEX CLIENT"]
+    types: [completed]
+  push:
+    branches: [main]
+    paths: ["docs/config/app.json"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: telegram-channel
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Post to channel
+        env:
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TG_CHAT }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/tg_channel.py
+      - name: Save state
+        run: |
+          [ -f docs/stats/tg-state.json ] || exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/stats/tg-state.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Telegram-канал: состояние робота"
+          for i in 1 2 3; do git push && exit 0; git pull --rebase -q; done

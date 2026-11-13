@@ -714,6 +714,14 @@
         <div class="rowx" style="margin-top:10px"><button class="btn quiet small" id="tgSave">Запомнить</button><button class="btn quiet small" id="tgTest">Проверить</button><button class="btn quiet small" id="tgForget">Забыть</button></div>
         <label class="sw" style="margin-top:12px"><div class="t"><b>Предлагать отправить новый баннер</b><span>После «Сохранить» пульт спросит, отправить ли новые баннеры в канал</span></div><span class="tog"><input type="checkbox" id="tgAuto"><i></i></span></label>
       </div>
+      <div class="block"><h2>🤖 Сам, без пульта</h2>
+        <p class="note">Робот GitHub сам пишет в канал: <b>о новой версии</b> (номер и список изменений) и <b>о техработах</b> — когда вы ставите пометку «Обслуживание» на сервер, когда меняете время и когда работы закончились. Проверяет каждые 10 минут и сразу после «Сохранить».</p>
+        <ol class="note" style="margin:8px 0 0;padding-left:20px">
+          <li>GitHub → репозиторий apex-client → Settings → Secrets and variables → Actions → <b>New repository secret</b>.</li>
+          <li>Имя <code>TG_BOT_TOKEN</code> — токен бота. Ещё один: <code>TG_CHAT</code> — <code>@имя_канала</code>.</li>
+          <li>Готово. Первый раз робот только запомнит, что сейчас есть, и ничего не отправит — дальше будет писать о новом.</li>
+        </ol>
+      </div>
       <div class="block"><h2>Сообщение</h2>
         <div class="tpls" id="tgPick"></div>
         <label class="f" for="tgText">Текст</label><textarea id="tgText" rows="5" maxlength="4000" placeholder="Сегодня с 22:00 до 23:00 техработы…"></textarea>
@@ -934,6 +942,7 @@
           <li>Опрос: вопрос и 2–10 вариантов → «Отправить опрос». Результаты — в самом Telegram.</li>
         </ol>
         <p>Галочка «Предлагать отправить новый баннер» — после «Сохранить» пульт сам спросит, отправить ли новые баннеры в канал.</p>
+        <p><b>Сам, без пульта:</b> добавьте в GitHub (Settings → Secrets and variables → Actions) секреты <code>TG_BOT_TOKEN</code> и <code>TG_CHAT</code> — робот будет сам писать в канал о новых версиях и техработах (проверка каждые 10 минут).</p>
         <div class="callout bad">Токен бота хранится только в этом браузере, зашифрованный вашим входом в пульт. Никому его не присылайте. На другом устройстве впишите заново.</div>
         <button class="btn quiet small gobtn" type="button" data-open="tg">Открыть вкладку «Telegram»</button>
       </details></div>

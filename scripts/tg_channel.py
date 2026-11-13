@@ -1,0 +1,101 @@
+"""Робот Telegram-канала: сам пишет в канал о новой версии и о техработах на серверах.
+
+Запускается из .github/workflows/telegram.yml (каждые 10 минут, после сборки и после сохранения в пульте).
+Нужны секреты репозитория: TG_BOT_TOKEN (токен бота от @BotFather) и TG_CHAT (@имя_канала или -100…).
+Нет секретов — тихо ничего не делает.
+
+Что помнит (docs/stats/tg-state.json): последнюю объявленную версию и техработы, о которых уже написал.
+Первый запуск только запоминает текущее состояние и ничего не публикует — чтобы не завалить канал старым.
+"""
+import datetime, json, os, re, sys, urllib.parse, urllib.request
+
+TOKEN, CHAT, REPO = os.environ.get('TG_BOT_TOKEN', ''), os.environ.get('TG_CHAT', ''), os.environ.get('GITHUB_REPOSITORY', 'Dubstep2004/apex-client')
+STATE = os.environ.get('TG_STATE', 'docs/stats/tg-state.json')  # пути можно подменить для проверки
+SITE = 'https://dubstep2004.github.io'
+MSK = datetime.timezone(datetime.timedelta(hours=3))
+DRY = '--dry' in sys.argv  # проверка без отправки: печатает, что бы отправил
+
+if not (TOKEN and CHAT) and not DRY:
+    print('Нет секретов TG_BOT_TOKEN / TG_CHAT — пропускаю'); raise SystemExit
+
+
+def tg(method, **params):
+    if DRY:
+        print('→', method, json.dumps(params, ensure_ascii=False)[:600]); return {}
+    data = urllib.parse.urlencode({k: (json.dumps(v) if isinstance(v, (dict, list)) else v) for k, v in params.items()}).encode()
+    with urllib.request.urlopen(urllib.request.Request(f'https://api.telegram.org/bot{TOKEN}/{method}', data), timeout=30) as r:
+        res = json.load(r)
+    if not res.get('ok'):
+        raise SystemExit('Telegram: ' + str(res.get('description')))
+    return res['result']
+
+
+def post(text):
+    tg('sendMessage', chat_id=CHAT, text=text, parse_mode='HTML', link_preview_options={'is_disabled': True})
+
+
+def gh(path):
+    if DRY:  # локальная проверка — через gh (в песочнице прямой доступ к API закрыт)
+        import subprocess
+        return json.loads(subprocess.run(['gh', 'api', 'repos/' + REPO + path], capture_output=True, text=True, check=True).stdout)
+    req = urllib.request.Request('https://api.github.com/repos/' + REPO + path, headers={'Accept': 'application/vnd.github+json', **({'Authorization': 'Bearer ' + os.environ['GITHUB_TOKEN']} if os.environ.get('GITHUB_TOKEN') else {})})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return json.load(r)
+
+
+esc = lambda s: str(s).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+when = lambda ms: datetime.datetime.fromtimestamp(ms / 1000, MSK).strftime('%d.%m %H:%M') + ' МСК'
+
+state = json.load(open(STATE)) if os.path.exists(STATE) else None
+first = state is None
+state = state or {'version': '', 'marks': {}}
+changed = first
+now = int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000)
+
+# 1. Новая версия (не бета): номер и пункты «- …» из описания релиза
+rel = gh('/releases/latest')
+tag = rel.get('tag_name', '')
+if tag and tag != state['version']:
+    if not first and not rel.get('prerelease'):
+        body = rel.get('body') or ''
+        body = body.split('\n---')[0]
+        items = [re.sub(r'\*\*|`', '', l[2:]).strip() for l in body.splitlines() if l.startswith('- ')][:8]
+        v = tag.lstrip('v')
+        text = f'🆕 <b>Вышла версия {esc(v)}</b>\n\n' + '\n'.join('• ' + esc(i) for i in items)
+        text += f'\n\nОбновление придёт само — плашка «Вышла версия» или окно «Доступна версия» → «Обновить».\n<a href="{SITE}/update/">Как обновить</a> · <a href="{SITE}/versions/">Все изменения</a>'
+        post(text)
+        if v.endswith('.0'):  # новая X.Y — ещё и видео «Что нового», если уже готово
+            try:
+                tg('sendVideo', chat_id=CHAT, video=f'{SITE}/media/whatsnew-ru.mp4', caption=f'Главное в {esc(".".join(v.split(".")[:2]))} — за 12 секунд')
+            except SystemExit as e:
+                print('видео не отправилось:', e)
+    state['version'] = tag; changed = True
+
+# 2. Техработы на серверах (пометки «обслуживание» из пульта, кроме предпросмотра)
+app = json.load(open(os.environ.get('TG_APP', 'docs/config/app.json')))
+marks = {n: v for n, v in ((app.get('servers') or {}).get('status') or {}).items()
+         if isinstance(v, dict) and v.get('state') == 'maintenance' and not v.get('preview') and (not v.get('until') or v['until'] > now)}
+for name, v in marks.items():
+    key = f"{v.get('from') or 0}-{v.get('until') or 0}"
+    if state['marks'].get(name) == key:
+        continue
+    if not first:
+        start = v.get('from') or 0
+        head = f'🔧 <b>Изменилось время техработ: {esc(name)}</b>' if name in state['marks'] else f'🔧 <b>Запланированы техработы: {esc(name)}</b>' if start > now else f'🔧 <b>Техработы: {esc(name)}</b>'
+        span = (f'С {when(start)}' if start > now else 'Сейчас') + (f' до {when(v["until"])}' if v.get('until') else ' до окончания работ')
+        note = f'\n{esc(v["note"])}' if v.get('note') else ''
+        post(f'{head}\n{span}.{note}\n\nАвтопилот сам переключит вас на рабочий сервер — ничего делать не нужно.\n<a href="{SITE}/status/">Статус серверов</a>')
+    state['marks'][name] = key; changed = True
+for name in list(state['marks']):
+    if name not in marks:
+        if not first:
+            post(f'✅ <b>Работы закончены: {esc(name)}</b>\nСервер снова работает. Спасибо за терпение!')
+        del state['marks'][name]; changed = True
+
+if changed:
+    os.makedirs('docs/stats', exist_ok=True)
+    if not DRY:
+        open(STATE, 'w').write(json.dumps(state, ensure_ascii=False, indent=1) + '\n')
+    print('состояние обновлено' + (' (первый запуск — ничего не отправлял)' if first else ''))
+else:
+    print('нового нет')
