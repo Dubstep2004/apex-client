@@ -33,6 +33,42 @@ sent = 0
 split = lambda s: [c for c in re.split(r'[\s,;]+', s or '') if c]
 CHATS, CHATS_EN, OWNER = split(CHAT), split(E('TG_CHAT_EN')), split(E('TG_OWNER'))
 
+
+
+def read(path, default):
+    try: return json.load(open(path))
+    except (OSError, ValueError): return default
+
+
+def next_due():
+    """Режим --next для будильника в telegram.yml: через сколько секунд следующее дело и какой робот нужен.
+    GitHub запускает «каждые 10 минут» очень редко (бывает раз в несколько часов), поэтому после каждого
+    запуска будильник ждёт ровно до следующего дела. Печатает «секунды робот[,робот]» или «none»."""
+    t = datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000
+    st, s, app = read(STATE, {}) or {}, read(SETTINGS, {}), read(E('TG_APP', 'docs/config/app.json'), {})
+    due = []  # (время, робот)
+    for it in (read(E('TG_OUTBOX', 'docs/tg/outbox.json'), {}).get('items') or []):
+        w = int((it.get('opts') or {}).get('when') or 0)
+        if w > t and str(it.get('id')) not in (st.get('results') or {}): due.append((w, 'telegram'))
+    for v in ((app.get('servers') or {}).get('status') or {}).values():
+        if isinstance(v, dict) and v.get('state') == 'maintenance' and (v.get('until') or 0) > t: due.append((v['until'] + 30000, 'telegram'))
+    for p in st.get('polls') or []: due.append((p.get('until') or 0, 'telegram'))
+    pend = read('docs/config/pending.json', {})
+    if pend.get('at') and not pend.get('error'): due.append((max(pend['at'], t), 'apply-pending'))
+    m = datetime.datetime.now(MSK)
+    for k in range(8):  # дайджест (вс 18:00) и праздники (10:00) на неделю вперёд
+        d = (m + datetime.timedelta(days=k)).replace(minute=1, second=0, microsecond=0)
+        if s.get('digest', True) and d.weekday() == 6: due.append((d.replace(hour=18).timestamp() * 1000, 'telegram'))
+        if s.get('holidays', True) and d.strftime('%m-%d') in ('12-31', '02-14', '03-08', '10-31'): due.append((d.replace(hour=10).timestamp() * 1000, 'telegram'))
+    due = sorted(x for x in due if x[0] > t - 60000)
+    if not due: return 'none'
+    first_at = due[0][0]; bots = sorted({b for w, b in due if w <= first_at + 120000})
+    return f'{max(60, int((first_at - t) / 1000) + 20)} {",".join(bots)}'
+
+
+if '--next' in sys.argv:
+    print(next_due()); raise SystemExit
+
 if not (TOKEN and CHATS) and not DRY:
     print('Нет секретов TG_BOT_TOKEN / TG_CHAT — пропускаю'); raise SystemExit
 
@@ -104,11 +140,6 @@ def gh(path):
     req = urllib.request.Request('https://api.github.com/repos/' + REPO + path, headers={'Accept': 'application/vnd.github+json', **({'Authorization': 'Bearer ' + E('GITHUB_TOKEN')} if E('GITHUB_TOKEN') else {})})
     with urllib.request.urlopen(req, timeout=30) as r:
         return json.load(r)
-
-
-def read(path, default):
-    try: return json.load(open(path))
-    except (OSError, ValueError): return default
 
 
 esc = lambda s: str(s).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')

@@ -1,7 +1,10 @@
 name: Telegram-канал
 
-# Робот сам пишет в канал: о новой версии и о техработах на серверах (scripts/tg_channel.py).
+# Робот сам пишет в канал: новая версия, техработы, задания из пульта, итоги опросов, дайджест, праздники (scripts/tg_channel.py).
 # Нужны секреты репозитория TG_BOT_TOKEN и TG_CHAT — без них ничего не делает.
+# GitHub запускает «каждые 10 минут» очень редко (бывает раз в несколько часов), поэтому после каждого запуска
+# работает «будильник»: ждёт ровно до следующего дела (отложенный пост, конец техработ, итоги опроса, отложенное
+# сохранение пульта, дайджест, праздник) и сам запускает нужного робота. Расписание ниже — только запасное.
 on:
   schedule:
     - cron: "*/10 * * * *"
@@ -10,22 +13,22 @@ on:
     types: [completed]
   push:
     branches: [main]
-    paths: ["docs/config/app.json", "docs/tg/outbox.json"]
+    paths: ["docs/config/app.json", "docs/tg/outbox.json", "docs/tg/settings.json", "docs/config/pending.json"]
   workflow_dispatch:
 
 permissions:
   contents: write
-
-concurrency:
-  group: telegram-channel
-  cancel-in-progress: false
+  actions: write
 
 jobs:
   post:
     runs-on: ubuntu-latest
+    concurrency:
+      group: telegram-channel
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
-      - name: Pillow for the version picture
+      - name: Pillow for the pictures
         run: python3 -m pip install --quiet --break-system-packages pillow || python3 -m pip install --quiet pillow || true
       - name: Post to channel
         env:
@@ -44,3 +47,27 @@ jobs:
           git diff --cached --quiet && exit 0
           git commit -m "Telegram-канал: состояние робота"
           for i in 1 2 3; do git push && exit 0; git pull --rebase -q; done
+
+  # Будильник: новый запуск отменяет старый (там уже устаревшее расписание), поэтому ждёт всегда один.
+  timer:
+    needs: post
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    concurrency:
+      group: telegram-timer
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Wait for the next task
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          N=$(python3 scripts/tg_channel.py --next); echo "Следующее дело: $N"
+          [ "$N" = "none" ] && exit 0
+          S=${N%% *}; BOTS=${N#* }
+          if [ "$S" -gt 20400 ]; then S=20400; BOTS=telegram; fi   # дольше 5 ч 40 мин ждать нельзя — перезапустимся
+          sleep "$S"
+          for b in ${BOTS//,/ }; do gh workflow run "$b.yml" -R "$GITHUB_REPOSITORY" --ref main; done

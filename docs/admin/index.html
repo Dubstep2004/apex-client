@@ -730,7 +730,7 @@
         <label class="sw" style="margin-top:12px"><div class="t"><b>Предлагать отправить новый баннер</b><span>После «Сохранить» пульт спросит, отправить ли новые баннеры в канал</span></div><span class="tog"><input type="checkbox" id="tgAuto"><i></i></span></label>
       </div>
       <div class="block"><h2>🤖 Сам, без пульта</h2>
-        <p class="note">Робот GitHub сам пишет в канал: <b>о новой версии</b> (номер и список изменений) и <b>о техработах</b> — когда вы ставите пометку «Обслуживание» на сервер, когда меняете время и когда работы закончились. Проверяет каждые 10 минут и сразу после «Сохранить».</p>
+        <p class="note">Робот GitHub сам пишет в канал: <b>о новой версии</b> (номер и список изменений) и <b>о техработах</b> — когда вы ставите пометку «Обслуживание» на сервер, когда меняете время и когда работы закончились. Срабатывает сразу после «Сохранить» и сам «просыпается» к концу техработ.</p>
         <ol class="note" style="margin:8px 0 0;padding-left:20px">
           <li>GitHub → репозиторий apex-client → Settings → Secrets and variables → Actions → <b>New repository secret</b>.</li>
           <li>Имя <code>TG_BOT_TOKEN</code> — токен бота. Ещё один: <code>TG_CHAT</code> — <code>@имя_канала</code>, группа — <code>@имя_группы</code> или номер <code>-100…</code>; оба — через запятую.</li>
@@ -756,7 +756,7 @@
         <label class="sw" id="tgPhotoRow" hidden style="margin-top:10px"><div class="t"><b>🖼 С картинкой «Вышла версия»</b><span>Тот же пост, что робот пишет при выходе версии: картинка, список изменений и ссылки «Как обновить · Все изменения». Отправляет робот GitHub — до минуты, без VPN. Свой текст — снимите галочку</span></div><span class="tog"><input type="checkbox" id="tgPhoto" checked><i></i></span></label>
         <button class="btn go" id="tgSend" style="margin-top:12px;width:100%">Отправить в канал</button>
         <p class="help">С картинкой, фото, кнопками, «закрепить», «без звука», «позже» или английским текстом пост отправляет робот GitHub — до минуты, VPN не нужен.</p></div>
-      <div class="block" id="tgSchedBlock" hidden><h2>⏰ Запланировано</h2><div id="tgSched"></div><p class="help">Робот проверяет каждые 10 минут — пост выйдет в пределах 10 минут от выбранного времени.</p></div>
+      <div class="block" id="tgSchedBlock" hidden><h2>⏰ Запланировано</h2><div id="tgSched"></div><p class="help">Робот сам «просыпается» к выбранному времени — пост выйдет в течение 1–2 минут после него.</p></div>
       <div class="block"><h2>Опрос</h2><p class="note">Ответы видны в самом Telegram — у опроса будут проценты. Анонимный.</p>
         <label class="f" for="tgQ">Вопрос</label><input id="tgQ" type="text" maxlength="300" placeholder="Какой сервер добавить?">
         <label class="f" for="tgOpts">Варианты — по одному в строке (2–10)</label><textarea id="tgOpts" rows="4" placeholder="Япония&#10;США&#10;Турция"></textarea>
@@ -984,14 +984,14 @@
           <li>Опрос: вопрос и 2–10 вариантов → «Отправить опрос». Результаты — в самом Telegram.</li>
         </ol>
         <p>Галочка «Предлагать отправить новый баннер» — после «Сохранить» пульт сам спросит, отправить ли новые баннеры в канал.</p>
-        <p><b>Сам, без пульта:</b> добавьте в GitHub (Settings → Secrets and variables → Actions) секреты <code>TG_BOT_TOKEN</code> и <code>TG_CHAT</code> — робот будет сам писать в канал о новых версиях и техработах (проверка каждые 10 минут).</p>
+        <p><b>Сам, без пульта:</b> добавьте в GitHub (Settings → Secrets and variables → Actions) секреты <code>TG_BOT_TOKEN</code> и <code>TG_CHAT</code> — робот будет сам писать в канал о новых версиях и техработах.</p>
         <div class="callout bad">Токен бота хранится только в этом браузере, зашифрованный вашим входом в пульт. Никому его не присылайте. На другом устройстве впишите заново.</div>
         <button class="btn quiet small gobtn" type="button" data-open="tg">Открыть вкладку «Telegram»</button>
       </details></div>
 
       <div class="block"><details><summary>⏰ Сохранить позже и 🎉 праздники</summary>
         <ul>
-          <li><b>⏰ рядом с «Сохранить»</b> — выберите время («через час», «сегодня в 22:00», «завтра в 9:00» или своё). Изменения сохранит робот GitHub (проверяет каждые 10 минут, задержка до ~15 минут). Пульт можно закрыть. На «Обзоре» видно, что запланировано, и есть «Отменить».</li>
+          <li><b>⏰ рядом с «Сохранить»</b> — выберите время («через час», «сегодня в 22:00», «завтра в 9:00» или своё). Изменения сохранит робот GitHub (он «просыпается» к этому времени — обычно в течение 1–2 минут). Пульт можно закрыть. На «Обзоре» видно, что запланировано, и есть «Отменить».</li>
           <li>Если до этого времени вы сохраните что-то вручную, отложенное <b>не затрёт</b> ваши правки — на «Обзоре» появится предупреждение.</li>
           <li><b>🎉 Праздник</b> (вкладка «Баннеры») — праздничный баннер в приложении (исчезнет сам после праздника) и оформление визитки одной кнопкой.</li>
           <li>Визитка → «Праздничное оформление» → <b>«Само по календарю»</b>: Новый год 15 декабря — 14 января, 10–15 февраля, 5–9 марта, 25 октября — 1 ноября. Включить один раз и забыть.</li>
@@ -1202,7 +1202,7 @@
 </dialog>
 <dialog id="laterDlg">
   <h2>Сохранить позже</h2>
-  <p>Изменения сохранятся сами в выбранное время (робот GitHub проверяет каждые 10 минут, возможна задержка до 15 минут). Пульт можно закрыть.</p>
+  <p>Изменения сохранятся сами в выбранное время (робот GitHub «просыпается» к этому времени, обычно в течение 1–2 минут). Пульт можно закрыть.</p>
   <label class="f" for="laterAt">Когда</label><input id="laterAt" type="datetime-local" style="width:100%">
   <div class="quick"><button class="pill" data-lq="1">через час</button><button class="pill" data-lq="22">сегодня в 22:00</button><button class="pill" data-lq="9">завтра в 9:00</button></div>
   <div class="acts"><button class="btn quiet" id="laterNo">Отмена</button><button class="btn go" id="laterOk">Запланировать</button></div>
@@ -2530,7 +2530,7 @@ async function renderWeek() {
   renderTgStat().catch(() => {})
 }
 
-// 5. Отложенное сохранение: файл docs/config/pending.json, применяет робот GitHub (каждые 10 минут)
+// 5. Отложенное сохранение: файл docs/config/pending.json, применяет робот GitHub (его будит «будильник» из telegram.yml)
 const PEND = 'docs/config/pending.json'
 async function loadPending() {
   let p = null; try { p = await getFile(PEND) } catch {}
@@ -2767,7 +2767,7 @@ $('tgSend').onclick = () => guarded($('tgSend'), async () => {
   if ((o.card || o.photo) && t.length > 1024) throw new Error('С картинкой подпись не длиннее 1024 знаков (сейчас ' + t.length + '). Сократите или выключите картинку')
   if (o.when && o.when < Date.now() + 60000) throw new Error('Время «Позже» уже прошло — выберите будущее')
   if (!confirm((o.when ? 'Запланировать пост?' : 'Отправить в канал?') + '\n\n' + t.slice(0, 300))) return
-  if (Object.keys(o).length) { const r = await tgRelay('sendMessage', { text: t }, o); toast(r.scheduled ? 'Запланировано — робот отправит в это время (±10 минут)' : 'Отправлено в канал'); if (r.scheduled) $('tgWhen').value = ''; return }
+  if (Object.keys(o).length) { const r = await tgRelay('sendMessage', { text: t }, o); toast(r.scheduled ? 'Запланировано — робот отправит в это время' : 'Отправлено в канал'); if (r.scheduled) $('tgWhen').value = ''; return }
   await tg('sendMessage', { text: t, link_preview_options: { is_disabled: true } }); toast('Отправлено в канал')
 })
 $('tgPoll').onclick = () => guarded($('tgPoll'), async () => {
@@ -2806,7 +2806,7 @@ async function tgOpen() { // при открытии вкладки
   await tgLoadSettings().catch(() => {}); renderTgPick(); tgPreview(); renderTgSched().catch(() => {})
   $('tgDigest').checked = tgSet?.digest !== false; $('tgHoliday').checked = tgSet?.holidays !== false
   tgState = await tgReadState(); renderTgState()
-  api('/actions/workflows/telegram.yml/runs?per_page=1', { cache: 'no-store' }).then(r => { const x = r.workflow_runs?.[0]; $('tgRobot').textContent = x ? 'Последний запуск робота: ' + new Date(x.updated_at).toLocaleString('ru', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + ' — ' + ({ success: '✓ без ошибок', failure: '✗ ошибка', cancelled: 'отменён' }[x.conclusion] || 'идёт сейчас') : 'Робот ещё не запускался' }).catch(() => {})
+  api('/actions/workflows/telegram.yml/runs?per_page=1', { cache: 'no-store' }).then(r => { const x = r.workflow_runs?.[0]; $('tgRobot').textContent = x ? 'Последний запуск робота: ' + new Date(x.updated_at).toLocaleString('ru', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + ' — ' + ({ success: '✓ без ошибок', failure: '✗ ошибка — откройте Actions → «Telegram-канал»', cancelled: '✓ без ошибок' }[x.conclusion] || '⏰ работает и ждёт следующего дела (отложенный пост, конец техработ, итоги опроса)') : 'Робот ещё не запускался' }).catch(() => {})
 }
 $('tgDel').onclick = () => guarded($('tgDel'), async () => {
   const last = (tgState?.last || []).slice(-1)[0]; if (!last || !confirm('Удалить из канала последний пост?\n\n«' + last.text.slice(0, 200) + '»\n\nTelegram даёт удалить только посты не старше 48 часов.')) return

@@ -1,7 +1,8 @@
 name: Отложенное сохранение пульта
 
 # Пульт 2.15: «⏰ Сохранить позже» кладёт изменения в docs/config/pending.json.
-# Робот каждые 10 минут смотрит, не пора ли, и переносит их в docs/config/app.json.
+# Запускает его «будильник» из telegram.yml ровно в назначенное время (расписание GitHub ниже — запасное, оно редкое).
+# Переносит изменения в docs/config/app.json, затем запускает робота Telegram (техработы в канал).
 # Если app.json успели поменять после планирования — не затирает, а помечает конфликт (пульт покажет).
 on:
   schedule:
@@ -10,6 +11,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: apply-pending
@@ -48,3 +50,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A docs/config
           git diff --cached --quiet || { git commit -m "$MSG"; git push; }
+      - name: Telegram robot (maintenance posts for the new settings)
+        if: ${{ env.MSG != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run telegram.yml -R "$GITHUB_REPOSITORY" --ref main
