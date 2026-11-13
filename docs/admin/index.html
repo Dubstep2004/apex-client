@@ -726,6 +726,7 @@
       <div class="block"><h2>Сообщение</h2>
         <div class="tpls" id="tgPick"></div>
         <label class="f" for="tgText">Текст</label><textarea id="tgText" rows="5" maxlength="4000" placeholder="Сегодня с 22:00 до 23:00 техработы…"></textarea>
+        <label class="sw" id="tgPhotoRow" hidden style="margin-top:10px"><div class="t"><b>🖼 С картинкой «Вышла версия»</b><span>Тот же пост, что робот пишет при выходе версии: картинка, список изменений и ссылки «Как обновить · Все изменения». Отправляет робот GitHub — до минуты, без VPN. Свой текст — снимите галочку</span></div><span class="tog"><input type="checkbox" id="tgPhoto" checked><i></i></span></label>
         <button class="btn go" id="tgSend" style="margin-top:12px;width:100%">Отправить в канал</button></div>
       <div class="block"><h2>Опрос</h2><p class="note">Ответы видны в самом Telegram — у опроса будут проценты. Анонимный.</p>
         <label class="f" for="tgQ">Вопрос</label><input id="tgQ" type="text" maxlength="300" placeholder="Какой сервер добавить?">
@@ -874,7 +875,7 @@
     <!-- Справка -->
     <section data-tab="help" hidden class="helpdoc">
       <h1>Справка для владельца</h1>
-      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 13 ноября 2026 · приложение 3.20.15 · пульт 2.20.</p>
+      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 13 ноября 2026 · приложение 3.20.15 · пульт 2.21.</p>
       <div class="helptools">
         <input id="hq" type="search" placeholder="Найти в справке, например «техработы»" aria-label="Найти в справке" autocomplete="off">
         <button class="btn quiet small" id="hOpen" type="button">Развернуть всё</button>
@@ -1100,6 +1101,7 @@
 
       <div class="block"><details><summary>🆕 Что нового в пульте</summary>
         <div class="tbl"><table>
+          <tr><td>2.21</td><td>Telegram: «🆕 Новая версия» — с картинкой «Вышла версия», как у робота, и без звёздочек разметки в тексте</td></tr>
           <tr><td>2.20</td><td>Telegram без VPN: если Telegram не открывается или токен не сохранён в браузере, сообщения, опросы и «Проверить» идут через робота GitHub (до минуты)</td></tr>
           <tr><td>2.19</td><td>Telegram: канал, группа или оба сразу (через запятую) — сообщения, опросы и робот GitHub пишут в каждый. «Проверить» показывает, что нашлось: канал или группа</td></tr>
           <tr><td>2.18</td><td>Перетаскивание за ⠿ везде: баннеры (выше — важнее: приложение показывает первый подходящий), пометки серверов, меню пульта (в режиме ✏️), виды визитки и свои ответы. Строка едет за пальцем, остальные расступаются</td></tr>
@@ -1198,7 +1200,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.20', PANEL_DATE = '13 ноября 2026'
+const PANEL_VERSION = '2.21', PANEL_DATE = '13 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -2652,13 +2654,21 @@ $('tgAuto').onchange = () => store('apex_admin_tg_auto', $('tgAuto').checked ? '
 function renderTgPick() {
   const c = collectApp(true), items = [...c.banners.map(b => ['📢 ' + (b.name || b.text).slice(0, 28), b.text + (b.url ? '\n' + b.url : '')]), ...(c.announce ? [['🪧 Объявление', [c.announce.title, c.announce.text, c.announce.url].filter(Boolean).join('\n\n')]] : [])]
   const st = releases.find(r => !r.prerelease && !r.draft)
-  if (st) items.push(['🆕 Новая версия', 'Вышла версия ' + st.tag_name.replace(/^v/, '') + ' APEX CLIENT.\n\n' + (st.body || '').split(/\n---/)[0].trim() + '\n\nОбновление придёт само, или: https://dubstep2004.github.io/update/'])
+  if (st) { // 2.21: без звёздочек разметки — пункты «•», как у робота; и картинка «Вышла версия»
+    const v = st.tag_name.replace(/^v/, ''), pts = (st.body || '').split(/\n---/)[0].split('\n').filter(l => l.startsWith('- ')).map(l => '• ' + l.slice(2).replace(/\*\*|`/g, '').trim())
+    let t; for (let n = Math.min(8, pts.length); ; n--) { t = '🆕 Вышла версия ' + v + '\n\n' + pts.slice(0, n).join('\n') + (n < pts.length ? '\n• …и другое' : '') + '\n\nОбновление придёт само: плашка «Вышла версия» или окно «Доступна версия» → «Обновить».\nКак обновить: https://dubstep2004.github.io/update/'; if (t.length <= 1000 || n <= 1) break }
+    items.push(['🆕 Новая версия', t, v])
+  }
   $('tgPick').innerHTML = items.map(([t], i) => `<button class="pill" data-tp="${i}">${esc(t)}</button>`).join(''); $('tgPick')._items = items
 }
-$('tgPick').onclick = e => { const i = e.target.closest('[data-tp]')?.dataset.tp; if (i != null) $('tgText').value = $('tgPick')._items[i][1] }
+$('tgPick').onclick = e => { const i = e.target.closest('[data-tp]')?.dataset.tp; if (i == null) return; const it = $('tgPick')._items[i]; $('tgText').value = it[1]; $('tgText')._ver = it[2] || ''; $('tgPhotoRow').hidden = !it[2]; $('tgPhoto').checked = !!it[2] }
 $('tgSend').onclick = () => guarded($('tgSend'), async () => {
   const t = $('tgText').value.trim(); if (!t) throw new Error('Напишите текст')
   if (!confirm('Отправить в канал?\n\n' + t.slice(0, 300))) return
+  const ver = $('tgText')._ver
+  if (ver && $('tgPhoto').checked) { // пост собирает робот GitHub тем же кодом, что при выходе версии (картинка + ссылки) — и без VPN
+    await tgRelay('sendVersion', { version: ver }); toast('Отправлено в канал с картинкой'); return
+  }
   await tg('sendMessage', { text: t, link_preview_options: { is_disabled: true } }); toast('Отправлено в канал')
 })
 $('tgPoll').onclick = () => guarded($('tgPoll'), async () => {

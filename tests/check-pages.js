@@ -105,6 +105,17 @@ async function dragRow(p, rowSel, from, to) { // перетащить строк
     await p.fill('#tgText', 'Тест через GitHub'); await p.click('#tgSend')
     await p.waitForFunction(() => /Отправлено в канал/.test(document.querySelector('#toast').textContent), null, { timeout: 15000 }).catch(() => bad(W, 'Telegram без VPN: сообщение через GitHub не ушло'))
     if (ids.length < 2) bad(W, 'Telegram без VPN: пульт не положил задание для робота')
+    // 2.21: «Новая версия» — без звёздочек и с картинкой через робота
+    await p.evaluate(() => renderTgPick()); const vb = await p.$('#tgPick [data-tp]:last-child')
+    if (!vb || !(await vb.textContent()).includes('Новая версия')) bad(W, 'нет шаблона «Новая версия»')
+    else {
+      await vb.click(); const vt = await p.inputValue('#tgText')
+      if (vt.includes('**') || !vt.includes('• проверка')) bad(W, '«Новая версия»: текст с разметкой: ' + vt.slice(0, 80))
+      if (!(await p.isVisible('#tgPhotoRow'))) bad(W, '«Новая версия»: нет переключателя картинки')
+      const n0 = ids.length; await p.click('#tgSend')
+      await p.waitForFunction(() => /с картинкой/.test(document.querySelector('#toast').textContent), null, { timeout: 15000 }).catch(() => bad(W, '«Новая версия» с картинкой не ушла'))
+      if (ids.length <= n0) bad(W, '«Новая версия»: нет задания для робота')
+    }
     await p.unroute('https://api.telegram.org/**')
     await p.evaluate(() => showTab('history')); await p.waitForTimeout(600)
     if (!(await p.$$('#journal > div')).length) bad(W, 'журнал изменений пустой')

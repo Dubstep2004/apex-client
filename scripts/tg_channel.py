@@ -7,7 +7,7 @@
 Что помнит (docs/stats/tg-state.json): последнюю объявленную версию и техработы, о которых уже написал.
 Первый запуск только запоминает текущее состояние и ничего не публикует — чтобы не завалить канал старым.
 """
-import datetime, json, os, re, sys, urllib.parse, urllib.request
+import datetime, json, os, re, sys, urllib.error, urllib.parse, urllib.request
 
 TOKEN, CHAT, REPO = os.environ.get('TG_BOT_TOKEN', ''), os.environ.get('TG_CHAT', ''), os.environ.get('GITHUB_REPOSITORY', 'Dubstep2004/apex-client')
 STATE = os.environ.get('TG_STATE', 'docs/stats/tg-state.json')  # пути можно подменить для проверки
@@ -35,23 +35,35 @@ def tg(method, **params):
 CHATS = [c for c in re.split(r'[\s,;]+', CHAT) if c]  # канал и/или группа через запятую
 
 
-def photo(png, caption):
-    """Пост с картинкой (multipart) во все чаты; не вышло — обычным сообщением."""
+def send_photo(chat, png, caption, html=True):
+    """Одна картинка с подписью в один чат (multipart). Ошибка — исключение."""
     import uuid
+    if DRY:
+        print('→ sendPhoto', chat, len(png), 'байт,', caption[:80]); return {}
+    b = uuid.uuid4().hex; parts = []
+    for k, v in {'chat_id': chat, 'caption': caption, **({'parse_mode': 'HTML'} if html else {})}.items():
+        parts.append(f'--{b}\r\nContent-Disposition: form-data; name="{k}"\r\n\r\n{v}\r\n'.encode())
+    parts.append(f'--{b}\r\nContent-Disposition: form-data; name="photo"; filename="version.png"\r\nContent-Type: image/png\r\n\r\n'.encode() + png + b'\r\n')
+    parts.append(f'--{b}--\r\n'.encode())
+    req = urllib.request.Request(f'https://api.telegram.org/bot{TOKEN}/sendPhoto', b''.join(parts), {'Content-Type': 'multipart/form-data; boundary=' + b})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            res = json.load(r)
+    except urllib.error.HTTPError as e:
+        try: res = json.load(e)
+        except Exception: raise SystemExit(f'Telegram: HTTP {e.code}')
+    if not res.get('ok'):
+        raise SystemExit('Telegram: ' + str(res.get('description')))
+    return res['result']
+
+
+def photo(png, caption):
+    """Пост с картинкой во все чаты; не вышло — обычным сообщением."""
     global sent
     sent += 1
     for chat in CHATS:
-        if DRY:
-            print('→ sendPhoto', chat, len(png), 'байт,', caption[:80]); continue
-        b = uuid.uuid4().hex; parts = []
-        for k, v in {'chat_id': chat, 'caption': caption, 'parse_mode': 'HTML'}.items():
-            parts.append(f'--{b}\r\nContent-Disposition: form-data; name="{k}"\r\n\r\n{v}\r\n'.encode())
-        parts.append(f'--{b}\r\nContent-Disposition: form-data; name="photo"; filename="version.png"\r\nContent-Type: image/png\r\n\r\n'.encode() + png + b'\r\n')
-        parts.append(f'--{b}--\r\n'.encode())
         try:
-            req = urllib.request.Request(f'https://api.telegram.org/bot{TOKEN}/sendPhoto', b''.join(parts), {'Content-Type': 'multipart/form-data; boundary=' + b})
-            with urllib.request.urlopen(req, timeout=60) as r:
-                if not json.load(r).get('ok'): raise ValueError('не ok')
+            send_photo(chat, png, caption)
             print(f'картинка отправлена в чат {CHATS.index(chat) + 1} из {len(CHATS)}')
         except Exception as e:
             print(chat, 'картинка не ушла:', e, '— отправляю текстом')
@@ -90,10 +102,31 @@ state = state or {'version': '', 'marks': {}}
 changed = first
 now = int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000)
 
+def version_post(rel):
+    """Пост «Вышла версия X»: картинка (scripts/tg_card.py) и подпись с пунктами из описания релиза.
+    Тот же пост и у робота, и по кнопке «🆕 Новая версия» в пульте. Нет Pillow — картинка None."""
+    body = (rel.get('body') or '').split('\n---')[0]
+    items = [re.sub(r'\*\*|`', '', l[2:]).strip() for l in body.splitlines() if l.startswith('- ')][:8]
+    v = rel.get('tag_name', '').lstrip('v')
+    tail = f'\n\nОбновление придёт само — плашка «Вышла версия» или окно «Доступна версия» → «Обновить».\n<a href="{SITE}/update/">Как обновить</a> · <a href="{SITE}/versions/">Все изменения</a>'
+    # подпись к картинке — до 1024 символов: убираем пункты целиком, а не режем посередине разметки
+    while True:
+        text = f'🆕 <b>Вышла версия {esc(v)}</b>\n\n' + '\n'.join('• ' + esc(i) for i in items) + tail
+        if len(text) <= 1000 or len(items) <= 1: break
+        items = items[:-1]
+    if len(text) > 1000: text = f'🆕 <b>Вышла версия {esc(v)}</b>' + tail
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import tg_card
+        return v, tg_card.card(v, items), text
+    except ImportError as e:
+        print('без картинки:', e); return v, None, text
+
+
 # 0. Отправки из пульта через GitHub (2.20): без VPN — в России api.telegram.org из браузера часто закрыт.
 # Пульт дописывает задание в docs/tg/outbox.json, робот отправляет его в чаты из TG_CHAT и пишет итог
 # в state['results'][id] — пульт читает его и показывает «Отправлено» или ошибку.
-ALLOWED = {'sendMessage': {'text', 'link_preview_options'}, 'sendPoll': {'question', 'options', 'is_anonymous', 'allows_multiple_answers'}, 'getChat': set()}
+ALLOWED = {'sendMessage': {'text', 'link_preview_options'}, 'sendPoll': {'question', 'options', 'is_anonymous', 'allows_multiple_answers'}, 'getChat': set(), 'sendVersion': {'version'}}
 try:
     box = json.load(open(os.environ.get('TG_OUTBOX', 'docs/tg/outbox.json')))
 except (OSError, ValueError):
@@ -112,7 +145,14 @@ for it in (box.get('items') or [])[-20:]:
     done, errs = [], []
     for i, chat in enumerate(CHATS, 1):
         try:
-            r = tg(method, chat_id=chat, **body)
+            if method == 'sendVersion':  # 2.21: «Новая версия» из пульта — тот же пост, что пишет робот при выходе версии
+                if 'vp' not in it:
+                    tagv = re.sub(r'[^\w.-]', '', 'v' + str(body.get('version', '')).lstrip('v'))[:24]
+                    it['vp'] = version_post(gh('/releases/tags/' + tagv))
+                _, png, cap = it['vp']
+                r = send_photo(chat, png, cap) if png else tg('sendMessage', chat_id=chat, text=cap, parse_mode='HTML', link_preview_options={'is_disabled': True})
+            else:
+                r = tg(method, chat_id=chat, **body)
             done.append(('канал ' if r.get('type') == 'channel' else 'группа ') + str(r.get('title') or r.get('username') or i) if method == 'getChat' else str(i))
         except SystemExit as e:
             errs.append(f'чат {i}: ' + str(e).replace('Telegram: ', ''))
@@ -128,23 +168,9 @@ rel = gh('/releases/latest')
 tag = rel.get('tag_name', '')
 if tag and tag != state['version']:
     if not first and not rel.get('prerelease'):
-        body = rel.get('body') or ''
-        body = body.split('\n---')[0]
-        items = [re.sub(r'\*\*|`', '', l[2:]).strip() for l in body.splitlines() if l.startswith('- ')][:8]
-        v = tag.lstrip('v')
-        tail = f'\n\nОбновление придёт само — плашка «Вышла версия» или окно «Доступна версия» → «Обновить».\n<a href="{SITE}/update/">Как обновить</a> · <a href="{SITE}/versions/">Все изменения</a>'
-        # подпись к картинке — до 1024 символов: убираем пункты целиком, а не режем посередине разметки
-        while True:
-            text = f'🆕 <b>Вышла версия {esc(v)}</b>\n\n' + '\n'.join('• ' + esc(i) for i in items) + tail
-            if len(text) <= 1000 or len(items) <= 1: break
-            items = items[:-1]
-        if len(text) > 1000: text = f'🆕 <b>Вышла версия {esc(v)}</b>' + tail
-        try:  # картинка «Вышла версия X» (scripts/tg_card.py); нет Pillow — просто текст
-            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-            import tg_card
-            photo(tg_card.card(v, items), text)
-        except ImportError as e:
-            print('без картинки:', e); post(text)
+        v, png, text = version_post(rel)
+        if png: photo(png, text)
+        else: post(text)
         if v.endswith('.0'):  # новая X.Y — ещё и видео «Что нового», если уже готово
             try:
                 for chat in CHATS: tg('sendVideo', chat_id=chat, video=f'{SITE}/media/whatsnew-ru.mp4', caption=f'Главное в {esc(".".join(v.split(".")[:2]))} — за 12 секунд')
