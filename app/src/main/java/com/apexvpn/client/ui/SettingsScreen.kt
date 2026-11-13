@@ -756,6 +756,14 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
                 leading = { tile(Icons.AutoMirrored.Rounded.HelpOutline) },
                 onClick = { onOpenPage(Page.Help) },
             ) { Chevron() }
+            // 3.20.14: видео-инструкция — откроется в браузере (35 секунд, со звуком)
+            GroupDivider()
+            ListRow(
+                "Видео: как пользоваться",
+                "35 секунд: установка, подписка, щит и обновления",
+                leading = { tile(Icons.Rounded.PlayCircle) },
+                onClick = { openLink(context, com.apexvpn.client.data.Links.SITE + "/media/install-ru.mp4") },
+            ) { Chevron() }
             GroupDivider()
             ListRow(
                 "Что нового",

@@ -2,6 +2,12 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.20.14 · 13 ноября 2026
+
+<img src="img/tags/new.svg" alt="Новое" height="22">
+
+- Видео-инструкция: в «Справке» и в настройках — «Видео: как пользоваться» (35 секунд: установка, подписка, щит и обновления)
+
 ## 3.20.13 · 13 ноября 2026
 
 <img src="img/tags/improved.svg" alt="Улучшено" height="22">

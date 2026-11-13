@@ -297,6 +297,30 @@ private fun HelpPage(onBack: () -> Unit) {
     PageScaffold("Справка", onBack) {
         Caption("Короткие инструкции с картинками — те же, что на странице APEX CLIENT на GitHub.")
         Spacer(Modifier.height(10.dp))
+        // 3.20.14: видео-инструкция — откроется в браузере
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(bottom = 10.dp)
+                .apexCard()
+                .clickable {
+                    runCatching {
+                        context.startActivity(
+                            android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(com.apexvpn.client.data.Links.SITE + "/media/install-ru.mp4"))
+                                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+                        )
+                    }
+                }
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("▶️", fontSize = 24.sp)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Видео: как пользоваться", color = Apex.Text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                Text("35 секунд: установка, подписка, щит и обновления", color = Apex.TextDim, fontSize = 14.sp)
+            }
+        }
         com.apexvpn.client.data.HelpTopics.all.forEachIndexed { i, t ->
             val expanded = open == i
             Column(
