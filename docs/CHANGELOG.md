@@ -2,6 +2,12 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.20.13 · 13 ноября 2026
+
+<img src="img/tags/improved.svg" alt="Улучшено" height="22">
+
+- Плашка и окно обновления меньше нагружают телефон: главный экран не делает лишнюю работу при каждой перерисовке
+
 ## 3.20.12 · 13 ноября 2026
 
 <img src="img/tags/fixed.svg" alt="Исправлено" height="22">

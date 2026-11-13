@@ -91,7 +91,8 @@ object UpdateManager {
      * Значение — код версии, для которой нажали «Позже» (0 — окно снова показывать).
      */
     private val _later by lazy { MutableStateFlow(runCatching { com.apexvpn.client.data.Prefs.dismissedUpdateCode }.getOrDefault(0)) }
-    val laterCode: StateFlow<Int> get() = _later.asStateFlow()
+    // 3.20.13: один и тот же поток (раньше при каждом обращении создавался новый — экраны переподписывались при каждой перерисовке)
+    val laterCode: StateFlow<Int> by lazy { _later.asStateFlow() }
     fun later(info: UpdateInfo) { com.apexvpn.client.data.Prefs.dismissedUpdateCode = info.versionCode; _later.value = info.versionCode }
     fun reopen() { com.apexvpn.client.data.Prefs.dismissedUpdateCode = 0; _later.value = 0 }
 
