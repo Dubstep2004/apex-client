@@ -41,6 +41,7 @@ import androidx.compose.material.icons.rounded.Campaign
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.NetworkCheck
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.WarningAmber
@@ -199,6 +200,23 @@ fun HomeScreen(
 
         // 3.20.10: «Вышла версия … Обновить» — обновиться прямо с главного экрана, без настроек
         UpdatePill(viewModel)
+
+        // 3.21: что-то не так с сетью — плашка ведёт в «Проверку сети». Белые списки (автопилот уже
+        // перешёл на обход) или недавняя проверка нашла глушилку / недоступные серверы
+        val wlNow by com.apexvpn.client.data.WhiteList.state.collectAsStateWithLifecycle()
+        val netRes by com.apexvpn.client.data.NetCheck.state.collectAsStateWithLifecycle()
+        val netAlert = remember(netRes.result, minute) { com.apexvpn.client.data.NetCheck.recentAlert() }
+        val netText = when {
+            wlNow && settings.autoWhitelist -> "Белые списки — включён обход. Интернет через VPN работает · Подробнее"
+            netAlert == com.apexvpn.client.data.NetCheck.Kind.Jammed -> "Оператор глушит VPN · Подробнее"
+            netAlert == com.apexvpn.client.data.NetCheck.Kind.JamPartial -> "Глушат часть протоколов — автопилот выбирает рабочие · Подробнее"
+            netAlert == com.apexvpn.client.data.NetCheck.Kind.ServersBlocked -> "Серверы VPN недоступны в этой сети · Подробнее"
+            else -> null
+        }
+        netText?.let { t ->
+            Spacer(Modifier.height(10.dp))
+            Banner(Icons.Rounded.NetworkCheck, Apex.Warn, null, t, onClick = { onOpenPage(Page.NetCheck) }, onClose = null)
+        }
 
         // 13. Подписка заканчивается
         ExpiryAlerts.warning(sub)?.let { w ->
@@ -363,6 +381,9 @@ fun HomeScreen(
             Chip(Icons.Rounded.Timer, timerText, active = autoOffAt > 0) { timerDialog = true }
             Chip(Icons.Rounded.Speed, "Тест скорости") { onOpenPage(Page.SpeedTest) }
         }
+        // 3.21: «Проверка сети» — отдельной строкой, чтобы на узком экране кнопки не сжимались
+        Spacer(Modifier.height(10.dp))
+        Row { Chip(Icons.Rounded.NetworkCheck, "Проверка сети") { onOpenPage(Page.NetCheck) } }
 
         // 49. Живой пинг
         if (status == VpnStatus.Started && livePing.isNotEmpty()) {

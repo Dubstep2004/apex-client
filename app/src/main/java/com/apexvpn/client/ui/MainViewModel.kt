@@ -227,6 +227,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** 3.21: «Проверка сети» — работает, даже если экран закрыли; после — обновляет плашку на главном. */
+    fun runNetCheck() {
+        viewModelScope.launch { com.apexvpn.client.data.NetCheck.run(getApplication<android.app.Application>()) }
+    }
+
     // ─── 49. Живой пинг на главном экране ────────────────────────────────
 
     private val _livePing = MutableStateFlow<List<Int>>(emptyList())

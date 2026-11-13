@@ -12,6 +12,11 @@ object Prefs {
         sp = context.getSharedPreferences("apex", Context.MODE_PRIVATE)
     }
 
+    /** 3.21: история «Проверки сети» — последние 20 итогов (JSON) */
+    var netHistory: String
+        get() = sp.getString("net_history", "[]") ?: "[]"
+        set(v) = sp.edit { putString("net_history", v) }
+
     var subscriptionUrl: String
         get() = sp.getString("sub_url", "") ?: ""
         set(v) = sp.edit { putString("sub_url", v) }

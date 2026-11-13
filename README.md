@@ -17,7 +17,7 @@
 <p><b>Два ядра</b> · все популярные протоколы · <b>свои списки</b> с шаблонами · <b>3D-глобус</b> · <b>13 дизайнов</b>, палитры и <b>живое видео на фоне</b><br>
 автопилот с белыми списками · DNS «Авто» для каждой сети · базы сайтов каждый день · часы Wear OS</p>
 
-<sub>📱 Android — <b>3.20.15</b> (Android 7+) · sing-box 1.13 · Xray 26</sub><br>
+<sub>📱 Android — <b>3.21.0</b> (Android 7+) · sing-box 1.13 · Xray 26</sub><br>
 <sub>🌐 Сайт: <a href="https://dubstep2004.github.io">dubstep2004.github.io</a> · 💬 Поддержка: <a href="https://t.me/Apexx_support">@Apexx_support</a></sub>
 
 </div>
@@ -864,19 +864,31 @@ core/apexcore/          Go: разбор подписки → конфиги sin
 
 <img src="docs/img/ui/whatsnew.webp" alt="Что нового" width="100%">
 
-<div align="center"><a href="https://dubstep2004.github.io/#news"><img src="docs/img/whatsnew-video.webp" alt="Видео: главное в версии 3.20" width="240"></a><br><sub>▶ <b>Главное в 3.20</b> за 12 секунд · <a href="https://dubstep2004.github.io/media/whatsnew-ru.mp4">Открыть видео</a> · <a href="https://dubstep2004.github.io/media/whatsnew-en.mp4">English</a></sub></div>
+<div align="center"><a href="https://dubstep2004.github.io/#news"><img src="docs/img/whatsnew-video.webp" alt="Видео: главное в версии 3.21" width="240"></a><br><sub>▶ <b>Главное в 3.21</b> за 12 секунд · <a href="https://dubstep2004.github.io/media/whatsnew-ru.mp4">Открыть видео</a> · <a href="https://dubstep2004.github.io/media/whatsnew-en.mp4">English</a></sub></div>
 
 <img src="docs/img/tags/new.svg" alt="Новое" height="22"> <img src="docs/img/tags/improved.svg" alt="Улучшено" height="22"> <img src="docs/img/tags/changed.svg" alt="Изменено" height="22"> <img src="docs/img/tags/fixed.svg" alt="Исправлено" height="22"> <img src="docs/img/tags/removed.svg" alt="Удалено" height="22">
 
-### 3.20.15 · 13 ноября 2026
+### 3.21.0 · 14 ноября 2026
+
+<img src="docs/img/tags/new.svg" alt="Новое" height="22">
+
+- «Проверка сети» на главном: что открывается напрямую, отвечают ли серверы и не глушит ли оператор VPN — с понятным итогом
+- Белые списки, глушилка или недоступные серверы — приложение показывает, что уже исправило само, или предлагает кнопку: «Обход LTE», автопилот
+- Плашка на главном, когда оператор что-то глушит — нажмите, чтобы узнать подробности
+- История проверок и «Поделиться» итогом — например, с поддержкой
+
+#### 📚 Все версии (138)
+
+Каждая версия — отдельная вкладка.
+
+<details>
+<summary><b>3.20.15</b> · 13 ноября 2026</summary>
 
 <img src="docs/img/tags/improved.svg" alt="Улучшено" height="22">
 
 - Справка «Установка и обновление»: новые картинки и шаги — скачать с сайта, обновлять одной кнопкой «Обновить», плашка «Вышла версия» на главном
 
-#### 📚 Все версии (137)
-
-Каждая версия — отдельная вкладка.
+</details>
 
 <details>
 <summary><b>3.20.14</b> · 13 ноября 2026</summary>
