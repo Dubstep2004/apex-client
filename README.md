@@ -17,7 +17,7 @@
 <p><b>Два ядра</b> · все популярные протоколы · <b>свои списки</b> с шаблонами · <b>3D-глобус</b> · <b>13 дизайнов</b>, палитры и <b>живое видео на фоне</b><br>
 автопилот с белыми списками · DNS «Авто» для каждой сети · базы сайтов каждый день · часы Wear OS</p>
 
-<sub>📱 Android — <b>3.20.11</b> (Android 7+) · sing-box 1.13 · Xray 26</sub><br>
+<sub>📱 Android — <b>3.20.12</b> (Android 7+) · sing-box 1.13 · Xray 26</sub><br>
 <sub>🌐 Сайт: <a href="https://dubstep2004.github.io">dubstep2004.github.io</a> · 💬 Поддержка: <a href="https://t.me/Apexx_support">@Apexx_support</a></sub>
 
 </div>
@@ -860,7 +860,18 @@ core/apexcore/          Go: разбор подписки → конфиги sin
 
 <img src="docs/img/tags/new.svg" alt="Новое" height="22"> <img src="docs/img/tags/improved.svg" alt="Улучшено" height="22"> <img src="docs/img/tags/changed.svg" alt="Изменено" height="22"> <img src="docs/img/tags/fixed.svg" alt="Исправлено" height="22"> <img src="docs/img/tags/removed.svg" alt="Удалено" height="22">
 
-### 3.20.11 · 13 ноября 2026
+### 3.20.12 · 13 ноября 2026
+
+<img src="docs/img/tags/fixed.svg" alt="Исправлено" height="22">
+
+- На плашке «Вышла версия … Обновить» в белом кружке не было видно значка загрузки
+
+#### 📚 Все версии (134)
+
+Каждая версия — отдельная вкладка.
+
+<details>
+<summary><b>3.20.11</b> · 13 ноября 2026</summary>
 
 <img src="docs/img/tags/new.svg" alt="Новое" height="22">
 
@@ -870,9 +881,7 @@ core/apexcore/          Go: разбор подписки → конфиги sin
 
 - Предупреждение «Подписка закончится через…» на главном экране теперь нажимается — сразу открывает продление
 
-#### 📚 Все версии (133)
-
-Каждая версия — отдельная вкладка.
+</details>
 
 <details>
 <summary><b>3.20.10</b> · 13 ноября 2026</summary>

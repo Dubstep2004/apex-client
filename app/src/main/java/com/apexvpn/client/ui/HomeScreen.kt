@@ -65,6 +65,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -1038,7 +1039,9 @@ private fun UpdatePill(viewModel: MainViewModel) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.size(40.dp).clip(CircleShape).background(Apex.Text), contentAlignment = Alignment.Center) {
-            Icon(Icons.Rounded.Download, contentDescription = null, tint = Apex.Surface, modifier = Modifier.size(22.dp))
+            // 3.20.12: значок был цвета фона карточки — на прозрачных оформлениях кружок выглядел пустым
+            val ink = if (Apex.Text.luminance() > 0.5f) androidx.compose.ui.graphics.Color(0xFF0B0E1C) else androidx.compose.ui.graphics.Color.White
+            Icon(Icons.Rounded.Download, contentDescription = null, tint = ink, modifier = Modifier.size(24.dp))
         }
         Spacer(Modifier.width(12.dp))
         Text(
