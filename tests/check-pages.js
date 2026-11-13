@@ -140,9 +140,10 @@ async function dragRow(p, rowSel, from, to) { // перетащить строк
     await edges(p, W + ' → Telegram 2.23')
     // 2.27: «Сохранить» на каждой вкладке, конкурс, перевод, подстановки, лента и готовность к выпуску
     {
-      const bar = await p.evaluate(() => { saveBarState(); const sb = $('savebar'); return { vis: getComputedStyle(sb).visibility, msg: $('saveMsg').textContent, dis: $('saveApp').disabled } })
-      if (bar.vis !== 'visible' || !bar.msg.includes('✓') || bar.dis) bad(W, '«Сохранить» не видна на вкладке Telegram: ' + JSON.stringify(bar))
-      await p.click('#saveApp'); await p.waitForFunction(() => /сохранять не нужно|Всё уже сохранено/.test(document.querySelector('#toast').textContent), null, { timeout: 5000 }).catch(() => bad(W, '«Сохранить» без изменений ничего не сказала'))
+      const bar = await p.evaluate(() => { saveBarState(); return getComputedStyle($('savebar')).visibility })
+      if (bar !== 'hidden') bad(W, 'полоса «Сохранить» видна без изменений')
+      const own = await p.evaluate(async () => { showTab('site'); const el = $('sTitle'), old = el.value; el.value = old + ' тест'; el.dispatchEvent(new Event('input', { bubbles: true })); await new Promise(r => setTimeout(r, 50)); const r = { vis: getComputedStyle($('savebar')).visibility, msg: $('saveMsg').textContent }; el.value = old; el.dispatchEvent(new Event('input', { bubbles: true })); await new Promise(r => setTimeout(r, 50)); r.after = getComputedStyle($('savebar')).visibility; showTab('tg'); return r })
+      if (own.vis !== 'visible' || !own.msg.includes('несохранённые') || own.after !== 'hidden') bad(W, 'полоса «Сохранить» на визитке: ' + JSON.stringify(own))
       const n0 = ids.length
       await p.evaluate(() => { const d = new Date(Date.now() + 86400e3); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); $('ctUntil').value = d.toISOString().slice(0, 16); $('ctText').value = 'Разыгрываем месяц подписки' })
       await p.click('#ctSend'); await p.waitForFunction(() => /Конкурс запущен/.test(document.querySelector('#toast').textContent), null, { timeout: 15000 }).catch(() => bad(W, 'конкурс не запустился'))

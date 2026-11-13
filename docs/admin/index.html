@@ -994,7 +994,7 @@
     <!-- Справка -->
     <section data-tab="help" hidden class="helpdoc">
       <h1>Справка для владельца</h1>
-      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 13 ноября 2026 · приложение 3.21.3 · пульт 2.30.</p>
+      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 13 ноября 2026 · приложение 3.21.3 · пульт 2.31.</p>
       <div class="helptools">
         <input id="hq" type="search" placeholder="Найти в справке, например «техработы»" aria-label="Найти в справке" autocomplete="off">
         <button class="btn quiet small" id="hOpen" type="button">Развернуть всё</button>
@@ -1220,7 +1220,7 @@
 
       <div class="block"><details><summary>🆕 Что нового в пульте</summary>
         <div class="tbl"><table>
-          <tr><td>2.30</td><td>«Сохранить» нажимается всегда: без изменений подтверждает «Всё уже сохранено»</td></tr>
+          <tr><td>2.31</td><td>Полоса «Сохранить» появляется только при изменениях — на любой вкладке, включая подписку, визитку и обои</td></tr>
           <tr><td>2.29</td><td>Telegram → Журнал → «Кнопки к посту»: кнопки-ссылки (Скачать, Как установить, Статус, Поддержка, своя) под любым постом канала</td></tr>
           <tr><td>2.28</td><td>Пост о версии — по разделам «Новое / Улучшено / Исправлено», со ссылками «Сообщить об ошибке» и «Наш канал»; кнопка «Обновить посты о версиях» переписывает прошлые посты</td></tr>
           <tr><td>2.27</td><td>«Сохранить» видна на каждой вкладке; лента событий и «Готово к выпуску?»; подстановки в ответах ({имя}, {версия}…); резервная копия с Telegram и ответами; конкурсы, перевод на английский, просмотры постов, напоминания о техработах и сводка после них, кнопки под постом о версии, нагрузка серверов, бот отвечает сам (Cloudflare)</td></tr>
@@ -1328,7 +1328,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.30', PANEL_DATE = '13 ноября 2026'
+const PANEL_VERSION = '2.31', PANEL_DATE = '13 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -1623,9 +1623,10 @@ const OWN_SAVE = { sub: 'saveSub', hide: 'saveHide', site: 'saveSite', walls: 's
 const INSTANT_TABS = { tg: 'Telegram сохраняется сразу', answers: 'Ответы сохраняются сразу', home: 'Здесь всё сохраняется сразу', history: 'Здесь только просмотр', checks: 'Здесь только проверка' }
 function saveBarState() {
   const sb = $('savebar'); if (!sb || !token || $('app').hidden) { sb?.classList.remove('idle'); return }
-  sb.classList.add('idle')
-  if (sb.classList.contains('show')) { sb.dataset.mode = 'app'; $('saveApp').disabled = false; return }
+  if (sb.classList.contains('show')) { sb.classList.remove('idle'); sb.dataset.mode = 'app'; $('saveApp').disabled = false; return }
   const own = OWN_SAVE[curTab], dirtyOwn = own && files[SUB] && otherDirty().has(curTab)
+  // 2.31: изменений нет — полосы нет; есть изменения на вкладке со своей кнопкой — та же полоса «Сохранить»
+  sb.classList.toggle('idle', !!dirtyOwn)
   sb.dataset.mode = dirtyOwn ? 'own' : 'idle'
   $('saveApp').disabled = false // 2.30: кнопка нажимается всегда — без изменений подтверждает, что всё сохранено
   $('saveMsg').textContent = dirtyOwn ? 'Есть несохранённые изменения на этой вкладке' : '✓ ' + (INSTANT_TABS[curTab] || 'Всё сохранено')
