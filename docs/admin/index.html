@@ -1610,6 +1610,7 @@ $('relSave').onclick = () => guarded($('relSave'), async () => {
 // ── Визитка (docs/config/site.json → dubstep2004.github.io)
 const SECTS = [
   ['demo', '🎮', 'Демонстрация', 'макет телефона, который можно нажимать'],
+  ['how', '🧭', 'Как работает', 'схема: телефон → шифрование → интернет'],
   ['features', '✨', 'Возможности', 'автопилот, белые списки, реклама, банки'],
   ['news', '🆕', 'Что нового', 'последние изменения из релизов'],
   ['compare', '⚖️', 'Сравнение', 'APEX и обычные VPN'],
@@ -1632,7 +1633,9 @@ function fillSite(c) {
   $('sBtnText').value = c.cta?.text || ''; $('sBtnUrl').value = c.cta?.url || ''
   $('sDownloads').checked = c.show?.downloads !== false; $('sStatus').checked = c.show?.status !== false; $('sHoliday').value = c.show?.holiday === true ? 'newyear' : (c.show?.holiday || '')
   const known = SECTS.map(x => x[0]), given = (c.sections || []).filter(x => known.includes(x.id))
-  sects = [...given.map(x => ({ id: x.id, on: x.on !== false })), ...known.filter(id => !given.some(g => g.id === id)).map(id => ({ id, on: true }))]
+  sects = given.map(x => ({ id: x.id, on: x.on !== false }))
+  // 2.17: новые блоки визитки встают рядом со своим соседом, а не в конец
+  known.filter(id => !sects.some(g => g.id === id)).forEach(id => { const k = known.indexOf(id), before = known.slice(0, k).reverse().find(p => sects.some(g => g.id === p)); sects.splice(before ? sects.findIndex(g => g.id === before) + 1 : 0, 0, { id, on: true }) })
   faq = (c.faq || []).map(x => ({ q: x.q || '', a: x.a || '' }))
   renderSects(); renderFaq(); sitePrev(); siteSaved = JSON.stringify(collectSite())
 }

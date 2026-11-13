@@ -17,12 +17,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # для «без сбоев N дней» нужна история app.json
       - name: Build stats image
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh api "repos/${{ github.repository }}/releases" --paginate --slurp > /tmp/releases.json
           python3 scripts/download-stats.py < /tmp/releases.json > docs/stats.svg
+      - name: Days without outages (site)
+        run: python3 scripts/uptime.py
       - name: Daily snapshot for the pult chart
         # Пульт 2.15: «Скачивания по дням» — итог раз в сутки в docs/stats/downloads.json (до 400 дней)
         run: |
@@ -43,5 +47,5 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/stats.svg docs/stats/downloads.json
+          git add docs/stats.svg docs/stats/downloads.json docs/stats/uptime.json
           git diff --cached --quiet || { git commit -m "Статистика скачиваний"; git push; }

@@ -5,7 +5,7 @@ on:
     branches: [main]
     tags: ["v*"]
     # Правка README, картинок и скриптов VPS не пересобирает приложение
-    paths-ignore: ["**.md", "docs/**", "tests/**", "scripts/readme.py", ".github/workflows/pages-check.yml", ".github/workflows/config-check.yml", ".github/workflows/stats.yml", ".github/workflows/apply-pending.yml"]
+    paths-ignore: ["**.md", "docs/**", "tests/**", "scripts/readme.py", "scripts/uptime.py", ".github/workflows/pages-check.yml", ".github/workflows/config-check.yml", ".github/workflows/stats.yml", ".github/workflows/apply-pending.yml"]
   pull_request:
   workflow_dispatch:
   # Раз в неделю «трогаем» ключ подписи в кэше, чтобы GitHub его не удалил
