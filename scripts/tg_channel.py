@@ -14,6 +14,8 @@ STATE = os.environ.get('TG_STATE', 'docs/stats/tg-state.json')  # пути мо�
 SITE = 'https://dubstep2004.github.io'
 MSK = datetime.timezone(datetime.timedelta(hours=3))
 DRY = '--dry' in sys.argv  # проверка без отправки: печатает, что бы отправил
+MAX_POSTS = 8  # защита от спама: не больше постов за один запуск (остальное — в следующий раз)
+sent = 0
 
 if not (TOKEN and CHAT) and not DRY:
     print('Нет секретов TG_BOT_TOKEN / TG_CHAT — пропускаю'); raise SystemExit
@@ -36,6 +38,8 @@ CHATS = [c for c in re.split(r'[\s,;]+', CHAT) if c]  # канал и/или г�
 def photo(png, caption):
     """Пост с картинкой (multipart) во все чаты; не вышло — обычным сообщением."""
     import uuid
+    global sent
+    sent += 1
     for chat in CHATS:
         if DRY:
             print('→ sendPhoto', chat, len(png), 'байт,', caption[:80]); continue
@@ -55,6 +59,10 @@ def photo(png, caption):
 
 
 def post(text):
+    global sent
+    if sent >= MAX_POSTS:
+        print('лимит постов за запуск — остальное в следующий раз'); return False
+    sent += 1
     for chat in CHATS:
         try:
             tg('sendMessage', chat_id=chat, text=text, parse_mode='HTML', link_preview_options={'is_disabled': True})
@@ -89,12 +97,17 @@ if tag and tag != state['version']:
         body = body.split('\n---')[0]
         items = [re.sub(r'\*\*|`', '', l[2:]).strip() for l in body.splitlines() if l.startswith('- ')][:8]
         v = tag.lstrip('v')
-        text = f'🆕 <b>Вышла версия {esc(v)}</b>\n\n' + '\n'.join('• ' + esc(i) for i in items)
-        text += f'\n\nОбновление придёт само — плашка «Вышла версия» или окно «Доступна версия» → «Обновить».\n<a href="{SITE}/update/">Как обновить</a> · <a href="{SITE}/versions/">Все изменения</a>'
+        tail = f'\n\nОбновление придёт само — плашка «Вышла версия» или окно «Доступна версия» → «Обновить».\n<a href="{SITE}/update/">Как обновить</a> · <a href="{SITE}/versions/">Все изменения</a>'
+        # подпись к картинке — до 1024 символов: убираем пункты целиком, а не режем посередине разметки
+        while True:
+            text = f'🆕 <b>Вышла версия {esc(v)}</b>\n\n' + '\n'.join('• ' + esc(i) for i in items) + tail
+            if len(text) <= 1000 or len(items) <= 1: break
+            items = items[:-1]
+        if len(text) > 1000: text = f'🆕 <b>Вышла версия {esc(v)}</b>' + tail
         try:  # картинка «Вышла версия X» (scripts/tg_card.py); нет Pillow — просто текст
             sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
             import tg_card
-            photo(tg_card.card(v, items), text[:1024])
+            photo(tg_card.card(v, items), text)
         except ImportError as e:
             print('без картинки:', e); post(text)
         if v.endswith('.0'):  # новая X.Y — ещё и видео «Что нового», если уже готово
@@ -112,6 +125,8 @@ for name, v in marks.items():
     key = f"{v.get('from') or 0}-{v.get('until') or 0}"
     if state['marks'].get(name) == key:
         continue
+    if not first and sent >= MAX_POSTS:
+        continue  # не запоминаем — напишем в следующий запуск
     if not first:
         start = v.get('from') or 0
         head = f'🔧 <b>Изменилось время техработ: {esc(name)}</b>' if name in state['marks'] else f'🔧 <b>Запланированы техработы: {esc(name)}</b>' if start > now else f'🔧 <b>Техработы: {esc(name)}</b>'
@@ -121,6 +136,8 @@ for name, v in marks.items():
     state['marks'][name] = key; changed = True
 for name in list(state['marks']):
     if name not in marks:
+        if not first and sent >= MAX_POSTS:
+            continue
         if not first:
             post(f'✅ <b>Работы закончены: {esc(name)}</b>\nСервер снова работает. Спасибо за терпение!')
         del state['marks'][name]; changed = True
