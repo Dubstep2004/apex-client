@@ -2593,7 +2593,9 @@ async function tgCfg() {
 }
 async function tg(method, body) {
   const c = await tgCfg(); if (!c) throw new Error('Сначала впишите токен бота и канал и нажмите «Запомнить»')
-  let r; try { r = await fetch('https://api.telegram.org/bot' + c.tok + '/' + method, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: c.chat, ...body }) }).then(x => x.json()) }
+  let r; try { // Обычная форма, а не JSON: так браузер не делает предварительный запрос (на него Telegram отвечает 501 и отправка бы не прошла)
+    const form = new URLSearchParams(); Object.entries({ chat_id: c.chat, ...body }).forEach(([k, v]) => form.append(k, typeof v === 'object' ? JSON.stringify(v) : String(v)))
+    r = await fetch('https://api.telegram.org/bot' + c.tok + '/' + method, { method: 'POST', body: form }).then(x => x.json()) }
   catch { throw new Error('Нет связи с Telegram — проверьте интернет или включите VPN') }
   if (!r.ok) throw new Error({ 401: 'Telegram не узнал токен бота', 400: 'Telegram: ' + (r.description || 'ошибка'), 403: 'Бот не может писать в канал — сделайте его администратором' }[r.error_code] || 'Telegram: ' + (r.description || 'ошибка'))
   return r.result
