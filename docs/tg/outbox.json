@@ -49,6 +49,13 @@
       },
       "opts": {},
       "at": 1794610508300
+    },
+    {
+      "id": "mwg5joa4qoxtt",
+      "method": "workerSetup",
+      "body": {},
+      "opts": {},
+      "at": 1794645420569
     }
   ]
 }
