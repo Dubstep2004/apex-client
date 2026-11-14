@@ -37,6 +37,12 @@
    ],
    "error": "",
    "at": 1794610520348
+  },
+  "mwg5joa4qoxtt": {
+   "ok": false,
+   "done": [],
+   "error": "нет секретов CF_ACCOUNT_ID и CF_API_TOKEN — впишите их в «Настройки бота»",
+   "at": 1794645434286
   }
  },
  "log": [
