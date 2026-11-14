@@ -170,9 +170,9 @@ async function dragRow(p, rowSel, from, to) { // перетащить строк
     // 2.34: настройки бота → секреты GitHub
     {
       const put = []
-      await p.route('https://api.github.com/**/actions/secrets**', rt => {
+      await p.route(/api\.github\.com\/.*\/actions\/secrets/, rt => {
         const u = rt.request().url(), m = rt.request().method()
-        if (u.includes('public-key')) return rt.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ key_id: 'k1', key: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=' }) })
+        if (u.includes('public-key')) return rt.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ key_id: 'k1', key: Buffer.alloc(32, 7).toString('base64') }) })
         if (m === 'PUT') { put.push(u.split('/').pop()); return rt.fulfill({ status: 201, body: '' }) }
         rt.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ secrets: [{ name: 'TG_BOT_TOKEN', updated_at: '2026-11-13T10:00:00Z' }] }) })
       })
@@ -184,7 +184,7 @@ async function dragRow(p, rowSel, from, to) { // перетащить строк
       await p.click('#bsSave'); await p.waitForFunction(() => /Сохранено:/.test(document.querySelector('#toast').textContent), null, { timeout: 8000 }).catch(async () => bad(W, 'настройки бота не сохранились: ' + await p.textContent('#toast')))
       if (put.sort().join() !== 'BOT_WORKER_KEY,TG_BOT_TOKEN,TG_CHAT') bad(W, 'настройки бота: сохранены ' + put.join())
       if (await p.inputValue('#bsTok')) bad(W, 'настройки бота: токен остался в поле')
-      await p.unroute('https://api.github.com/**/actions/secrets**')
+      await p.unroute(/api\.github\.com\/.*\/actions\/secrets/)
     }
     // 2.33: тексты бота
     {
