@@ -56,6 +56,13 @@
       "body": {},
       "opts": {},
       "at": 1794645420569
+    },
+    {
+      "id": "mwg60dfsdcl5d",
+      "method": "workerSetup",
+      "body": {},
+      "opts": {},
+      "at": 1794646199281
     }
   ]
 }
