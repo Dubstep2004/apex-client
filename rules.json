@@ -1,0 +1,45 @@
+{
+ "updated": 1794641949,
+ "files": {
+  "ads-hagezi.srs": {
+   "sha256": "8edd2b239449fb0f7ab62ca3fad09e98201a8578dd76f1506b2bfebbe78c2299",
+   "size": 1641831,
+   "count": 211014
+  },
+  "geoip-ru.srs": {
+   "sha256": "55869c680cf6489991cbfdf62c2f5da77ea85bf571babddb6cd9c4941d84cbfa",
+   "size": 50098,
+   "count": 10909
+  },
+  "geosite-category-ads-all.srs": {
+   "sha256": "5577fd713d8479b6df9bcfe5832eab9d6d4fd5a34ea5748460618ed30526cb0c",
+   "size": 8175,
+   "count": 909
+  },
+  "geosite-category-betting-ru.srs": {
+   "sha256": "761a8b09a17094b8fb9e25899a057bf87fe6e0ca49513b5a72746c762f2e4f63",
+   "size": 222,
+   "count": 13
+  },
+  "geosite-category-porn.srs": {
+   "sha256": "21d2d79413ab1963f7cc45d484b069504e9c7fa0d44a2f25c6c76cdfa333babf",
+   "size": 48910,
+   "count": 6661
+  },
+  "geosite-category-ru.srs": {
+   "sha256": "ce60c3549b12cbb4b7577b98fc0812793b6e88664919ab70ffa2007b4617f5d4",
+   "size": 9056,
+   "count": 1149
+  },
+  "ru-inside.srs": {
+   "sha256": "ae0e83d563ad397180d50ff8759b98f6d0629cf2d5097d72a055640ed7337641",
+   "size": 1318,
+   "count": 170
+  },
+  "threats-hagezi.srs": {
+   "sha256": "90735e92d2fa2f4dc8fc75eec77230fab91167b1f902b3e48f8f2ca2ef3e6be4",
+   "size": 1323829,
+   "count": 186315
+  }
+ }
+}
