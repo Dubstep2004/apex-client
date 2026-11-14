@@ -181,7 +181,7 @@ async function dragRow(p, rowSel, from, to) { // перетащить строк
       await p.fill('#bsTok', 'плохой'); await p.click('#bsSave'); await p.waitForTimeout(300)
       if (put.length) bad(W, 'настройки бота: сохранился неправильный токен')
       await p.fill('#bsTok', '123456789:AAEexampleexampleexampleexample12'); await p.click('#bsKeyGen'); await p.fill('#bsChat', '@apex_client_news')
-      await p.click('#bsSave'); await p.waitForFunction(() => /Сохранено:/.test(document.querySelector('#toast').textContent), null, { timeout: 8000 }).catch(() => bad(W, 'настройки бота не сохранились'))
+      await p.click('#bsSave'); await p.waitForFunction(() => /Сохранено:/.test(document.querySelector('#toast').textContent), null, { timeout: 8000 }).catch(async () => bad(W, 'настройки бота не сохранились: ' + await p.textContent('#toast')))
       if (put.sort().join() !== 'BOT_WORKER_KEY,TG_BOT_TOKEN,TG_CHAT') bad(W, 'настройки бота: сохранены ' + put.join())
       if (await p.inputValue('#bsTok')) bad(W, 'настройки бота: токен остался в поле')
       await p.unroute('https://api.github.com/**/actions/secrets**')
