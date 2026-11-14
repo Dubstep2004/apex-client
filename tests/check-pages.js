@@ -160,6 +160,13 @@ async function dragRow(p, rowSel, from, to) { // перетащить строк
       await p.waitForFunction(() => document.querySelectorAll('#relReady .check').length >= 7, null, { timeout: 20000 }).catch(() => bad(W, '«Готово к выпуску?» не показал проверки'))
       await edges(p, W + ' → Проверка 2.27'); await p.evaluate(() => showTab('tg'))
     }
+    // 2.32: метки изменений в пульте и «Что нового в приложении»
+    {
+      const r = await p.evaluate(() => { renderAppNews(); return { log: document.querySelectorAll('#pultLog .kchip').length, rows: document.querySelectorAll('#pultLog tr').length, news: document.querySelectorAll('#appNews .kchip').length } })
+      if (r.log !== r.rows) bad(W, 'метки в «Что нового в пульте»: ' + r.log + ' из ' + r.rows)
+      if (!r.news) bad(W, '«Что нового в приложении» без меток')
+      if (process.env.SHOT2) { await p.evaluate(() => { showTab('home') }); const e1 = await p.$('#appNewsBlock'); if (e1) { await e1.scrollIntoViewIfNeeded(); await e1.screenshot({ path: process.env.SHOT2 + '-news-' + width + '.png' }) } await p.evaluate(() => { showTab('help'); document.querySelector('#pultLog').closest('details').open = true }); const e2 = await p.$('#pultLog'); await e2.scrollIntoViewIfNeeded(); await e2.screenshot({ path: process.env.SHOT2 + '-log-' + width + '.png' }); await p.evaluate(() => showTab('tg')) }
+    }
     // 2.25: список приложений для «Проверки сети»
     {
       const r = await p.evaluate(() => { const old = $('netApps').value; $('netApps').value = 'YouTube | https://www.youtube.com\nVK Видео | https://vkvideo.ru'; const c = collectApp(); let err = ''; $('netApps').value = 'плохо'; try { collectApp() } catch (e) { err = e.message } $('netApps').value = ''; const empty = collectApp(); $('netApps').value = old; return { n: (c.netCheck || []).length, err, emptyKey: 'netCheck' in empty } })
