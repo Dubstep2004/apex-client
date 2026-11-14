@@ -166,6 +166,7 @@ async function dragRow(p, rowSel, from, to) { // перетащить строк
       if (r.log !== r.rows) bad(W, 'метки в «Что нового в пульте»: ' + r.log + ' из ' + r.rows)
       if (!r.news) bad(W, '«Что нового в приложении» без меток')
       if (process.env.SHOT2) { await p.evaluate(() => { showTab('home') }); const e1 = await p.$('#appNewsBlock'); if (e1) { await e1.scrollIntoViewIfNeeded(); await e1.screenshot({ path: process.env.SHOT2 + '-news-' + width + '.png' }) } await p.evaluate(() => { showTab('help'); document.querySelector('#pultLog').closest('details').open = true }); const e2 = await p.$('#pultLog'); await e2.scrollIntoViewIfNeeded(); await e2.screenshot({ path: process.env.SHOT2 + '-log-' + width + '.png' }); await p.evaluate(() => showTab('tg')) }
+      if (process.env.SHOT3 && width < 500) { await p.evaluate(() => showTab('tg')); const e3 = await p.$('#srvBlock'); if (e3) { await e3.scrollIntoViewIfNeeded(); await e3.screenshot({ path: process.env.SHOT3 + '.png' }) } }
     }
     // 2.34: настройки бота → секреты GitHub
     {

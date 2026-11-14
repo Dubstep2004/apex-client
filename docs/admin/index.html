@@ -528,6 +528,7 @@
     .toast { top: 12px; }
   }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+.srv-cmd{margin:8px 0 0;padding:10px 12px;border-radius:12px;background:rgba(127,127,140,.16);border:1px solid rgba(127,127,140,.3);color:inherit;overflow-x:auto;white-space:pre;font-size:12.5px;user-select:all}
 </style>
 </head>
 <body>
@@ -867,6 +868,17 @@
         </ol>
         </details>
         <p class="help">Токен бота хранится только в секретах GitHub и Cloudflare. Робот GitHub продолжает публиковать посты как раньше.</p></div>
+      <div class="block" id="srvBlock"><h2>🖥 Бот на своём сервере (Ubuntu)</h2>
+        <p class="note">Тот же бот, что в Cloudflare, но на вашем сервере: Ubuntu 22.04 / 24.04 или Debian 12, хватит самого маленького VPS. Домен, HTTPS и открытые порты не нужны — бот сам забирает сообщения у Telegram. Конкурсы и тексты из пульта работают так же.</p>
+        <ol class="note us-steps">
+          <li>Зайдите на сервер по SSH (под root или пользователем с sudo).</li>
+          <li>Вставьте команду и нажмите Enter: <button class="btn quiet small" id="srvCmd" type="button">Скопировать команду</button>
+            <pre class="srv-cmd"><code id="srvCmdText">curl -fsSL https://raw.githubusercontent.com/Dubstep2004/apex-client/main/tools/tg-bot/install.sh | sudo bash</code></pre></li>
+          <li>Скрипт спросит токен бота от @BotFather (при вводе его не видно — так и надо) и, по желанию, ваш номер в Telegram от @userinfobot — для команд /draw и /contests.</li>
+          <li>Увидите «✅ Готово» — напишите боту <code>/start</code>.</li>
+        </ol>
+        <p class="note"><b>Обновить бота</b> — запустите ту же команду ещё раз: код обновится, настройки останутся. <b>Журнал</b>: <code>journalctl -u apex-bot -f</code>. <b>Сменить токен</b>: <code>sudo nano /etc/apex-bot.env</code>, затем <code>sudo systemctl restart apex-bot</code>.</p>
+        <p class="help">Бот работает только в одном месте: запуск на сервере отключает Cloudflare, а «Применить к боту в Cloudflare» — наоборот, забирает бота обратно. Выберите что-то одно. Итоги конкурсов на сервере подводятся командой <code>/draw номер</code> в личке бота. Токен хранится только на сервере в /etc/apex-bot.env — никому его не отправляйте.</p></div>
       <div class="block" id="bcBlock"><h2>📝 Тексты бота</h2>
         <p class="note">Что бот отвечает в личке: приветствие, темы-кнопки, слова для поиска и ответы. Бот подхватит изменения за 5 минут — код в Cloudflare менять не нужно. Если вы ставили бота до этой версии пульта, один раз обновите код: «Скопировать код бота» → вставить в Cloudflare → Deploy. В текстах можно писать <code>{сайт}</code> и <code>{поддержка}</code> — подставятся ссылки.</p>
         <label class="f" for="bcGreet">Приветствие (/start)</label><textarea id="bcGreet" rows="2" maxlength="1000"></textarea>
@@ -1029,7 +1041,7 @@
     <!-- Справка -->
     <section data-tab="help" hidden class="helpdoc">
       <h1>Справка для владельца</h1>
-      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 13 ноября 2026 · приложение 3.21.3 · пульт 2.34.</p>
+      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 14 ноября 2026 · приложение 3.21.3 · пульт 2.35.</p>
       <div class="helptools">
         <input id="hq" type="search" placeholder="Найти в справке, например «техработы»" aria-label="Найти в справке" autocomplete="off">
         <button class="btn quiet small" id="hOpen" type="button">Развернуть всё</button>
@@ -1255,6 +1267,7 @@
 
       <div class="block"><details><summary>🆕 Что нового в пульте</summary>
         <div class="tbl"><table id="pultLog">
+          <tr data-k="n"><td>2.35</td><td>Telegram → Настройка → «🖥 Бот на своём сервере»: бот ставится на свой Ubuntu-сервер одной командой — без Cloudflare, домена и HTTPS</td></tr>
           <tr data-k="n"><td>2.34</td><td>Telegram → Настройка → «🔐 Настройки бота»: токен, канал, секретное слово, номер владельца и Cloudflare — сохраняются в секреты GitHub прямо из пульта; «Применить к боту в Cloudflare» загружает и подключает бота одной кнопкой</td></tr>
           <tr data-k="n"><td>2.33</td><td>Telegram → Настройка → «Тексты бота»: приветствие, темы-кнопки, слова для поиска и ответы бота редактируются в пульте — без правки кода в Cloudflare</td></tr>
           <tr data-k="u"><td>2.32</td><td>Метки «Новое / Улучшено / Исправлено» в «Что нового в пульте»; на «Обзоре» — блок «Что нового в приложении» с теми же метками</td></tr>
@@ -1366,7 +1379,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.34', PANEL_DATE = '13 ноября 2026'
+const PANEL_VERSION = '2.35', PANEL_DATE = '14 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -3189,6 +3202,10 @@ $('bcSave').onclick = () => guarded($('bcSave'), async () => {
   await putFile(BOT_CFG, c, 'Пульт: тексты бота'); bcData = c; toast('Сохранено — бот подхватит за 5 минут')
 })
 // 2.27: код бота для Cloudflare и секретное слово
+// 2.35: команда установки бота на свой сервер
+$('srvCmd').onclick = async () => {
+  try { await navigator.clipboard.writeText($('srvCmdText').textContent.trim()); toast('Команда скопирована — вставьте её на сервере') } catch { toast('Не удалось скопировать — выделите команду вручную', false) }
+}
 $('botCode').onclick = () => guarded($('botCode'), async () => {
   const code = b64dec((await api('/contents/tools/tg-bot/worker.js?ref=' + BRANCH)).content)
   try { await navigator.clipboard.writeText(code); toast('Код бота скопирован — вставьте его в Cloudflare') } catch { toast('Не удалось скопировать — откройте tools/tg-bot/worker.js на GitHub', false) }
