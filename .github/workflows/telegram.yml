@@ -38,6 +38,7 @@ jobs:
           TG_OWNER: ${{ secrets.TG_OWNER }}
           CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           CF_AI_TOKEN: ${{ secrets.CF_AI_TOKEN }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           BOT_WORKER_URL: ${{ secrets.BOT_WORKER_URL }}
           BOT_WORKER_KEY: ${{ secrets.BOT_WORKER_KEY }}
           GITHUB_TOKEN: ${{ github.token }}

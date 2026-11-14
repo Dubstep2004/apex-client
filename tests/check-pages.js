@@ -167,6 +167,25 @@ async function dragRow(p, rowSel, from, to) { // перетащить строк
       if (!r.news) bad(W, '«Что нового в приложении» без меток')
       if (process.env.SHOT2) { await p.evaluate(() => { showTab('home') }); const e1 = await p.$('#appNewsBlock'); if (e1) { await e1.scrollIntoViewIfNeeded(); await e1.screenshot({ path: process.env.SHOT2 + '-news-' + width + '.png' }) } await p.evaluate(() => { showTab('help'); document.querySelector('#pultLog').closest('details').open = true }); const e2 = await p.$('#pultLog'); await e2.scrollIntoViewIfNeeded(); await e2.screenshot({ path: process.env.SHOT2 + '-log-' + width + '.png' }); await p.evaluate(() => showTab('tg')) }
     }
+    // 2.34: настройки бота → секреты GitHub
+    {
+      const put = []
+      await p.route('https://api.github.com/**/actions/secrets**', rt => {
+        const u = rt.request().url(), m = rt.request().method()
+        if (u.includes('public-key')) return rt.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ key_id: 'k1', key: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=' }) })
+        if (m === 'PUT') { put.push(u.split('/').pop()); return rt.fulfill({ status: 201, body: '' }) }
+        rt.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ secrets: [{ name: 'TG_BOT_TOKEN', updated_at: '2026-11-13T10:00:00Z' }] }) })
+      })
+      await p.evaluate(async () => { window.sealedBox = { seal: m => new Uint8Array(m.length + 48) }; naclReady = Promise.resolve(); await bsRender() })
+      if (!(await p.$eval('#bsList', e => e.textContent)).includes('задан')) bad(W, 'настройки бота: список секретов не показан')
+      await p.fill('#bsTok', 'плохой'); await p.click('#bsSave'); await p.waitForTimeout(300)
+      if (put.length) bad(W, 'настройки бота: сохранился неправильный токен')
+      await p.fill('#bsTok', '123456789:AAEexampleexampleexampleexample12'); await p.click('#bsKeyGen'); await p.fill('#bsChat', '@apex_client_news')
+      await p.click('#bsSave'); await p.waitForFunction(() => /Сохранено:/.test(document.querySelector('#toast').textContent), null, { timeout: 8000 }).catch(() => bad(W, 'настройки бота не сохранились'))
+      if (put.sort().join() !== 'BOT_WORKER_KEY,TG_BOT_TOKEN,TG_CHAT') bad(W, 'настройки бота: сохранены ' + put.join())
+      if (await p.inputValue('#bsTok')) bad(W, 'настройки бота: токен остался в поле')
+      await p.unroute('https://api.github.com/**/actions/secrets**')
+    }
     // 2.33: тексты бота
     {
       const r = await p.evaluate(async () => { await bcLoad(); const n0 = document.querySelectorAll('#bcTopics .bct').length; $('bcAdd').click(); const last = document.querySelector('#bcTopics .bct:last-child'); last.querySelector('[data-f="title"]').value = '🎁 Акции'; last.querySelector('[data-f="words"]').value = 'Акция, скидка'; last.querySelector('[data-f="text"]').value = 'Скоро'; const c = bcCollect(); last.querySelector('[data-mv="-1"]').click(); const moved = bcCollect().topics[n0 - 1].title; return { n0, n: c.topics.length, words: c.topics[c.topics.length - 1].words, moved } })

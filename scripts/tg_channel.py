@@ -294,7 +294,7 @@ SUPPORT = SUPPORT if SUPPORT.startswith('https://') else 'https://t.me/Apexx_sup
 
 # ── 0. Задания из пульта (docs/tg/outbox.json). Пульт ждёт итог в state['results'][id].
 ALLOWED = {'sendMessage': {'text', 'link_preview_options'}, 'sendPoll': {'question', 'options', 'is_anonymous', 'allows_multiple_answers'},
-           'getChat': set(), 'sendVersion': {'version'}, 'deleteLast': set(), 'editLast': {'text'}, 'ping': set(), 'translate': {'text'}, 'contest': {'text', 'until', 'n', 'button'}, 'refreshVersions': set(), 'setButtons': {'mid', 'buttons'}}
+           'getChat': set(), 'sendVersion': {'version'}, 'deleteLast': set(), 'editLast': {'text'}, 'ping': set(), 'translate': {'text'}, 'contest': {'text', 'until', 'n', 'button'}, 'refreshVersions': set(), 'setButtons': {'mid', 'buttons'}, 'workerSetup': set()}
 box = read(E('TG_OUTBOX', 'docs/tg/outbox.json'), {})
 results = state['results']
 for it in (box.get('items') or [])[-40:]:
@@ -318,7 +318,7 @@ for it in (box.get('items') or [])[-40:]:
                 try: r = tg('getChat', chat_id=chat); done.append(('канал ' if r.get('type') == 'channel' else 'группа ') + str(r.get('title') or r.get('username') or i))
                 except Exception as e: errs.append(f'чат {i}: {e}')
         elif method == 'translate':  # 2.27: перевод на английский — бесплатный переводчик Cloudflare Workers AI
-            acc, key = E('CF_ACCOUNT_ID', ''), E('CF_AI_TOKEN', '')
+            acc, key = E('CF_ACCOUNT_ID', ''), E('CF_AI_TOKEN', '') or E('CF_API_TOKEN', '')
             if not (acc and key): raise TgError('нет секретов CF_ACCOUNT_ID и CF_AI_TOKEN — см. пульт → Telegram → Настройка')
             body_t = json.dumps({'text': str(body.get('text', ''))[:4000], 'source_lang': 'russian', 'target_lang': 'english'}).encode()
             req = urllib.request.Request(f'https://api.cloudflare.com/client/v4/accounts/{acc}/ai/run/@cf/meta/m2m100-1.2b', body_t, {'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json'})
@@ -337,6 +337,44 @@ for it in (box.get('items') or [])[-40:]:
             done, errs = broadcast('Конкурс', text, CHATS, lambda chat: [tg('sendMessage', chat_id=chat, text=text, reply_markup=kb, link_preview_options={'is_disabled': True}).get('message_id')])
             if not errs:
                 state.setdefault('contests', []).append({'cid': cid, 'until': until, 'n': max(1, min(int(body.get('n') or 1), 10)), 'title': text[:80], 'ids': (state['last'][-1]['ids'] if state['last'] else {}), 'drawn': False})
+        elif method == 'workerSetup':  # 2.34: бот на Cloudflare одной кнопкой — код, токен, слово, KV и адрес для Telegram
+            acc, cft, wkey = E('CF_ACCOUNT_ID', ''), E('CF_API_TOKEN', ''), E('BOT_WORKER_KEY', '')
+            if not (acc and cft): raise TgError('нет секретов CF_ACCOUNT_ID и CF_API_TOKEN — впишите их в «Настройки бота»')
+            if len(wkey) < 12: raise TgError('нет секрета BOT_WORKER_KEY (секретное слово) — создайте его в «Настройки бота»')
+            base = f'https://api.cloudflare.com/client/v4/accounts/{acc}'
+            def cf(path, data=None, method_='GET', ctype='application/json'):
+                req = urllib.request.Request(base + path, data, {'Authorization': 'Bearer ' + cft, **({'Content-Type': ctype} if data is not None else {})}, method=method_)
+                try:
+                    with urllib.request.urlopen(req, timeout=60) as r: res = json.load(r)
+                except urllib.error.HTTPError as e:
+                    try: res = json.load(e)
+                    except Exception: raise TgError(f'Cloudflare ответил {e.code} на {path.split("?")[0]}')
+                if not res.get('success'): raise TgError('Cloudflare: ' + '; '.join(str(x.get('message')) for x in res.get('errors') or [])[:200] + (' — проверьте права API-токена' if 'auth' in json.dumps(res).lower() else ''))
+                return res.get('result')
+            notes = []
+            ns = None  # KV для конкурсов: найти или создать «apex-bot»
+            try:
+                ns = next((n['id'] for n in cf('/storage/kv/namespaces?per_page=100') or [] if n.get('title') == 'apex-bot'), None) or cf('/storage/kv/namespaces', json.dumps({'title': 'apex-bot'}).encode(), 'POST')['id']
+            except TgError as e:
+                notes.append('конкурсы без KV (' + str(e)[:80] + ')')
+            meta = {'main_module': 'worker.js', 'compatibility_date': '2024-09-23', 'bindings': [
+                {'type': 'secret_text', 'name': 'BOT_TOKEN', 'text': TOKEN}, {'type': 'secret_text', 'name': 'WEBHOOK_SECRET', 'text': wkey},
+                {'type': 'plain_text', 'name': 'SUPPORT', 'text': SUPPORT}] + ([{'type': 'plain_text', 'name': 'OWNER_ID', 'text': OWNER[0]}] if OWNER else [])
+                + ([{'type': 'kv_namespace', 'name': 'APEX_KV', 'namespace_id': ns}] if ns else [])}
+            code = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'tools', 'tg-bot', 'worker.js'), 'rb').read()
+            bd = uuid.uuid4().hex
+            body_m = (f'--{bd}\r\nContent-Disposition: form-data; name="metadata"\r\nContent-Type: application/json\r\n\r\n'.encode() + json.dumps(meta).encode()
+                      + f'\r\n--{bd}\r\nContent-Disposition: form-data; name="worker.js"; filename="worker.js"\r\nContent-Type: application/javascript+module\r\n\r\n'.encode() + code + f'\r\n--{bd}--\r\n'.encode())
+            if DRY: print('→ Cloudflare: загрузка apex-bot,', len(code), 'байт кода, привязок', len(meta['bindings'])); sub = 'test'
+            else:
+                cf('/workers/scripts/apex-bot', body_m, 'PUT', 'multipart/form-data; boundary=' + bd)
+                cf('/workers/scripts/apex-bot/subdomain', json.dumps({'enabled': True}).encode(), 'POST')
+                sub = (cf('/workers/subdomain') or {}).get('subdomain')
+            if not sub: raise TgError('в Cloudflare нет адреса workers.dev — откройте один раз Workers & Pages на dash.cloudflare.com, он создастся сам')
+            wurl = f'https://apex-bot.{sub}.workers.dev'
+            tg('setWebhook', url=wurl + '/tg', secret_token=wkey, allowed_updates=['message', 'callback_query'], drop_pending_updates=True)
+            done = [wurl] + notes
+            log('Бот на Cloudflare', 'настроен: ' + wurl + ('; ' + '; '.join(notes) if notes else ''))
         elif method == 'setButtons':  # 2.29: кнопки-ссылки под любым постом канала (номер поста — из «Просмотров» в пульте)
             mid = int(body.get('mid') or 0)
             if mid <= 0: raise TgError('нет номера поста')
