@@ -241,6 +241,8 @@
   .kc-n { color: #34d27b; background: rgba(52,210,123,.14); } .kc-u { color: #a78bfa; background: rgba(167,139,250,.16); } .kc-f { color: #60a5fa; background: rgba(96,165,250,.16); } .kc-d { color: #f87171; background: rgba(248,113,113,.14); }
   .anv { padding: 10px 0; border-top: 1px solid var(--line); } .anv:first-child { border-top: 0; } .anv h3 { font-size: 15px; margin: 0 0 6px; } .anv h3 span { color: var(--dim); font-weight: 500; font-size: 13px; margin-left: 6px; }
   .anv li { list-style: none; margin: 6px 0; font-size: 14px; line-height: 1.45; } .anv ul { padding: 0; margin: 0; }
+  .bct { border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px 12px; margin-top: 10px; background: var(--field); }
+  .bct .rowx { align-items: center; } .bct input[data-f="title"] { flex: 1; min-width: 0; font-weight: 600; } .bct textarea { width: 100%; margin-top: 6px; } .bct input[data-f="words"] { width: 100%; margin-top: 6px; }
   .tpw { display: inline-flex; gap: 2px; } .pill.x { padding: 7px 10px; }
   .tgcount { text-align: right; margin-top: 4px; } .tgcount.bad { color: #f0616d; font-weight: 700; }
   .tgchk { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 14px; } .tgchk label { display: inline-flex; gap: 6px; align-items: center; }
@@ -841,12 +843,24 @@
         <ol class="note us-steps">
           <li>Зарегистрируйтесь на <b>dash.cloudflare.com</b> (бесплатно) → Workers &amp; Pages → Create → Worker → имя <code>apex-bot</code> → Deploy.</li>
           <li>Edit code → удалите всё и вставьте код бота: <button class="btn quiet small" id="botCode" type="button">Скопировать код бота</button> → Deploy.</li>
-          <li>Settings → Variables and Secrets: секрет <code>BOT_TOKEN</code> — токен бота; секрет <code>WEBHOOK_SECRET</code> — слово: <button class="btn quiet small" id="botKeyGen" type="button">Создать слово</button> <input id="botKey" readonly style="width:100%;margin-top:6px" placeholder="здесь появится слово">; по желанию <code>OWNER_ID</code> — ваш номер (команды /draw и /contests).</li>
+          <li>Settings → Variables and Secrets → Add, тип <b>Secret</b>:
+            <div class="note" style="margin:6px 0">• <code>BOT_TOKEN</code> — токен бота от @BotFather;<br>• <code>WEBHOOK_SECRET</code> — секретное слово. Нажмите и вставьте его:</div>
+            <div class="rowx"><button class="btn quiet small" id="botKeyGen" type="button">Создать слово</button><input id="botKey" readonly placeholder="здесь появится слово" style="flex:1;min-width:0"></div>
+            <div class="note" style="margin-top:6px">• по желанию <code>OWNER_ID</code> — ваш номер в Telegram (узнать у @userinfobot): команды /draw и /contests.</div></li>
           <li>Для конкурсов: Storage → KV → Create namespace <code>apex-bot</code>; затем в Worker → Settings → Bindings → KV namespace, имя <code>APEX_KV</code>.</li>
           <li>Откройте в браузере <code>https://apex-bot.&lt;ваше-имя&gt;.workers.dev/setup?key=СЛОВО</code> — увидите «Готово! Бот отвечает».</li>
           <li>Для итогов конкурсов по расписанию — секреты GitHub (как TG_BOT_TOKEN): <code>BOT_WORKER_URL</code> = адрес Worker (https://…workers.dev) и <code>BOT_WORKER_KEY</code> = то же слово.</li>
         </ol>
         <p class="help">Токен бота хранится только в секретах Cloudflare. Робот GitHub продолжает публиковать посты как раньше.</p></div>
+      <div class="block" id="bcBlock"><h2>📝 Тексты бота</h2>
+        <p class="note">Что бот отвечает в личке: приветствие, темы-кнопки, слова для поиска и ответы. Бот подхватит изменения за 5 минут — код в Cloudflare менять не нужно. Если вы ставили бота до этой версии пульта, один раз обновите код: «Скопировать код бота» → вставить в Cloudflare → Deploy. В текстах можно писать <code>{сайт}</code> и <code>{поддержка}</code> — подставятся ссылки.</p>
+        <label class="f" for="bcGreet">Приветствие (/start)</label><textarea id="bcGreet" rows="2" maxlength="1000"></textarea>
+        <label class="f" for="bcNot">Если ответа не нашлось</label><textarea id="bcNot" rows="2" maxlength="1000"></textarea>
+        <label class="f" for="bcSup">Ссылка поддержки</label><input id="bcSup" type="url" placeholder="https://t.me/…">
+        <p class="f" style="margin-top:14px">Темы — кнопки в меню бота, по порядку</p>
+        <div id="bcTopics"></div>
+        <div class="rowx" style="margin-top:10px"><button class="btn quiet small" id="bcAdd" type="button">＋ Добавить тему</button><button class="btn quiet small" id="bcUndo" type="button">Отменить изменения</button></div>
+        <button class="btn go" id="bcSave" style="margin-top:12px;width:100%">Сохранить тексты бота</button></div>
       <div class="block"><h2>🌐 Перевод на английский</h2>
         <p class="note">Кнопка «Перевести с русского» у английского текста — бесплатный переводчик Cloudflare. Один раз добавьте секреты GitHub: <code>CF_ACCOUNT_ID</code> (Cloudflare → Workers &amp; Pages → справа «Account ID») и <code>CF_AI_TOKEN</code> (My Profile → API Tokens → Create Token → шаблон «Workers AI»). Перевод всегда показывается вам перед отправкой.</p></div>
       <div class="block"><h2>🤖 Сам, без пульта</h2>
@@ -1000,7 +1014,7 @@
     <!-- Справка -->
     <section data-tab="help" hidden class="helpdoc">
       <h1>Справка для владельца</h1>
-      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 13 ноября 2026 · приложение 3.21.3 · пульт 2.32.</p>
+      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 13 ноября 2026 · приложение 3.21.3 · пульт 2.33.</p>
       <div class="helptools">
         <input id="hq" type="search" placeholder="Найти в справке, например «техработы»" aria-label="Найти в справке" autocomplete="off">
         <button class="btn quiet small" id="hOpen" type="button">Развернуть всё</button>
@@ -1226,6 +1240,7 @@
 
       <div class="block"><details><summary>🆕 Что нового в пульте</summary>
         <div class="tbl"><table id="pultLog">
+          <tr data-k="n"><td>2.33</td><td>Telegram → Настройка → «Тексты бота»: приветствие, темы-кнопки, слова для поиска и ответы бота редактируются в пульте — без правки кода в Cloudflare</td></tr>
           <tr data-k="u"><td>2.32</td><td>Метки «Новое / Улучшено / Исправлено» в «Что нового в пульте»; на «Обзоре» — блок «Что нового в приложении» с теми же метками</td></tr>
           <tr data-k="u"><td>2.31</td><td>Полоса «Сохранить» появляется только при изменениях — на любой вкладке, включая подписку, визитку и обои</td></tr>
           <tr data-k="n"><td>2.29</td><td>Telegram → Журнал → «Кнопки к посту»: кнопки-ссылки (Скачать, Как установить, Статус, Поддержка, своя) под любым постом канала</td></tr>
@@ -1335,7 +1350,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.32', PANEL_DATE = '13 ноября 2026'
+const PANEL_VERSION = '2.33', PANEL_DATE = '13 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -2949,7 +2964,7 @@ function renderTgState() {
   renderTgStat()
 }
 async function tgOpen() { // при открытии вкладки
-  await tgLoadSettings().catch(() => {}); renderTgPick(); tgPreview(); renderTgSched().catch(() => {})
+  await tgLoadSettings().catch(() => {}); bcLoad().catch(() => {}); renderTgPick(); tgPreview(); renderTgSched().catch(() => {})
   $('tgDigest').checked = tgSet?.digest !== false; $('tgHoliday').checked = tgSet?.holidays !== false
   $('tgAutoVer').checked = tgSet?.version !== false; $('tgAutoVideo').checked = tgSet?.video !== false; $('tgAutoMaint').checked = tgSet?.maint !== false; $('tgAutoBtn').checked = tgSet?.buttons !== false; $('tgAutoRemind').checked = tgSet?.remind !== false
   tgState = await tgReadState(); renderTgState()
@@ -3078,6 +3093,44 @@ $('ctSend').onclick = () => guarded($('ctSend'), async () => {
 $('tgTr').onclick = () => guarded($('tgTr'), async () => {
   const t = $('tgText').value.trim(); if (!t) throw new Error('Сначала напишите русский текст')
   const r = await tgRelay('translate', { text: t }); $('tgEn').value = (r.done || [])[0] || ''; tgPreview(); toast('Перевод готов — проверьте перед отправкой')
+})
+// 2.33: тексты бота на Cloudflare — docs/tg/bot.json (бот читает его сам, раз в 5 минут)
+const BOT_CFG = 'docs/tg/bot.json'
+let bcData = null
+function bcRender() {
+  const c = bcData || {}
+  $('bcGreet').value = c.greeting || ''; $('bcNot').value = c.notFound || ''; $('bcSup').value = c.support || ''
+  $('bcTopics').innerHTML = (c.topics || []).map((t, i) => `<div class="bct" data-i="${i}">
+    <div class="rowx"><input data-f="title" maxlength="40" value="${esc(t.title || '')}" placeholder="Кнопка, например 📥 Как установить" aria-label="Название темы">
+      <button class="pill" data-mv="-1" type="button" aria-label="Выше">↑</button><button class="pill" data-mv="1" type="button" aria-label="Ниже">↓</button><button class="pill x" data-rm type="button" aria-label="Удалить тему">×</button></div>
+    <input data-f="words" value="${esc((t.words || []).join(', '))}" placeholder="Слова для поиска через запятую: установ, скачать, apk" aria-label="Слова для поиска">
+    <textarea data-f="text" rows="4" maxlength="3500" placeholder="Ответ бота" aria-label="Ответ">${esc(t.text || '')}</textarea></div>`).join('')
+}
+function bcCollect() {
+  const topics = [...document.querySelectorAll('#bcTopics .bct')].map((el, i) => {
+    const old = (bcData?.topics || [])[+el.dataset.i] || {}, g = f => el.querySelector(`[data-f="${f}"]`).value.trim()
+    return { id: old.id || ('t' + Date.now().toString(36) + i), title: g('title'), words: g('words').split(',').map(w => w.trim().toLowerCase()).filter(Boolean), text: g('text') }
+  })
+  return { greeting: $('bcGreet').value.trim(), notFound: $('bcNot').value.trim(), support: $('bcSup').value.trim(), topics }
+}
+async function bcLoad() { bcData = (await getFile(BOT_CFG).catch(() => null)) || { topics: [] }; bcRender() }
+$('bcTopics').addEventListener('click', e => {
+  const card = e.target.closest('.bct'); if (!card) return
+  const cur = bcCollect(), i = [...card.parentNode.children].indexOf(card)
+  if (e.target.closest('[data-rm]')) { if (!confirm('Удалить тему «' + (cur.topics[i].title || 'без названия') + '»?')) return; cur.topics.splice(i, 1) }
+  else if (e.target.closest('[data-mv]')) { const j = i + +e.target.closest('[data-mv]').dataset.mv; if (j < 0 || j >= cur.topics.length) return; [cur.topics[i], cur.topics[j]] = [cur.topics[j], cur.topics[i]] }
+  else return
+  bcData = { ...bcData, ...cur }; bcRender()
+})
+$('bcAdd').onclick = () => { const cur = bcCollect(); if (cur.topics.length >= 12) return toast('Не больше 12 тем', false); cur.topics.push({ id: 't' + Date.now().toString(36), title: '', words: [], text: '' }); bcData = { ...bcData, ...cur }; bcRender(); document.querySelector('#bcTopics .bct:last-child [data-f="title"]').focus() }
+$('bcUndo').onclick = () => guarded($('bcUndo'), async () => { if (!confirm('Вернуть тексты как сохранено?')) return; await bcLoad(); toast('Изменения отменены') })
+$('bcSave').onclick = () => guarded($('bcSave'), async () => {
+  const c = bcCollect()
+  if (!c.greeting) throw new Error('Напишите приветствие')
+  if (c.support && !/^https:\/\/\S+$/.test(c.support)) throw new Error('Ссылка поддержки должна начинаться с https://')
+  if (!c.topics.length) throw new Error('Нужна хотя бы одна тема')
+  c.topics.forEach((t, i) => { if (!t.title || !t.text) throw new Error('Тема ' + (i + 1) + ': нужны название и ответ') })
+  await putFile(BOT_CFG, c, 'Пульт: тексты бота'); bcData = c; toast('Сохранено — бот подхватит за 5 минут')
 })
 // 2.27: код бота для Cloudflare и секретное слово
 $('botCode').onclick = () => guarded($('botCode'), async () => {

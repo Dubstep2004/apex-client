@@ -13,8 +13,14 @@
 //   SUPPORT        — по желанию: ссылка поддержки (по умолчанию https://t.me/Apexx_support).
 // Привязка KV (Settings → Bindings → KV namespace) с именем APEX_KV — нужна только для конкурсов.
 // После сохранения откройте https://<ваш-worker>.workers.dev/setup?key=<WEBHOOK_SECRET> — бот начнёт отвечать.
+//
+// Тексты бота (приветствие, темы, слова, ответы, ссылка поддержки) редактируются в пульте:
+// Telegram → Настройка → «Тексты бота» → «Сохранить». Бот берёт их из docs/tg/bot.json на сайте
+// (обновляет раз в 5 минут) — код в Cloudflare менять не нужно. Нет файла — встроенные тексты ниже.
+// BOT_CONFIG — по желанию: свой адрес файла настроек.
 
 const SITE = 'https://dubstep2004.github.io'
+const CONFIG_URL = SITE + '/apex-client/tg/bot.json'
 
 const FAQ = [
   { id: 'install', title: '📥 Как установить', words: ['установ', 'скача', 'скачать', 'apk', 'где взять', 'загруз'],
@@ -38,14 +44,36 @@ async function tg(env, method, body) {
   return r.json()
 }
 
-const menu = () => ({ inline_keyboard: FAQ.map(f => [{ text: f.title, callback_data: 'faq:' + f.id }]) })
-const support = env => (env.SUPPORT && env.SUPPORT.startsWith('https://')) ? env.SUPPORT : 'https://t.me/Apexx_support'
-const faqText = (env, f) => f.text || 'Поддержка поможет с подключением, подпиской и продлением: ' + support(env)
+// Настройки из пульта: кэш на 5 минут в памяти Worker; файл не открылся — встроенные тексты
+let cfgCache = null, cfgAt = 0
+async function config(env) {
+  if (cfgCache && Date.now() - cfgAt < 300000) return cfgCache
+  let c = null
+  try {
+    const r = await fetch((env.BOT_CONFIG && env.BOT_CONFIG.startsWith('https://')) ? env.BOT_CONFIG : CONFIG_URL, { cf: { cacheTtl: 300 } })
+    if (r.ok) c = await r.json()
+  } catch {}
+  const topics = Array.isArray(c?.topics) ? c.topics.filter(t => t && t.id && t.title && t.text).slice(0, 12).map(t => ({
+    id: String(t.id).replace(/[^\w-]/g, '').slice(0, 24), title: String(t.title).slice(0, 40),
+    words: (Array.isArray(t.words) ? t.words : []).map(w => String(w).toLowerCase().trim()).filter(Boolean).slice(0, 30), text: String(t.text).slice(0, 3500),
+  })) : []
+  cfgCache = {
+    greeting: (c?.greeting && String(c.greeting).slice(0, 1000)) || 'Привет! Я бот APEX CLIENT 👋\nВыберите тему или просто напишите вопрос своими словами.',
+    notFound: (c?.notFound && String(c.notFound).slice(0, 1000)) || 'Не нашёл готового ответа 🤔 Выберите тему или напишите в поддержку — там помогут.',
+    support: (c?.support && String(c.support).startsWith('https://')) ? String(c.support) : ((env.SUPPORT && env.SUPPORT.startsWith('https://')) ? env.SUPPORT : 'https://t.me/Apexx_support'),
+    topics: topics.length ? topics : FAQ.map(f => ({ ...f, text: f.text || 'Поддержка поможет с подключением, подпиской и продлением: {поддержка}' })),
+  }
+  cfgAt = Date.now()
+  return cfgCache
+}
+const fill = (cfg, t) => t.replaceAll('{сайт}', SITE).replaceAll('{поддержка}', cfg.support)
+const menu = cfg => ({ inline_keyboard: cfg.topics.map(f => [{ text: f.title, callback_data: 'faq:' + f.id }]) })
+const after = cfg => ({ inline_keyboard: [[{ text: '📋 Другие темы', callback_data: 'menu' }], [{ text: '💬 Написать в поддержку', url: cfg.support }]] })
 
-function findFaq(text) {
+function findFaq(cfg, text) {
   const t = (text || '').toLowerCase()
   let best = null, score = 0
-  for (const f of FAQ) {
+  for (const f of cfg.topics) {
     const s = f.words.filter(w => t.includes(w)).length
     if (s > score) { best = f; score = s }
   }
@@ -54,6 +82,7 @@ function findFaq(text) {
 
 async function onMessage(env, m) {
   if (m.chat?.type !== 'private') return // в группах и каналах молчим
+  const cfg = await config(env)
   const text = (m.text || '').trim(), owner = env.OWNER_ID && String(m.from?.id) === String(env.OWNER_ID)
   if (owner && text.startsWith('/draw')) {
     const [, cid, n] = text.split(/\s+/)
@@ -67,11 +96,11 @@ async function onMessage(env, m) {
     return tg(env, 'sendMessage', { chat_id: m.chat.id, text: rows.join('\n') || 'Конкурсов нет' })
   }
   if (text === '/start' || text === '/help' || !text) {
-    return tg(env, 'sendMessage', { chat_id: m.chat.id, text: 'Привет! Я бот APEX CLIENT 👋\nВыберите тему или просто напишите вопрос своими словами.', reply_markup: menu() })
+    return tg(env, 'sendMessage', { chat_id: m.chat.id, text: fill(cfg, cfg.greeting), reply_markup: menu(cfg) })
   }
-  const f = findFaq(text)
-  if (f) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: faqText(env, f), disable_web_page_preview: true, reply_markup: { inline_keyboard: [[{ text: '📋 Другие темы', callback_data: 'menu' }], [{ text: '💬 Написать в поддержку', url: support(env) }]] } })
-  return tg(env, 'sendMessage', { chat_id: m.chat.id, text: 'Не нашёл готового ответа 🤔 Выберите тему или напишите в поддержку — там помогут.', reply_markup: { inline_keyboard: [...menu().inline_keyboard, [{ text: '💬 Написать в поддержку', url: support(env) }]] } })
+  const f = findFaq(cfg, text)
+  if (f) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: fill(cfg, f.text), disable_web_page_preview: true, reply_markup: after(cfg) })
+  return tg(env, 'sendMessage', { chat_id: m.chat.id, text: fill(cfg, cfg.notFound), reply_markup: { inline_keyboard: [...menu(cfg).inline_keyboard, [{ text: '💬 Написать в поддержку', url: cfg.support }]] } })
 }
 
 const who = u => u.username ? '@' + u.username : (u.name || 'участник')
@@ -133,11 +162,11 @@ export default {
         if (u.callback_query) {
           const cq = u.callback_query, d = cq.data || ''
           if (d.startsWith('join:')) await join(env, cq, d.slice(5))
-          else if (d === 'menu') { await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id }); await tg(env, 'sendMessage', { chat_id: cq.message.chat.id, text: 'Выберите тему:', reply_markup: menu() }) }
+          else if (d === 'menu') { const cfg = await config(env); await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id }); await tg(env, 'sendMessage', { chat_id: cq.message.chat.id, text: 'Выберите тему:', reply_markup: menu(cfg) }) }
           else if (d.startsWith('faq:')) {
-            const f = FAQ.find(x => x.id === d.slice(4))
+            const cfg = await config(env), f = cfg.topics.find(x => x.id === d.slice(4))
             await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id })
-            if (f) await tg(env, 'sendMessage', { chat_id: cq.message.chat.id, text: faqText(env, f), disable_web_page_preview: true, reply_markup: { inline_keyboard: [[{ text: '📋 Другие темы', callback_data: 'menu' }], [{ text: '💬 Написать в поддержку', url: support(env) }]] } })
+            if (f) await tg(env, 'sendMessage', { chat_id: cq.message.chat.id, text: fill(cfg, f.text), disable_web_page_preview: true, reply_markup: after(cfg) })
           }
         }
       } catch (e) { /* ответим на следующее сообщение; Telegram не должен повторять запрос */ }

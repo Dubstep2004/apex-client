@@ -167,6 +167,13 @@ async function dragRow(p, rowSel, from, to) { // перетащить строк
       if (!r.news) bad(W, '«Что нового в приложении» без меток')
       if (process.env.SHOT2) { await p.evaluate(() => { showTab('home') }); const e1 = await p.$('#appNewsBlock'); if (e1) { await e1.scrollIntoViewIfNeeded(); await e1.screenshot({ path: process.env.SHOT2 + '-news-' + width + '.png' }) } await p.evaluate(() => { showTab('help'); document.querySelector('#pultLog').closest('details').open = true }); const e2 = await p.$('#pultLog'); await e2.scrollIntoViewIfNeeded(); await e2.screenshot({ path: process.env.SHOT2 + '-log-' + width + '.png' }); await p.evaluate(() => showTab('tg')) }
     }
+    // 2.33: тексты бота
+    {
+      const r = await p.evaluate(async () => { await bcLoad(); const n0 = document.querySelectorAll('#bcTopics .bct').length; $('bcAdd').click(); const last = document.querySelector('#bcTopics .bct:last-child'); last.querySelector('[data-f="title"]').value = '🎁 Акции'; last.querySelector('[data-f="words"]').value = 'Акция, скидка'; last.querySelector('[data-f="text"]').value = 'Скоро'; const c = bcCollect(); last.querySelector('[data-mv="-1"]').click(); const moved = bcCollect().topics[n0 - 1].title; return { n0, n: c.topics.length, words: c.topics[c.topics.length - 1].words, moved } })
+      if (!r.n0) bad(W, 'тексты бота не загрузились'); if (r.n !== r.n0 + 1 || r.words.join() !== 'акция,скидка' || r.moved !== '🎁 Акции') bad(W, 'редактор текстов бота: ' + JSON.stringify(r))
+      await p.click('#bcSave'); await p.waitForFunction(() => /бот подхватит/.test(document.querySelector('#toast').textContent), null, { timeout: 8000 }).catch(() => bad(W, 'тексты бота не сохранились'))
+      await p.evaluate(() => bcLoad())
+    }
     // 2.25: список приложений для «Проверки сети»
     {
       const r = await p.evaluate(() => { const old = $('netApps').value; $('netApps').value = 'YouTube | https://www.youtube.com\nVK Видео | https://vkvideo.ru'; const c = collectApp(); let err = ''; $('netApps').value = 'плохо'; try { collectApp() } catch (e) { err = e.message } $('netApps').value = ''; const empty = collectApp(); $('netApps').value = old; return { n: (c.netCheck || []).length, err, emptyKey: 'netCheck' in empty } })
