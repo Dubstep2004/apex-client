@@ -41,7 +41,7 @@ globalThis.fetch = async (url, init = {}) => {
       { update_id: 202, callback_query: { id: 'a2', from: { id: 1 }, data: 'ad:q', message: { chat: { id: 1 }, message_id: 50 } } }, { update_id: 203, callback_query: { id: 'a3', from: { id: 1 }, data: 'ad:qa:1001', message: { chat: { id: 1 }, message_id: 50 } } },
       { update_id: 204, message: msg('Ответ из панели', { id: 1 }) }, { update_id: 205, callback_query: { id: 'a4', from: { id: 1 }, data: 'ad:bc', message: { chat: { id: 1 }, message_id: 50 } } },
       { update_id: 206, message: msg('Рассылка из бота', { id: 1 }) }, { update_id: 207, callback_query: { id: 'a5', from: { id: 1 }, data: 'ad:bcok', message: { chat: { id: 1 }, message_id: 51 } } },
-      { update_id: 208, callback_query: { id: 'a6', from: { id: 88 }, data: 'ad:today', message: { chat: { id: 88 }, message_id: 52 } } }, { update_id: 209, message: msg('🛠 Админ', { id: 88 }) }])
+      { update_id: 208, callback_query: { id: 'a6', from: { id: 88 }, data: 'ad:today', message: { chat: { id: 88 }, message_id: 52 } } }, { update_id: 209, message: msg('🛠 Админ', { id: 88 }) }, { update_id: 210, callback_query: { id: 'u1', from: { id: 1 }, data: 'ad:users', message: { chat: { id: 1 }, message_id: 60 } } }, { update_id: 211, callback_query: { id: 'u2', from: { id: 1 }, data: 'ad:uc:20', message: { chat: { id: 1 }, message_id: 60 } } }, { update_id: 212, callback_query: { id: 'u3', from: { id: 1 }, data: 'ad:ub2:20', message: { chat: { id: 1 }, message_id: 60 } } }, { update_id: 213, callback_query: { id: 'u4', from: { id: 88 }, data: 'ad:ub2:7', message: { chat: { id: 88 }, message_id: 61 } } }])
     if (n < 7) { await new Promise(r => setTimeout(r, 1500)); return ok([]) }
     process.stdout.write('SENT' + JSON.stringify(sent) + '\\n'); process.exit(0) }
   sent.push([m, b.chat_id, b.text || '', b.parse_mode || '', b.from_chat_id, b.callback_query_id === 'c9' ? 77 : 0])
@@ -86,6 +86,9 @@ else {
   if (!sent.some(s => s[0] === 'sendMessage' && /^Рассылка из бота/.test(s[2]) && String(s[1]) !== '1')) fail('панель админа: рассылка из бота не пошла людям')
   if (sent.some(s => s[0] === 'editMessageText' && String(s[1]) === '88')) fail('панель админа открылась у чужого человека')
   if (to(88).some(t => /Панель админа|Вы владелец/.test(t))) fail('чужой «🛠 Админ» что-то показал')
+  if (!sent.some(s => s[0] === 'editMessageText' && /Пользователи бота: \d+/.test(s[2]))) fail('пользователи: список не открылся')
+  if (!sent.some(s => s[0] === 'editMessageText' && /👤 .*\nНомер: 20/.test(s[2]))) fail('пользователи: карточка человека не открылась')
+  { const b = JSON.parse(JSON.parse(fs.readFileSync(path.join(tmp, 'data/kv.json'), 'utf8')).block || '[]'); if (!b.includes(20)) fail('пользователи: «Забанить» не сработал'); if (b.includes(7)) fail('пользователи: чужой человек смог забанить') }
   // Команды владельца у других: не работают и ничего не выдают
   for (const c of ['/settings', '/stats', '/ping', '/contests', '/draw 1', '/help']) if (to(70).concat(to(71)).some(t => /Функции бота|Вопросы за 7|Работаю|Команды владельца|Конкурс|уч\./.test(t))) fail('команда владельца сработала у другого человека: ' + c)
   if (!to(70).some(t => /Такой команды нет/.test(t))) fail('чужой /settings должен получить «такой команды нет»')

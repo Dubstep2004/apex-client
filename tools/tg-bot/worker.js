@@ -25,6 +25,8 @@
 //   его ответ на пересланное сообщение бот отправит человеку; счёт, какие темы спрашивают чаще.
 
 // ЧТО НОВОГО В БОТЕ (пульт показывает это в «Справка» → «Что нового» → «Бот»; V — версия, n/u/f — новое/улучшено/исправлено)
+// V|2.5|16 ноября 2026
+// n|👥 Пользователи: сколько, список по страницам, поиск по номеру, @нику и имени, карточка (когда писал, вопросы, «Помогло?», приглашения), кнопки — написать, забанить и разбанить, отписать от рассылок, удалить данные; /user номер, /users. То же — в пульте
 // V|2.4|16 ноября 2026
 // n|Панель админа на кнопках: кнопка «🛠 Админ» внизу (только у владельца) — сегодня, вопросы (ответить, шаблон, решено, заблокировать), рассылка с предпросмотром, функции, серверы, конкурсы с итогами, статистика, заблокированные, проверка бота
 // V|2.3|16 ноября 2026
@@ -214,9 +216,39 @@ function flooded(uid) {
   if (flood.size > 5000) flood.clear()
   return a.length > 8 ? (a.length === 9 ? 'warn' : 'skip') : ''
 }
-async function remember(env, u) { // кто писал боту — для рассылки (без /stop)
+async function remember(env, u) { // кто писал боту — для рассылки (без /stop) и карточка человека для админа
   const users = await kget(env, 'users', [])
   if (!users.includes(u.id) && !(await kget(env, 'stop', [])).includes(u.id)) { users.push(u.id); await kput(env, 'users', users.slice(-50000)) }
+  // Карточка: пишем не чаще раза в 6 часов (бесплатный Cloudflare KV — 1000 записей в день)
+  const k = 'u:' + u.id, c = await kget(env, k, null)
+  if (!c || now() - (c.last || 0) > 6 * 3600000 || c.name !== (u.first_name || '') || c.un !== (u.username || '')) {
+    await kput(env, k, { id: u.id, name: [u.first_name, u.last_name].filter(Boolean).join(' ').slice(0, 40), un: u.username || '', lang: u.language_code || '', first: c?.first || now(), last: now(), visits: (c?.visits || 0) + 1 })
+  }
+}
+async function userCard(env, id) { // текст карточки и кнопки управления
+  const c = await kget(env, 'u:' + id, null), q = (await kget(env, 'q', [])).filter(x => +x.uid === +id), fb = (await kget(env, 'fbk', [])).filter(f => q.some(x => x.id === f.qid))
+  const blocked = (await kget(env, 'block', [])).includes(+id), stopped = (await kget(env, 'stop', [])).includes(+id), refc = (await kget(env, 'refc', {}))[id] || 0, ref = await kget(env, 'ref:' + id, null)
+  const d = t => t ? new Date(t).toLocaleString('ru', { timeZone: 'Europe/Moscow', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'
+  const text = `👤 ${c?.name || 'без имени'}${c?.un ? ' @' + c.un : ''}\nНомер: ${id}${c?.lang ? ' · язык ' + c.lang : ''}\n\nВпервые: ${d(c?.first)}\nПоследний раз: ${d(c?.last)}\nВопросов в поддержку: ${q.length} (без ответа: ${q.filter(x => !x.ans).length})\n«Помогло?»: 👍 ${fb.filter(f => f.ok).length} · 👎 ${fb.filter(f => !f.ok).length}\nПригласил: ${refc}${ref ? ' · пришёл по приглашению ' + ref : ''}\n\n${blocked ? '🚫 Заблокирован' : '✅ Может писать боту'} · ${stopped ? '🔕 без рассылок' : '🔔 получает рассылки'}`
+  const rows = [[{ text: '✉️ Написать', callback_data: 'ad:um:' + id }, blocked ? { text: '✅ Разбанить', callback_data: 'ad:uu:' + id } : { text: '🚫 Забанить', callback_data: 'ad:ub2:' + id }],
+    [stopped ? { text: '🔔 Вернуть рассылки', callback_data: 'ad:us:' + id } : { text: '🔕 Отписать от рассылок', callback_data: 'ad:us:' + id }, { text: '🗑 Удалить данные', callback_data: 'ad:ud:' + id }], [{ text: '⬅️ К пользователям', callback_data: 'ad:users' }]]
+  return { text, rows }
+}
+async function userAction(env, act, id, text) { // общее для бота и пульта: ban / unban / stop / delete / msg
+  id = +id; if (!id) return { error: 'нет номера' }
+  if (act === 'ban') { const b = await kget(env, 'block', []); if (!b.includes(id)) b.push(id); await kput(env, 'block', b.slice(-5000)) }
+  else if (act === 'unban') await kput(env, 'block', (await kget(env, 'block', [])).filter(x => x !== id))
+  else if (act === 'stop') { const st = await kget(env, 'stop', []), on = st.includes(id); await kput(env, 'stop', on ? st.filter(x => x !== id) : [...st, id].slice(-50000)); const u = await kget(env, 'users', []); if (!on) await kput(env, 'users', u.filter(x => x !== id)); else if (!u.includes(id)) { u.push(id); await kput(env, 'users', u) } }
+  else if (act === 'delete') { await env.APEX_KV?.delete('u:' + id); await kput(env, 'users', (await kget(env, 'users', [])).filter(x => x !== id)); await kput(env, 'q', (await kget(env, 'q', [])).filter(x => +x.uid !== id)) }
+  else if (act === 'msg') { const r = await tg(env, 'sendMessage', { chat_id: id, text: String(text || '').slice(0, 4000), disable_web_page_preview: true }); return r.ok ? { ok: true } : { error: r.description || 'не отправилось' } }
+  else return { error: 'неизвестное действие' }
+  return { ok: true }
+}
+async function userList(env, n = 300) { // последние n человек — для пульта и поиска
+  const ids = (await kget(env, 'users', [])).slice(-n).reverse(), out = []
+  const extra = [...(await kget(env, 'block', [])), ...(await kget(env, 'stop', []))].filter(x => !ids.includes(x)).slice(-50)
+  for (const id of [...ids, ...extra]) { const c = await kget(env, 'u:' + id, null); out.push(c || { id }) }
+  return out
 }
 let latest = { v: '', at: 0 }
 async function latestVersion() {
@@ -297,7 +329,8 @@ const adminKb = () => ({ inline_keyboard: [
   [{ text: '📊 Сегодня', callback_data: 'ad:today' }, { text: '📥 Вопросы', callback_data: 'ad:q' }],
   [{ text: '📣 Рассылка', callback_data: 'ad:bc' }, { text: '⚙️ Функции', callback_data: 'ad:feat' }],
   [{ text: '🛰 Серверы', callback_data: 'ad:status' }, { text: '🎁 Конкурсы', callback_data: 'ad:contests' }],
-  [{ text: '📈 Статистика', callback_data: 'ad:stats' }, { text: '🚫 Заблокированные', callback_data: 'ad:blocked' }],
+  [{ text: '👥 Пользователи', callback_data: 'ad:users' }, { text: '📈 Статистика', callback_data: 'ad:stats' }],
+  [{ text: '🚫 Заблокированные', callback_data: 'ad:blocked' }],
   [{ text: '🏓 Проверка бота', callback_data: 'ad:ping' }]] })
 async function adminMenu(env, cfg, chat, edit) {
   const q = (await kget(env, 'q', [])).filter(x => !x.ans).length
@@ -336,6 +369,21 @@ async function onAdmin(env, cfg, cq, d) {
     const b = await kget(env, 'block', []); if (!b.includes(+x.uid)) b.push(+x.uid); await kput(env, 'block', b.slice(-5000)); await markAnswered(env, x.id, 'заблокирован')
     return adminScreen(env, cfg, chat, mid, `🚫 ${x.name || 'Человек'} заблокирован: его сообщения больше не приходят. Разблокировать — «🚫 Заблокированные».`, [[{ text: '⬅️ К списку', callback_data: 'ad:q' }]])
   }
+  if (act === 'users' || act === 'up') { // список: по 8 на страницу, сначала новые
+    const ids = (await kget(env, 'users', [])).slice().reverse(), page = +arg || 0, pg = ids.slice(page * 8, page * 8 + 8), rows = []
+    for (const id of pg) { const c = await kget(env, 'u:' + id, null); rows.push([{ text: `👤 ${(c?.name || id).toString().slice(0, 22)}${c?.un ? ' @' + c.un.slice(0, 16) : ''}`, callback_data: 'ad:uc:' + id }]) }
+    const nav = []; if (page > 0) nav.push({ text: '◀️', callback_data: 'ad:up:' + (page - 1) }); if ((page + 1) * 8 < ids.length) nav.push({ text: '▶️', callback_data: 'ad:up:' + (page + 1) })
+    return adminScreen(env, cfg, chat, mid, `👥 Пользователи бота: ${ids.length}\nЗаблокировано: ${(await kget(env, 'block', [])).length} · без рассылок: ${(await kget(env, 'stop', [])).length}\n\nСтраница ${page + 1} из ${Math.max(1, Math.ceil(ids.length / 8))} — нажмите на человека:`, [[{ text: '🔎 Найти', callback_data: 'ad:uf' }], ...rows, ...(nav.length ? [nav] : [])])
+  }
+  if (act === 'uc') { const c = await userCard(env, arg); return adminScreen(env, cfg, chat, mid, c.text, c.rows.slice(0, -1).concat([[{ text: '⬅️ К пользователям', callback_data: 'ad:users' }]])) }
+  if (act === 'uf') { await kput(env, 'await', { kind: 'find' }, 1800); return tg(env, 'sendMessage', { chat_id: chat, text: '🔎 Напишите номер, @ник или имя:', reply_markup: { keyboard: [[{ text: '❌ Отмена' }]], resize_keyboard: true } }) }
+  if (act === 'um') { await kput(env, 'await', { kind: 'msg', uid: +arg }, 1800); return tg(env, 'sendMessage', { chat_id: chat, text: '✉️ Напишите сообщение — бот отправит его этому человеку:', reply_markup: { keyboard: [[{ text: '❌ Отмена' }]], resize_keyboard: true } }) }
+  if (['ub2', 'uu', 'us', 'ud'].includes(act)) {
+    if (act === 'ud' && !arg.endsWith('!')) return adminScreen(env, cfg, chat, mid, '🗑 Удалить данные человека (карточку и вопросы)? Это нельзя отменить.', [[{ text: '🗑 Да, удалить', callback_data: 'ad:ud:' + arg + '!' }, { text: 'Нет', callback_data: 'ad:uc:' + arg }]])
+    const id = arg.replace('!', ''); await userAction(env, { ub2: 'ban', uu: 'unban', us: 'stop', ud: 'delete' }[act], id)
+    if (act === 'ud') return adminScreen(env, cfg, chat, mid, '🗑 Данные удалены', [[{ text: '⬅️ К пользователям', callback_data: 'ad:users' }]])
+    return onAdmin(env, await config(env), { ...cq, id: cq.id + 'x' }, 'ad:uc:' + id)
+  }
   if (act === 'blocked') {
     const b = await kget(env, 'block', [])
     return adminScreen(env, cfg, chat, mid, b.length ? `🚫 Заблокировано: ${b.length}. Нажмите, чтобы разблокировать:` : '🚫 Заблокированных нет', b.slice(-8).map(id => [{ text: '✅ Разблокировать ' + id, callback_data: 'ad:ub:' + id }]))
@@ -367,6 +415,12 @@ async function adminInput(env, cfg, chat, wait, text) { // ждали от вл�
     const r = await sendToUser(env, cfg, x.uid, text, x.id)
     return tg(env, 'sendMessage', { chat_id: chat, text: r.ok ? '✅ Ответ отправлен ' + (x.name || '') : '⚠️ Не отправилось: ' + (r.description || 'ошибка'), reply_markup: ADMIN_KB })
   }
+  if (wait.kind === 'find') {
+    const q = text.trim().replace(/^@/, '').toLowerCase(), list = await userList(env, 500)
+    const hits = list.filter(c => String(c.id) === q || (c.un || '').toLowerCase() === q || (c.name || '').toLowerCase().includes(q)).slice(0, 8)
+    return tg(env, 'sendMessage', { chat_id: chat, text: hits.length ? `🔎 Нашлось: ${hits.length}` : '🔎 Никого не нашлось', reply_markup: hits.length ? { inline_keyboard: hits.map(c => [{ text: `👤 ${(c.name || c.id).toString().slice(0, 22)}${c.un ? ' @' + c.un : ''}`, callback_data: 'ad:uc:' + c.id }]) } : ADMIN_KB })
+  }
+  if (wait.kind === 'msg') { const r = await userAction(env, 'msg', wait.uid, text); return tg(env, 'sendMessage', { chat_id: chat, text: r.ok ? '✅ Отправлено' : '⚠️ ' + r.error, reply_markup: ADMIN_KB }) }
   if (wait.kind === 'bc') {
     await kput(env, 'bcdraft', text.slice(0, 3500), 3600)
     await tg(env, 'sendMessage', { chat_id: chat, text: 'Так увидят люди 👇', reply_markup: ADMIN_KB })
@@ -404,6 +458,8 @@ async function onMessage(env, m) {
     return tg(env, 'sendMessage', { chat_id: m.chat.id, text: `🏓 Работаю · ${env.HOST_INFO || 'Cloudflare'}\nПодписчиков бота: ${(await kget(env, 'users', [])).length}\nФункции: ${Object.entries(cfg.features).map(([k, v]) => (v ? '✅' : '▫️') + k).join(' ')}\nОтвет за ${now() - t0} мс` })
   }
   if (owner && (cmd === '/settings' || cmd === '/features')) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: '⚙️ Функции бота — нажмите, чтобы включить или выключить. Действует сразу, пульт и меню сервера это видят.', reply_markup: settingsKb(cfg) })
+  if (owner && cmd === '/user' && /^\d+$/.test(arg || '')) { const c = await userCard(env, arg); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: c.text, reply_markup: { inline_keyboard: c.rows } }) }
+  if (owner && (cmd === '/users')) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: '👥 Пользователи', reply_markup: { inline_keyboard: [[{ text: 'Открыть список', callback_data: 'ad:users' }]] } })
   if (owner && cmd === '/stats') return tg(env, 'sendMessage', { chat_id: m.chat.id, text: await statsText(env, cfg) })
   if (owner && cmd === '/help') return tg(env, 'sendMessage', { chat_id: m.chat.id, text: 'Команды владельца:\n/settings — включить и выключить функции бота\n/ping — работает ли бот\n/stats — какие темы спрашивают за неделю\n/status — состояние серверов\n/news — последние новости\n/contests — конкурсы\n/draw <номер> [победителей] — подвести итоги\nОтветьте на пересланный вопрос (или нажмите ⚡ быстрый ответ) — бот отправит ответ человеку.' })
   if (cmd === '/status' && cfg.features.status) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: await statusText(), disable_web_page_preview: true })
@@ -589,7 +645,8 @@ async function dataExport(env) {
   return { at: now(), host: env.HOST_INFO || 'Cloudflare', users: (await kget(env, 'users', [])).length, stop: (await kget(env, 'stop', [])).length, remind: await kget(env, 'rmd', []),
     q: await kget(env, 'q', []), stats: st, fb: await kget(env, 'fbk', []), cmp: (await kget(env, 'cmp', [])).map(x => ({ name: x.name, at: x.at })), spam: await kget(env, 'spam', 0),
     broadcast: bc && { id: cfg.broadcast.id, ok: bc.ok, fail: bc.fail, done: !!bc.done }, polls: await kget(env, 'pollres', {}),
-    refs: Object.entries(refc).sort((a, b) => b[1] - a[1]).slice(0, 20), features: cfg.features, fover: await kget(env, 'fover', {}) }
+    refs: Object.entries(refc).sort((a, b) => b[1] - a[1]).slice(0, 20), features: cfg.features, fover: await kget(env, 'fover', {}),
+    ulist: await userList(env, 300), block: await kget(env, 'block', []), stopl: (await kget(env, 'stop', [])).slice(-500) }
 }
 async function hmac(secret, msg) { const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']); return [...new Uint8Array(await crypto.subtle.sign('HMAC', k, new TextEncoder().encode(msg)))].map(b => b.toString(16).padStart(2, '0')).join('') }
 async function seal(secret, obj) { // AES-GCM, ключ = SHA-256('apex-bot:' + слово) — то же делает робот
@@ -623,6 +680,11 @@ export default {
     if (url.pathname === '/api/data' && req.method === 'POST') {
       if (!await okSig(env, req)) return json({ error: 'forbidden' }, 403)
       return json(await seal(env.WEBHOOK_SECRET, await dataExport(env)))
+    }
+    if (url.pathname === '/api/admin' && req.method === 'POST') { // управление людьми из пульта (через робота)
+      if (!await okSig(env, req)) return json({ error: 'forbidden' }, 403)
+      const b = await req.json().catch(() => ({}))
+      return json(await userAction(env, String(b.act || ''), b.uid, b.text))
     }
     if (url.pathname === '/api/reply' && req.method === 'POST') {
       if (!await okSig(env, req)) return json({ error: 'forbidden' }, 403)

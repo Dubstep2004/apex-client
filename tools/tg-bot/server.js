@@ -129,7 +129,7 @@ if (port > 0 && process.env.WEBHOOK_SECRET) {
     try {
       const chunks = []; let size = 0
       for await (const c of req) { size += c.length; if (size > 65536) { res.writeHead(413).end(); return } chunks.push(c) }
-      if (!(['/api/data', '/api/reply', '/api/draw'].includes(req.url) && req.method === 'POST')) { res.writeHead(404).end(); return }
+      if (!(['/api/data', '/api/reply', '/api/draw', '/api/admin'].includes(req.url) && req.method === 'POST')) { res.writeHead(404).end(); return }
       const h = {}; for (const k of ['x-key', 'x-ts', 'x-sig']) h[k] = String(req.headers[k] || '')
       const r = await worker.fetch(new Request('http://localhost' + req.url, { method: 'POST', headers: { ...h, 'content-type': 'application/json' }, body: Buffer.concat(chunks) }), env)
       res.writeHead(r.status, { 'content-type': 'application/json' }).end(await r.text())
