@@ -25,6 +25,8 @@
 //   его ответ на пересланное сообщение бот отправит человеку; счёт, какие темы спрашивают чаще.
 
 // ЧТО НОВОГО В БОТЕ (пульт показывает это в «Справка» → «Что нового» → «Бот»; V — версия, n/u/f — новое/улучшено/исправлено)
+// V|3.4|16 ноября 2026
+// u|«🛠 Админ» по разделам: «📊 Сводки и контроль», «👥 Работа с людьми», «📣 Рассылки и канал», «⚙️ Управление ботом»; «📥 Вопросы» и «📊 Сегодня» — сразу сверху
 // V|3.3|16 ноября 2026
 // u|Функции бота — по разделам: «Админ и сводки», «Ответы людям», «Помощники», «Команды», «Рассылки и канал», «Конкурсы», «Группа», «Защита и прочее»; у раздела видно, сколько включено. В /settings, «⚙️ Функции» и меню сервера
 // V|3.2|16 ноября 2026
@@ -448,15 +450,12 @@ async function topScreen(env, cfg) { // частые вопросы + отвеч
 // ── Панель админа: всё кнопками. Видна и работает только у владельца (OWNER_ID)
 const ADMIN_KB = { keyboard: [[{ text: '🛠 Админ' }]], resize_keyboard: true, is_persistent: true }
 const back = [{ text: '⬅️ Назад', callback_data: 'ad:menu' }]
-const adminKb = () => ({ inline_keyboard: [
-  [{ text: '📊 Сегодня', callback_data: 'ad:today' }, { text: '📥 Вопросы', callback_data: 'ad:q' }],
-  [{ text: '📣 Рассылка', callback_data: 'ad:bc' }, { text: '📊 Опрос', callback_data: 'ad:poll' }],
-  [{ text: '📊 Итоги опросов', callback_data: 'ad:pres' }, { text: '⚙️ Функции', callback_data: 'ad:feat' }],
-  [{ text: '🛰 Серверы', callback_data: 'ad:status' }, { text: '🎁 Конкурсы', callback_data: 'ad:contests' }],
-  [{ text: '👥 Пользователи', callback_data: 'ad:users' }, { text: '🔥 Частые вопросы', callback_data: 'ad:stats' }],
-  [{ text: '📢 Пост в канал', callback_data: 'ad:post' }, { text: '💾 Копия данных', callback_data: 'ad:backup' }],
-  [{ text: '🚫 Заблокированные', callback_data: 'ad:blocked' }, { text: '🖥 Система и ошибки', callback_data: 'ad:sys' }],
-  [{ text: '🛟 Помощники', callback_data: 'ad:helpers' }, { text: '🏓 Проверка бота', callback_data: 'ad:ping' }]] })
+const ADMIN_SECS = { // «🛠 Админ» по разделам
+  rep: ['📊 Сводки и контроль', [[{ text: '📊 Сегодня', callback_data: 'ad:today' }, { text: '🔥 Частые вопросы', callback_data: 'ad:stats' }], [{ text: '🛰 Серверы', callback_data: 'ad:status' }, { text: '🖥 Система и ошибки', callback_data: 'ad:sys' }], [{ text: '🏓 Проверка бота', callback_data: 'ad:ping' }]]],
+  ppl: ['👥 Работа с людьми', [[{ text: '📥 Вопросы', callback_data: 'ad:q' }, { text: '👥 Пользователи', callback_data: 'ad:users' }], [{ text: '🚫 Заблокированные', callback_data: 'ad:blocked' }, { text: '🛟 Помощники', callback_data: 'ad:helpers' }]]],
+  bc: ['📣 Рассылки и канал', [[{ text: '📣 Рассылка', callback_data: 'ad:bc' }, { text: '📊 Опрос', callback_data: 'ad:poll' }], [{ text: '📊 Итоги опросов', callback_data: 'ad:pres' }, { text: '📢 Пост в канал', callback_data: 'ad:post' }], [{ text: '🎁 Конкурсы', callback_data: 'ad:contests' }]]],
+  bot: ['⚙️ Управление ботом', [[{ text: '⚙️ Функции', callback_data: 'ad:feat' }, { text: '💾 Копия данных', callback_data: 'ad:backup' }], [{ text: '🧩 Темы из бота', callback_data: 'ad:kt' }]]] }
+const adminKb = () => ({ inline_keyboard: [[{ text: '📥 Вопросы', callback_data: 'ad:q' }, { text: '📊 Сегодня', callback_data: 'ad:today' }], ...Object.entries(ADMIN_SECS).map(([k, v]) => [{ text: v[0], callback_data: 'ad:sec:' + k }])] })
 async function adminMenu(env, cfg, chat, edit) {
   const q = (await kget(env, 'q', [])).filter(x => !x.ans).length
   const text = `🛠 Панель админа\n\nЖдут ответа: ${q}\nНажмите кнопку 👇`
@@ -485,6 +484,7 @@ async function onAdmin(env, cfg, cq, d) {
   }
   if (act === 'hdel') { await kput(env, 'helpers', (await kget(env, 'helpers', [])).filter(h => +h.id !== +arg)); await kput(env, 'await:' + arg, null); await tg(env, 'sendMessage', { chat_id: +arg, text: 'Вы больше не помощник поддержки. Спасибо за помощь! 🙌', reply_markup: { remove_keyboard: true } }); return onAdmin(env, cfg, { ...cq, id: cq.id + 'x' }, 'ad:helpers') }
   if (act === 'menu') return adminMenu(env, cfg, chat, mid)
+  if (act === 'sec' && ADMIN_SECS[arg]) return adminScreen(env, cfg, chat, mid, ADMIN_SECS[arg][0] + '\n\nВыберите 👇', ADMIN_SECS[arg][1])
   if (act === 'today') {
     const day = new Date().toISOString().slice(0, 10), st = await kget(env, 'st:' + day, {}), q = await kget(env, 'q', [])
     const today = Object.values(st).reduce((a, b) => a + b, 0), cmp = (await kget(env, 'cmp', [])).filter(x => now() - x.at < 86400000)
