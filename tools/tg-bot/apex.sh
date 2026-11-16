@@ -7,6 +7,7 @@
 # Потом меню открывается командой:  sudo apex
 # Без меню:  apex install | update | restart | stop | start | status | logs | errors | backup | import <файл> | self-update | uninstall | remove
 set -uo pipefail
+export LC_ALL=C.UTF-8 2>/dev/null  # русские буквы — по одной, а не по байтам
 
 APEX_VER="1.1"
 SRC="https://raw.githubusercontent.com/Dubstep2004/apex-client/main/tools/tg-bot"
@@ -21,8 +22,9 @@ BACKUPS=${APEX_BACKUPS:-/root/apex-bot-backups}
 if [ -t 1 ]; then
   R=$'\e[0m'; B=$'\e[1m'; D=$'\e[2m'; I=$'\e[3m'
   C1=$'\e[38;5;43m'; C2=$'\e[38;5;79m'; C3=$'\e[38;5;115m'   # бирюзовый → зелёный, как в приложении
+  NEW=$'\e[38;5;78m'; IMP=$'\e[38;5;141m'; FIX=$'\e[38;5;75m'; BGN=$'\e[48;5;22m'; BGI=$'\e[48;5;54m'; BGF=$'\e[48;5;24m'
   OK=$'\e[38;5;78m'; WR=$'\e[38;5;221m'; BD=$'\e[38;5;203m'; DIM=$'\e[38;5;245m'; ACC=$'\e[38;5;117m'
-else R= B= D= I= C1= C2= C3= OK= WR= BD= DIM= ACC=; fi
+else R= B= D= I= C1= C2= C3= OK= WR= BD= DIM= ACC= NEW= IMP= FIX= BGN= BGI= BGF=; fi
 TTY=/dev/tty; { : <"$TTY"; } 2>/dev/null || TTY=/dev/stdin   # нет терминала (скрипт, таймер) — читаем stdin
 
 say()  { printf '%s\n' "$*"; }
@@ -78,6 +80,48 @@ banner() {
 dur() { local s=$1 d h m; d=$((s/86400)); h=$((s%86400/3600)); m=$((s%3600/60)); if [ $d -gt 0 ]; then echo "${d} д ${h} ч"; elif [ $h -gt 0 ]; then echo "${h} ч ${m} мин"; else echo "${m} мин"; fi; }
 section() { printf '   %s%s%s\n' "$DIM" "$1" "$R"; }
 item()    { printf '   %s%3s%s  %s%s%s\n' "$ACC$B" "$1" "$R" "${3:-}" "$2" "$R"; }
+
+# ── Что нового ─────────────────────────────────────────────────────
+# Строки: «V|версия|дата» — заголовок; «n|текст» — новое, «u|…» — улучшено, «f|…» — исправлено.
+CHANGES='V|1.1|16 ноября 2026
+n|Раздел «Включить / выключить»: уведомления, автообновление, копия в 4:00, запуск вместе с сервером — видно, что включено
+n|Связь с Telegram и прокси: проверка, открывается ли Telegram с сервера, и HTTP-прокси, если нет
+n|Журнал только с ошибками за сутки — красным
+n|Резервная копия каждый день в 4:00, хранятся 10 последних
+n|Перенос бота на другой сервер: копия, команда для копирования и восстановление на новом месте
+n|Бот: /status — состояние серверов, ответы на английском, вопросы без ответа — вам в личку, /stats и /ping
+n|Что нового — этот экран
+u|Восстановление принимает копию с другого сервера, даже если бот там ещё не стоит
+V|1.0|16 ноября 2026
+n|Меню «APEX ШТАБ»: установить, обновить, перезапустить, журнал, токен, номер владельца, уведомления, копии, удалить бота и меню'
+chip() { case $1 in n) printf '%s%s %s %s' "$BGN" "$NEW$B" "● Новое" "$R";; u) printf '%s%s %s %s' "$BGI" "$IMP$B" "● Улучшено" "$R";; f) printf '%s%s %s %s' "$BGF" "$FIX$B" "● Исправлено" "$R";; esac; }
+do_news() {
+  local only=${1:-} kind ver date line last="" shown=0
+  [ -z "$only" ] && step "Что нового в APEX ШТАБ"
+  while IFS= read -r line; do
+    kind=${line%%|*}; line=${line#*|}
+    if [ "$kind" = V ]; then
+      ver=${line%%|*}; date=${line#*|}
+      [ -n "$only" ] && [ "$ver" != "$only" ] && { shown=$((shown + 1)); continue; }
+      [ -n "$only" ] || [ $shown -lt 3 ] || break
+      shown=$((shown + 1)); last=""
+      local tag=""; [ "$ver" = "$APEX_VER" ] && tag="  ${OK}${B}✓ установлена${R}"
+      say ""; say "  ${C1}┃${R} ${B}Версия $ver${R}$tag   ${DIM}$date${R}"
+      continue
+    fi
+    [ -n "$only" ] && [ "$ver" != "$only" ] && continue
+    if [ "$kind" != "$last" ]; then say "  ${C1}┃${R}"; say "  ${C1}┃${R} $(chip "$kind")"; last=$kind; fi
+    local c=$NEW; [ "$kind" = u ] && c=$IMP; [ "$kind" = f ] && c=$FIX
+    local first=1 cur="" w
+    for w in $line; do  # перенос по словам: ${#} считает буквы (UTF-8), а не байты, как fold
+      if [ -n "$cur" ] && [ $(( ${#cur} + ${#w} + 1 )) -gt 60 ]; then
+        if [ $first = 1 ]; then say "  ${C1}┃${R}  ${c}•${R} $cur"; first=0; else say "  ${C1}┃${R}    $cur"; fi; cur=$w
+      else cur=${cur:+$cur }$w; fi
+    done
+    if [ $first = 1 ]; then say "  ${C1}┃${R}  ${c}•${R} $cur"; else say "  ${C1}┃${R}    $cur"; fi
+  done <<<"$CHANGES"
+  say ""
+}
 
 # ── Действия ───────────────────────────────────────────────────────
 do_install() {
@@ -162,7 +206,10 @@ do_self_update() {
   need_root; step "Обновление меню"
   local tmp; tmp=$(mktemp)
   curl -fsSL -m 30 "$SRC/apex.sh" -o "$tmp" && bash -n "$tmp" || { err "Не скачалось"; rm -f "$tmp"; return 1; }
-  install -m 755 "$tmp" "$SELF"; rm -f "$tmp"; ok "Меню обновлено — откройте снова: sudo apex"; exit 0
+  local nv; nv=$(sed -n 's/^APEX_VER="\(.*\)"/\1/p' "$tmp" | head -1)
+  install -m 755 "$tmp" "$SELF"; rm -f "$tmp"
+  if [ "$nv" != "$APEX_VER" ]; then ok "Меню обновлено: $APEX_VER → $nv"; "$SELF" news "$nv"; else ok "Уже последняя версия меню"; fi
+  exit 0
 }
 do_status() {
   step "Проверка"
@@ -332,6 +379,7 @@ menu_missing() {
   item 18 "Восстановить из копии ${DIM}(перенос с другого сервера)${R}"
   section "Меню"
   item 15 "Обновить меню"
+  item 22 "Что нового"
   item 21 "Удалить меню"
   item 0 "Выход" "$DIM"
   say ""
@@ -357,6 +405,7 @@ menu_full() {
   section "Обновления"
   item 14 "Обновить бота"
   item 15 "Обновить меню"
+  item 22 "Что нового ${DIM}· версия $APEX_VER${R}"
   section "Копии и перенос"
   item 16 "Список конкурсов"
   item 17 "Сделать резервную копию"
@@ -377,7 +426,7 @@ main_menu() {
     local c; c=$(ask "${B}Выберите пункт:${R} ")
     say ""
     if ! installed; then
-      case "$c" in 1) do_install ;; 18) do_restore ;; 15) do_self_update ;; 21) do_remove_menu ;; 0|q|"") exit 0 ;; *) warn "Нет такого пункта" ;; esac
+      case "$c" in 1) do_install ;; 18) do_restore ;; 15) do_self_update ;; 22) do_news ;; 21) do_remove_menu ;; 0|q|"") exit 0 ;; *) warn "Нет такого пункта" ;; esac
       pause; continue
     fi
     case "$c" in
@@ -402,6 +451,7 @@ main_menu() {
       19) do_move ;;
       20) do_uninstall ;;
       21) do_remove_menu ;;
+      22) do_news ;;
       0|q|"") clear 2>/dev/null; exit 0 ;;
       *) warn "Нет такого пункта" ;;
     esac
@@ -431,6 +481,7 @@ case "${1:-}" in
   status) do_status ;;
   logs) do_logs ;;
   errors) do_errors ;;
+  news) do_news "${2:-}" ;;
   import) need_root; [ -f "${2:-}" ] || { err "Укажите файл: apex import /root/apex-bot-….tar.gz"; exit 1; }; restore_file "$2" ;;
   backup) do_backup ;;
   uninstall) do_uninstall ;;
