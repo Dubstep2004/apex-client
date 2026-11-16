@@ -25,6 +25,9 @@
 //   его ответ на пересланное сообщение бот отправит человеку; счёт, какие темы спрашивают чаще.
 
 // ЧТО НОВОГО В БОТЕ (пульт показывает это в «Справка» → «Что нового» → «Бот»; V — версия, n/u/f — новое/улучшено/исправлено)
+// V|2.7|16 ноября 2026
+// n|«📊 Опрос» в «🛠 Админ»: вопрос и варианты одним сообщением, предпросмотр, отправка всем; «📊 Итоги опросов» — голоса и проценты
+// n|Шаблон ответа с правкой: «✏️» рядом с шаблоном — бот покажет текст, вы поправите и отправите
 // V|2.6|16 ноября 2026
 // n|/today — сводка за сутки (вопросы, ждут ответа, новые люди, жалобы, спам); утренняя сводка в 9:00 сама (вкл/выкл); /queue — вопросы без ответа кнопками; /top — частые вопросы и «➕ Сделать темой» из отвеченного вопроса: бот сам отвечает так же на похожие
 // V|2.5|16 ноября 2026
@@ -343,7 +346,8 @@ const ADMIN_KB = { keyboard: [[{ text: '🛠 Админ' }]], resize_keyboard: t
 const back = [{ text: '⬅️ Назад', callback_data: 'ad:menu' }]
 const adminKb = () => ({ inline_keyboard: [
   [{ text: '📊 Сегодня', callback_data: 'ad:today' }, { text: '📥 Вопросы', callback_data: 'ad:q' }],
-  [{ text: '📣 Рассылка', callback_data: 'ad:bc' }, { text: '⚙️ Функции', callback_data: 'ad:feat' }],
+  [{ text: '📣 Рассылка', callback_data: 'ad:bc' }, { text: '📊 Опрос', callback_data: 'ad:poll' }],
+  [{ text: '📊 Итоги опросов', callback_data: 'ad:pres' }, { text: '⚙️ Функции', callback_data: 'ad:feat' }],
   [{ text: '🛰 Серверы', callback_data: 'ad:status' }, { text: '🎁 Конкурсы', callback_data: 'ad:contests' }],
   [{ text: '👥 Пользователи', callback_data: 'ad:users' }, { text: '🔥 Частые вопросы', callback_data: 'ad:stats' }],
   [{ text: '🚫 Заблокированные', callback_data: 'ad:blocked' }],
@@ -378,7 +382,13 @@ async function onAdmin(env, cfg, cq, d) {
       [[{ text: '✍️ Ответить', callback_data: 'ad:qa:' + x.id }, { text: '⚡ Шаблон', callback_data: 'ad:qt:' + x.id }], [{ text: '✓ Решено', callback_data: 'ad:qd:' + x.id }, { text: '🚫 Заблокировать', callback_data: 'ad:qb:' + x.id }], [{ text: '⬅️ К списку', callback_data: 'ad:q' }]])
   }
   if (act === 'qa') { await kput(env, 'await', { kind: 'reply', qid: +arg }, 1800); return tg(env, 'sendMessage', { chat_id: chat, text: '✍️ Напишите ответ следующим сообщением — бот отправит его человеку.', reply_markup: { keyboard: [[{ text: '❌ Отмена' }]], resize_keyboard: true } }) }
-  if (act === 'qt') return adminScreen(env, cfg, chat, mid, '⚡ Выберите шаблон ответа:\n\n' + cfg.quick.map((t, i) => `${i + 1}. ${fill(cfg, t)}`).join('\n'), [...cfg.quick.map((t, i) => [{ text: `${i + 1}. ${t.slice(0, 35)}`, callback_data: `qr:${i}:${arg}` }]), [{ text: '⬅️ К вопросу', callback_data: 'ad:qo:' + arg }]])
+  if (act === 'qt') return adminScreen(env, cfg, chat, mid, '⚡ Выберите шаблон ответа: «1.» — отправить сразу, «✏️» — поправить перед отправкой\n\n' + cfg.quick.map((t, i) => `${i + 1}. ${fill(cfg, t)}`).join('\n'), [...cfg.quick.map((t, i) => [{ text: `${i + 1}. ${t.slice(0, 30)}`, callback_data: `qr:${i}:${arg}` }, { text: '✏️ ' + (i + 1), callback_data: `ad:qe:${i}_${arg}` }]), [{ text: '⬅️ К вопросу', callback_data: 'ad:qo:' + arg }]])
+  if (act === 'qe') { // шаблон с правкой: показать текст, владелец копирует, правит и отправляет
+    const [i, qid] = String(arg).split('_').map(Number), t = cfg.quick[i]; if (t == null) return adminScreen(env, cfg, chat, mid, 'Шаблон не найден')
+    await kput(env, 'await', { kind: 'reply', qid }, 1800)
+    await tg(env, 'sendMessage', { chat_id: chat, text: '✏️ Скопируйте шаблон ниже, поправьте и отправьте следующим сообщением — бот передаст человеку.', reply_markup: { keyboard: [[{ text: '❌ Отмена' }]], resize_keyboard: true } })
+    return tg(env, 'sendMessage', { chat_id: chat, text: fill(cfg, t) })
+  }
   if (act === 'qd') { await markAnswered(env, +arg, 'решено без ответа'); return onAdmin(env, cfg, { ...cq, id: cq.id + 'x' }, 'ad:q') }
   if (act === 'qb') {
     const x = (await kget(env, 'q', [])).find(y => y.id === +arg); if (!x) return
@@ -430,7 +440,23 @@ async function onAdmin(env, cfg, cq, d) {
     await kput(env, 'bcadm', { id: 'a' + now().toString(36), text: draft }); await kput(env, 'bcdraft', null)
     return adminScreen(env, cfg, chat, mid, '✅ Рассылка запущена — бот отправляет по 25 человек в минуту.')
   }
-  if (act === 'bcno') { await kput(env, 'bcdraft', null); return adminMenu(env, cfg, chat, mid) }
+  if (act === 'bcno') { await kput(env, 'bcdraft', null); await kput(env, 'polldraft', null); return adminMenu(env, cfg, chat, mid) }
+  if (act === 'poll') { // опрос из бота: вопрос и варианты одним сообщением
+    if (!cfg.features.polls) return adminScreen(env, cfg, chat, mid, '📊 Опросы выключены — включите в «⚙️ Функции»')
+    await kput(env, 'await', { kind: 'poll' }, 1800)
+    return tg(env, 'sendMessage', { chat_id: chat, text: `📊 Опрос всем, кто писал боту (${(await kget(env, 'users', [])).length} чел.).\nНапишите одним сообщением: первая строка — вопрос, следующие — варианты (от 2 до 10). Например:\n\nКак работает приложение?\nОтлично\nИногда тормозит\nНе подключается`, reply_markup: { keyboard: [[{ text: '❌ Отмена' }]], resize_keyboard: true } })
+  }
+  if (act === 'pok') {
+    const p = await kget(env, 'polldraft', null); if (!p) return adminScreen(env, cfg, chat, mid, 'Черновик опроса устарел — начните заново')
+    await kput(env, 'polladm', { id: 'p' + now().toString(36), poll: p }); await kput(env, 'polldraft', null)
+    return adminScreen(env, cfg, chat, mid, '✅ Опрос запущен — бот отправляет по 25 человек в минуту. Итоги — «📊 Итоги опросов».', [[{ text: '📊 Итоги опросов', callback_data: 'ad:pres' }]])
+  }
+  if (act === 'pres') { // итоги: голоса из всех копий опроса складываем по вопросу
+    const by = {}
+    for (const r of Object.values(await kget(env, 'pollres', {}))) { const x = by[r.q] ||= { at: 0, o: {} }; x.at = Math.max(x.at, r.at || 0); for (const [t, c] of r.o) x.o[t] = (x.o[t] || 0) + c }
+    const list = Object.entries(by).sort((a, b) => b[1].at - a[1].at).slice(0, 5)
+    return adminScreen(env, cfg, chat, mid, list.length ? '📊 Итоги опросов\n\n' + list.map(([q, x]) => { const sum = Object.values(x.o).reduce((a, b) => a + b, 0) || 1; return `❓ ${q}\n` + Object.entries(x.o).map(([t, c]) => `  ${t} — ${c} (${Math.round(c * 100 / sum)}%)`).join('\n') }).join('\n\n') : '📊 Голосов пока нет', [[{ text: '🔄 Обновить', callback_data: 'ad:pres' }]])
+  }
 }
 async function adminInput(env, cfg, chat, wait, text) { // ждали от владельца текст: ответ человеку или рассылку
   await kput(env, 'await', null)
@@ -445,6 +471,14 @@ async function adminInput(env, cfg, chat, wait, text) { // ждали от вл�
     return tg(env, 'sendMessage', { chat_id: chat, text: hits.length ? `🔎 Нашлось: ${hits.length}` : '🔎 Никого не нашлось', reply_markup: hits.length ? { inline_keyboard: hits.map(c => [{ text: `👤 ${(c.name || c.id).toString().slice(0, 22)}${c.un ? ' @' + c.un : ''}`, callback_data: 'ad:uc:' + c.id }]) } : ADMIN_KB })
   }
   if (wait.kind === 'msg') { const r = await userAction(env, 'msg', wait.uid, text); return tg(env, 'sendMessage', { chat_id: chat, text: r.ok ? '✅ Отправлено' : '⚠️ ' + r.error, reply_markup: ADMIN_KB }) }
+  if (wait.kind === 'poll') {
+    const [q, ...opts] = text.split('\n').map(x => x.trim()).filter(Boolean), options = [...new Set(opts)].slice(0, 10)
+    if (!q || options.length < 2) return tg(env, 'sendMessage', { chat_id: chat, text: '⚠️ Нужно: первая строка — вопрос, дальше хотя бы 2 варианта. Нажмите «📊 Опрос» ещё раз.', reply_markup: ADMIN_KB })
+    const p = { q: q.slice(0, 300), options: options.map(o => o.slice(0, 100)) }; await kput(env, 'polldraft', p, 3600)
+    await tg(env, 'sendMessage', { chat_id: chat, text: 'Так увидят люди 👇', reply_markup: ADMIN_KB })
+    await tg(env, 'sendPoll', { chat_id: chat, question: p.q, options: p.options.map(o => ({ text: o })), is_anonymous: true })
+    return tg(env, 'sendMessage', { chat_id: chat, text: `Отправить опрос всем (${(await kget(env, 'users', [])).length} чел.)?`, reply_markup: { inline_keyboard: [[{ text: '✅ Отправить всем', callback_data: 'ad:pok' }, { text: '❌ Отмена', callback_data: 'ad:bcno' }]] } })
+  }
   if (wait.kind === 'bc') {
     await kput(env, 'bcdraft', text.slice(0, 3500), 3600)
     await tg(env, 'sendMessage', { chat_id: chat, text: 'Так увидят люди 👇', reply_markup: ADMIN_KB })
@@ -653,14 +687,15 @@ export async function tick(env, force) {
   }
   if (ch) await kput(env, 'fu', fu)
   // Рассылка / опрос из пульта: по 25 человек за раз (у Cloudflare лимит запросов), продолжаем на следующем шаге
-  for (const bc of [cfg.broadcast, await kget(env, 'bcadm', null)]) if (bc && cfg.features.broadcast) {
+  let bcBusy = false // за один шаг — не больше одной рассылки (лимит запросов Cloudflare)
+  for (const bc of [cfg.broadcast, await kget(env, 'bcadm', null), await kget(env, 'polladm', null)]) if (bc && cfg.features.broadcast && !bcBusy) {
     const k = 'bc:' + bc.id, st = await kget(env, k, { i: 0, ok: 0, fail: 0, polls: [] })
     const users = await kget(env, 'users', [])
     if (bc.poll && !cfg.features.polls) st.done = true
-    if (!st.done && (!bc.at || bc.at <= now())) {
+    if (!st.done && (!bc.at || bc.at <= now())) { bcBusy = true
       for (const uid of users.slice(st.i, st.i + 25)) {
         const r = bc.poll ? await tg(env, 'sendPoll', { chat_id: uid, question: String(bc.poll.q).slice(0, 300), options: bc.poll.options.slice(0, 10).map(o => ({ text: String(o).slice(0, 100) })), is_anonymous: true }) : await tg(env, 'sendMessage', { chat_id: uid, text: fill(cfg, String(bc.text)).slice(0, 4000) + '\n\n/stop — не получать рассылки', disable_web_page_preview: true })
-        if (r.ok) { st.ok++; if (bc.poll) st.polls.push(r.result.poll.id) } else st.fail++
+        if (r.ok) { st.ok++; if (bc.poll && r.result?.poll?.id) st.polls.push(r.result.poll.id); st.polls = st.polls.slice(-500) } else st.fail++
       }
       st.i += 25; if (st.i >= users.length) { st.done = true; st.at = now() }
       await kput(env, k, st)
