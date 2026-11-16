@@ -65,6 +65,8 @@ object AppConfigJson {
             features = feats?.keys()?.asSequence()?.associate { it to feats.optBoolean(it, true) }.orEmpty(),
             announce = an,
             previewCode = o.optString("previewCode"),
+            rulesHours = o.optJSONObject("rules")?.optInt("hours", 0)?.takeIf { it in listOf(6, 12, 24, 168) } ?: 0,
+            rulesForceAt = o.optJSONObject("rules")?.optLong("forceAt", 0)?.takeIf { it in 1..(System.currentTimeMillis() + 86_400_000) } ?: 0,
             netApps = o.optJSONArray("netCheck")?.let { a ->
                 (0 until a.length()).mapNotNull { i -> a.optJSONObject(i) }
                     .map { it.optString("name").trim().take(30) to it.optString("url").trim() }

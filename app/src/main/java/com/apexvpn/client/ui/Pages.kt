@@ -2095,6 +2095,9 @@ private fun AdvancedPage(viewModel: MainViewModel, onBack: () -> Unit) {
                     append("Проверено: ${formatAgo(ri?.checkedAt ?: 0)}")
                     if (ri != null && ri.source.isNotEmpty()) append("\nИсточник: ${com.apexvpn.client.data.RulesUpdater.sourceTitle(ri.source)}")
                     ri?.error?.let { append("\nПоследняя ошибка: $it") }
+                    val ac = com.apexvpn.client.data.AppConfig.value
+                    if (!ac.on("rulesAuto")) append("\nАвтообновление сейчас выключено поддержкой — обновляйте кнопкой")
+                    else if (ac.rulesHours > 0) append("\nПроверка: ${if (ac.rulesHours == 168) "раз в неделю" else if (ac.rulesHours == 24) "раз в сутки" else "каждые ${ac.rulesHours} ч"} (настроено поддержкой)")
                 },
             )
         }

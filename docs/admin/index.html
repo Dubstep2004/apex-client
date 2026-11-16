@@ -791,9 +791,25 @@
 
     <!-- Функции -->
     <section data-tab="features" hidden>
-      <h1>Экстренное выключение</h1>
-      <p class="lead">Если функция сломалась, выключите её у всех, пока готовите исправление.</p>
-      <div class="block" id="feats"></div>
+      <h1>Функции и базы сайтов</h1>
+      <p class="lead">Включайте и выключайте функции у всех сразу и настраивайте, как телефоны обновляют базы сайтов. Изменения уходят после «Опубликовать».</p>
+      <div class="block"><h2>🛑 Экстренное выключение</h2><p class="help">Если функция сломалась, выключите её у всех, пока готовите исправление.</p><div id="feats"></div></div>
+      <div class="block"><h2>🔄 Автообновление баз</h2>
+        <div id="featsRules"></div>
+        <label class="f" for="rHours">Как часто телефоны проверяют базы</label>
+        <select id="rHours"><option value="0">Как выбрал человек в приложении (по умолчанию — раз в сутки)</option><option value="6">Каждые 6 часов</option><option value="12">Каждые 12 часов</option><option value="24">Раз в сутки</option><option value="168">Раз в неделю</option></select>
+        <p class="help">Качаются только изменившиеся базы, поэтому частая проверка почти не тратит трафик. Приложение проверяет при запуске и каждые полчаса, пока VPN включён (с версии 3.22.2).</p>
+        <div class="rowx" style="gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn quiet small" id="rForce" type="button">⚡ Обновить базы у всех сейчас</button><span class="help" id="rForceInfo"></span></div>
+      </div>
+      <div class="block"><h2>🧱 Какие базы включены</h2><p class="help">Дополнительные базы можно выключить у всех — например, если какой-то сайт ошибочно попал в список.</p><div id="featsSets"></div></div>
+      <div class="block"><h2>🏭 Сборка баз на GitHub</h2>
+        <p class="help">Робот каждый день в 06:23 МСК берёт свежие официальные базы и HaGeZi, проверяет и выкладывает в ветку «rules». Телефоны качают оттуда.</p>
+        <div id="rBuild" class="help">Загружаю…</div>
+        <div class="rowx" style="gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn quiet small" id="rRebuild" type="button">🏭 Собрать базы сейчас</button><button class="btn quiet small" id="rReload" type="button">🔄 Обновить</button></div>
+        <label class="f" for="rSort" style="margin-top:12px">Сортировка баз</label>
+        <select id="rSort"><option value="name">По названию</option><option value="count">По количеству записей</option><option value="size">По размеру</option></select>
+        <div id="rFiles" style="margin-top:8px"></div>
+      </div>
     </section>
 
     <!-- Предпросмотр -->
@@ -1162,7 +1178,7 @@
         <p class="note">Для второго человека: в этом браузере остаются только «Обзор», «Баннеры», «Объявление», «Telegram» и «Справка» — серверы, обновления и настройки скрыты.</p>
         <label class="sw"><div class="t"><b>Режим помощника в этом браузере</b><span>Выключается здесь же</span></div><span class="tog"><input type="checkbox" id="helperOn"><i></i></span></label>
         <p class="help">Это удобство, а не защита: настоящие права даёт GitHub. Помощнику — свой токен: github.com → Settings → Developer settings → Fine-grained tokens → только репозиторий apex-client → <b>Contents: Read and write</b> (без Secrets и Actions). Тогда он не увидит и не изменит секреты, а все его сохранения видны в «Истории» с его именем.</p></div>
-      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 16 ноября 2026 · приложение 3.22.0 · пульт 2.46.</p>
+      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 17 ноября 2026 · приложение 3.22.2 · пульт 2.47.</p>
       <div class="helptools">
         <input id="hq" type="search" placeholder="Найти в справке, например «техработы»" aria-label="Найти в справке" autocomplete="off">
         <button class="btn quiet small" id="hOpen" type="button">Развернуть всё</button>
@@ -1391,6 +1407,7 @@
         <div class="nwkind" id="nwKind" role="group" aria-label="Сортировка"><button type="button" class="pill on" data-k="">Все</button><button type="button" class="pill" data-k="n">🟢 Новое</button><button type="button" class="pill" data-k="u">🟣 Улучшено</button><button type="button" class="pill" data-k="f">🔵 Исправлено</button></div>
         <div id="nwOther" hidden></div>
         <div class="tbl" id="nwPult"><table id="pultLog">
+          <tr data-k="n"><td>2.47</td><td>«Функции» по разделам: «Экстренное выключение», «🔄 Автообновление баз» (вкл/выкл у всех, как часто проверять, «⚡ Обновить базы у всех сейчас»), «🧱 Какие базы включены», «🏭 Сборка баз на GitHub» (когда собраны, статус робота, «Собрать сейчас», список баз с сортировкой)</td></tr>
           <tr data-k="n"><td>2.46</td><td>Telegram → «Бот в личке» → «👥 Пользователи бота»: сколько их, поиск и фильтры (заблокированные, без рассылок, новые), кнопки — написать, забанить и разбанить, отписать, удалить данные</td></tr>
           <tr data-k="n"><td>2.45</td><td>Функции бота: «🛠 Панель админа на кнопках» — включается и выключается здесь, в /settings и в меню сервера</td></tr>
           <tr data-k="n"><td>2.44</td><td>Несколько ботов, как на сервере: в «Бот в личке» переключатель «🤖 Основной · бот 2 · бот 3 · ＋ Бот» — у каждого свои вопросы, статистика, рассылка, тексты и функции; «Настройки бота» — адрес и слово для бота 2 и 3</td></tr>
@@ -1525,7 +1542,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.46', PANEL_DATE = '16 ноября 2026'
+const PANEL_VERSION = '2.47', PANEL_DATE = '17 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -1551,12 +1568,16 @@ const ANN_TEMPLATES = [
   ['🎉 Праздник', { title: 'С праздником!', text: 'Спасибо, что вы с APEX CLIENT. Хорошего настроения и быстрого интернета!', button: '', url: '' }],
   ['📣 Наш канал', { title: 'Новости в Telegram', text: 'Подпишитесь на канал — там первыми появляются новости о серверах и версиях.', button: 'Открыть канал', url: '' }],
 ]
+// 2.47: у функции — раздел вкладки, где её переключатель (main — «Экстренное выключение», rules — «Автообновление баз», sets — «Какие базы»)
 const FEATURES = [
-  ['whitelistAuto', 'Белые списки', 'Автопереход на LTE-обход, когда оператор включает белые списки'],
-  ['adsHagezi', 'Список рекламы HaGeZi', 'Дополнительные 200 тысяч рекламных и следящих адресов'],
-  ['threats', 'Защита от мошенников', 'База опасных сайтов HaGeZi Threat Intelligence'],
-  ['autoUpdate', 'Автоустановка обновлений', 'Остановите, если выпущенная версия оказалась плохой'],
+  ['whitelistAuto', 'Белые списки', 'Автопереход на LTE-обход, когда оператор включает белые списки', 'main'],
+  ['autoUpdate', 'Автоустановка обновлений', 'Остановите, если выпущенная версия оказалась плохой', 'main'],
+  ['rulesAuto', 'Автообновление баз сайтов', 'Телефоны сами проверяют и качают свежие базы. Выключите — обновятся только по кнопке в приложении', 'rules'],
+  ['adsHagezi', 'Список рекламы HaGeZi', 'Дополнительные 200 тысяч рекламных и следящих адресов', 'sets'],
+  ['threats', 'Защита от мошенников', 'База опасных сайтов HaGeZi Threat Intelligence', 'sets'],
 ]
+const RULE_TITLES = { 'geosite-category-ru.srs': 'Российские сайты', 'ru-inside.srs': 'Работают только из России', 'geoip-ru.srs': 'IP-адреса России', 'geosite-category-ads-all.srs': 'Реклама и трекеры', 'ads-hagezi.srs': 'Реклама — HaGeZi', 'threats-hagezi.srs': 'Мошенники — HaGeZi', 'geosite-category-porn.srs': 'Сайты 18+ (семейный режим)', 'geosite-category-betting-ru.srs': 'Ставки (семейный режим)' }
+let rulesForceAt = 0, rulesMan = null
 const TABS = [['home', '🏠', 'Обзор'], ['banner', '📢', 'Баннеры'], ['servers', '🖥', 'Серверы'], ['announce', '🪧', 'Объявление'],
   ['links', '🔗', 'Ссылки'], ['update', '📦', 'Обновления'], ['features', '⚙️', 'Функции'], ['preview', '👁', 'Предпросмотр'],
   ['history', '🕘', 'История'], ['checks', '🩺', 'Проверка'], ['sub', '🔐', 'Подписка'], ['hide', '🧩', 'Скрыть VPN'], ['site', '🌐', 'Визитка'], ['walls', '🖼', 'Обои'], ['tg', '📣', 'Telegram'], ['answers', '💬', 'Ответы'], ['help', '📖', 'Справка']]
@@ -1770,7 +1791,9 @@ function fillApp(c) {
   $('netApps').value = (c.netCheck || []).map(x => x.name + ' | ' + x.url).join('\n')
   const u = c.update || {}; $('uRequired').value = u.required || ''; $('uRevoked').value = (u.revoked || []).join(', ')
   const f = c.features || {}
-  $('feats').innerHTML = FEATURES.map(([id, t, d], i) => `<label class="sw ${i ? '' : 'first'}"><div class="t"><b>${t}</b><span>${d}</span></div><span class="tog"><input type="checkbox" id="f_${id}" ${f[id] === false ? '' : 'checked'}><i></i></span></label>`).join('')
+  const sw = list => list.map(([id, t, d], i) => `<label class="sw ${i ? '' : 'first'}"><div class="t"><b>${t}</b><span>${d}</span></div><span class="tog"><input type="checkbox" id="f_${id}" ${f[id] === false ? '' : 'checked'}><i></i></span></label>`).join('')
+  $('feats').innerHTML = sw(FEATURES.filter(x => x[3] === 'main')); $('featsRules').innerHTML = sw(FEATURES.filter(x => x[3] === 'rules')); $('featsSets').innerHTML = sw(FEATURES.filter(x => x[3] === 'sets'))
+  const r = c.rules || {}; $('rHours').value = [6, 12, 24, 168].includes(+r.hours) ? String(r.hours) : '0'; rulesForceAt = +r.forceAt || 0; rForceInfo()
   $('pCode').value = c.previewCode || ''
   renderBanners(); renderMarks()
 }
@@ -1793,6 +1816,7 @@ function collectApp(loose = false) {
     links: { support: url($('lSupport').value), channel: url($('lChannel').value), site: url($('lSite').value) },
     update: { required: int($('uRequired').value), revoked: $('uRevoked').value.split(/[,\s]+/).map(x => parseInt(x, 10)).filter(x => x > 0) },
     features: Object.fromEntries(FEATURES.map(([id]) => [id, $('f_' + id)?.checked !== false])),
+    rules: { hours: +$('rHours').value || 0, ...(rulesForceAt ? { forceAt: rulesForceAt } : {}) },
     previewCode: $('pCode').value.trim(),
     ...netAppsList(loose),
   }
@@ -3590,6 +3614,38 @@ tgCatInit(); tgCatApply(load('apex_admin_tgcat') || '')
 // 2.42: на остальных длинных вкладках — строка «Всё · раздел · раздел…» из заголовков блоков; выбор запоминается
 // Большие вкладки — по смысловым группам, остальные — по блокам; «Справка» — у неё свой поиск
 const SEC_GROUPS = { home: [['🟢 Состояние', /Статус|Сборки|Всё сломано|Сейчас действует|Быстрые/], ['📊 Статистика', /Неделя|Telegram-канал|Пользовател|Скачивани|Версии/], ['📰 События', /Лента|Что нового|Календарь|Отложенное/], ['🧰 Инструменты', /Резервн|Разбор|отчёт/]] }
+// 2.47: базы сайтов — «обновить у всех», статус сборки на GitHub, список баз с сортировкой
+function rForceInfo() { const el = $('rForceInfo'); if (el) el.textContent = rulesForceAt ? 'Последний раз: ' + new Date(rulesForceAt).toLocaleString('ru', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + (rulesForceAt > Date.now() - 6e4 ? ' — нажмите «Опубликовать»' : '') : '' }
+$('rForce').onclick = () => { rulesForceAt = Date.now(); rForceInfo(); toast('Готово — нажмите «Опубликовать». Телефоны обновят базы при ближайшей проверке приложения (до 30 минут при включённом VPN)') }
+const fmtSize = b => b >= 1048576 ? (b / 1048576).toFixed(1) + ' МБ' : (b / 1024).toFixed(1) + ' КБ'
+function rFilesRender() {
+  if (!rulesMan) return
+  const by = $('rSort').value, list = Object.entries(rulesMan.files || {}).map(([n, v]) => ({ n, t: RULE_TITLES[n] || n.replace(/\.srs$/, ''), c: v.count || 0, s: v.size || 0 }))
+  list.sort((a, b) => by === 'count' ? b.c - a.c : by === 'size' ? b.s - a.s : a.t.localeCompare(b.t, 'ru'))
+  $('rFiles').innerHTML = list.map(x => `<div class="sw"><div class="t"><b>${esc(x.t)}</b><span>${x.c.toLocaleString('ru')} записей · ${fmtSize(x.s)} · ${esc(x.n)}</span></div></div>`).join('')
+  try { localStorage.setItem('apex_admin_rsort', by) } catch (e) {}
+}
+$('rSort').onchange = rFilesRender
+try { const v = localStorage.getItem('apex_admin_rsort'); if (v) $('rSort').value = v } catch (e) {}
+async function rBuildLoad() {
+  try {
+    rulesMan = await (await fetch('https://raw.githubusercontent.com/' + OWNER + '/' + REPO + '/rules/rules.json?t=' + Date.now(), { cache: 'no-store' })).json()
+    let run = ''
+    if (token) { try { const r = await api('/actions/workflows/rules.yml/runs?per_page=1'); const x = r.workflow_runs && r.workflow_runs[0]; if (x) run = ` · последняя сборка: ${new Date(x.created_at).toLocaleString('ru', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} — ${x.status !== 'completed' ? '⏳ идёт' : x.conclusion === 'success' ? '✅ успешно' : '⚠️ ' + x.conclusion}` } catch (e) {} }
+    $('rBuild').textContent = '📦 Базы от ' + new Date(rulesMan.updated * 1000).toLocaleString('ru', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) + ` · ${Object.keys(rulesMan.files || {}).length} баз` + run
+    rFilesRender()
+  } catch (e) { $('rBuild').textContent = '⚠️ Не удалось прочитать базы: ' + e.message }
+}
+$('rReload').onclick = rBuildLoad
+$('rRebuild').onclick = async () => {
+  if (!token) return toast('Сначала войдите с токеном GitHub')
+  try { await api('/actions/workflows/rules.yml/dispatches', { method: 'POST', body: JSON.stringify({ ref: 'main' }) }); toast('🏭 Сборка запущена — через 2–3 минуты нажмите «Обновить»'); setTimeout(rBuildLoad, 4000) }
+  catch (e) { toast('⚠️ Не запустилось: ' + e.message + '. Нужно право «Actions: Read and write» у токена') }
+}
+// загружаем при открытии вкладки «Функции»
+document.addEventListener('click', e => { if (e.target.closest('[data-go="features"],[data-t="features"]') && !rulesMan) rBuildLoad() })
+setTimeout(() => { if (!rulesMan) rBuildLoad() }, 3000)
+
 function secFilters() {
   document.querySelectorAll('section[data-tab]').forEach(sec => {
     const id = sec.dataset.tab; if (id === 'tg' || id === 'help' || sec.querySelector(':scope > .secf')) return

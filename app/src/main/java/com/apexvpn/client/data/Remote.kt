@@ -216,14 +216,18 @@ object RulesUpdater {
 
     suspend fun update(context: Context, force: Boolean = false): Result = lock.withLock { withContext(Dispatchers.IO) {
         val p = sp(context)
-        if (!force) {
-            if (!AppSettings.value.rulesAuto) return@withContext Result.Skipped
-            // Как часто — по настройке; источник без rules.json качает всё целиком, ему не чаще раза в сутки
-            val chosen = AppSettings.value.rulesHours.coerceIn(6, 168) * 3600_000L
+        val cfg = AppConfig.value
+        // 3.22.3: «Обновить базы у всех сейчас» из пульта — один раз, даже если недавно проверяли
+        val pushed = cfg.rulesForceAt > 0 && cfg.rulesForceAt > p.getLong("checkedAt", 0) && cfg.rulesForceAt > p.getLong("forceDone", 0)
+        if (!force && !pushed) {
+            if (!AppSettings.value.rulesAuto || !cfg.on("rulesAuto")) return@withContext Result.Skipped
+            // Как часто — из пульта, иначе по настройке; источник без rules.json качает всё целиком, ему не чаще раза в сутки
+            val chosen = (cfg.rulesHours.takeIf { it > 0 } ?: AppSettings.value.rulesHours).coerceIn(6, 168) * 3600_000L
             val interval = if (p.getBoolean("hasManifest", true)) chosen else maxOf(chosen, DAY)
             val last = maxOf(p.getLong("checkedAt", 0), lastUpdated(context))
             if (System.currentTimeMillis() - last < interval) return@withContext Result.Skipped
         }
+        if (pushed) p.edit { putLong("forceDone", cfg.rulesForceAt) }
         var lastError = "нет источников"
         for (base in sources()) {
             val r = runCatching { updateFrom(context, base) }
