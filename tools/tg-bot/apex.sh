@@ -10,7 +10,7 @@
 set -uo pipefail
 export LC_ALL=C.UTF-8 2>/dev/null  # русские буквы — по одной, а не по байтам
 
-APEX_VER="2.2"
+APEX_VER="2.3"
 SRC="https://raw.githubusercontent.com/Dubstep2004/apex-client/main/tools/tg-bot"
 API="https://api.github.com/repos/Dubstep2004/apex-client/commits?path=tools/tg-bot&per_page=1"
 DIR=${APEX_DIR:-/opt/apex-bot}; SELF=${APEX_SELF:-/usr/local/bin/apex}
@@ -70,6 +70,9 @@ onoff() { if [ "$1" = 1 ]; then printf "%s● вкл%s" "$OK" "$R"; else printf 
 jget()  { sed -n "s/.*\"$1\":\"\{0,1\}\([^\",}]*\).*/\1/p" | head -1; }
 remote_sha() { curl -fsS -m 6 -H 'Accept: application/vnd.github+json' "$API" 2>/dev/null | sed -n 's/^ *"sha": "\([0-9a-f]\{40\}\)".*/\1/p' | head -1; }
 local_sha()  { cat "$DIR/.version" 2>/dev/null; }
+# 2.3: качаем файлы по номеру последнего коммита, а не с «main»: адрес main GitHub кэширует до 5 минут,
+# и сразу после выхода новой версии сервер получал старую («Уже последняя версия»)
+srcv() { local sha; sha=${RSHA:-$(remote_sha)}; RSHA=$sha; printf 'https://raw.githubusercontent.com/Dubstep2004/apex-client/%s/tools/tg-bot' "${sha:-main}"; }
 
 # ── Шапка ──────────────────────────────────────────────────────────
 banner() {
@@ -102,7 +105,9 @@ item()    { printf '   %s%3s%s  %s%s%s\n' "$ACC$B" "$1" "$R" "${3:-}" "$2" "$R";
 
 # ── Что нового ─────────────────────────────────────────────────────
 # Строки: «V|версия|дата» — заголовок; «n|текст» — новое, «u|…» — улучшено, «f|…» — исправлено.
-CHANGES='V|2.2|16 ноября 2026
+CHANGES='V|2.3|16 ноября 2026
+f|«Обновить меню» и «Обновить бота» сразу видят новую версию — раньше GitHub до 5 минут отдавал старую
+V|2.2|16 ноября 2026
 n|«Обновить всё» — бот и меню одной кнопкой: в главном меню (10) и в «Обновлениях» (1); без меню — apex all
 V|2.1|16 ноября 2026
 f|После «Обновить меню» сразу открывается новое меню, а не консоль
@@ -190,14 +195,14 @@ do_install() {
   [ -f "$TIMER" ] || { [ -n "${YES:-}" ] && auto_on || { confirm "Обновлять бота автоматически раз в день?" && auto_on; }; }
 }
 fetch_code() {
-  local f tmp; tmp=$(mktemp -d)
+  local f tmp src; tmp=$(mktemp -d); RSHA=; src=$(srcv)
   for f in worker.js server.js package.json; do
-    curl -fsSL -m 30 "$SRC/$f" -o "$tmp/$f" || { err "Не скачался $f — проверьте интернет"; rm -rf "$tmp"; return 1; }
+    curl -fsSL -m 30 "$src/$f" -o "$tmp/$f" || { err "Не скачался $f — проверьте интернет"; rm -rf "$tmp"; return 1; }
   done
   node --check "$tmp/server.js" 2>/dev/null || { err "Скачанный код повреждён — обновление отменено"; rm -rf "$tmp"; return 1; }
   [ -f "$DIR/server.js" ] && { rm -rf "$DIR.prev"; cp -a "$DIR" "$DIR.prev"; }   # 2.0: прошлая версия — для отката
   cp "$tmp"/* "$DIR"/; rm -rf "$tmp"
-  remote_sha >"$DIR/.version" 2>/dev/null || true
+  [ -n "$RSHA" ] && printf '%s\n' "$RSHA" >"$DIR/.version"
   ok "Код бота обновлён ${DIM}($(cut -c1-7 "$DIR/.version" 2>/dev/null))${R}"
 }
 write_unit() {
@@ -246,7 +251,7 @@ do_update() {
 do_self_update() {
   need_root; step "Обновление меню"
   local tmp; tmp=$(mktemp)
-  curl -fsSL -m 30 "$SRC/apex.sh" -o "$tmp" && bash -n "$tmp" || { err "Не скачалось"; rm -f "$tmp"; return 1; }
+  RSHA=; curl -fsSL -m 30 "$(srcv)/apex.sh" -o "$tmp" && bash -n "$tmp" || { err "Не скачалось"; rm -f "$tmp"; return 1; }
   local nv; nv=$(sed -n 's/^APEX_VER="\(.*\)"/\1/p' "$tmp" | head -1)
   install -m 755 "$tmp" "$SELF"; rm -f "$tmp"
   if [ "$nv" != "$APEX_VER" ]; then ok "Меню обновлено: $APEX_VER → $nv"; "$SELF" news "$nv"; else ok "Уже последняя версия меню"; fi
@@ -516,11 +521,12 @@ do_clean() {
 do_integrity() {
   step "Проверка меню и кода бота на подмену"
   local f rs ls bad=0
-  rs=$(curl -fsSL -m 20 "$SRC/apex.sh" 2>/dev/null | sha256sum | cut -c1-64); ls=$(sha256sum "$SELF" 2>/dev/null | cut -c1-64)
+  RSHA=; local src; src=$(srcv)
+  rs=$(curl -fsSL -m 20 "$src/apex.sh" 2>/dev/null | sha256sum | cut -c1-64); ls=$(sha256sum "$SELF" 2>/dev/null | cut -c1-64)
   if [ -z "$rs" ]; then warn "GitHub не ответил — проверить нельзя"; return; fi
   if [ "$rs" = "$ls" ]; then ok "Меню совпадает с GitHub"; else warn "Меню отличается от GitHub — обновите меню («Обновления» → «Обновить меню»). Если вы не меняли его сами — это повод насторожиться"; bad=1; fi
   for f in worker.js server.js; do
-    rs=$(curl -fsSL -m 20 "$SRC/$f" 2>/dev/null | sha256sum | cut -c1-64); ls=$(sha256sum "$DIR/$f" 2>/dev/null | cut -c1-64)
+    rs=$(curl -fsSL -m 20 "$src/$f" 2>/dev/null | sha256sum | cut -c1-64); ls=$(sha256sum "$DIR/$f" 2>/dev/null | cut -c1-64)
     [ "$rs" = "$ls" ] && ok "Код бота $f совпадает" || { warn "$f отличается — «Обновить бота» поставит версию с GitHub"; bad=1; }
   done
   [ $bad = 0 ] && ok "Подмены нет"
@@ -767,7 +773,7 @@ self_install() {
   [ "$(readlink -f "${BASH_SOURCE[0]:-$0}" 2>/dev/null)" = "$SELF" ] && return 0
   local tmp; tmp=$(mktemp)
   if [ -f "${BASH_SOURCE[0]:-}" ] && head -c 800 "${BASH_SOURCE[0]}" | grep -q 'APEX'; then cp "${BASH_SOURCE[0]}" "$tmp"
-  else curl -fsSL -m 30 "$SRC/apex.sh" -o "$tmp" || { rm -f "$tmp"; return 0; }; fi
+  else curl -fsSL -m 30 "$(srcv)/apex.sh" -o "$tmp" || { rm -f "$tmp"; return 0; }; fi
   bash -n "$tmp" && install -m 755 "$tmp" "$SELF" && [ -z "${QUIET:-}" ] && ok "Команда ${B}apex${R} установлена — дальше меню открывается так: ${B}sudo apex${R}"
   rm -f "$tmp"
 }
