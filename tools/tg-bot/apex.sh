@@ -9,7 +9,7 @@
 set -uo pipefail
 export LC_ALL=C.UTF-8 2>/dev/null  # русские буквы — по одной, а не по байтам
 
-APEX_VER="1.1"
+APEX_VER="1.2"
 SRC="https://raw.githubusercontent.com/Dubstep2004/apex-client/main/tools/tg-bot"
 API="https://api.github.com/repos/Dubstep2004/apex-client/commits?path=tools/tg-bot&per_page=1"
 DIR=${APEX_DIR:-/opt/apex-bot}; ENVF=${APEX_ENV:-/etc/apex-bot.env}; DATA=${APEX_DATA:-/var/lib/apex-bot}; SELF=${APEX_SELF:-/usr/local/bin/apex}
@@ -41,13 +41,15 @@ installed() { [ -f "$DIR/server.js" ] && [ -f "$UNIT" ]; }
 running()   { systemctl is-active --quiet apex-bot 2>/dev/null; }
 envget()    { [ -f "$ENVF" ] && sed -n "s/^$1=//p" "$ENVF" | tail -1; }
 envset() {  # envset KEY VALUE — меняет строку в /etc/apex-bot.env (значение — одной строкой)
-  local k=$1 v=$2; touch "$ENVF"
+  local k=$1 v=$2; [ -f "$ENVF" ] || ( umask 077; : >"$ENVF" )   # файл с токеном — только root (и группа apexbot)
+  v=${v//$'\n'/}
   if grep -q "^#\? *$k=" "$ENVF"; then
-    awk -v k="$k" -v v="$v" 'BEGIN{d=0} $0 ~ "^#? *"k"=" { if(!d){print k"="v; d=1}; next } {print}' "$ENVF" >"$ENVF.tmp" && cat "$ENVF.tmp" >"$ENVF" && rm -f "$ENVF.tmp"
+    ( umask 077; awk -v k="$k" -v v="$v" 'BEGIN{d=0} $0 ~ "^#? *"k"=" { if(!d){print k"="v; d=1}; next } {print}' "$ENVF" >"$ENVF.tmp" ) && cat "$ENVF.tmp" >"$ENVF" && rm -f "$ENVF.tmp"
   else printf '%s=%s\n' "$k" "$v" >>"$ENVF"; fi
 }
-pxarg() { local p; p=$(envget TG_PROXY); [ -n "$p" ] && printf -- "-x\n%s\n" "$p"; }
-tgapi() { local t; t=$(envget BOT_TOKEN); [ -n "$t" ] || return 1; local -a px; mapfile -t px < <(pxarg); curl -fsS -m 8 "${px[@]}" "https://api.telegram.org/bot$t/$1" 2>/dev/null; }
+# Токен и прокси передаём curl через stdin (-K -), а не в командной строке: её видят все пользователи сервера (ps)
+curlk() { local url=$1 px=${2:-} tm=${3:-8}; { printf 'url = "%s"\n' "$url"; [ -n "$px" ] && printf 'proxy = "%s"\n' "$px"; } | curl -sS -m "$tm" -K - "${@:4}" 2>/dev/null; }
+tgapi() { local t; t=$(envget BOT_TOKEN); [ -n "$t" ] || return 1; curlk "https://api.telegram.org/bot$t/$1" "$(envget TG_PROXY)" "${2:-8}" -f; }
 onoff() { if [ "$1" = 1 ]; then printf "%s● вкл%s" "$OK" "$R"; else printf "%s○ выкл%s" "$DIM" "$R"; fi; }
 jget()  { sed -n "s/.*\"$1\":\"\{0,1\}\([^\",}]*\).*/\1/p" | head -1; }
 remote_sha() { curl -fsS -m 6 -H 'Accept: application/vnd.github+json' "$API" 2>/dev/null | sed -n 's/^ *"sha": "\([0-9a-f]\{40\}\)".*/\1/p' | head -1; }
@@ -70,7 +72,8 @@ banner() {
     st="${OK}●${R} ${B}${OK}Работает${R} ${DIM}$(dur $s)${R}"
   else st="${BD}●${R} ${B}${BD}Остановлен${R}"; fi
   mem=$(systemctl show apex-bot -p MemoryCurrent --value 2>/dev/null); [[ "$mem" =~ ^[0-9]+$ ]] && mem="$((mem / 1048576)) МБ" || mem="—"
-  who=$(tgapi getMe | jget username); [ -n "$who" ] && who="@$who" || who="${WR}токен не проверен${R}"
+  [ -n "${WHO:-}" ] || WHO=$(tgapi getMe 4 | jget username)  # один раз за сеанс — меню не ждёт Telegram на каждом шаге
+  [ -n "$WHO" ] && who="@$WHO" || who="${WR}Telegram не ответил${R}"
   host=$(. /etc/os-release 2>/dev/null; echo "${PRETTY_NAME:-Linux}")
   say "   $st   ${DIM}│${R} $who"
   say "   ${DIM}Память $mem · $(df -h / | awk 'NR==2{print "диск "$5}') · $host${R}"
@@ -83,7 +86,13 @@ item()    { printf '   %s%3s%s  %s%s%s\n' "$ACC$B" "$1" "$R" "${3:-}" "$2" "$R";
 
 # ── Что нового ─────────────────────────────────────────────────────
 # Строки: «V|версия|дата» — заголовок; «n|текст» — новое, «u|…» — улучшено, «f|…» — исправлено.
-CHANGES='V|1.1|16 ноября 2026
+CHANGES='V|1.2|16 ноября 2026
+f|Токен бота и пароль прокси больше не видны в списке процессов сервера
+f|Восстановление проверяет копию: только два файла APEX, без ссылок — чужой архив не перезапишет файлы сервера
+f|Файл настроек с токеном создаётся сразу закрытым — без мгновения, когда его могли прочитать другие
+f|Меню не ждёт Telegram на каждом шаге — имя бота проверяется один раз
+f|«Журнал: только ошибки» больше не показывает строку о включённом прокси как ошибку
+V|1.1|16 ноября 2026
 n|Раздел «Включить / выключить»: уведомления, автообновление, копия в 4:00, запуск вместе с сервером — видно, что включено
 n|Связь с Telegram и прокси: проверка, открывается ли Telegram с сервера, и HTTP-прокси, если нет
 n|Журнал только с ошибками за сутки — красным
@@ -190,9 +199,9 @@ set_token() {
   read -r -s -p "  Токен бота: " t <"$TTY"; echo
   t=$(printf '%s' "$t" | tr -d '[:space:]')
   [[ "$t" =~ ^[0-9]+:[A-Za-z0-9_-]{30,}$ ]] || { err "Не похоже на токен (123456789:AA…)"; return 1; }
-  local u; u=$(curl -fsS -m 10 "https://api.telegram.org/bot$t/getMe" 2>/dev/null | jget username)
+  local u; u=$(curlk "https://api.telegram.org/bot$t/getMe" "$(envget TG_PROXY)" 10 -f | jget username)
   [ -n "$u" ] || { err "Telegram не принял токен"; return 1; }
-  envset BOT_TOKEN "$t"; ok "Токен принят: @$u"
+  envset BOT_TOKEN "$t"; WHO=$u; ok "Токен принят: @$u"
 }
 do_update() {
   need_root; installed || { err "Бот не установлен"; return 1; }
@@ -250,7 +259,7 @@ do_backup() {
 }
 do_errors() {
   step "Ошибки за последние сутки"
-  local out; out=$(journalctl -u apex-bot --since "-24h" --no-pager -o short-iso 2>/dev/null | grep -iE 'ошибк|error|нет связи|не принял|не запустил|failed|conflict|прокси|уже работает|exception|enoent|eacces')
+  local out; out=$(journalctl -u apex-bot --since "-24h" --no-pager -o short-iso 2>/dev/null | grep -iE 'ошибк|error|нет связи|не принял|не запустил|failed|conflict|прокси:|прокси не|уже работает|exception|enoent|eacces')
   if [ -z "$out" ]; then ok "Ошибок нет"; return; fi
   printf '%s\n' "$out" | tail -40 | while IFS= read -r l; do printf '  %s%s%s %s%s%s\n' "$DIM" "${l:0:19}" "$R" "$BD" "${l:20}" "$R"; done
   say "  ${DIM}Всего строк с ошибками: $(printf '%s\n' "$out" | wc -l)${R}"
@@ -261,10 +270,10 @@ tg_check() {
   code=$(curl -s -o /dev/null -w '%{http_code}' -m 8 https://api.telegram.org 2>/dev/null)
   if [ "$code" != 000 ]; then ok "Напрямую — открывается"; else err "Напрямую — не открывается (провайдер или страна блокирует)"; fi
   if [ -n "$p" ]; then
-    code=$(curl -s -o /dev/null -w '%{http_code}' -m 10 -x "$p" https://api.telegram.org 2>/dev/null)
+    code=$(curlk https://api.telegram.org "$p" 10 -o /dev/null -w '%{http_code}')
     [ "$code" != 000 ] && ok "Через прокси — открывается" || err "Через прокси — не открывается"
   fi
-  [ -n "$(tgapi getMe)" ] && ok "Бот отвечает через $([ -n "$p" ] && echo прокси || echo прямую связь)" || warn "getMe не прошёл — проверьте токен или связь"
+  WHO=; [ -n "$(tgapi getMe)" ] && ok "Бот отвечает через $([ -n "$p" ] && echo прокси || echo прямую связь)" || warn "getMe не прошёл — проверьте токен или связь"
   say ""
   if [ -n "$p" ]; then
     item 1 "Сменить прокси"; item 2 "Выключить прокси" "$BD"; item 0 "Назад" "$DIM"
@@ -274,8 +283,8 @@ tg_check() {
   fi
   case "$(ask "Пункт: ")" in
     1) local np; np=$(ask "Прокси ${DIM}(http://адрес:порт или http://логин:пароль@адрес:порт)${R}: ")
-       [[ "$np" =~ ^https?://[^[:space:]]+:[0-9]+/?$ ]] || { err "Нужен вид http://адрес:порт"; return; }
-       code=$(curl -s -o /dev/null -w '%{http_code}' -m 10 -x "$np" https://api.telegram.org 2>/dev/null)
+       [[ "$np" =~ ^https?://[^[:space:]\"]+:[0-9]+/?$ ]] || { err "Нужен вид http://адрес:порт"; return; }
+       code=$(curlk https://api.telegram.org "$np" 10 -o /dev/null -w '%{http_code}')
        [ "$code" != 000 ] || { err "Через этот прокси Telegram не открывается — не сохраняю"; return; }
        envset TG_PROXY "$np"; systemctl restart apex-bot; ok "Прокси включён, бот перезапущен" ;;
     2) [ -n "$p" ] && { envset TG_PROXY ""; systemctl restart apex-bot; ok "Прокси выключен"; } ;;
@@ -284,6 +293,9 @@ tg_check() {
 restore_file() {  # restore_file <архив> — только два файла: настройки и конкурсы
   local f=$1
   tar -tzf "$f" 2>/dev/null | grep -qx "${ENVF#/}" || { err "Это не копия APEX: внутри нет ${ENVF#/}"; return 1; }
+  # Только обычные файлы: ссылка вместо файла могла бы перезаписать чужой файл на сервере
+  if tar -tvzf "$f" 2>/dev/null | grep -vq '^-'; then err "В копии есть ссылки или папки — это не копия APEX, не восстанавливаю"; return 1; fi
+  if tar -tzf "$f" 2>/dev/null | grep -vqxE "${ENVF#/}|${DATA#/}/kv.json"; then err "В копии лишние файлы — не восстанавливаю"; return 1; fi
   installed && systemctl stop apex-bot
   mkdir -p "$DATA"
   tar -xzf "$f" -C / "${ENVF#/}" 2>/dev/null; tar -xzf "$f" -C / "${DATA#/}/kv.json" 2>/dev/null

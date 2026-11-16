@@ -25,6 +25,8 @@
 //   его ответ на пересланное сообщение бот отправит человеку; счёт, какие темы спрашивают чаще.
 
 // ЧТО НОВОГО В БОТЕ (пульт показывает это в «Справка» → «Что нового» → «Бот»; V — версия, n/u/f — новое/улучшено/исправлено)
+// V|1.4|16 ноября 2026
+// f|Пересылка вопросов владельцу: не больше 3 в час от одного человека — личку не завалят спамом
 // V|1.3|16 ноября 2026
 // n|/status — любой может узнать, есть ли техработы на серверах (берётся из пульта)
 // n|Ответы на английском, если Telegram у человека не на русском
@@ -194,7 +196,7 @@ async function onMessage(env, m) {
   if (f) { await count(env, cfg, f.id); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: fill(cfg, f.text), disable_web_page_preview: true, reply_markup: after(cfg, en) }) }
   await count(env, cfg, '_miss')
   // Вопрос без ответа — владельцу (если включено в пульте)
-  if (cfg.features.forward && env.OWNER_ID && env.APEX_KV && !owner) {
+  if (cfg.features.forward && env.OWNER_ID && env.APEX_KV && !owner && await fwAllowed(env, m.from?.id)) {
     const fw = await tg(env, 'forwardMessage', { chat_id: env.OWNER_ID, from_chat_id: m.chat.id, message_id: m.message_id })
     if (fw.ok) {
       await env.APEX_KV.put('fw:' + fw.result.message_id, String(m.chat.id), { expirationTtl: 14 * 86400 })
@@ -203,6 +205,16 @@ async function onMessage(env, m) {
     }
   }
   return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? EN.notFound : fill(cfg, cfg.notFound), reply_markup: { inline_keyboard: [...menu(cfg, en).inline_keyboard, [{ text: en ? EN.support : '💬 Написать в поддержку', url: cfg.support }]] } })
+}
+
+// Защита лички владельца от спама: не больше 3 пересланных вопросов от одного человека за час
+async function fwAllowed(env, uid) {
+  try {
+    const k = 'fl:' + uid, n = +(await env.APEX_KV.get(k) || 0)
+    if (n >= 3) return false
+    await env.APEX_KV.put(k, String(n + 1), { expirationTtl: 3600 })
+    return true
+  } catch { return false }
 }
 
 const who = u => u.username ? '@' + u.username : (u.name || 'участник')

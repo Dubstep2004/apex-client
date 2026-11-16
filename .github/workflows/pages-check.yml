@@ -5,7 +5,7 @@ name: Проверка пульта и страниц
 on:
   push:
     branches: [main]
-    paths: ['docs/**', 'tests/check-pages.js', '.github/workflows/pages-check.yml']
+    paths: ['docs/**', 'tests/check-pages.js', 'tests/check-bot.mjs', 'tools/tg-bot/**', '.github/workflows/pages-check.yml']
   schedule:
     - cron: '41 4 * * *'
   workflow_dispatch:
@@ -23,5 +23,7 @@ jobs:
         run: |
           npm i --no-save --no-audit --no-fund playwright@1.48.2
           npx playwright install --with-deps chromium
+      - name: Проверить бота и меню сервера
+        run: node tests/check-bot.mjs
       - name: Проверить пульт и приглашение
         run: node tests/check-pages.js
