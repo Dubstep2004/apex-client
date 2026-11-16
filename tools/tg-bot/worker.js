@@ -141,7 +141,7 @@ async function tgFile(env, chat, name, content, caption) { // отправить
 async function logErr(env, where, e) {
   const x = { at: now(), where, msg: String(e?.message || e).slice(0, 200) }
   if (Array.isArray(env.ERRLOG)) { env.ERRLOG.push(x); env.ERRLOG.splice(0, env.ERRLOG.length - 20); return }
-  try { const l = await kget(env, 'errlog', []); l.push(x); await kput(env, 'errlog', l.slice(-20), 7 * 86400) } catch {}
+  try { const l = await kget(env, 'errlog', []), last = l[l.length - 1]; if (last && last.msg === x.msg && x.at - last.at < 600000) return; l.push(x); await kput(env, 'errlog', l.slice(-20), 7 * 86400) } catch {} // одинаковая ошибка — не чаще раза в 10 минут (лимит записей KV)
 }
 const errList = async env => Array.isArray(env.ERRLOG) ? env.ERRLOG : await kget(env, 'errlog', [])
 const mskTime = t => new Date(t + 3 * 3600000).toISOString().slice(5, 16).replace('T', ' ').replace(/^(\d\d)-(\d\d)/, '$2.$1')
