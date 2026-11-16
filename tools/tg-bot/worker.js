@@ -25,6 +25,8 @@
 //   его ответ на пересланное сообщение бот отправит человеку; счёт, какие темы спрашивают чаще.
 
 // ЧТО НОВОГО В БОТЕ (пульт показывает это в «Справка» → «Что нового» → «Бот»; V — версия, n/u/f — новое/улучшено/исправлено)
+// V|3.8|16 ноября 2026
+// u|Мини-приложение 2.0: вкладки «Главная», «Помощь» (темы бота с поиском и видео), «Подписка» (кнопки ведут в бота: срок, ссылка для друзей), «ТВ» (короткий адрес для браузера телевизора)
 // V|3.7|16 ноября 2026
 // n|Кнопка «📱 Открыть APEX» под темами — мини-приложение прямо в чате (статус, скачать, помощь, ТВ, поддержка)
 // V|3.6|16 ноября 2026
@@ -224,7 +226,8 @@ const FEAT_NAMES = { admin: 'Панель админа на кнопках', mor
 const QUICK = ['Обновите подписку: Настройки → Подписка → «Обновить»', 'Включите автопилот — он сам выберет рабочий сервер', 'Откройте «Проверка сети» на главном и пришлите итог (кнопка «Поделиться»)', 'Обновите приложение до последней версии: ' + SITE + '/update/']
 const fill = (cfg, t) => t.replaceAll('{сайт}', SITE).replaceAll('{поддержка}', cfg.support)
 const topicsOf = (cfg, en) => en ? FAQ_EN : cfg.topics
-const menu = (cfg, en) => ({ inline_keyboard: [...topicsOf(cfg, en).map(f => [{ text: f.title, callback_data: (en ? 'faqen:' : 'faq:') + f.id }]), ...(cfg.features.video ? [[{ text: en ? '🎬 Video guide' : '🎬 Видеоинструкция', callback_data: 'vid' }]] : []), ...(cfg.features.miniapp ? [[{ text: en ? '📱 Open APEX' : '📱 Открыть APEX', web_app: { url: SITE + '/app/' + (en ? '?lang=en' : '') } }]] : [])] })
+const appUrl = en => SITE + '/app/?' + (meName ? 'bot=' + meName + '&' : '') + (en ? 'lang=en' : 'lang=ru') // мини-приложение знает, в какого бота вести кнопки
+const menu = (cfg, en) => ({ inline_keyboard: [...topicsOf(cfg, en).map(f => [{ text: f.title, callback_data: (en ? 'faqen:' : 'faq:') + f.id }]), ...(cfg.features.video ? [[{ text: en ? '🎬 Video guide' : '🎬 Видеоинструкция', callback_data: 'vid' }]] : []), ...(cfg.features.miniapp ? [[{ text: en ? '📱 Open APEX' : '📱 Открыть APEX', web_app: { url: appUrl(en) } }]] : [])] })
 const after = (cfg, en) => ({ inline_keyboard: [[{ text: en ? EN.other : '📋 Другие темы', callback_data: en ? 'menuen' : 'menu' }], ...(cfg.features.human && cfg.features.forward && cfg.hasOwner ? [[{ text: en ? '🙋 Ask a human' : '🙋 Позвать человека', callback_data: 'human' }]] : []), [{ text: en ? EN.support : '💬 Написать в поддержку', url: cfg.support }]] })
 const isNight = () => { const h = new Date(now() + 3 * 3600000).getUTCHours(); return h < 9 } // 0:00–8:59 МСК
 async function fakeWarn(env, cfg, en) { if (!cfg.features.fakewarn) return ''; const n = await botName(env); return n ? (en ? `\n\n🛡 The only official bot is @${n}. Support never asks for passwords, SMS codes or payment in private messages.` : `\n\n🛡 Официальный бот — только @${n}. Поддержка никогда не просит пароль, код из СМС или оплату в личке.`) : '' }
@@ -686,7 +689,8 @@ async function onMessage(env, m) {
   if (m.chat?.type === 'group' || m.chat?.type === 'supergroup') return onGroup(env, cfg, m)
   if (m.chat?.type !== 'private') return // в каналах молчим
   const text = (m.text || '').trim(), owner = env.OWNER_ID && String(m.from?.id) === String(env.OWNER_ID), en = isEn(cfg, m.from)
-  const [cmd0, arg] = text.split(/\s+/, 2), cmd = (cmd0 || '').split('@')[0].toLowerCase()
+  const [cmd0, arg] = text.split(/\s+/, 2); let cmd = (cmd0 || '').split('@')[0].toLowerCase()
+  if (cmd === '/start' && /^(sub|invite|video|status|report|quiz)$/.test(arg || '')) cmd = '/' + arg // кнопки мини-приложения: t.me/бот?start=sub
   if (!owner && (await kget(env, 'block', [])).includes(m.from.id)) return // заблокирован админом — молчим
   if (!owner && cfg.features.antiflood) { const f = flooded(m.from.id); if (f === 'warn') return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? 'Too many messages — please wait a minute 🙏' : 'Слишком часто — подождите минуту 🙏' }); if (f) return }
   if (!owner && env.APEX_KV) await remember(env, m.from)
@@ -734,7 +738,7 @@ async function onMessage(env, m) {
     const ST = { ACTIVE: '✅ активна', EXPIRED: '⏰ закончилась', DISABLED: '⛔ отключена', LIMITED: '📶 закончился трафик' }
     return tg(env, 'sendMessage', { chat_id: m.chat.id, text: '📅 Ваша подписка\n\n' + list.map(u => { const exp = Date.parse(u.expireAt), left = Math.ceil((exp - now()) / 86400000); return `${ST[u.status] || u.status || '—'}\nДо: ${exp ? new Date(exp).toLocaleDateString('ru', { timeZone: 'Europe/Moscow', day: 'numeric', month: 'long', year: 'numeric' }) : '—'}${left > 0 ? ` (осталось ${left} дн.)` : ''}\nТрафик: ${gb(u.usedTrafficBytes || u.userTraffic?.usedTrafficBytes || 0)}${+u.trafficLimitBytes ? ' из ' + gb(u.trafficLimitBytes) : ' (без лимита)'}` }).join('\n\n') + '\n\nПродлить — через поддержку: ' + cfg.support })
   }
-  if (cmd === '/web' && cfg.features.miniapp) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? '📱 APEX: server status, download, help' : '📱 APEX: статус серверов, скачать, помощь', reply_markup: { inline_keyboard: [[{ text: en ? '📱 Open APEX' : '📱 Открыть APEX', web_app: { url: SITE + '/app/' + (en ? '?lang=en' : '') } }]] } })
+  if (cmd === '/web' && cfg.features.miniapp) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? '📱 APEX: server status, download, help' : '📱 APEX: статус серверов, скачать, помощь', reply_markup: { inline_keyboard: [[{ text: en ? '📱 Open APEX' : '📱 Открыть APEX', web_app: { url: appUrl(en) } }]] } })
   if ((cmd === '/video' || cmd === '/howto') && cfg.features.video) return sendHowto(env, m.chat.id, en)
   if (cmd === '/quiz' && cfg.features.quiz) { const q = quizMsg(0, 0); return tg(env, 'sendMessage', { chat_id: m.chat.id, ...q }) }
   if (cmd === '/report' && cfg.features.form && !owner) { await kput(env, 'pf:' + m.from.id, { step: 0, a: [] }, 1800); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: '📝 Сообщить о проблеме — 3 коротких вопроса.\n\n1/3. Какое у вас устройство? (например: Samsung A52, Android 13 или телевизор Xiaomi)', reply_markup: { keyboard: [[{ text: '❌ Отмена' }]], resize_keyboard: true, one_time_keyboard: true } }) }
@@ -934,7 +938,7 @@ export async function tick(env, force) {
   if ((await kget(env, 'sig', '')) !== sig) {
     const cmds = [['start', 'Начать / темы'], ['download', 'Скачать приложение'], ...(cfg.features.status ? [['status', 'Состояние серверов']] : []), ...(cfg.features.news ? [['news', 'Последние новости']] : []), ...(cfg.features.invite ? [['invite', 'Пригласить друга']] : []), ...(cfg.features.remind ? [['remind', 'Напоминание о продлении']] : []), ...(cfg.features.complaints ? [['problem', 'Сообщить о проблеме с сервером']] : []), ...(cfg.features.form ? [['report', 'Форма: что не работает']] : []), ...(cfg.features.quiz ? [['quiz', 'Викторина по приложению']] : []), ...(cfg.features.sub ? [['sub', 'Моя подписка']] : []), ...(cfg.features.video ? [['video', 'Видеоинструкция']] : []), ...(cfg.features.miniapp ? [['web', 'Открыть APEX: статус, скачать, помощь']] : []), ['stop', 'Не получать рассылки']]
     await tg(env, 'setMyCommands', { commands: cmds.map(([command, description]) => ({ command, description })) })
-    await tg(env, 'setChatMenuButton', { menu_button: cfg.features.miniapp ? { type: 'web_app', text: 'APEX', web_app: { url: SITE + '/app/' } } : { type: 'commands' } })
+    await tg(env, 'setChatMenuButton', { menu_button: cfg.features.miniapp ? { type: 'web_app', text: 'APEX', web_app: { url: (await botName(env), appUrl(false)) } } : { type: 'commands' } })
     if (env.OWNER_ID) await tg(env, 'setMyCommands', { scope: { type: 'chat', chat_id: +env.OWNER_ID }, commands: [...cmds, ['today', 'Что было за сутки'], ['queue', 'Вопросы без ответа'], ['top', 'Частые вопросы'], ['users', 'Пользователи'], ['settings', 'Включить и выключить функции'], ['ping', 'Работает ли бот'], ['stats', 'Статистика тем'], ['contests', 'Конкурсы'], ['help', 'Команды владельца']].map(x => Array.isArray(x) ? { command: x[0], description: x[1] } : x) })
     if (cfg.description) await tg(env, 'setMyDescription', { description: cfg.description })
     if (cfg.short) await tg(env, 'setMyShortDescription', { short_description: cfg.short })
