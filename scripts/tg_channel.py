@@ -437,7 +437,7 @@ if not DRY and now - int(state.get('botsync') or 0) > 20 * 60_000:
 
 # ── 0. Задания из пульта (docs/tg/outbox.json). Пульт ждёт итог в state['results'][id].
 ALLOWED = {'sendMessage': {'text', 'link_preview_options'}, 'sendPoll': {'question', 'options', 'is_anonymous', 'allows_multiple_answers'},
-           'getChat': set(), 'sendVersion': {'version'}, 'deleteLast': set(), 'editLast': {'text'}, 'ping': set(), 'translate': {'text'}, 'contest': {'text', 'until', 'n', 'button'}, 'refreshVersions': set(), 'setButtons': {'mid', 'buttons'}, 'workerSetup': set(), 'botStatus': set(), 'dropWebhook': set(), 'botReply': {'qid', 'text', 'slot'}, 'botSync': {'slot'}}
+           'getChat': set(), 'sendVersion': {'version'}, 'deleteLast': set(), 'editLast': {'text'}, 'ping': set(), 'translate': {'text'}, 'contest': {'text', 'until', 'n', 'button'}, 'refreshVersions': set(), 'setButtons': {'mid', 'buttons'}, 'workerSetup': set(), 'botStatus': set(), 'dropWebhook': set(), 'botReply': {'qid', 'text', 'slot'}, 'botSync': {'slot'}, 'botAdmin': {'act', 'uid', 'text', 'slot'}}
 box = read(E('TG_OUTBOX', 'docs/tg/outbox.json'), {})
 results = state['results']
 for it in (box.get('items') or [])[-40:]:
@@ -561,6 +561,13 @@ for it in (box.get('items') or [])[-40:]:
             r = bot_api('/api/reply', {'qid': int(body.get('qid') or 0), 'text': str(body.get('text', ''))[:4000]}, slot)
             if r.get('error'): raise TgError(r['error'])
             done = ['ответ отправлен']; bot_sync(slot)
+        elif method == 'botAdmin':  # 2.46: управление людьми из пульта — бан, разбан, отписка, удалить, написать
+            slot = int(body.get('slot') or 1) if str(body.get('slot') or 1) in ('1', '2', '3') else 1
+            act = str(body.get('act', ''))
+            if act not in ('ban', 'unban', 'stop', 'delete', 'msg'): raise TgError('неизвестное действие')
+            r = bot_api('/api/admin', {'act': act, 'uid': int(body.get('uid') or 0), 'text': str(body.get('text', ''))[:4000]}, slot)
+            if r.get('error'): raise TgError(r['error'])
+            done = ['готово']; bot_sync(slot)
         elif method == 'botSync':  # 2.40: «Обновить» в пульте — свежие данные бота
             slot = int(body.get('slot') or 1) if str(body.get('slot') or 1) in ('1', '2', '3') else 1
             bot_sync(slot); state['botsync'] = now; done = ['данные бота обновлены']

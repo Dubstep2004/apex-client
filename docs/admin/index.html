@@ -902,6 +902,10 @@
         <p class="note" id="btNote">Загружаем…</p>
         <div class="rowx"><button class="btn quiet small" id="btSync" type="button">↻ Обновить</button><label class="sw inl"><span class="tog"><input type="checkbox" id="btOnlyNew" checked><i></i></span><span>Только без ответа</span></label></div>
         <div id="btQ"></div></div>
+      <div class="block" id="btUsersBlock" hidden><h2>👥 Пользователи бота</h2>
+        <div class="relsum" id="btUSum"></div>
+        <div class="rowx"><input id="btUQ" type="search" placeholder="Поиск: имя, @ник или номер" style="flex:1;min-width:0"><select id="btUF"><option value="">Все</option><option value="block">🚫 Заблокированные</option><option value="stop">🔕 Без рассылок</option><option value="new">🆕 Новые за неделю</option></select></div>
+        <div id="btUList"></div><p class="help">Бан — бот перестаёт отвечать человеку и не пересылает его сообщения. То же — в боте: «🛠 Админ» → «👥 Пользователи».</p></div>
       <div class="block" id="btStatBlock" hidden><h2>📊 Статистика бота</h2><div class="relsum" id="btSum"></div><div id="btStat"></div></div>
       <div class="block" id="btBcBlock"><h2>📣 Рассылка и опрос в личку</h2>
         <p class="note">Всем, кто писал боту и не нажал /stop. Бот отправляет по 25 человек в минуту. Отправка — один раз, с вашим подтверждением.</p>
@@ -1154,7 +1158,7 @@
         <p class="note">Для второго человека: в этом браузере остаются только «Обзор», «Баннеры», «Объявление», «Telegram» и «Справка» — серверы, обновления и настройки скрыты.</p>
         <label class="sw"><div class="t"><b>Режим помощника в этом браузере</b><span>Выключается здесь же</span></div><span class="tog"><input type="checkbox" id="helperOn"><i></i></span></label>
         <p class="help">Это удобство, а не защита: настоящие права даёт GitHub. Помощнику — свой токен: github.com → Settings → Developer settings → Fine-grained tokens → только репозиторий apex-client → <b>Contents: Read and write</b> (без Secrets и Actions). Тогда он не увидит и не изменит секреты, а все его сохранения видны в «Истории» с его именем.</p></div>
-      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 16 ноября 2026 · приложение 3.22.0 · пульт 2.45.</p>
+      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 16 ноября 2026 · приложение 3.22.0 · пульт 2.46.</p>
       <div class="helptools">
         <input id="hq" type="search" placeholder="Найти в справке, например «техработы»" aria-label="Найти в справке" autocomplete="off">
         <button class="btn quiet small" id="hOpen" type="button">Развернуть всё</button>
@@ -1383,6 +1387,7 @@
         <div class="nwkind" id="nwKind" role="group" aria-label="Сортировка"><button type="button" class="pill on" data-k="">Все</button><button type="button" class="pill" data-k="n">🟢 Новое</button><button type="button" class="pill" data-k="u">🟣 Улучшено</button><button type="button" class="pill" data-k="f">🔵 Исправлено</button></div>
         <div id="nwOther" hidden></div>
         <div class="tbl" id="nwPult"><table id="pultLog">
+          <tr data-k="n"><td>2.46</td><td>Telegram → «Бот в личке» → «👥 Пользователи бота»: сколько их, поиск и фильтры (заблокированные, без рассылок, новые), кнопки — написать, забанить и разбанить, отписать, удалить данные</td></tr>
           <tr data-k="n"><td>2.45</td><td>Функции бота: «🛠 Панель админа на кнопках» — включается и выключается здесь, в /settings и в меню сервера</td></tr>
           <tr data-k="n"><td>2.44</td><td>Несколько ботов, как на сервере: в «Бот в личке» переключатель «🤖 Основной · бот 2 · бот 3 · ＋ Бот» — у каждого свои вопросы, статистика, рассылка, тексты и функции; «Настройки бота» — адрес и слово для бота 2 и 3</td></tr>
           <tr data-k="n"><td>2.43</td><td>«Справка» → «🎛 Функции пульта»: 20 новых возможностей пульта включаются и выключаются (на всех устройствах); функций бота стало 25 — то же можно переключать командой /settings в боте и в меню сервера, пульт показывает «переключено в боте»</td></tr>
@@ -1516,7 +1521,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.45', PANEL_DATE = '16 ноября 2026'
+const PANEL_VERSION = '2.46', PANEL_DATE = '16 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -3630,7 +3635,7 @@ function botSelRender() {
 }
 async function botSwitch(slot) {
   curBot = botList().find(b => b.slot === slot) || botList()[0]; store('apex_admin_bot', String(curBot.slot))
-  bcData = null; btData = null; $('btQ').innerHTML = ''; $('btStatBlock').hidden = true; botSelRender()
+  bcData = null; btData = null; $('btQ').innerHTML = ''; $('btStatBlock').hidden = true; $('btUsersBlock').hidden = true; botSelRender()
   await Promise.all([bcLoad().catch(() => {}), btLoad().catch(() => {})])
 }
 $('botSel').addEventListener('click', e => {
@@ -3651,6 +3656,25 @@ $('botSel').addEventListener('click', e => {
     const sl = curBot.slot; await tgSaveSettings(s => { s.bots = (s.bots || []).filter(b => b.slot !== sl) }); await botSwitch(1); toast('Убран из пульта')
   })
 })
+
+// ── 2.46: пользователи бота — список, поиск, бан/разбан, отписка, написать, удалить (через робота → бот)
+function btUsersRender() {
+  const d = btData; if (!d?.ulist) { $('btUsersBlock').hidden = true; return }
+  $('btUsersBlock').hidden = false
+  const block = new Set(d.block || []), stop = new Set(d.stopl || []), wk = Date.now() - 7 * 864e5, q = $('btUQ').value.trim().replace(/^@/, '').toLowerCase(), f = $('btUF').value
+  $('btUSum').innerHTML = [[d.users, 'получают рассылки'], [d.ulist.filter(u => u.first > wk).length, 'новых за неделю'], [block.size, 'заблокировано'], [stop.size, 'без рассылок']].map(([n, t]) => `<div><b>${n}</b><span>${t}</span></div>`).join('')
+  const list = d.ulist.filter(u => (!q || String(u.id) === q || (u.un || '').toLowerCase().includes(q) || (u.name || '').toLowerCase().includes(q)) && (!f || (f === 'block' && block.has(u.id)) || (f === 'stop' && stop.has(u.id)) || (f === 'new' && u.first > wk))).slice(0, 40)
+  $('btUList').innerHTML = list.length ? list.map(u => `<div class="btq"><div class="btqh"><b>👤 ${esc(u.name || 'без имени')}</b>${u.un ? ' <span class="help">@' + esc(u.un) + '</span>' : ''}${block.has(u.id) ? ' <em class="kchip kc-f">бан</em>' : ''}${stop.has(u.id) ? ' <em class="kchip kc-u">без рассылок</em>' : ''}<time>${u.last ? fmt(u.last) : ''}</time></div>
+    <p class="help">№ ${u.id}${u.first ? ' · впервые ' + fmt(u.first) : ''}${u.visits ? ' · заходов ' + u.visits : ''}</p>
+    <div class="rowx"><button class="btn quiet small" type="button" data-ua="msg" data-uid="${u.id}">✉️ Написать</button><button class="btn quiet small" type="button" data-ua="${block.has(u.id) ? 'unban' : 'ban'}" data-uid="${u.id}">${block.has(u.id) ? '✅ Разбанить' : '🚫 Забанить'}</button><button class="btn quiet small" type="button" data-ua="stop" data-uid="${u.id}">${stop.has(u.id) ? '🔔 Вернуть рассылки' : '🔕 Отписать'}</button><button class="btn quiet small" type="button" data-ua="delete" data-uid="${u.id}">🗑</button></div></div>`).join('') : '<p class="note">Никого не нашлось.</p>'
+}
+$('btUQ').oninput = btUsersRender; $('btUF').onchange = btUsersRender
+$('btUList').addEventListener('click', e => { const b = e.target.closest('[data-ua]'); if (!b) return; guarded(b, async () => {
+  const act = b.dataset.ua, uid = +b.dataset.uid; let text = ''
+  if (act === 'msg') { text = (prompt('Сообщение человеку — бот отправит его от своего имени') || '').trim(); if (!text) return }
+  else if (!confirm({ ban: 'Забанить: бот перестанет отвечать этому человеку?', unban: 'Разбанить?', stop: 'Переключить рассылки для этого человека?', delete: 'Удалить карточку и вопросы этого человека? Нельзя отменить.' }[act])) return
+  await tgRelay('botAdmin', { act, uid, text, slot: curBot.slot }); await btLoad(); toast('Готово')
+}) })
 
 // ── 2.41: готовые шаблоны под полями — нажали, и текст подставился (непустое поле — с вопросом)
 const SUP = '{поддержка}', WEB = '{сайт}'
@@ -3702,7 +3726,7 @@ async function btLoad() {
 }
 function btRender() {
   const d = btData; if (!d) return
-  $('btNote').textContent = 'Обновлено ' + fmt(d.at) + ' · бот: ' + (d.host || '—')
+  $('btNote').textContent = 'Обновлено ' + fmt(d.at) + ' · бот: ' + (d.host || '—'); try { btUsersRender() } catch {}
   const only = $('btOnlyNew').checked, q = (d.q || []).slice().reverse().filter(x => !only || !x.ans)
   $('btQ').innerHTML = q.length ? q.slice(0, 30).map(x => `<div class="btq${x.ans ? ' done' : ''}"><div class="btqh"><b>${esc(x.name || 'человек')}</b>${x.en ? ' <em class="kchip kc-u">EN</em>' : ''}${x.kind && x.kind !== 'text' ? ' <em class="kchip kc-f">' + esc(x.kind) + '</em>' : ''}<time>${fmt(x.at)}</time></div>
     <p>${esc(x.text || '(без текста)')}</p>${x.ans ? `<p class="help">✓ Отвечено (${esc(x.ans)}) ${x.ansAt ? fmt(x.ansAt) : ''}</p>` : `<div class="rowx"><input data-qa="${x.id}" placeholder="Ответ — бот отправит его человеку${x.en ? ' (переведёт на английский)' : ''}" style="flex:1;min-width:0"><button class="btn small" data-qreply="${x.id}" type="button">Ответить</button></div>`}</div>`).join('') : '<p class="note">' + (only ? 'Все вопросы отвечены 👍' : 'Вопросов пока нет.') + '</p>'
