@@ -365,6 +365,11 @@ class ApexVpnService : VpnService(), PlatformInterface, CommandServerHandler {
                 tick++
                 val status = VpnState.status.value
                 val settings = AppSettings.value
+                // 3.22.2: базы сайтов — проверка раз в 30 минут, пока VPN включён (сама решает, пора ли качать).
+                // Фоновые задачи Android на многих телефонах (Realme, Xiaomi, Huawei) не запускаются, пока приложение закрыто
+                if (tick % 1800 == 60L && status == VpnStatus.Started && settings.rulesAuto) scope.launch {
+                    if (runCatching { com.apexvpn.client.data.RulesUpdater.update(this@ApexVpnService) }.getOrNull() is com.apexvpn.client.data.RulesUpdater.Result.Updated) reloadVpn()
+                }
 
                 // Скорость: весь трафик ядра идёт через сокеты этого приложения
                 val rx = TrafficStats.getUidRxBytes(uid)

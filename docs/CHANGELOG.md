@@ -2,6 +2,13 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.22.2 · 17 ноября 2026
+
+<img src="img/tags/fixed.svg" alt="Исправлено" height="22">
+
+- Базы сайтов не обновлялись сами на многих телефонах — теперь проверка идёт и при запуске приложения, и каждые полчаса, пока VPN включён
+- Сбой в любой другой фоновой задаче больше не мешает обновлению баз
+
 ## 3.22.1 · 16 ноября 2026
 
 <img src="img/tags/improved.svg" alt="Улучшено" height="22">

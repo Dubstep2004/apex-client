@@ -297,6 +297,13 @@ class ApexApp : Application() {
             }
         }
         BackgroundWork.schedule(this)
+        // 3.22.2: и при каждом запуске приложения — через 20 секунд, чтобы не мешать старту
+        appScope.launch {
+            kotlinx.coroutines.delay(20_000)
+            if (runCatching { com.apexvpn.client.data.RulesUpdater.update(this@ApexApp) }.getOrNull() is com.apexvpn.client.data.RulesUpdater.Result.Updated &&
+                VpnState.status.value == com.apexvpn.client.vpn.VpnStatus.Started
+            ) com.apexvpn.client.vpn.ApexVpnService.reload(this@ApexApp)
+        }
         // 259. Точные напоминания о конце подписки — при каждой новой дате окончания
         appScope.launch {
             Subscription.state.map { it.expireAt }.distinctUntilChanged().collect {

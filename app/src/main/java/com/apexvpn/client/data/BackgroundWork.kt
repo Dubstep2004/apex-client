@@ -29,22 +29,23 @@ class BackgroundWork(context: Context, params: WorkerParameters) : CoroutineWork
 
     override suspend fun doWork(): Result {
         val ctx = applicationContext
+        // 3.22.2: базы — первыми и отдельно: раньше ошибка в любом шаге выше обрывала задачу, и до баз дело не доходило
+        if (runCatching { RulesUpdater.update(ctx) }.getOrNull() is RulesUpdater.Result.Updated) runCatching { ApexVpnService.reload(ctx) }
         if (Subscription.needsRefresh()) {
             runCatching {
                 Subscription.refresh()
                 ApexVpnService.reload(ctx)
             }
         }
-        ExpiryAlerts.check(ctx)
+        runCatching { ExpiryAlerts.check(ctx) }
         // 3.16. Адрес подписки из файла на GitHub (раз в 6 часов); перенесли ссылку — обновляем подписку
         if (runCatching { SubHosts.refresh() }.getOrDefault(false)) runCatching { Subscription.refresh() }
         // 3.10. Шаблон «Скрыть VPN»: свежий список из интернета и новые приложения — сразу в список
         runCatching { HideTemplates.refresh() }
         if (runCatching { HideTemplates.autoApply(ctx) }.getOrDefault(0) > 0) com.apexvpn.client.vpn.ApexVpnService.reload(ctx)
         // 3.6. 1-го числа — итоги прошлого месяца
-        MonthStats.reportDue()?.let { notifyReport(ctx, it) }
-        if (RulesUpdater.update(ctx) is RulesUpdater.Result.Updated) ApexVpnService.reload(ctx)
-        CrashReporter.cleanup(ctx)
+        runCatching { MonthStats.reportDue()?.let { notifyReport(ctx, it) } }
+        runCatching { CrashReporter.cleanup(ctx) }
         // Новая версия на GitHub. «Ставить само» — скачиваем заранее и ставим, когда VPN выключен или экран погас;
         // иначе (или пока не вышло) — уведомление, нажатие сразу обновляет
         if (AppSettings.value.autoCheckUpdates) {

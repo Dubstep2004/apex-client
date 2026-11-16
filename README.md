@@ -17,7 +17,7 @@
 <p><b>Два ядра</b> · все популярные протоколы · <b>свои списки</b> с шаблонами · <b>3D-глобус</b> · <b>13 дизайнов</b>, палитры и <b>живое видео на фоне</b><br>
 автопилот с белыми списками · DNS «Авто» для каждой сети · базы сайтов каждый день · часы Wear OS</p>
 
-<sub>📱 Android — <b>3.22.1</b> (Android 7+) · sing-box 1.13 · Xray 26</sub><br>
+<sub>📱 Android — <b>3.22.2</b> (Android 7+) · sing-box 1.13 · Xray 26</sub><br>
 <sub>🌐 Сайт: <a href="https://dubstep2004.github.io">dubstep2004.github.io</a> · 💬 Поддержка: <a href="https://t.me/Apexx_support">@Apexx_support</a></sub><br>
 <a href="https://t.me/apex_client_news"><img src="docs/stats/tg-members.svg" alt="Канал APEX CLIENT в Telegram" height="22"></a>
 
@@ -869,15 +869,25 @@ core/apexcore/          Go: разбор подписки → конфиги sin
 
 <img src="docs/img/tags/new.svg" alt="Новое" height="22"> <img src="docs/img/tags/improved.svg" alt="Улучшено" height="22"> <img src="docs/img/tags/changed.svg" alt="Изменено" height="22"> <img src="docs/img/tags/fixed.svg" alt="Исправлено" height="22"> <img src="docs/img/tags/removed.svg" alt="Удалено" height="22">
 
-### 3.22.1 · 16 ноября 2026
+### 3.22.2 · 17 ноября 2026
+
+<img src="docs/img/tags/fixed.svg" alt="Исправлено" height="22">
+
+- Базы сайтов не обновлялись сами на многих телефонах — теперь проверка идёт и при запуске приложения, и каждые полчаса, пока VPN включён
+- Сбой в любой другой фоновой задаче больше не мешает обновлению баз
+
+#### 📚 Все версии (144)
+
+Каждая версия — отдельная вкладка.
+
+<details>
+<summary><b>3.22.1</b> · 16 ноября 2026</summary>
 
 <img src="docs/img/tags/improved.svg" alt="Улучшено" height="22">
 
 - «Написать в поддержку» открывает бота сразу с версией приложения — поддержка видит её без лишних вопросов, а бот подскажет, если вышла новее
 
-#### 📚 Все версии (143)
-
-Каждая версия — отдельная вкладка.
+</details>
 
 <details>
 <summary><b>3.22.0</b> · 16 ноября 2026</summary>
