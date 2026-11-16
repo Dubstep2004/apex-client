@@ -191,6 +191,8 @@ async function dragRow(p, rowSel, from, to) { // перетащить строк
       if (r.hist !== 1) bad(W, 'история техработ пустая')
       if (r.sched !== 1) bad(W, 'расписание пометок не рисуется')
       if (r.feat < 18) bad(W, 'функций бота в пульте меньше 18: ' + r.feat)
+      const t = await p.evaluate(() => { tplRender(); const n = document.querySelectorAll('[data-tplf]').length; $('bcWelcome').value = ''; document.querySelector('[data-tplf="bcWelcome"][data-tpli="1"]').click(); return { n, v: $('bcWelcome').value, opts: $('bcTopicTpl').options.length } })
+      if (t.n < 20 || !/Правила/.test(t.v) || t.opts < 7) bad(W, 'шаблоны: кнопок ' + t.n + ', тем ' + t.opts + ', подстановка «' + t.v.slice(0, 20) + '»')
     }
     // 2.39: переключатели автопостов подряд — каждое сохранение берёт свежий settings.json, ни одно не теряется
     {

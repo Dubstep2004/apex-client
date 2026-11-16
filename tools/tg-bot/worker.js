@@ -254,7 +254,7 @@ async function onGroup(env, cfg, m) { // группа: приветствие и
     for (const u of m.new_chat_members.filter(u => !u.is_bot).slice(0, 5)) {
       const j = await kget(env, 'joined', {}); j[u.id] = now(); for (const k in j) if (now() - j[k] > 86400000) delete j[k]; await kput(env, 'joined', j)
       const name = await botName(env)
-      await tg(env, 'sendMessage', { chat_id: m.chat.id, text: cfg.welcome.replaceAll('{имя}', u.first_name || 'друг'), reply_markup: { inline_keyboard: [[{ text: '📥 Как установить', url: name ? `https://t.me/${name}?start=install` : SITE }, { text: '💬 Поддержка', url: cfg.support }]] } })
+      await tg(env, 'sendMessage', { chat_id: m.chat.id, text: fill(cfg, cfg.welcome).replaceAll('{имя}', u.first_name || 'друг'), reply_markup: { inline_keyboard: [[{ text: '📥 Как установить', url: name ? `https://t.me/${name}?start=install` : SITE }, { text: '💬 Поддержка', url: cfg.support }]] } })
     }
     return
   }
@@ -451,7 +451,7 @@ export async function tick(env, force) {
     const users = await kget(env, 'users', [])
     if (!st.done && (!bc.at || bc.at <= now())) {
       for (const uid of users.slice(st.i, st.i + 25)) {
-        const r = bc.poll ? await tg(env, 'sendPoll', { chat_id: uid, question: String(bc.poll.q).slice(0, 300), options: bc.poll.options.slice(0, 10).map(o => ({ text: String(o).slice(0, 100) })), is_anonymous: true }) : await tg(env, 'sendMessage', { chat_id: uid, text: String(bc.text).slice(0, 4000) + '\n\n/stop — не получать рассылки', disable_web_page_preview: true })
+        const r = bc.poll ? await tg(env, 'sendPoll', { chat_id: uid, question: String(bc.poll.q).slice(0, 300), options: bc.poll.options.slice(0, 10).map(o => ({ text: String(o).slice(0, 100) })), is_anonymous: true }) : await tg(env, 'sendMessage', { chat_id: uid, text: fill(cfg, String(bc.text)).slice(0, 4000) + '\n\n/stop — не получать рассылки', disable_web_page_preview: true })
         if (r.ok) { st.ok++; if (bc.poll) st.polls.push(r.result.poll.id) } else st.fail++
       }
       st.i += 25; if (st.i >= users.length) { st.done = true; st.at = now() }
@@ -520,7 +520,7 @@ export default {
           if (d.startsWith('join:')) await join(env, cq, d.slice(5))
           else if (d.startsWith('qr:') && owner) { // быстрый ответ владельца
             const [, i, fwid] = d.split(':'), cfg = await config(env), to = await env.APEX_KV?.get('fw:' + fwid)
-            const r = to && cfg.quick[+i] ? await sendToUser(env, cfg, to, cfg.quick[+i], +fwid) : { ok: false, description: 'вопрос устарел' }
+            const r = to && cfg.quick[+i] ? await sendToUser(env, cfg, to, fill(cfg, cfg.quick[+i]), +fwid) : { ok: false, description: 'вопрос устарел' }
             await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: r.ok ? '✅ Отправлено' : '⚠️ ' + (r.description || 'не отправилось'), show_alert: !r.ok })
           }
           else if (d.startsWith('fb:')) { // «Помогло?»

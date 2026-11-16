@@ -331,6 +331,7 @@
   .add { width: 100%; border: 1px dashed var(--line); background: none; color: var(--dim); border-radius: var(--r-md); padding: 12px; cursor: pointer; font-weight: 700; }
   .add:hover { color: var(--text); border-color: var(--dim); }
   .tpls { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 14px; }
+  .tplmini { margin: 6px 0 6px; gap: 6px; } .tplmini .pill { font-size: 12.5px; padding: 4px 10px; }
   .mark { border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px 12px; margin: 0 0 8px; background: var(--field); }
   .mark .top { display: flex; gap: 8px; align-items: center; } .mark .n { background: transparent; border: 0; padding: 6px 2px; font-weight: 700; flex: 1; min-width: 0; }
   .mark .more { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
@@ -958,7 +959,7 @@
         <label class="f" for="bcSup">Ссылка поддержки</label><input id="bcSup" type="url" placeholder="https://t.me/…">
         <p class="f" style="margin-top:14px">Темы — кнопки в меню бота, по порядку</p>
         <div id="bcTopics"></div>
-        <div class="rowx" style="margin-top:10px"><button class="btn quiet small" id="bcAdd" type="button">＋ Добавить тему</button><button class="btn quiet small" id="bcUndo" type="button">Отменить изменения</button></div>
+        <div class="rowx" style="margin-top:10px"><button class="btn quiet small" id="bcAdd" type="button">＋ Добавить тему</button><select id="bcTopicTpl" aria-label="Тема из шаблона"><option value="">＋ Тема из шаблона…</option></select><button class="btn quiet small" id="bcUndo" type="button">Отменить изменения</button></div>
         <div class="bfeat" id="bcFeat"><p class="f" style="margin-top:16px">Функции бота — включаются и выключаются здесь</p>
           <p class="help">Новые функции работают с кодом бота от 16 ноября: на своём сервере — <code>sudo apex</code> → «Обновления» → «Обновить бота» (или автообновление), в Cloudflare — «Применить к боту в Cloudflare».</p>
           <div id="bcFeatList"></div></div>
@@ -1134,7 +1135,7 @@
         <p class="note">Для второго человека: в этом браузере остаются только «Обзор», «Баннеры», «Объявление», «Telegram» и «Справка» — серверы, обновления и настройки скрыты.</p>
         <label class="sw"><div class="t"><b>Режим помощника в этом браузере</b><span>Выключается здесь же</span></div><span class="tog"><input type="checkbox" id="helperOn"><i></i></span></label>
         <p class="help">Это удобство, а не защита: настоящие права даёт GitHub. Помощнику — свой токен: github.com → Settings → Developer settings → Fine-grained tokens → только репозиторий apex-client → <b>Contents: Read and write</b> (без Secrets и Actions). Тогда он не увидит и не изменит секреты, а все его сохранения видны в «Истории» с его именем.</p></div>
-      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 16 ноября 2026 · приложение 3.22.0 · пульт 2.40.</p>
+      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 16 ноября 2026 · приложение 3.22.0 · пульт 2.41.</p>
       <div class="helptools">
         <input id="hq" type="search" placeholder="Найти в справке, например «техработы»" aria-label="Найти в справке" autocomplete="off">
         <button class="btn quiet small" id="hOpen" type="button">Развернуть всё</button>
@@ -1363,6 +1364,7 @@
         <div class="nwkind" id="nwKind" role="group" aria-label="Сортировка"><button type="button" class="pill on" data-k="">Все</button><button type="button" class="pill" data-k="n">🟢 Новое</button><button type="button" class="pill" data-k="u">🟣 Улучшено</button><button type="button" class="pill" data-k="f">🔵 Исправлено</button></div>
         <div id="nwOther" hidden></div>
         <div class="tbl" id="nwPult"><table id="pultLog">
+          <tr data-k="n"><td>2.41</td><td>Готовые шаблоны: приветствие в группе, /start, «нет ответа», описание бота, быстрые ответы, рассылка, опрос и варианты; «＋ Тема из шаблона» — оплата, устройства, ТВ, часы, игры, банки</td></tr>
           <tr data-k="n"><td>2.40</td><td>Telegram → «💬 Бот»: вопросы людей с ответом прямо из пульта (бот переведёт и спросит «Помогло?»), статистика бота (темы, жалобы, опросы, приглашения), рассылка и опрос в личку</td></tr>
           <tr data-k="n"><td>2.40</td><td>«Тексты и функции бота»: 18 переключателей (рассылка, /news, /invite, /remind, жалобы, перевод, антифлуд, группа, конкурсы…), описание бота, приветствие в группе, быстрые ответы, картинки к темам и ссылки на тему</td></tr>
           <tr data-k="n"><td>2.40</td><td>«Обзор»: «✅ Всё ли в порядке?» одной кнопкой, «Неделя к неделе», у скольких подписка кончается через 3 и 7 дней (с кнопкой «Напомнить в канале»), сколько уже обновились; большой экран — карточка бота и светлая тема</td></tr>
@@ -1491,7 +1493,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.40', PANEL_DATE = '16 ноября 2026'
+const PANEL_VERSION = '2.41', PANEL_DATE = '16 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -3176,7 +3178,7 @@ function renderTgState() {
   renderTgStat()
 }
 async function tgOpen() { // при открытии вкладки
-  await tgLoadSettings().catch(() => {}); hostApply(); renderBest(); btLoad().catch(() => {}); bcLoad().catch(() => {}); bsRender(); renderTgPick(); tgPreview(); renderTgSched().catch(() => {})
+  await tgLoadSettings().catch(() => {}); hostApply(); renderBest(); tplRender(); btLoad().catch(() => {}); bcLoad().catch(() => {}); bsRender(); renderTgPick(); tgPreview(); renderTgSched().catch(() => {})
   $('tgDigest').checked = tgSet?.digest !== false; $('tgHoliday').checked = tgSet?.holidays !== false
   $('tgAutoVer').checked = tgSet?.version !== false; $('tgAutoVideo').checked = tgSet?.video !== false; $('tgAutoMaint').checked = tgSet?.maint !== false; $('tgAutoBtn').checked = tgSet?.buttons !== false; $('tgAutoRemind').checked = tgSet?.remind !== false
   tgState = await tgReadState(); renderTgState()
@@ -3522,6 +3524,43 @@ $('undoSave').onclick = () => guarded($('undoSave'), async () => {
 // Большой экран: светлый / тёмный
 $('bigT').onclick = () => { $('big').classList.toggle('light'); store('apex_admin_bigl', $('big').classList.contains('light') ? '1' : null) }
 if (load('apex_admin_bigl')) $('big').classList.add('light')
+
+// ── 2.41: готовые шаблоны под полями — нажали, и текст подставился (непустое поле — с вопросом)
+const SUP = '{поддержка}', WEB = '{сайт}'
+const TPL = {
+  bcWelcome: [['👋 Коротко', 'Добро пожаловать, {имя}! 👋\nЗдесь новости и помощь по APEX CLIENT.'], ['📌 С правилами', 'Привет, {имя}! 👋 Рады видеть в чате APEX CLIENT.\n\nПравила простые: без рекламы и ссылок на чужие сервисы, уважаем друг друга. Вопросы по подключению — смело пишите сюда или в поддержку.'], ['🚀 С первыми шагами', 'Привет, {имя}! 🚀\n1. Скачайте приложение — кнопка «Как установить» ниже.\n2. Вставьте ссылку подписки и нажмите на щит.\nЕсли что-то не так — «Поддержка».'], ['🎉 Тепло', '{имя}, добро пожаловать в семью APEX CLIENT! 🎉 Здесь новости, конкурсы и помощь. Устраивайтесь поудобнее 🙂'], ['🇬🇧 English', 'Welcome, {имя}! 👋 News and help for APEX CLIENT are here. Questions — ask in the chat or contact support.']],
+  bcGreet: [['👋 Обычное', 'Привет! Я бот APEX CLIENT 👋\nВыберите тему или просто напишите вопрос своими словами.'], ['⚡ Коротко', 'Привет! Чем помочь? Выберите тему ниже 👇'], ['🛟 Поддержка', 'Здравствуйте! Я помогу с установкой, обновлением и подключением APEX CLIENT. Выберите тему или опишите проблему — если не найду ответ, передам поддержке.'], ['🎁 С конкурсами', 'Привет! 👋 Здесь ответы на частые вопросы, а в нашем канале — новости и конкурсы. Выберите тему 👇']],
+  bcNot: [['🤔 Обычное', 'Не нашёл готового ответа 🤔 Выберите тему или напишите в поддержку — там помогут.'], ['📨 Передам', 'Такого ответа у меня нет, но я передал вопрос поддержке — ответ придёт сюда 🙌'], ['🔍 Уточните', 'Не понял вопрос 🙈 Попробуйте иначе: «не подключается», «как обновить», «медленно» — или выберите тему ниже.']],
+  bcDesc: [['🛟 Помощник', 'Помощник APEX CLIENT: как установить и обновить приложение, что делать, если не подключается. Отвечу сразу, а сложные вопросы передам поддержке.'], ['📣 С новостями', 'Бот APEX CLIENT — ответы на частые вопросы, состояние серверов (/status) и свежие новости (/news).'], ['🇬🇧 English', 'APEX CLIENT assistant: install, update and connection help. Server status — /status.']],
+  bcShort: [['Поддержка', 'Поддержка APEX CLIENT'], ['Помощь 24/7', 'Помощь с APEX CLIENT — круглосуточно'], ['Статус и новости', 'Помощь, статус серверов и новости APEX CLIENT']],
+  bcQuick: [['🔧 Подключение', 'Обновите подписку: Настройки → Подписка → «Обновить»\nВключите автопилот — он сам выберет рабочий сервер\nОткройте «Проверка сети» на главном и пришлите итог (кнопка «Поделиться»)\nОбновите приложение до последней версии: https://dubstep2004.github.io/update/'], ['💳 Оплата', 'Продлить подписку можно здесь: ' + SUP + '\nОплата прошла — подписка обновится в течение 5 минут, нажмите «Обновить» в приложении\nНапишите, пожалуйста, ваш логин или почту из подписки — проверю'], ['🐢 Скорость', 'Попробуйте режим «Скорость» и другой сервер — автопилот выберет быстрый\nСделайте «Тест скорости» с VPN и без и пришлите оба результата\nНа мобильном с белыми списками работает только «Обход LTE» — он медленнее']],
+  btText: [['🆕 Новая версия', 'Вышла новая версия APEX CLIENT 🆕\nОбновление придёт само — нажмите «Обновить» на плашке в приложении.\nЧто нового: https://dubstep2004.github.io/versions/'], ['🔧 Техработы', '🔧 Сегодня с 02:00 до 03:00 (МСК) — техработы на серверах. Автопилот сам переключит на рабочий сервер. Спасибо за терпение!'], ['⏳ Продление', '⏳ Не забудьте продлить подписку APEX CLIENT, чтобы VPN не отключился. Напоминание за 3 дня — команда /remind'], ['🎁 Конкурс', '🎁 В канале начался конкурс! Нажмите «Участвую» под постом — победителей выберем случайно. Удачи 🍀'], ['🙏 Спасибо', 'Спасибо, что пользуетесь APEX CLIENT 💚 Если что-то не так — просто напишите сюда.']],
+  btOpts: [['👍 Как работает', 'Отлично\nНормально\nПлохо'], ['⭐ Оценка 1–5', '5 — отлично\n4\n3\n2\n1 — плохо'], ['🌍 Какой сервер', 'Германия\nФинляндия\nНидерланды\nДругой'], ['✅ Да / Нет', 'Да\nНет']],
+}
+const TPL_POLLQ = [['Как работает VPN?', 'Как работает APEX CLIENT в последние дни?'], ['Оценка', 'Оцените APEX CLIENT от 1 до 5'], ['Сервер', 'Каким сервером пользуетесь чаще?']]
+const TOPIC_TPL = [
+  { id: 'pay', title: '💳 Оплата и продление', words: ['оплат', 'продл', 'купить', 'цена', 'стоимост', 'тариф'], text: 'Продлить подписку можно здесь: ' + SUP + '\nПосле оплаты подписка обновится в течение 5 минут — нажмите «Обновить» в приложении.' },
+  { id: 'devices', title: '📱 Сколько устройств', words: ['устройств', 'телефон', 'планшет', 'компьютер', 'телевизор', 'тв'], text: 'Одна подписка работает на нескольких устройствах — сколько именно, зависит от тарифа. Установить: ' + WEB },
+  { id: 'tv', title: '📺 На телевизоре', words: ['телевизор', 'тв', 'android tv', 'приставк'], text: 'APEX CLIENT работает на Android TV: скачайте APK с сайта ' + WEB + ' и установите через файловый менеджер или «Downloader».' },
+  { id: 'watch', title: '⌚ На часах', words: ['часы', 'wear', 'watch'], text: 'Для часов Wear OS есть отдельное приложение apex-watch — его ставят с телефона. Подробнее: ' + WEB },
+  { id: 'games', title: '🎮 Игры и пинг', words: ['игр', 'пинг', 'лаг', 'game'], text: 'Для игр включите режим «Игры» — он выбирает сервер с самым низким пингом. Пинг видно у каждого сервера в списке.' },
+  { id: 'banks', title: '🏦 Банки и Госуслуги', words: ['банк', 'госуслуг', 'сбер', 'тинькофф', 'оплата картой'], text: 'Российские сайты и банки открываются напрямую, мимо VPN — это включено по умолчанию. Если банк не открывается: Настройки → «Скрыть от банков».' },
+]
+function tplRender() {
+  Object.entries(TPL).forEach(([id, list]) => {
+    const el = $(id); if (!el || el.previousElementSibling?.dataset?.tplfor === id) return
+    el.insertAdjacentHTML('beforebegin', `<div class="tpls tplmini" data-tplfor="${id}">${list.map(([t], i) => `<button class="pill" type="button" data-tplf="${id}" data-tpli="${i}">${esc(t)}</button>`).join('')}</div>`)
+  })
+  if (!$('bcTopicTpl').options[1]) $('bcTopicTpl').insertAdjacentHTML('beforeend', TOPIC_TPL.map((t, i) => `<option value="${i}">${esc(t.title)}</option>`).join(''))
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-tplf]'); if (!b) return
+  const id = b.dataset.tplf, el = $(id); let v = TPL[id][+b.dataset.tpli][1]
+  if (id === 'btText' && btKind === 'poll') v = TPL_POLLQ[+b.dataset.tpli % TPL_POLLQ.length][1]
+  if (el.value.trim() && el.value.trim() !== v && !confirm('Заменить текст в поле шаблоном «' + b.textContent + '»?')) return
+  el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); el.focus(); toast('Шаблон подставлен — поправьте под себя и сохраните')
+})
+$('bcTopicTpl').onchange = () => { const t = TOPIC_TPL[+$('bcTopicTpl').value]; $('bcTopicTpl').value = ''; if (!t) return; const cur = bcCollect(); if (cur.topics.length >= 12) return toast('Не больше 12 тем', false); if (cur.topics.some(x => x.id === t.id)) return toast('Такая тема уже есть', false); cur.topics.push({ ...t, words: [...t.words] }); bcData = { ...bcData, ...cur }; bcRender(); toast('Тема добавлена — проверьте текст и сохраните') }
 
 // ── 2.40: бот — вопросы, статистика, рассылка (docs/stats/bot.enc.json, ключ — тот же, что у «Пользователей»)
 const BOT_FILE = 'docs/stats/bot.enc.json'
