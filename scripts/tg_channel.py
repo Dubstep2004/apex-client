@@ -322,7 +322,38 @@ def bot_sync():
     enc = AESGCM(hashlib.sha256(('apex-bot-data:' + key).encode()).digest()).encrypt(iv, json.dumps(data, ensure_ascii=False).encode(), None)
     if not DRY: open(out, 'w').write(json.dumps({'v': 1, 'i': base64.b64encode(iv).decode(), 'c': base64.b64encode(enc).decode()}) + '\n')
     state['botsig'], state['botsync'] = sig, now
+    if (data.get('features') or {}).get('remind', True): remind_renewals(data.get('remind') or [])
     return True
+
+
+def remind_renewals(ids):
+    """2.40: напоминание о продлении (бот → /remind). Раз в день: по номеру Telegram ищем подписку в Remnawave;
+    осталось 3 дня или меньше — пишем человеку один раз на каждую дату окончания. В файлы не пишем ни номера, ни даты."""
+    url, tok = E('REMNA_URL', '').rstrip('/'), E('REMNA_TOKEN', '')
+    if not (ids and url.startswith('https://') and tok) or DRY: return
+    today = datetime.datetime.now(MSK).strftime('%Y-%m-%d')
+    if state.get('rmdday') == today: return
+    state['rmdday'] = today
+    import hashlib
+    sent_marks, n = set(state.get('rmdsent') or []), 0
+    h = {'Authorization': 'Bearer ' + tok, 'Accept': 'application/json', 'User-Agent': 'APEX-robot'}
+    if E('REMNA_COOKIE', ''): h['Cookie'] = E('REMNA_COOKIE', '')
+    for tid in ids[:500]:
+        try:
+            r = json.load(urllib.request.urlopen(urllib.request.Request(f'{url}/api/users/by-telegram-id/{int(tid)}', headers=h), timeout=20)).get('response') or []
+        except Exception: continue
+        for u in (r if isinstance(r, list) else [r])[:3]:
+            try: exp = datetime.datetime.fromisoformat(str(u.get('expireAt')).replace('Z', '+00:00'))
+            except Exception: continue
+            left = (exp - datetime.datetime.now(datetime.timezone.utc)).total_seconds() / 86400
+            mark = hashlib.sha256(f'{tid}|{u.get("expireAt")}'.encode()).hexdigest()[:16]  # без номера и даты в открытом виде
+            if 0 < left <= 3 and mark not in sent_marks:
+                d = int(left) or 1
+                try: tg('sendMessage', chat_id=int(tid), text=f'🔔 Подписка APEX CLIENT закончится через {d} {"день" if d == 1 else "дня"} ({exp.astimezone(MSK).strftime("%d.%m")}). Продлить: {SUPPORT}\n\nВыключить напоминания — /remind в боте'); n += 1
+                except Exception: pass
+                sent_marks.add(mark)
+    state['rmdsent'] = list(sent_marks)[-2000:]
+    if n: log('Напоминания о продлении', f'отправлено: {n}')
 
 
 def bot_status():

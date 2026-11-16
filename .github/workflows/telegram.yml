@@ -42,6 +42,9 @@ jobs:
           BOT_WORKER_URL: ${{ secrets.BOT_WORKER_URL }}
           BOT_WORKER_KEY: ${{ secrets.BOT_WORKER_KEY }}
           STATS_KEY: ${{ secrets.STATS_KEY }}
+          REMNA_URL: ${{ secrets.REMNA_URL }}
+          REMNA_TOKEN: ${{ secrets.REMNA_TOKEN }}
+          REMNA_COOKIE: ${{ secrets.REMNA_COOKIE }}
           GITHUB_TOKEN: ${{ github.token }}
         run: python3 scripts/tg_channel.py
       - name: Save state
