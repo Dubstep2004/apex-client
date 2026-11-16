@@ -25,6 +25,17 @@
 //   его ответ на пересланное сообщение бот отправит человеку; счёт, какие темы спрашивают чаще.
 
 // ЧТО НОВОГО В БОТЕ (пульт показывает это в «Справка» → «Что нового» → «Бот»; V — версия, n/u/f — новое/улучшено/исправлено)
+// V|2.0|16 ноября 2026
+// n|Рассылка и опросы в личку всем, кто писал боту (из пульта); /stop — не получать
+// n|Напоминание о продлении подписки — для тех, кто включил /remind
+// n|Группа: приветствие новичков с кнопками и защита от ссылок-спама в первые сутки
+// n|Фото, голосовые и файлы — вам в личку; быстрые ответы кнопками под пересланным вопросом
+// n|«Пригласи друга»: /invite — своя ссылка и счёт приглашённых
+// n|Конкурс: только подписчики канала; по желанию — без пустых аккаунтов (нет фото и @имени); победителям — поздравление в личку
+// n|Меню команд «/», описание бота из пульта, картинки в ответах, ссылки на тему (t.me/бот?start=тема)
+// n|Через день после ответа — «Помогло?»; жалобы на сервер («не работает Германия») — вам, если их несколько за час
+// n|Перевод вашего ответа на английский для англоязычных; защита от флуда; «у меня 3.20» — подскажет новую версию
+// n|Данные для пульта: вопросы, статистика, опросы, приглашения — зашифрованы, забирает робот GitHub
 // V|1.4|16 ноября 2026
 // f|Пересылка вопросов владельцу: не больше 3 в час от одного человека — личку не завалят спамом
 // V|1.3|16 ноября 2026
@@ -78,6 +89,11 @@ const isEn = (cfg, u) => cfg.features.english && !!u?.language_code && !RU_LANGS
 
 const json = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { 'content-type': 'application/json' } })
 
+// ── Хранилище: JSON в KV (Cloudflare) или в файле (свой сервер)
+const kget = async (env, k, d) => { try { const v = await env.APEX_KV?.get(k); return v ? JSON.parse(v) : d } catch { return d } }
+const kput = (env, k, v, ttl) => env.APEX_KV?.put(k, JSON.stringify(v), ttl ? { expirationTtl: ttl } : undefined).catch?.(() => {})
+const now = () => Date.now()
+
 async function tg(env, method, body) {
   const r = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/${method}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
   return r.json()
@@ -102,11 +118,20 @@ async function config(env) {
     support: (c?.support && String(c.support).startsWith('https://')) ? String(c.support) : ((env.SUPPORT && env.SUPPORT.startsWith('https://')) ? env.SUPPORT : 'https://t.me/Apexx_support'),
     topics: topics.length ? topics : FAQ.map(f => ({ ...f, text: f.text || 'Поддержка поможет с подключением, подпиской и продлением: {поддержка}' })),
     // Функции бота: пульт → «Функции бота». Нет настройки — значение по умолчанию
-    features: Object.fromEntries(Object.entries({ status: true, ping: true, english: true, forward: false, stats: true }).map(([k, d]) => [k, typeof c?.features?.[k] === 'boolean' ? c.features[k] : d])),
+    features: Object.fromEntries(Object.entries(FEATURES).map(([k, d]) => [k, typeof c?.features?.[k] === 'boolean' ? c.features[k] : d])),
+    // 2.0: быстрые ответы владельца, описание бота, рассылка/опрос, картинки к темам
+    quick: (Array.isArray(c?.quick) ? c.quick : QUICK).map(x => String(x).slice(0, 300)).filter(Boolean).slice(0, 6),
+    description: String(c?.description || '').slice(0, 512), short: String(c?.short || '').slice(0, 120),
+    broadcast: c?.broadcast && /^[\w-]{4,40}$/.test(String(c.broadcast.id || '')) ? c.broadcast : null,
+    images: Object.fromEntries((Array.isArray(c?.topics) ? c.topics : []).filter(t => t?.id && /^https:\/\/\S+$/.test(t.image || '')).map(t => [String(t.id).replace(/[^\w-]/g, '').slice(0, 24), t.image])),
+    channel: /^@?\w{4,}$/.test(String(c?.channel || '')) ? String(c.channel) : '',
+    welcome: String(c?.welcome || 'Добро пожаловать, {имя}! 👋\nЗдесь новости и помощь по APEX CLIENT.').slice(0, 600),
   }
   cfgAt = Date.now()
   return cfgCache
 }
+const FEATURES = { broadcast: true, news: true, status: true, ping: true, english: true, forward: false, stats: true, welcome: true, antispam: true, invite: true, remind: true, followup: true, complaints: true, translate: true, antiflood: true, version: true, contestSub: true, contestReal: false }
+const QUICK = ['Обновите подписку: Настройки → Подписка → «Обновить»', 'Включите автопилот — он сам выберет рабочий сервер', 'Откройте «Проверка сети» на главном и пришлите итог (кнопка «Поделиться»)', 'Обновите приложение до последней версии: ' + SITE + '/update/']
 const fill = (cfg, t) => t.replaceAll('{сайт}', SITE).replaceAll('{поддержка}', cfg.support)
 const topicsOf = (cfg, en) => en ? FAQ_EN : cfg.topics
 const menu = (cfg, en) => ({ inline_keyboard: topicsOf(cfg, en).map(f => [{ text: f.title, callback_data: (en ? 'faqen:' : 'faq:') + f.id }]) })
@@ -158,26 +183,125 @@ function findFaq(cfg, text, en) {
   return best
 }
 
+// ── 2.0: пользователи бота (для рассылки), флуд, версии, новости, перевод
+const flood = new Map() // в памяти: uid → [время сообщений за минуту]
+function flooded(uid) {
+  const t = now(), a = (flood.get(uid) || []).filter(x => t - x < 60000); a.push(t); flood.set(uid, a)
+  if (flood.size > 5000) flood.clear()
+  return a.length > 8 ? (a.length === 9 ? 'warn' : 'skip') : ''
+}
+async function remember(env, u) { // кто писал боту — для рассылки (без /stop)
+  const users = await kget(env, 'users', [])
+  if (!users.includes(u.id) && !(await kget(env, 'stop', [])).includes(u.id)) { users.push(u.id); await kput(env, 'users', users.slice(-50000)) }
+}
+let latest = { v: '', at: 0 }
+async function latestVersion() {
+  if (now() - latest.at < 600000 && latest.v) return latest.v
+  try { const r = await fetch('https://api.github.com/repos/Dubstep2004/apex-client/releases/latest', { headers: { 'user-agent': 'APEX-bot', accept: 'application/vnd.github+json' } }); if (r.ok) latest = { v: String((await r.json()).tag_name || '').replace(/^v/, ''), at: now() } } catch {}
+  return latest.v
+}
+const vcmp = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) - (y[i] || 0); return 0 }
+async function newsText(cfg) {
+  try {
+    const st = await (await fetch(SITE + '/apex-client/stats/tg-state.json', { cf: { cacheTtl: 300 } })).json()
+    const ch = (cfg.channel || '').replace(/^@/, ''), posts = (st.views || []).slice(-3).reverse()
+    if (!posts.length) return '📰 Новостей пока нет'
+    return '📰 Последние новости\n\n' + posts.map(p => '• ' + p.text + (ch ? '\nhttps://t.me/' + ch + '/' + p.id : '')).join('\n\n')
+  } catch { return '📰 Новости не загрузились — загляните в канал' }
+}
+async function translate(env, text) { // русский → английский: Workers AI (Cloudflare) или CF_ACCOUNT_ID + CF_AI_TOKEN (свой сервер)
+  const body = { text, source_lang: 'russian', target_lang: 'english' }
+  try {
+    if (env.AI) return (await env.AI.run('@cf/meta/m2m100-1.2b', body))?.translated_text || ''
+    if (env.CF_ACCOUNT_ID && env.CF_AI_TOKEN) {
+      const r = await fetch(`https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/ai/run/@cf/meta/m2m100-1.2b`, { method: 'POST', headers: { authorization: 'Bearer ' + env.CF_AI_TOKEN, 'content-type': 'application/json' }, body: JSON.stringify(body) })
+      return (await r.json())?.result?.translated_text || ''
+    }
+  } catch {}
+  return ''
+}
+let meName = ''
+async function botName(env) { if (!meName) { const r = await tg(env, 'getMe', {}); meName = r.result?.username || '' } return meName }
+
+// Вопросы для пульта: q → последние 100 {id, uid, name, text, at, kind, ans}
+async function logQuestion(env, q) { const l = await kget(env, 'q', []); l.push(q); await kput(env, 'q', l.slice(-100)) }
+async function markAnswered(env, fwid, how) { const l = await kget(env, 'q', []), q = l.find(x => x.id === fwid); if (q) { q.ans = how; q.ansAt = now(); await kput(env, 'q', l) } return q }
+
+async function forwardToOwner(env, cfg, m, en, kind) {
+  if (!(cfg.features.forward && env.OWNER_ID && env.APEX_KV && await fwAllowed(env, m.from?.id))) return false
+  const fw = await tg(env, 'forwardMessage', { chat_id: env.OWNER_ID, from_chat_id: m.chat.id, message_id: m.message_id })
+  if (!fw.ok) return false
+  const id = fw.result.message_id
+  await env.APEX_KV.put('fw:' + id, String(m.chat.id), { expirationTtl: 14 * 86400 })
+  await logQuestion(env, { id, uid: m.chat.id, name: who({ username: m.from?.username, name: m.from?.first_name }), text: (m.text || m.caption || '').slice(0, 500), kind, at: now(), en: !!en })
+  const kb = cfg.quick.map((q, i) => [{ text: '⚡ ' + q.slice(0, 40), callback_data: `qr:${i}:${id}` }])
+  await tg(env, 'sendMessage', { chat_id: env.OWNER_ID, reply_to_message_id: id, text: (kind === 'text' ? '❓ Вопрос без готового ответа' : '📎 Прислали ' + kind) + ' от ' + who({ username: m.from?.username, name: m.from?.first_name }) + (en ? ' (пишет по-английски — ответ переведу)' : '') + '. Ответьте на пересланное сообщение или нажмите быстрый ответ.', reply_markup: { inline_keyboard: kb } })
+  await tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? EN.sent : 'Передал ' + (kind === 'text' ? 'ваш вопрос' : kind) + ' в поддержку — ответ придёт сюда 🙌', reply_markup: menu(cfg, en) })
+  return true
+}
+async function sendToUser(env, cfg, to, text, fwid) { // ответ владельца человеку: перевод для англоязычных + «Помогло?» через день
+  const q = (await kget(env, 'q', [])).find(x => x.id === fwid)
+  let out = text
+  if (q?.en && cfg.features.translate && /[а-яё]/i.test(text)) { const t = await translate(env, text); if (t) out = t }
+  const r = await tg(env, 'sendMessage', { chat_id: to, text: out, disable_web_page_preview: true })
+  if (r.ok) { await markAnswered(env, fwid, 'бот'); if (cfg.features.followup) { const fu = await kget(env, 'fu', {}); fu[to] = { at: now() + 86400000, qid: fwid, en: !!q?.en }; await kput(env, 'fu', fu) } }
+  return r
+}
+
+async function onGroup(env, cfg, m) { // группа: приветствие и защита от ссылок от новичков
+  if (m.new_chat_members && cfg.features.welcome) {
+    for (const u of m.new_chat_members.filter(u => !u.is_bot).slice(0, 5)) {
+      const j = await kget(env, 'joined', {}); j[u.id] = now(); for (const k in j) if (now() - j[k] > 86400000) delete j[k]; await kput(env, 'joined', j)
+      const name = await botName(env)
+      await tg(env, 'sendMessage', { chat_id: m.chat.id, text: cfg.welcome.replaceAll('{имя}', u.first_name || 'друг'), reply_markup: { inline_keyboard: [[{ text: '📥 Как установить', url: name ? `https://t.me/${name}?start=install` : SITE }, { text: '💬 Поддержка', url: cfg.support }]] } })
+    }
+    return
+  }
+  if (cfg.features.antispam && !m.from?.is_bot && ((m.entities || []).concat(m.caption_entities || []).some(e => ['url', 'text_link', 'mention'].includes(e.type)) || m.forward_origin)) {
+    const j = await kget(env, 'joined', {})
+    if (j[m.from.id] && now() - j[m.from.id] < 86400000) {
+      await tg(env, 'deleteMessage', { chat_id: m.chat.id, message_id: m.message_id })
+      const n = await kget(env, 'spam', 0); await kput(env, 'spam', n + 1)
+    }
+  }
+}
+
 async function onMessage(env, m) {
-  if (m.chat?.type !== 'private') return // в группах и каналах молчим
   const cfg = await config(env)
+  if (m.chat?.type === 'group' || m.chat?.type === 'supergroup') return onGroup(env, cfg, m)
+  if (m.chat?.type !== 'private') return // в каналах молчим
   const text = (m.text || '').trim(), owner = env.OWNER_ID && String(m.from?.id) === String(env.OWNER_ID), en = isEn(cfg, m.from)
-  const cmd = text.split(/[\s@]/)[0].toLowerCase()
+  const [cmd0, arg] = text.split(/\s+/, 2), cmd = (cmd0 || '').split('@')[0].toLowerCase()
+  if (!owner && cfg.features.antiflood) { const f = flooded(m.from.id); if (f === 'warn') return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? 'Too many messages — please wait a minute 🙏' : 'Слишком часто — подождите минуту 🙏' }); if (f) return }
+  if (!owner && env.APEX_KV) await remember(env, m.from)
   // Владелец ответил на пересланный вопрос — отправляем ответ человеку
   if (owner && m.reply_to_message && env.APEX_KV) {
     const to = await env.APEX_KV.get('fw:' + m.reply_to_message.message_id)
     if (to) {
-      const r = await tg(env, 'copyMessage', { chat_id: to, from_chat_id: m.chat.id, message_id: m.message_id })
+      const r = m.text ? await sendToUser(env, cfg, to, m.text, m.reply_to_message.message_id) : await tg(env, 'copyMessage', { chat_id: to, from_chat_id: m.chat.id, message_id: m.message_id })
+      if (!m.text && r.ok) await markAnswered(env, m.reply_to_message.message_id, 'бот')
       return tg(env, 'sendMessage', { chat_id: m.chat.id, text: r.ok ? '✅ Ответ отправлен' : '⚠️ Не отправилось: ' + (r.description || 'ошибка') })
     }
   }
   if (owner && cmd === '/ping' && cfg.features.ping) {
-    const t0 = Date.now(); await config(env)
-    return tg(env, 'sendMessage', { chat_id: m.chat.id, text: `🏓 Работаю · ${env.HOST_INFO || 'Cloudflare'}\nФункции: ${Object.entries(cfg.features).map(([k, v]) => (v ? '✅' : '▫️') + k).join(' ')}\nОтвет за ${Date.now() - t0} мс` })
+    const t0 = now(); await config(env)
+    return tg(env, 'sendMessage', { chat_id: m.chat.id, text: `🏓 Работаю · ${env.HOST_INFO || 'Cloudflare'}\nПодписчиков бота: ${(await kget(env, 'users', [])).length}\nФункции: ${Object.entries(cfg.features).map(([k, v]) => (v ? '✅' : '▫️') + k).join(' ')}\nОтвет за ${now() - t0} мс` })
   }
   if (owner && cmd === '/stats') return tg(env, 'sendMessage', { chat_id: m.chat.id, text: await statsText(env, cfg) })
-  if (owner && cmd === '/help') return tg(env, 'sendMessage', { chat_id: m.chat.id, text: 'Команды владельца:\n/ping — работает ли бот\n/stats — какие темы спрашивают за неделю\n/status — состояние серверов\n/contests — конкурсы\n/draw <номер> [победителей] — подвести итоги\nОтветьте на пересланный вопрос — бот отправит ответ человеку.' })
+  if (owner && cmd === '/help') return tg(env, 'sendMessage', { chat_id: m.chat.id, text: 'Команды владельца:\n/ping — работает ли бот\n/stats — какие темы спрашивают за неделю\n/status — состояние серверов\n/news — последние новости\n/contests — конкурсы\n/draw <номер> [победителей] — подвести итоги\nОтветьте на пересланный вопрос (или нажмите ⚡ быстрый ответ) — бот отправит ответ человеку.' })
   if (cmd === '/status' && cfg.features.status) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: await statusText(), disable_web_page_preview: true })
+  if (cmd === '/news' && cfg.features.news) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: await newsText(cfg), disable_web_page_preview: true })
+  if (cmd === '/stop') { const st = await kget(env, 'stop', []); if (!st.includes(m.from.id)) st.push(m.from.id); await kput(env, 'stop', st.slice(-50000)); await kput(env, 'users', (await kget(env, 'users', [])).filter(x => x !== m.from.id)); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: 'Хорошо, рассылок больше не будет. Вернуть — /start' }) }
+  if (cmd === '/remind' && cfg.features.remind) {
+    const r = await kget(env, 'rmd', []), on = !r.includes(m.from.id)
+    await kput(env, 'rmd', on ? [...r, m.from.id].slice(-50000) : r.filter(x => x !== m.from.id))
+    return tg(env, 'sendMessage', { chat_id: m.chat.id, text: on ? '🔔 Напомню за 3 дня до конца подписки (если ваш Telegram привязан к подписке). Выключить — /remind' : '🔕 Напоминания выключены' })
+  }
+  if (cmd === '/invite' && cfg.features.invite) {
+    const name = await botName(env), refc = await kget(env, 'refc', {})
+    return tg(env, 'sendMessage', { chat_id: m.chat.id, text: `🤝 Ваша ссылка для друзей:\nhttps://t.me/${name}?start=ref_${m.from.id}\n\nПриглашено: ${refc[m.from.id] || 0}` })
+  }
+  if (cmd === '/problem' && cfg.features.complaints) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: 'Напишите, какой сервер не работает — например «не работает Германия». Если таких сообщений будет несколько, поддержка сразу узнает.' })
   if (owner && text.startsWith('/draw')) {
     const [, cid, n] = text.split(/\s+/)
     const r = await draw(env, cid, +n || 1)
@@ -189,22 +313,53 @@ async function onMessage(env, m) {
     const rows = await Promise.all(list.keys.slice(0, 20).map(async k => { const c = JSON.parse(await env.APEX_KV.get(k.name) || '{}'); return `${k.name.slice(2)} — ${(c.ids || []).length} уч.${c.closed ? ', завершён' : ''}` }))
     return tg(env, 'sendMessage', { chat_id: m.chat.id, text: rows.join('\n') || 'Конкурсов нет' })
   }
-  if (cmd === '/start' || cmd === '/help' || (!text && !m.photo && !m.document && !m.voice)) {
+  if (cmd === '/start') {
+    // Ссылки t.me/бот?start=тема и приглашения ref_<номер>
+    if (arg && /^ref_\d+$/.test(arg) && cfg.features.invite && String(m.from.id) !== arg.slice(4)) {
+      const k = 'ref:' + m.from.id
+      if (!(await kget(env, k, null))) { await kput(env, k, arg.slice(4)); const rc = await kget(env, 'refc', {}); rc[arg.slice(4)] = (rc[arg.slice(4)] || 0) + 1; await kput(env, 'refc', rc) }
+    }
+    const f = arg && topicsOf(cfg, en).find(t => t.id === arg)
+    if (f) return answer(env, cfg, m.chat.id, f, en)
     return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? EN.greeting : fill(cfg, cfg.greeting), reply_markup: menu(cfg, en) })
   }
-  const f = findFaq(cfg, text, en)
-  if (f) { await count(env, cfg, f.id); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: fill(cfg, f.text), disable_web_page_preview: true, reply_markup: after(cfg, en) }) }
-  await count(env, cfg, '_miss')
-  // Вопрос без ответа — владельцу (если включено в пульте)
-  if (cfg.features.forward && env.OWNER_ID && env.APEX_KV && !owner && await fwAllowed(env, m.from?.id)) {
-    const fw = await tg(env, 'forwardMessage', { chat_id: env.OWNER_ID, from_chat_id: m.chat.id, message_id: m.message_id })
-    if (fw.ok) {
-      await env.APEX_KV.put('fw:' + fw.result.message_id, String(m.chat.id), { expirationTtl: 14 * 86400 })
-      await tg(env, 'sendMessage', { chat_id: env.OWNER_ID, reply_to_message_id: fw.result.message_id, text: '❓ Вопрос без готового ответа от ' + who({ username: m.from?.username, name: m.from?.first_name }) + '. Ответьте на пересланное сообщение — бот отправит ответ.' })
-      return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? EN.sent : 'Передал ваш вопрос в поддержку — ответ придёт сюда 🙌', reply_markup: menu(cfg, en) })
-    }
+  if (cmd === '/help' || (!text && !m.photo && !m.document && !m.voice && !m.video && !m.video_note)) {
+    return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? EN.greeting : fill(cfg, cfg.greeting), reply_markup: menu(cfg, en) })
   }
+  // Фото, голосовые, файлы — владельцу
+  const kind = m.photo ? 'скриншот' : m.voice || m.video_note ? 'голосовое' : m.document ? 'файл' : m.video ? 'видео' : ''
+  if (kind) { if (await forwardToOwner(env, cfg, m, en, kind)) return; return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? EN.notFound : fill(cfg, cfg.notFound), reply_markup: after(cfg, en) }) }
+  // «у меня 3.20» — подскажем новую версию
+  const vm = cfg.features.version && text.match(/(?:^|\s)v?(\d+\.\d+(?:\.\d+)?)(?:\s|$|[,.!?])/)
+  if (vm) {
+    const last = await latestVersion()
+    if (last && vcmp(vm[1], last) < 0) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: (en ? `There is a newer version: ${last}. Update in the app («Update» banner) or download:` : `Есть версия новее: ${last}. Обновите в приложении (плашка «Вышла версия») или скачайте:`) + `\n${SITE}`, reply_markup: { inline_keyboard: [[{ text: en ? '⬇️ Download' : '⬇️ Скачать', url: SITE }, { text: en ? 'How to update' : 'Как обновить', url: SITE + '/update/' }]] } })
+    if (last && vcmp(vm[1], last) >= 0 && /верси|version|обнов/i.test(text)) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? `✅ ${vm[1]} is the latest version` : `✅ ${vm[1]} — последняя версия` })
+  }
+  // Жалоба на сервер: «не работает Германия»
+  const cm = cfg.features.complaints && text.match(/не (?:работает|подключ\w*|грузит)\s+(?:сервер\s+)?([А-ЯЁA-Z][\p{L}-]{2,20})/u)
+  if (cm) {
+    const name = cm[1][0].toUpperCase() + cm[1].slice(1).toLowerCase(), list = (await kget(env, 'cmp', [])).filter(x => now() - x.at < 86400000)
+    if (!list.some(x => x.uid === m.from.id && x.name === name)) list.push({ name, uid: m.from.id, at: now() })
+    await kput(env, 'cmp', list.slice(-300))
+    const hour = list.filter(x => x.name === name && now() - x.at < 3600000).length
+    if (hour === 3 && env.OWNER_ID) await tg(env, 'sendMessage', { chat_id: env.OWNER_ID, text: `⚠️ Жалобы на сервер «${name}»: ${hour} человека за час. Проверьте его — и, если надо, поставьте «Обслуживание» в пульте.` })
+    return tg(env, 'sendMessage', { chat_id: m.chat.id, text: 'Спасибо, записал жалобу на «' + name + '» 🙏 Пока попробуйте автопилот или другой сервер. Состояние серверов — /status', reply_markup: after(cfg, en) })
+  }
+  const f = findFaq(cfg, text, en)
+  if (f) return answer(env, cfg, m.chat.id, f, en)
+  await count(env, cfg, '_miss')
+  if (!owner && await forwardToOwner(env, cfg, m, en, 'text')) return
   return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? EN.notFound : fill(cfg, cfg.notFound), reply_markup: { inline_keyboard: [...menu(cfg, en).inline_keyboard, [{ text: en ? EN.support : '💬 Написать в поддержку', url: cfg.support }]] } })
+}
+async function answer(env, cfg, chat, f, en) { // ответ по теме — с картинкой, если она задана в пульте
+  await count(env, cfg, f.id)
+  const img = !en && cfg.images[f.id], t = fill(cfg, f.text)
+  if (img) {
+    if (t.length <= 1000) return tg(env, 'sendPhoto', { chat_id: chat, photo: img, caption: t, reply_markup: after(cfg, en) })
+    await tg(env, 'sendPhoto', { chat_id: chat, photo: img })
+  }
+  return tg(env, 'sendMessage', { chat_id: chat, text: t, disable_web_page_preview: true, reply_markup: after(cfg, en) })
 }
 
 // Защита лички владельца от спама: не больше 3 пересланных вопросов от одного человека за час
@@ -225,8 +380,18 @@ async function join(env, cq, cid) {
   const key = 'c:' + cid.replace(/[^\w-]/g, '').slice(0, 40)
   const c = JSON.parse(await env.APEX_KV.get(key) || '{"ids":[],"users":{}}')
   if (c.closed) return tg(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: 'Конкурс уже завершён 🙌', show_alert: true })
-  const id = String(cq.from.id)
+  const id = String(cq.from.id), cfg = await config(env)
   if (c.ids.includes(id)) return tg(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: 'Вы уже участвуете — удачи! 🍀' })
+  // Только подписчики канала, где стоит пост (бот должен быть админом канала)
+  if (cfg.features.contestSub && cq.message?.chat?.type === 'channel') {
+    const st = (await tg(env, 'getChatMember', { chat_id: cq.message.chat.id, user_id: cq.from.id })).result?.status
+    if (st && !['member', 'administrator', 'creator'].includes(st)) return tg(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: 'Чтобы участвовать, подпишитесь на канал 🙌', show_alert: true })
+  }
+  // По желанию: без пустых аккаунтов — нужно фото профиля или @имя (Telegram не сообщает возраст аккаунта)
+  if (cfg.features.contestReal && !cq.from.username) {
+    const ph = (await tg(env, 'getUserProfilePhotos', { user_id: cq.from.id, limit: 1 })).result?.total_count || 0
+    if (!ph) return tg(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: 'Участвовать могут аккаунты с фото профиля или @именем 🙏', show_alert: true })
+  }
   c.ids.push(id); c.users[id] = { name: [cq.from.first_name, cq.from.last_name].filter(Boolean).join(' ').slice(0, 40), username: cq.from.username || '' }
   await env.APEX_KV.put(key, JSON.stringify(c))
   await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: 'Вы участвуете! Удачи 🍀' })
@@ -249,9 +414,70 @@ async function draw(env, cid, n) {
   }
   c.closed = true; c.winners = winners
   await env.APEX_KV.put(key, JSON.stringify(c))
+  // Победителям — поздравление в личку (дойдёт тем, кто хоть раз писал боту)
+  for (const w of winners) await tg(env, 'sendMessage', { chat_id: w.id, text: '🎉 Поздравляем! Вы победили в конкурсе APEX CLIENT. Напишите в поддержку, чтобы получить приз: ' + (await config(env)).support }).catch?.(() => {})
   return { count: c.ids.length, winners }
 }
 
+// ── Раз в минуту (свой сервер) или на каждом сообщении (Cloudflare): рассылка, «Помогло?», меню команд и описание
+let tickAt = 0
+export async function tick(env, force) {
+  if (!env.APEX_KV || (!force && now() - tickAt < 60000)) return
+  tickAt = now()
+  const cfg = await config(env)
+  // Меню команд «/» и описание бота — когда поменялись в пульте
+  const sig = JSON.stringify([cfg.features, cfg.description, cfg.short])
+  if ((await kget(env, 'sig', '')) !== sig) {
+    const cmds = [['start', 'Начать / темы'], ...(cfg.features.status ? [['status', 'Состояние серверов']] : []), ...(cfg.features.news ? [['news', 'Последние новости']] : []), ...(cfg.features.invite ? [['invite', 'Пригласить друга']] : []), ...(cfg.features.remind ? [['remind', 'Напоминание о продлении']] : []), ...(cfg.features.complaints ? [['problem', 'Сообщить о проблеме с сервером']] : []), ['stop', 'Не получать рассылки']]
+    await tg(env, 'setMyCommands', { commands: cmds.map(([command, description]) => ({ command, description })) })
+    if (env.OWNER_ID) await tg(env, 'setMyCommands', { scope: { type: 'chat', chat_id: +env.OWNER_ID }, commands: [...cmds, ['ping', 'Работает ли бот'], ['stats', 'Статистика тем'], ['contests', 'Конкурсы'], ['help', 'Команды владельца']].map(x => Array.isArray(x) ? { command: x[0], description: x[1] } : x) })
+    if (cfg.description) await tg(env, 'setMyDescription', { description: cfg.description })
+    if (cfg.short) await tg(env, 'setMyShortDescription', { short_description: cfg.short })
+    await kput(env, 'sig', sig)
+  }
+  // «Помогло?» через день после ответа
+  const fu = await kget(env, 'fu', {}); let ch = false
+  for (const [uid, x] of Object.entries(fu)) if (x.at <= now()) {
+    if (cfg.features.followup) await tg(env, 'sendMessage', { chat_id: uid, text: x.en ? 'Did our answer help? 🙂' : 'Помог ли ответ поддержки? 🙂', reply_markup: { inline_keyboard: [[{ text: x.en ? '👍 Yes' : '👍 Да', callback_data: 'fb:1:' + x.qid }, { text: x.en ? '👎 No' : '👎 Нет', callback_data: 'fb:0:' + x.qid }]] } })
+    delete fu[uid]; ch = true
+  }
+  if (ch) await kput(env, 'fu', fu)
+  // Рассылка / опрос из пульта: по 25 человек за раз (у Cloudflare лимит запросов), продолжаем на следующем шаге
+  const bc = cfg.broadcast
+  if (bc && cfg.features.broadcast) {
+    const k = 'bc:' + bc.id, st = await kget(env, k, { i: 0, ok: 0, fail: 0, polls: [] })
+    const users = await kget(env, 'users', [])
+    if (!st.done && (!bc.at || bc.at <= now())) {
+      for (const uid of users.slice(st.i, st.i + 25)) {
+        const r = bc.poll ? await tg(env, 'sendPoll', { chat_id: uid, question: String(bc.poll.q).slice(0, 300), options: bc.poll.options.slice(0, 10).map(o => ({ text: String(o).slice(0, 100) })), is_anonymous: true }) : await tg(env, 'sendMessage', { chat_id: uid, text: String(bc.text).slice(0, 4000) + '\n\n/stop — не получать рассылки', disable_web_page_preview: true })
+        if (r.ok) { st.ok++; if (bc.poll) st.polls.push(r.result.poll.id) } else st.fail++
+      }
+      st.i += 25; if (st.i >= users.length) { st.done = true; st.at = now() }
+      await kput(env, k, st)
+    }
+  }
+}
+
+// ── Данные для пульта (зашифрованы словом WEBHOOK_SECRET): вопросы, статистика, рассылки, опросы, приглашения, жалобы
+async function dataExport(env) {
+  const cfg = await config(env), st = {}
+  for (let i = 0; i < 7; i++) { const day = new Date(now() - i * 86400000).toISOString().slice(0, 10); st[day] = await kget(env, 'st:' + day, {}) }
+  const bc = cfg.broadcast ? await kget(env, 'bc:' + cfg.broadcast.id, null) : null
+  const refc = await kget(env, 'refc', {})
+  return { at: now(), host: env.HOST_INFO || 'Cloudflare', users: (await kget(env, 'users', [])).length, stop: (await kget(env, 'stop', [])).length, remind: await kget(env, 'rmd', []),
+    q: await kget(env, 'q', []), stats: st, fb: await kget(env, 'fbk', []), cmp: (await kget(env, 'cmp', [])).map(x => ({ name: x.name, at: x.at })), spam: await kget(env, 'spam', 0),
+    broadcast: bc && { id: cfg.broadcast.id, ok: bc.ok, fail: bc.fail, done: !!bc.done }, polls: await kget(env, 'pollres', {}),
+    refs: Object.entries(refc).sort((a, b) => b[1] - a[1]).slice(0, 20), features: cfg.features }
+}
+async function hmac(secret, msg) { const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']); return [...new Uint8Array(await crypto.subtle.sign('HMAC', k, new TextEncoder().encode(msg)))].map(b => b.toString(16).padStart(2, '0')).join('') }
+async function seal(secret, obj) { // AES-GCM, ключ = SHA-256('apex-bot:' + слово) — то же делает робот
+  const key = await crypto.subtle.importKey('raw', await crypto.subtle.digest('SHA-256', new TextEncoder().encode('apex-bot:' + secret)), 'AES-GCM', false, ['encrypt'])
+  const iv = crypto.getRandomValues(new Uint8Array(12)), ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(JSON.stringify(obj))))
+  const b64 = a => btoa(String.fromCharCode(...a)); return { i: b64(iv), c: b64(ct) }
+}
+const okSig = async (env, req) => { const ts = +req.headers.get('x-ts'), sig = req.headers.get('x-sig') || ''; return Math.abs(now() - ts) < 300000 && sig.length === 64 && sig === await hmac(env.WEBHOOK_SECRET, String(ts)) }
+
+export const ALLOWED = ['message', 'callback_query', 'poll']
 export default {
   async fetch(req, env) {
     const url = new URL(req.url)
@@ -259,31 +485,57 @@ export default {
     // Однократная настройка: адрес бота для Telegram
     if (url.pathname === '/setup') {
       if (url.searchParams.get('key') !== env.WEBHOOK_SECRET) return new Response('Неверный ключ', { status: 403 })
-      const r = await tg(env, 'setWebhook', { url: url.origin + '/tg', secret_token: env.WEBHOOK_SECRET, allowed_updates: ['message', 'callback_query'], drop_pending_updates: true })
+      const r = await tg(env, 'setWebhook', { url: url.origin + '/tg', secret_token: env.WEBHOOK_SECRET, allowed_updates: ALLOWED, drop_pending_updates: true })
       return new Response(r.ok ? 'Готово! Бот отвечает. Напишите ему /start' : 'Telegram: ' + r.description, { headers: { 'content-type': 'text/plain; charset=utf-8' } })
     }
     // Итоги конкурса — зовёт робот GitHub (секреты BOT_WORKER_URL и BOT_WORKER_KEY)
     if (url.pathname === '/api/draw' && req.method === 'POST') {
-      if (req.headers.get('x-key') !== env.WEBHOOK_SECRET) return json({ error: 'forbidden' }, 403)
+      if (req.headers.get('x-key') !== env.WEBHOOK_SECRET && !await okSig(env, req)) return json({ error: 'forbidden' }, 403)
       const b = await req.json().catch(() => ({}))
       return json(await draw(env, b.cid, b.n))
+    }
+    // Данные для пульта и ответы из пульта — зовёт робот GitHub; подпись HMAC по времени, ответ зашифрован
+    if (url.pathname === '/api/data' && req.method === 'POST') {
+      if (!await okSig(env, req)) return json({ error: 'forbidden' }, 403)
+      return json(await seal(env.WEBHOOK_SECRET, await dataExport(env)))
+    }
+    if (url.pathname === '/api/reply' && req.method === 'POST') {
+      if (!await okSig(env, req)) return json({ error: 'forbidden' }, 403)
+      const b = await req.json().catch(() => ({})), cfg = await config(env), q = (await kget(env, 'q', [])).find(x => x.id === +b.qid)
+      if (!q) return json({ error: 'вопрос не найден' })
+      const r = await sendToUser(env, cfg, q.uid, String(b.text || '').slice(0, 4000), q.id)
+      if (r.ok) await markAnswered(env, q.id, 'пульт')
+      return json(r.ok ? { ok: true } : { error: r.description || 'не отправилось' })
     }
     if (url.pathname === '/tg' && req.method === 'POST') {
       if (req.headers.get('x-telegram-bot-api-secret-token') !== env.WEBHOOK_SECRET) return new Response('forbidden', { status: 403 })
       const u = await req.json().catch(() => ({}))
       try {
         if (u.message) await onMessage(env, u.message)
+        if (u.poll) { const pr = await kget(env, 'pollres', {}), p = u.poll; pr[p.id] = { q: p.question, o: p.options.map(o => [o.text, o.voter_count]), at: now() }; const ks = Object.keys(pr); if (ks.length > 300) delete pr[ks[0]]; await kput(env, 'pollres', pr) }
         if (u.callback_query) {
-          const cq = u.callback_query, d = cq.data || ''
+          const cq = u.callback_query, d = cq.data || '', owner = env.OWNER_ID && String(cq.from.id) === String(env.OWNER_ID)
           if (d.startsWith('join:')) await join(env, cq, d.slice(5))
+          else if (d.startsWith('qr:') && owner) { // быстрый ответ владельца
+            const [, i, fwid] = d.split(':'), cfg = await config(env), to = await env.APEX_KV?.get('fw:' + fwid)
+            const r = to && cfg.quick[+i] ? await sendToUser(env, cfg, to, cfg.quick[+i], +fwid) : { ok: false, description: 'вопрос устарел' }
+            await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: r.ok ? '✅ Отправлено' : '⚠️ ' + (r.description || 'не отправилось'), show_alert: !r.ok })
+          }
+          else if (d.startsWith('fb:')) { // «Помогло?»
+            const [, ok, qid] = d.split(':'), l = await kget(env, 'fbk', []); l.push({ ok: ok === '1', qid: +qid, at: now() }); await kput(env, 'fbk', l.slice(-300))
+            await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: ok === '1' ? 'Спасибо! 🙌' : 'Жаль 😔 Напишите, что не так — передам поддержке' })
+            if (ok !== '1' && env.OWNER_ID) await tg(env, 'sendMessage', { chat_id: env.OWNER_ID, text: '👎 Ответ не помог: ' + who({ username: cq.from.username, name: cq.from.first_name }) })
+            if (cq.message) await tg(env, 'editMessageReplyMarkup', { chat_id: cq.message.chat.id, message_id: cq.message.message_id, reply_markup: { inline_keyboard: [] } })
+          }
           else if (d === 'menu' || d === 'menuen') { const cfg = await config(env), en = d === 'menuen'; await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id }); await tg(env, 'sendMessage', { chat_id: cq.message.chat.id, text: en ? EN.pick : 'Выберите тему:', reply_markup: menu(cfg, en) }) }
           else if (d.startsWith('faq:') || d.startsWith('faqen:')) {
             const en = d.startsWith('faqen:'), cfg = await config(env), f = topicsOf(cfg, en).find(x => x.id === d.slice(en ? 6 : 4))
             await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id })
-            if (f) { await count(env, cfg, f.id); await tg(env, 'sendMessage', { chat_id: cq.message.chat.id, text: fill(cfg, f.text), disable_web_page_preview: true, reply_markup: after(cfg, en) }) }
+            if (f) await answer(env, cfg, cq.message.chat.id, f, en)
           }
         }
       } catch (e) { /* ответим на следующее сообщение; Telegram не должен повторять запрос */ }
+      try { await tick(env) } catch {}
       return new Response('ok')
     }
     return new Response('APEX CLIENT bot', { headers: { 'content-type': 'text/plain; charset=utf-8' } })

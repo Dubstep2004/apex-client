@@ -19,7 +19,7 @@ import path from 'node:path'
 import os from 'node:os'
 import https from 'node:https'
 import net from 'node:net'
-import worker from './worker.js'
+import worker, { tick, ALLOWED } from './worker.js'
 
 const DATA = process.env.BOT_DATA || '/var/lib/apex-bot'
 const KV_FILE = path.join(DATA, 'kv.json')
@@ -102,7 +102,7 @@ async function main() {
   let offset = 0, fails = 0
   for (;;) {
     try {
-      const r = await api('getUpdates', { offset, timeout: 50, allowed_updates: ['message', 'callback_query'] }, 70000)
+      const r = await api('getUpdates', { offset, timeout: 50, allowed_updates: ALLOWED }, 70000)
       if (!r.ok) {
         if (r.error_code === 409) console.error('Бот уже работает в другом месте (Cloudflare или второй сервер) — отключаю его адрес')
         if (r.error_code === 409) await api('deleteWebhook', {}, 20000).catch(() => {})
@@ -121,15 +121,23 @@ async function main() {
   }
 }
 
-// По желанию: адрес для итогов конкурсов от робота GitHub (BOT_WORKER_URL). Только /api/draw.
+// По желанию (меню apex → «Связь с пультом»): адрес для робота GitHub — данные для пульта, ответы из пульта, итоги конкурсов.
+// Только /api/data, /api/reply, /api/draw; вход — по подписи от слова WEBHOOK_SECRET, данные зашифрованы им же.
 const port = parseInt(process.env.BOT_PORT || '', 10)
 if (port > 0 && process.env.WEBHOOK_SECRET) {
   http.createServer(async (req, res) => {
-    const chunks = []; for await (const c of req) { chunks.push(c); if (chunks.length > 64) break }
-    if (!(req.url === '/api/draw' && req.method === 'POST')) { res.writeHead(404).end(); return }
-    const r = await worker.fetch(new Request('http://localhost/api/draw', { method: 'POST', headers: { 'x-key': String(req.headers['x-key'] || ''), 'content-type': 'application/json' }, body: Buffer.concat(chunks) }), env)
-    res.writeHead(r.status, { 'content-type': 'application/json' }).end(await r.text())
-  }).listen(port, process.env.BOT_HOST || '127.0.0.1', () => console.log('Итоги конкурсов: порт ' + port))
+    try {
+      const chunks = []; let size = 0
+      for await (const c of req) { size += c.length; if (size > 65536) { res.writeHead(413).end(); return } chunks.push(c) }
+      if (!(['/api/data', '/api/reply', '/api/draw'].includes(req.url) && req.method === 'POST')) { res.writeHead(404).end(); return }
+      const h = {}; for (const k of ['x-key', 'x-ts', 'x-sig']) h[k] = String(req.headers[k] || '')
+      const r = await worker.fetch(new Request('http://localhost' + req.url, { method: 'POST', headers: { ...h, 'content-type': 'application/json' }, body: Buffer.concat(chunks) }), env)
+      res.writeHead(r.status, { 'content-type': 'application/json' }).end(await r.text())
+    } catch { try { res.writeHead(500).end() } catch {} }
+  }).listen(port, process.env.BOT_HOST || '0.0.0.0', () => console.log('Связь с пультом: порт ' + port))
 }
+// Раз в минуту: рассылка, «Помогло?», меню команд (на Cloudflare это делается на каждом сообщении)
+setInterval(() => tick(env).catch(e => console.error('Ошибка tick:', e.message)), 60000).unref?.()
+setTimeout(() => tick(env, true).catch(() => {}), 3000)
 
 main()

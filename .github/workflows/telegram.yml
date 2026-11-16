@@ -29,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Pillow for the pictures
-        run: python3 -m pip install --quiet --break-system-packages pillow || python3 -m pip install --quiet pillow || true
+        run: python3 -m pip install --quiet --break-system-packages pillow cryptography || python3 -m pip install --quiet pillow cryptography || true
       - name: Post to channel
         env:
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
@@ -41,6 +41,7 @@ jobs:
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           BOT_WORKER_URL: ${{ secrets.BOT_WORKER_URL }}
           BOT_WORKER_KEY: ${{ secrets.BOT_WORKER_KEY }}
+          STATS_KEY: ${{ secrets.STATS_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
         run: python3 scripts/tg_channel.py
       - name: Save state
