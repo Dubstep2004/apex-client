@@ -3,5 +3,5 @@
   "version": true,
   "digest": false,
   "video": false,
-  "botHost": "cloudflare"
+  "botHost": "server"
 }
