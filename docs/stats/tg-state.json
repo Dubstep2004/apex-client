@@ -322,7 +322,9 @@
   ]
  },
  "holidays": {},
- "fails": [],
+ "fails": [
+  43975167925
+ ],
  "mday": "2026-11-17",
  "mstart": {},
  "remind": {},
@@ -387,7 +389,7 @@
  "cfg_sha": "3a62fdc4bb1e8b516c8a9a60b06a4bddba55698b",
  "digest": "2026-46",
  "bot": {
-  "at": 1794848210539,
+  "at": 1794870096977,
   "ok": true,
   "mode": "server",
   "user": "apex_client_news_bot",
@@ -406,5 +408,5 @@
    1
   ]
  ],
- "botsync": 1794868690756
+ "botsync": 1794870096977
 }
