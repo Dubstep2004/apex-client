@@ -253,6 +253,7 @@ fs.rmSync(tmp, { recursive: true, force: true })
   const day = new Date(Date.now() - 864e5).toISOString().slice(0, 10)
   if (await ads({ day, dev: 'abcdef1234567890', ads: 120 }) !== 200 || await ads({ day, dev: 'abcdef1234567890', ads: 150 }) !== 200 || await ads({ day, dev: '0011223344556677', ads: 999999 }) !== 200) fail('счётчик рекламы: не принял')
   if (await ads({ day: '2020-01-01', dev: 'abcdef1234567890', ads: 5 }) !== 400 || await ads({ day, dev: 'x', ads: 5 }) !== 400) fail('счётчик рекламы: принял мусор')
+  await (await import(path.join(BOT, 'worker.js') + '?app')).adsFlush(env) // бот пишет в KV раз в минуту — дописываем остаток
   { const st = JSON.parse(mem['adst:' + day]).d; if (st.abcdef1234567890 !== 150 || st['0011223344556677'] !== 50000) fail('счётчик рекламы: неверный подсчёт ' + JSON.stringify(st)) }
   globalThis.fetch = realFetch
 }

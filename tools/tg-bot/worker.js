@@ -479,6 +479,15 @@ async function onGroup(env, cfg, m) { // группа: приветствие, �
   }
 }
 
+const adsBuf = {}; let adsFlushAt = 0
+async function adsFlush(env) {
+  adsFlushAt = now()
+  for (const day of Object.keys(adsBuf)) {
+    const k = 'adst:' + day, st = await kget(env, k, { d: {} })
+    for (const [dev, n] of Object.entries(adsBuf[day])) if (Object.keys(st.d).length < 20000 || dev in st.d) st.d[dev] = Math.max(st.d[dev] || 0, n)
+    await kput(env, k, st, 40 * 86400); delete adsBuf[day]
+  }
+}
 const cfg0AdsLine = async env => { const c = await config(env); if (!c.features.adstats) return ''; const [y] = await adsStats(env, 1); return y ? `\n🛡 Рекламы заблокировано вчера: ${y.ads.toLocaleString('ru')} (телефонов: ${y.devs})` : '' }
 async function adsStats(env, days = 7) { // по дням: сколько рекламы заблокировано у всех и на скольких телефонах
   const out = []
@@ -1115,6 +1124,7 @@ export async function tick(env, force) {
       }
     }
   }
+  if (Object.keys(adsBuf).length) await adsFlush(env) // счётчик рекламы — остаток из памяти
   // Утренняя сводка владельцу в 9:00 МСК (раз в день)
   if (cfg.features.morning && env.OWNER_ID) {
     const msk = new Date(now() + 3 * 3600000), day = msk.toISOString().slice(0, 10)
@@ -1165,7 +1175,7 @@ async function seal(secret, obj) { // AES-GCM, ключ = SHA-256('apex-bot:' + 
 const okSig = async (env, req) => { const ts = +req.headers.get('x-ts'), sig = req.headers.get('x-sig') || ''; return Math.abs(now() - ts) < 300000 && sig.length === 64 && sig === await hmac(env.WEBHOOK_SECRET, String(ts)) }
 
 export const ALLOWED = ['message', 'callback_query', 'poll', 'channel_post', 'edited_channel_post'] // 3.2: посты канала — для новостей на сайте
-export { FEATURES, FEAT_NAMES, FEAT_GROUPS, CONFIG_URL } // для меню сервера (apex → «Функции бота»)
+export { FEATURES, FEAT_NAMES, FEAT_GROUPS, CONFIG_URL, adsFlush } // для меню сервера (apex → «Функции бота»)
 export default {
   // Cloudflare: расписание раз в минуту (ставит «Применить к боту в Cloudflare») — рассылка, «Помогло?», меню команд
   async scheduled(event, env, ctx) { if (env.BOT_TOKEN) ctx.waitUntil(tick(env, true).catch(() => {})) },
@@ -1180,8 +1190,9 @@ export default {
       const day = String(b.day || ''), dev = String(b.dev || '').replace(/[^a-f0-9]/g, '').slice(0, 16), ads = Math.min(Math.max(parseInt(b.ads, 10) || 0, 0), 50000)
       const today = new Date().toISOString().slice(0, 10), yest = new Date(now() - 86400000).toISOString().slice(0, 10)
       if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || ![today, yest, new Date(now() - 2 * 86400000).toISOString().slice(0, 10)].includes(day) || dev.length < 8) return new Response('{"error":"bad"}', { status: 400, headers: H }) // день телефона — по его часам: ±сутки
-      const k = 'adst:' + day, st = await kget(env, k, { d: {} })
-      if (Object.keys(st.d).length < 20000 || dev in st.d) { st.d[dev] = Math.max(st.d[dev] || 0, ads); await kput(env, k, st, 40 * 86400) }
+      // Копим в памяти и пишем в KV не чаще раза в минуту: на Cloudflare бесплатно ~1000 записей в день
+      const buf = adsBuf[day] ||= {}; buf[dev] = Math.max(buf[dev] || 0, ads)
+      if (now() - adsFlushAt > 60000 || !env.APEX_KV?.list) await adsFlush(env)
       return new Response('{"ok":1}', { headers: H })
     }
     if (url.pathname === '/api/app') { // мини-приложение (визитка) → бот; проверка подписи Telegram в checkInit
