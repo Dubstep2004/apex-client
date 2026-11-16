@@ -134,6 +134,7 @@ if (!/rc=1/.test(rs.stdout) || !/ссылки/.test(rs.stdout)) fail('apex.sh: �
 const ws = fs.readFileSync(path.join(BOT, 'worker.js'), 'utf8')
 if (!/x-telegram-bot-api-secret-token/.test(ws) || !/WEBHOOK_SECRET/.test(ws)) fail('worker.js: нет проверки секретного слова')
 if ((ws.match(/^\/\/ V\|/m) || []).length === 0) fail('worker.js: нет «Что нового в боте»')
+if (!ws.includes("async scheduled(")) fail('worker.js: нет расписания для Cloudflare (scheduled) — рассылка встанет, если боту не пишут')
 
 fs.rmSync(tmp, { recursive: true, force: true })
 console.log(errs.length ? `✗ Бот и меню: ошибок ${errs.length}` : '✓ Бот и меню — без ошибок')

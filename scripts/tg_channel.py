@@ -513,6 +513,9 @@ for it in (box.get('items') or [])[-40:]:
                 cf('/workers/scripts/apex-bot', body_m, 'PUT', 'multipart/form-data; boundary=' + bd)
                 cf('/workers/scripts/apex-bot/subdomain', json.dumps({'enabled': True}).encode(), 'POST')
                 sub = (cf('/workers/subdomain') or {}).get('subdomain')
+                # 2.44: раз в минуту — рассылка, «Помогло?», меню команд идут и когда боту никто не пишет
+                try: cf('/workers/scripts/apex-bot/schedules', json.dumps([{'cron': '* * * * *'}]).encode(), 'PUT')
+                except TgError as e: notes.append('без расписания (' + str(e)[:60] + ') — рассылка пойдёт, когда боту напишут')
             if not sub: raise TgError('в Cloudflare нет адреса workers.dev — откройте один раз Workers & Pages на dash.cloudflare.com, он создастся сам')
             wurl = f'https://apex-bot.{sub}.workers.dev'
             tg('setWebhook', url=wurl + '/tg', secret_token=wkey, allowed_updates=['message', 'callback_query', 'poll'], drop_pending_updates=True)

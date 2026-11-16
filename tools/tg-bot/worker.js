@@ -25,6 +25,8 @@
 //   его ответ на пересланное сообщение бот отправит человеку; счёт, какие темы спрашивают чаще.
 
 // ЧТО НОВОГО В БОТЕ (пульт показывает это в «Справка» → «Что нового» → «Бот»; V — версия, n/u/f — новое/улучшено/исправлено)
+// V|2.2|16 ноября 2026
+// f|Cloudflare: рассылка, «Помогло?» и меню команд работают по расписанию раз в минуту, а не только когда боту кто-то пишет (после «Применить к боту в Cloudflare»)
 // V|2.1|16 ноября 2026
 // n|/settings — владелец включает и выключает любую функцию кнопками прямо в боте; то же — в меню сервера («Функции бота»)
 // n|Новые переключатели: фото и голосовые, быстрые ответы, меню команд, картинки, ссылки на темы, опросы, поздравление победителей
@@ -504,6 +506,8 @@ const okSig = async (env, req) => { const ts = +req.headers.get('x-ts'), sig = r
 export const ALLOWED = ['message', 'callback_query', 'poll']
 export { FEATURES, FEAT_NAMES, CONFIG_URL } // для меню сервера (apex → «Функции бота»)
 export default {
+  // Cloudflare: расписание раз в минуту (ставит «Применить к боту в Cloudflare») — рассылка, «Помогло?», меню команд
+  async scheduled(event, env, ctx) { if (env.BOT_TOKEN) ctx.waitUntil(tick(env, true).catch(() => {})) },
   async fetch(req, env) {
     const url = new URL(req.url)
     if (!env.BOT_TOKEN || !env.WEBHOOK_SECRET) return new Response('Добавьте секреты BOT_TOKEN и WEBHOOK_SECRET', { status: 500 })
