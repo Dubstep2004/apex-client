@@ -644,7 +644,7 @@ do_domain() {
   fi
   if ! command -v caddy >/dev/null; then
     say "  Ставлю Caddy (веб-сервер с автоматическим https)…"
-    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq caddy >/dev/null 2>&1 || { err "Не получилось поставить Caddy (apt install caddy)"; return; }
+    { apt-get update -qq >/dev/null 2>&1; DEBIAN_FRONTEND=noninteractive apt-get install -y -qq caddy >/dev/null 2>&1; } || { err "Не получилось поставить Caddy (apt install caddy)"; return; }
   fi
   [ -f /etc/caddy/Caddyfile ] && sed -i "/^# apex-bot $d\$/,/^# end apex-bot $d\$/d" /etc/caddy/Caddyfile
   grep -q '^:80 {' /etc/caddy/Caddyfile 2>/dev/null && sed -i '/^:80 {/,/^}/d' /etc/caddy/Caddyfile # заглушка Caddy по умолчанию мешает сертификату

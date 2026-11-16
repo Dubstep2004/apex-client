@@ -2,6 +2,12 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.24.1 · 17 ноября 2026
+
+<img src="img/tags/fixed.svg" alt="Исправлено" height="22">
+
+- Окно обновления показывало изменения только последней версии — теперь видно всё, что нового во всех пропущенных версиях
+
 ## 3.24.0 · 17 ноября 2026
 
 <img src="img/tags/new.svg" alt="Новое" height="22">

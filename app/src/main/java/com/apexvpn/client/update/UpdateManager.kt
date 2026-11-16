@@ -72,7 +72,7 @@ object UpdateManager {
     suspend fun check(silent: Boolean = false) {
         if (!silent) _state.value = UpdateState.Checking
         try {
-            val info = fetchLatest()
+            val info = fetchLatest()?.let { withSkipped(it) }
             _state.value = if (info != null && rank(info.versionName) > rank(BuildConfig.VERSION_NAME)) {
                 // 3.18: из веб-админки — «версии ниже N обязаны обновиться»
                 val required = com.apexvpn.client.data.AppConfig.value.requiredCode
@@ -181,6 +181,20 @@ object UpdateManager {
         } else {
             api(latestApi).ifBlank { return@withContext null }.let { toInfo(JSONObject(it)) }
         }
+    }
+
+    /**
+     * 3.24.1: обновление через несколько версий (3.22.2 → 3.24.0) — в окне «Что нового» изменения всех
+     * пропущенных версий, а не только последней. Ошибка — оставляем как было.
+     */
+    private suspend fun withSkipped(info: UpdateInfo): UpdateInfo = withContext(Dispatchers.IO) {
+        val mine = rank(BuildConfig.VERSION_NAME), top = rank(info.versionName)
+        if (top <= mine) return@withContext info
+        runCatching {
+            val skipped = releases().filter { r -> rank(r.versionName) in (mine + 1) until top && (info.beta || !r.beta) && r.changelog.isNotBlank() }
+            if (skipped.isEmpty()) info
+            else info.copy(changelog = (listOf(info) + skipped).joinToString("\n\n") { "Версия ${it.versionName}\n${it.changelog}" })
+        }.getOrDefault(info)
     }
 
     /** 3.7. Прошлые обычные версии — для «Вернуть прошлую версию». */
