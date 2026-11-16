@@ -37,7 +37,12 @@ globalThis.fetch = async (url, init = {}) => {
     if (n === 2) return ok([{ update_id: 99, message: msg('Ответ владельца', { id: 1 }, { reply_to_message: { message_id: 1000 } }) }, { update_id: 100, message: msg('чужой ответ', { id: 5 }, { reply_to_message: { message_id: 1000 } }) },
       { update_id: 101, callback_query: { id: 'c1', from: { id: 1 }, data: 'qr:0:1000', message: { chat: { id: 1 }, message_id: 7 } } }, { update_id: 102, callback_query: { id: 'c2', from: { id: 5 }, data: 'qr:1:1000', message: { chat: { id: 5 }, message_id: 8 } } },
       { update_id: 103, message: msg('/settings', { id: 1 }) }, { update_id: 104, callback_query: { id: 'c3', from: { id: 5 }, data: 'ft:status', message: { chat: { id: 5 }, message_id: 9 } } }, { update_id: 105, callback_query: { id: 'c4', from: { id: 1 }, data: 'ft:status', message: { chat: { id: 1 }, message_id: 10 } } }, { update_id: 106, message: msg('/status', { id: 60 }) }, { update_id: 107, message: msg('/settings', { id: 70 }) }, { update_id: 108, message: msg('/stats', { id: 71 }) }, { update_id: 109, message: msg('/ping', { id: 71 }) }, { update_id: 110, message: msg('/contests', { id: 71 }) }, { update_id: 111, message: msg('/draw 1', { id: 71 }) }, { update_id: 112, callback_query: { id: 'c9', from: { id: 77 }, data: 'ft:news', message: { chat: { id: 77 }, message_id: 11 } } }])
-    if (n < 6) { await new Promise(r => setTimeout(r, 1500)); return ok([]) }
+    if (n === 3) return ok([{ update_id: 200, message: msg('/start', { id: 1 }) }, { update_id: 201, callback_query: { id: 'a1', from: { id: 1 }, data: 'ad:today', message: { chat: { id: 1 }, message_id: 50 } } },
+      { update_id: 202, callback_query: { id: 'a2', from: { id: 1 }, data: 'ad:q', message: { chat: { id: 1 }, message_id: 50 } } }, { update_id: 203, callback_query: { id: 'a3', from: { id: 1 }, data: 'ad:qa:1001', message: { chat: { id: 1 }, message_id: 50 } } },
+      { update_id: 204, message: msg('Ответ из панели', { id: 1 }) }, { update_id: 205, callback_query: { id: 'a4', from: { id: 1 }, data: 'ad:bc', message: { chat: { id: 1 }, message_id: 50 } } },
+      { update_id: 206, message: msg('Рассылка из бота', { id: 1 }) }, { update_id: 207, callback_query: { id: 'a5', from: { id: 1 }, data: 'ad:bcok', message: { chat: { id: 1 }, message_id: 51 } } },
+      { update_id: 208, callback_query: { id: 'a6', from: { id: 88 }, data: 'ad:today', message: { chat: { id: 88 }, message_id: 52 } } }, { update_id: 209, message: msg('🛠 Админ', { id: 88 }) }])
+    if (n < 7) { await new Promise(r => setTimeout(r, 1500)); return ok([]) }
     process.stdout.write('SENT' + JSON.stringify(sent) + '\\n'); process.exit(0) }
   sent.push([m, b.chat_id, b.text || '', b.parse_mode || '', b.from_chat_id, b.callback_query_id === 'c9' ? 77 : 0])
   return ok(m === 'forwardMessage' ? { message_id: 1000 + sent.filter(x => x[0] === 'forwardMessage').length - 1 } : {})
@@ -66,13 +71,21 @@ else {
   has(23, /start=ref_23[\s\S]*Приглашено: 1/, '/invite: нет ссылки или не засчитано приглашение')
   has(22, /Есть версия новее: 3\.22\.0/, '«у меня 3.20» — не подсказал новую версию')
   has(1, /Жалобы на сервер «Германия»: 3/, 'жалобы на сервер не дошли владельцу')
-  const fl = to(40); if (fl.length > 9 || !fl.some(t => /Слишком часто/.test(t))) fail('защита от флуда не сработала: ответов ' + fl.length)
+  const fl = to(40).filter(t => !/^(Привет всем|Рассылка из бота)/.test(t)); if (fl.length > 9 || !fl.some(t => /Слишком часто/.test(t))) fail('защита от флуда не сработала: ответов ' + fl.length)
   has(-100, /Добро пожаловать, Нов/, 'группа: нет приветствия новичка')
   const del = sent.filter(s => s[0] === 'deleteMessage'); if (del.length !== 1) fail('группа: ссылку от новичка надо удалить, старожила — нет; удалено ' + del.length)
   const bc = sent.filter(s => s[0] === 'sendMessage' && /^Привет всем/.test(s[2])).map(s => s[1])
   if (!bc.length || bc.includes(21) || bc.includes(1)) fail('рассылка: не дошла, или пришла тому, кто нажал /stop, или владельцу: ' + JSON.stringify(bc))
   if (!sent.some(s => s[0] === 'setMyCommands')) fail('меню команд «/» не выставлено')
   has(1, /Функции бота — нажмите/, '/settings владельцу не ответил')
+  // Панель админа на кнопках
+  has(1, /Вы владелец бота/, 'панель админа: /start владельца без кнопки «🛠 Админ»')
+  if (!sent.some(s => s[0] === 'editMessageText' && String(s[1]) === '1' && /📊 Сегодня/.test(s[2]))) fail('панель админа: «Сегодня» не открылся')
+  if (!sent.some(s => s[0] === 'editMessageText' && /Без ответа — выберите/.test(s[2]))) fail('панель админа: список вопросов не открылся')
+  if (!to(9).includes('Ответ из панели') && !to(7).includes('Ответ из панели')) fail('панель админа: «Ответить» не отправил ответ человеку')
+  if (!sent.some(s => s[0] === 'sendMessage' && /^Рассылка из бота/.test(s[2]) && String(s[1]) !== '1')) fail('панель админа: рассылка из бота не пошла людям')
+  if (sent.some(s => s[0] === 'editMessageText' && String(s[1]) === '88')) fail('панель админа открылась у чужого человека')
+  if (to(88).some(t => /Панель админа|Вы владелец/.test(t))) fail('чужой «🛠 Админ» что-то показал')
   // Команды владельца у других: не работают и ничего не выдают
   for (const c of ['/settings', '/stats', '/ping', '/contests', '/draw 1', '/help']) if (to(70).concat(to(71)).some(t => /Функции бота|Вопросы за 7|Работаю|Команды владельца|Конкурс|уч\./.test(t))) fail('команда владельца сработала у другого человека: ' + c)
   if (!to(70).some(t => /Такой команды нет/.test(t))) fail('чужой /settings должен получить «такой команды нет»')

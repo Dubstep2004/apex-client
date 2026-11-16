@@ -1154,7 +1154,7 @@
         <p class="note">Для второго человека: в этом браузере остаются только «Обзор», «Баннеры», «Объявление», «Telegram» и «Справка» — серверы, обновления и настройки скрыты.</p>
         <label class="sw"><div class="t"><b>Режим помощника в этом браузере</b><span>Выключается здесь же</span></div><span class="tog"><input type="checkbox" id="helperOn"><i></i></span></label>
         <p class="help">Это удобство, а не защита: настоящие права даёт GitHub. Помощнику — свой токен: github.com → Settings → Developer settings → Fine-grained tokens → только репозиторий apex-client → <b>Contents: Read and write</b> (без Secrets и Actions). Тогда он не увидит и не изменит секреты, а все его сохранения видны в «Истории» с его именем.</p></div>
-      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 16 ноября 2026 · приложение 3.22.0 · пульт 2.44.</p>
+      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 16 ноября 2026 · приложение 3.22.0 · пульт 2.45.</p>
       <div class="helptools">
         <input id="hq" type="search" placeholder="Найти в справке, например «техработы»" aria-label="Найти в справке" autocomplete="off">
         <button class="btn quiet small" id="hOpen" type="button">Развернуть всё</button>
@@ -1383,6 +1383,7 @@
         <div class="nwkind" id="nwKind" role="group" aria-label="Сортировка"><button type="button" class="pill on" data-k="">Все</button><button type="button" class="pill" data-k="n">🟢 Новое</button><button type="button" class="pill" data-k="u">🟣 Улучшено</button><button type="button" class="pill" data-k="f">🔵 Исправлено</button></div>
         <div id="nwOther" hidden></div>
         <div class="tbl" id="nwPult"><table id="pultLog">
+          <tr data-k="n"><td>2.45</td><td>Функции бота: «🛠 Панель админа на кнопках» — включается и выключается здесь, в /settings и в меню сервера</td></tr>
           <tr data-k="n"><td>2.44</td><td>Несколько ботов, как на сервере: в «Бот в личке» переключатель «🤖 Основной · бот 2 · бот 3 · ＋ Бот» — у каждого свои вопросы, статистика, рассылка, тексты и функции; «Настройки бота» — адрес и слово для бота 2 и 3</td></tr>
           <tr data-k="n"><td>2.43</td><td>«Справка» → «🎛 Функции пульта»: 20 новых возможностей пульта включаются и выключаются (на всех устройствах); функций бота стало 25 — то же можно переключать командой /settings в боте и в меню сервера, пульт показывает «переключено в боте»</td></tr>
           <tr data-k="u"><td>2.42</td><td>Telegram разложен по разделам: «📣 Канал» (посты, журнал, автопосты, конкурсы) · «👥 Группа» (приветствие новичков, антиспам) · «💬 Бот в личке» (вопросы, статистика, рассылка, тексты и функции) · «⚙️ Настройка» — переключатель сверху, выбор запоминается. На всех длинных вкладках — строка разделов «Всё · …»: нажали — остался только нужный блок</td></tr>
@@ -1515,7 +1516,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.44', PANEL_DATE = '16 ноября 2026'
+const PANEL_VERSION = '2.45', PANEL_DATE = '16 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -3413,9 +3414,10 @@ let curBot = { slot: 1, id: '', name: 'Основной' }
 const botCfgPath = () => curBot.slot === 1 ? 'docs/tg/bot.json' : 'docs/tg/bot-' + curBot.id + '.json'
 const botFilePath = () => curBot.slot === 1 ? 'docs/stats/bot.enc.json' : 'docs/stats/bot' + curBot.slot + '.enc.json'
 let bcData = null
-const BOT_FEAT = { media: true, quick: true, commands: true, images: true, deeplinks: true, contestDM: true, polls: true, broadcast: true, news: true, status: true, ping: true, english: true, forward: false, stats: true, welcome: true, antispam: true, invite: true, remind: true, followup: true, complaints: true, translate: true, antiflood: true, version: true, contestSub: true, contestReal: false } // как FEATURES в worker.js
+const BOT_FEAT = { admin: true, media: true, quick: true, commands: true, images: true, deeplinks: true, contestDM: true, polls: true, broadcast: true, news: true, status: true, ping: true, english: true, forward: false, stats: true, welcome: true, antispam: true, invite: true, remind: true, followup: true, complaints: true, translate: true, antiflood: true, version: true, contestSub: true, contestReal: false } // как FEATURES в worker.js
 // 2.40: функции бота — название и что делает; переключатели строятся отсюда
 const BOT_FEAT_INFO = [
+  ['Админ', [['admin', '🛠 Панель админа на кнопках', 'Кнопка «🛠 Админ» в боте — только у вас: сегодня, вопросы, рассылка, функции, серверы, конкурсы, блокировки']]],
   ['Ответы людям', [['forward', '📨 Вопросы без ответа — вам в личку', 'Нужен ваш номер. Ответьте на пересланное сообщение — бот отправит ответ человеку'], ['media', '📎 Фото, голосовые и файлы — вам', 'Скриншоты ошибок и голосовые приходят вам в личку'], ['quick', '⚡ Быстрые ответы кнопками', 'Под пересланным вопросом — готовые ответы (список ниже)'], ['followup', '🙂 «Помогло?» через день после ответа', 'Итоги — в статистике бота'], ['translate', '🔁 Перевод ваших ответов на английский', 'Для тех, у кого Telegram не на русском (Cloudflare AI)'], ['english', '🇬🇧 Ответы на английском', 'Если Telegram у человека не на русском — меню и ответы на английском']]],
   ['Команды', [['status', '🛰 /status — состояние серверов', 'Техработы и «медленно» из пульта'], ['news', '📰 /news — последние новости', 'Три последних поста канала'], ['invite', '🤝 /invite — пригласить друга', 'Своя ссылка и счёт приглашённых'], ['remind', '🔔 /remind — напомнить о продлении', 'За 3 дня до конца подписки (робот сверяет с Remnawave)'], ['complaints', '⚠️ Жалобы на серверы', '«не работает Германия» — 3 жалобы за час, и вам придёт сообщение'], ['version', '⬆️ Подсказка новой версии', '«у меня 3.20» — бот предложит обновиться'], ['broadcast', '📣 Рассылка', 'Из пульта — всем, кто писал боту; /stop — отписка'], ['polls', '📊 Опросы в личку', 'Опросы через рассылку; итоги — в статистике'], ['commands', '📋 Меню команд «/»', 'Подсказки команд в Telegram'], ['images', '🖼 Картинки в ответах', 'Если у темы задана картинка'], ['deeplinks', '🔗 Ссылки на темы', 't.me/бот?start=тема сразу открывает ответ'], ['stats', '📊 Счёт популярных тем', '/stats у вас и статистика в пульте'], ['ping', '🏓 /ping для владельца', 'Где работает бот и что включено']]],
   ['Защита', [['antiflood', '🧯 Защита от флуда', 'Больше 8 сообщений в минуту — пауза']]],

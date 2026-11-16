@@ -25,6 +25,8 @@
 //   его ответ на пересланное сообщение бот отправит человеку; счёт, какие темы спрашивают чаще.
 
 // ЧТО НОВОГО В БОТЕ (пульт показывает это в «Справка» → «Что нового» → «Бот»; V — версия, n/u/f — новое/улучшено/исправлено)
+// V|2.4|16 ноября 2026
+// n|Панель админа на кнопках: кнопка «🛠 Админ» внизу (только у владельца) — сегодня, вопросы (ответить, шаблон, решено, заблокировать), рассылка с предпросмотром, функции, серверы, конкурсы с итогами, статистика, заблокированные, проверка бота
 // V|2.3|16 ноября 2026
 // f|Кнопки владельца (/settings, быстрые ответы) у других людей молча не работают — без ответа и подсказок; команды владельца у них не видны в меню «/» и отвечают «такой команды нет»
 // V|2.2|16 ноября 2026
@@ -150,9 +152,9 @@ async function config(env) {
   cfgAt = Date.now()
   return cfgCache
 }
-const FEATURES = { media: true, quick: true, commands: true, images: true, deeplinks: true, contestDM: true, polls: true, broadcast: true, news: true, status: true, ping: true, english: true, forward: false, stats: true, welcome: true, antispam: true, invite: true, remind: true, followup: true, complaints: true, translate: true, antiflood: true, version: true, contestSub: true, contestReal: false }
+const FEATURES = { admin: true, media: true, quick: true, commands: true, images: true, deeplinks: true, contestDM: true, polls: true, broadcast: true, news: true, status: true, ping: true, english: true, forward: false, stats: true, welcome: true, antispam: true, invite: true, remind: true, followup: true, complaints: true, translate: true, antiflood: true, version: true, contestSub: true, contestReal: false }
 // Названия функций — для /settings в боте и меню сервера (apex → «Функции бота»)
-const FEAT_NAMES = { forward: 'Вопросы без ответа — мне', media: 'Фото и голосовые — мне', quick: 'Быстрые ответы', followup: '«Помогло?»', translate: 'Перевод моих ответов', english: 'Ответы на английском', status: '/status', news: '/news', invite: '/invite', remind: '/remind', complaints: 'Жалобы на серверы', version: 'Подсказка версии', broadcast: 'Рассылка', polls: 'Опросы', stats: 'Счёт тем', ping: '/ping', commands: 'Меню команд «/»', images: 'Картинки в ответах', deeplinks: 'Ссылки на темы', antiflood: 'Защита от флуда', welcome: 'Приветствие в группе', antispam: 'Антиспам в группе', contestSub: 'Конкурс: только подписчики', contestReal: 'Конкурс: без пустых аккаунтов', contestDM: 'Конкурс: поздравить победителей' }
+const FEAT_NAMES = { admin: 'Панель админа на кнопках', forward: 'Вопросы без ответа — мне', media: 'Фото и голосовые — мне', quick: 'Быстрые ответы', followup: '«Помогло?»', translate: 'Перевод моих ответов', english: 'Ответы на английском', status: '/status', news: '/news', invite: '/invite', remind: '/remind', complaints: 'Жалобы на серверы', version: 'Подсказка версии', broadcast: 'Рассылка', polls: 'Опросы', stats: 'Счёт тем', ping: '/ping', commands: 'Меню команд «/»', images: 'Картинки в ответах', deeplinks: 'Ссылки на темы', antiflood: 'Защита от флуда', welcome: 'Приветствие в группе', antispam: 'Антиспам в группе', contestSub: 'Конкурс: только подписчики', contestReal: 'Конкурс: без пустых аккаунтов', contestDM: 'Конкурс: поздравить победителей' }
 const QUICK = ['Обновите подписку: Настройки → Подписка → «Обновить»', 'Включите автопилот — он сам выберет рабочий сервер', 'Откройте «Проверка сети» на главном и пришлите итог (кнопка «Поделиться»)', 'Обновите приложение до последней версии: ' + SITE + '/update/']
 const fill = (cfg, t) => t.replaceAll('{сайт}', SITE).replaceAll('{поддержка}', cfg.support)
 const topicsOf = (cfg, en) => en ? FAQ_EN : cfg.topics
@@ -288,14 +290,106 @@ async function onGroup(env, cfg, m) { // группа: приветствие и
   }
 }
 
+// ── Панель админа: всё кнопками. Видна и работает только у владельца (OWNER_ID)
+const ADMIN_KB = { keyboard: [[{ text: '🛠 Админ' }]], resize_keyboard: true, is_persistent: true }
+const back = [{ text: '⬅️ Назад', callback_data: 'ad:menu' }]
+const adminKb = () => ({ inline_keyboard: [
+  [{ text: '📊 Сегодня', callback_data: 'ad:today' }, { text: '📥 Вопросы', callback_data: 'ad:q' }],
+  [{ text: '📣 Рассылка', callback_data: 'ad:bc' }, { text: '⚙️ Функции', callback_data: 'ad:feat' }],
+  [{ text: '🛰 Серверы', callback_data: 'ad:status' }, { text: '🎁 Конкурсы', callback_data: 'ad:contests' }],
+  [{ text: '📈 Статистика', callback_data: 'ad:stats' }, { text: '🚫 Заблокированные', callback_data: 'ad:blocked' }],
+  [{ text: '🏓 Проверка бота', callback_data: 'ad:ping' }]] })
+async function adminMenu(env, cfg, chat, edit) {
+  const q = (await kget(env, 'q', [])).filter(x => !x.ans).length
+  const text = `🛠 Панель админа\n\nЖдут ответа: ${q}\nНажмите кнопку 👇`
+  if (edit) return tg(env, 'editMessageText', { chat_id: chat, message_id: edit, text, reply_markup: adminKb() })
+  return tg(env, 'sendMessage', { chat_id: chat, text, reply_markup: adminKb() })
+}
+async function adminScreen(env, cfg, chat, mid, text, rows) { // один экран: текст + кнопки + «Назад», правим то же сообщение
+  return tg(env, 'editMessageText', { chat_id: chat, message_id: mid, text: text.slice(0, 4000), disable_web_page_preview: true, reply_markup: { inline_keyboard: [...(rows || []), back] } })
+}
+async function onAdmin(env, cfg, cq, d) {
+  const chat = cq.message.chat.id, mid = cq.message.message_id, [, act, arg] = d.split(':')
+  await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id })
+  if (act === 'menu') return adminMenu(env, cfg, chat, mid)
+  if (act === 'today') {
+    const day = new Date().toISOString().slice(0, 10), st = await kget(env, 'st:' + day, {}), q = await kget(env, 'q', [])
+    const today = Object.values(st).reduce((a, b) => a + b, 0), cmp = (await kget(env, 'cmp', [])).filter(x => now() - x.at < 86400000)
+    const byName = {}; cmp.forEach(x => { byName[x.name] = (byName[x.name] || 0) + 1 })
+    return adminScreen(env, cfg, chat, mid, `📊 Сегодня\n\nВопросов боту: ${today} (без готового ответа: ${st._miss || 0})\nЖдут вашего ответа: ${q.filter(x => !x.ans).length}\nВсего писали боту: ${(await kget(env, 'users', [])).length}\nЖалобы на серверы: ${Object.entries(byName).map(([n, c]) => n + ' — ' + c).join(', ') || 'нет'}\nСпама удалено в группе: ${await kget(env, 'spam', 0)}`, [[{ text: '🔄 Обновить', callback_data: 'ad:today' }]])
+  }
+  if (act === 'q') { // список вопросов без ответа
+    const q = (await kget(env, 'q', [])).filter(x => !x.ans).slice(-6).reverse()
+    if (!q.length) return adminScreen(env, cfg, chat, mid, '📥 Вопросов без ответа нет 👍')
+    return adminScreen(env, cfg, chat, mid, '📥 Без ответа — выберите вопрос:\n\n' + q.map((x, i) => `${i + 1}. ${x.name || 'человек'}: ${(x.text || '(' + (x.kind || 'файл') + ')').slice(0, 80)}`).join('\n'), q.map((x, i) => [{ text: `${i + 1}. ${(x.name || 'человек').slice(0, 20)} — открыть`, callback_data: 'ad:qo:' + x.id }]))
+  }
+  if (act === 'qo') { // один вопрос: ответить, шаблон, решено, блок
+    const x = (await kget(env, 'q', [])).find(y => y.id === +arg); if (!x) return adminScreen(env, cfg, chat, mid, 'Вопрос не найден — возможно, уже закрыт')
+    return adminScreen(env, cfg, chat, mid, `❓ ${x.name || 'человек'}${x.en ? ' (EN — ответ переведу)' : ''}\n${new Date(x.at).toLocaleString('ru', { timeZone: 'Europe/Moscow' })} МСК\n\n${x.text || '(' + (x.kind || 'файл') + ' — смотрите пересланное сообщение выше в чате)'}`,
+      [[{ text: '✍️ Ответить', callback_data: 'ad:qa:' + x.id }, { text: '⚡ Шаблон', callback_data: 'ad:qt:' + x.id }], [{ text: '✓ Решено', callback_data: 'ad:qd:' + x.id }, { text: '🚫 Заблокировать', callback_data: 'ad:qb:' + x.id }], [{ text: '⬅️ К списку', callback_data: 'ad:q' }]])
+  }
+  if (act === 'qa') { await kput(env, 'await', { kind: 'reply', qid: +arg }, 1800); return tg(env, 'sendMessage', { chat_id: chat, text: '✍️ Напишите ответ следующим сообщением — бот отправит его человеку.', reply_markup: { keyboard: [[{ text: '❌ Отмена' }]], resize_keyboard: true } }) }
+  if (act === 'qt') return adminScreen(env, cfg, chat, mid, '⚡ Выберите шаблон ответа:\n\n' + cfg.quick.map((t, i) => `${i + 1}. ${fill(cfg, t)}`).join('\n'), [...cfg.quick.map((t, i) => [{ text: `${i + 1}. ${t.slice(0, 35)}`, callback_data: `qr:${i}:${arg}` }]), [{ text: '⬅️ К вопросу', callback_data: 'ad:qo:' + arg }]])
+  if (act === 'qd') { await markAnswered(env, +arg, 'решено без ответа'); return onAdmin(env, cfg, { ...cq, id: cq.id + 'x' }, 'ad:q') }
+  if (act === 'qb') {
+    const x = (await kget(env, 'q', [])).find(y => y.id === +arg); if (!x) return
+    const b = await kget(env, 'block', []); if (!b.includes(+x.uid)) b.push(+x.uid); await kput(env, 'block', b.slice(-5000)); await markAnswered(env, x.id, 'заблокирован')
+    return adminScreen(env, cfg, chat, mid, `🚫 ${x.name || 'Человек'} заблокирован: его сообщения больше не приходят. Разблокировать — «🚫 Заблокированные».`, [[{ text: '⬅️ К списку', callback_data: 'ad:q' }]])
+  }
+  if (act === 'blocked') {
+    const b = await kget(env, 'block', [])
+    return adminScreen(env, cfg, chat, mid, b.length ? `🚫 Заблокировано: ${b.length}. Нажмите, чтобы разблокировать:` : '🚫 Заблокированных нет', b.slice(-8).map(id => [{ text: '✅ Разблокировать ' + id, callback_data: 'ad:ub:' + id }]))
+  }
+  if (act === 'ub') { await kput(env, 'block', (await kget(env, 'block', [])).filter(x => x !== +arg)); return onAdmin(env, cfg, { ...cq, id: cq.id + 'x' }, 'ad:blocked') }
+  if (act === 'feat') return tg(env, 'editMessageText', { chat_id: chat, message_id: mid, text: '⚙️ Функции бота — нажмите, чтобы включить или выключить:', reply_markup: { inline_keyboard: [...settingsKb(cfg).inline_keyboard, back] } })
+  if (act === 'status') return adminScreen(env, cfg, chat, mid, await statusText(), [[{ text: '🔄 Обновить', callback_data: 'ad:status' }]])
+  if (act === 'stats') return adminScreen(env, cfg, chat, mid, await statsText(env, cfg))
+  if (act === 'ping') { const t0 = now(); return adminScreen(env, cfg, chat, mid, `🏓 Бот работает · ${env.HOST_INFO || 'Cloudflare'}\nПодписчиков бота: ${(await kget(env, 'users', [])).length}\nФункций включено: ${Object.values(cfg.features).filter(Boolean).length} из ${Object.keys(cfg.features).length}\nОтвет за ${now() - t0} мс`) }
+  if (act === 'contests') {
+    if (!env.APEX_KV) return adminScreen(env, cfg, chat, mid, 'Конкурсы выключены: нет хранилища')
+    const list = (await env.APEX_KV.list({ prefix: 'c:' })).keys.slice(-8), rows = [], lines = []
+    for (const k of list) { const c = JSON.parse(await env.APEX_KV.get(k.name) || '{}'), cid = k.name.slice(2); lines.push(`${cid} — ${(c.ids || []).length} уч.${c.closed ? ', итоги подведены' : ''}`); if (!c.closed) rows.push([{ text: '🏆 Итоги ' + cid, callback_data: 'ad:draw:' + cid }]) }
+    return adminScreen(env, cfg, chat, mid, '🎁 Конкурсы\n\n' + (lines.join('\n') || 'Пока нет — их создаёт пульт: Telegram → Конкурс'), rows)
+  }
+  if (act === 'draw') { const r = await draw(env, arg, 1); return adminScreen(env, cfg, chat, mid, r.error ? '⚠️ ' + r.error : `🏆 Конкурс ${arg}: участников ${r.count}\nПобедитель: ${r.winners.map(who).join(', ') || 'нет'}`, [[{ text: '⬅️ К конкурсам', callback_data: 'ad:contests' }]]) }
+  if (act === 'bc') { await kput(env, 'await', { kind: 'bc' }, 1800); return tg(env, 'sendMessage', { chat_id: chat, text: `📣 Рассылка всем, кто писал боту (${(await kget(env, 'users', [])).length} чел.).\nНапишите текст следующим сообщением — я покажу, как он выглядит, и спрошу подтверждение.`, reply_markup: { keyboard: [[{ text: '❌ Отмена' }]], resize_keyboard: true } }) }
+  if (act === 'bcok') {
+    const draft = await kget(env, 'bcdraft', null); if (!draft) return adminScreen(env, cfg, chat, mid, 'Черновик рассылки устарел — начните заново')
+    await kput(env, 'bcadm', { id: 'a' + now().toString(36), text: draft }); await kput(env, 'bcdraft', null)
+    return adminScreen(env, cfg, chat, mid, '✅ Рассылка запущена — бот отправляет по 25 человек в минуту.')
+  }
+  if (act === 'bcno') { await kput(env, 'bcdraft', null); return adminMenu(env, cfg, chat, mid) }
+}
+async function adminInput(env, cfg, chat, wait, text) { // ждали от владельца текст: ответ человеку или рассылку
+  await kput(env, 'await', null)
+  if (wait.kind === 'reply') {
+    const x = (await kget(env, 'q', [])).find(y => y.id === wait.qid); if (!x) return tg(env, 'sendMessage', { chat_id: chat, text: 'Вопрос не найден', reply_markup: ADMIN_KB })
+    const r = await sendToUser(env, cfg, x.uid, text, x.id)
+    return tg(env, 'sendMessage', { chat_id: chat, text: r.ok ? '✅ Ответ отправлен ' + (x.name || '') : '⚠️ Не отправилось: ' + (r.description || 'ошибка'), reply_markup: ADMIN_KB })
+  }
+  if (wait.kind === 'bc') {
+    await kput(env, 'bcdraft', text.slice(0, 3500), 3600)
+    await tg(env, 'sendMessage', { chat_id: chat, text: 'Так увидят люди 👇', reply_markup: ADMIN_KB })
+    return tg(env, 'sendMessage', { chat_id: chat, text: fill(cfg, text).slice(0, 3500) + '\n\n/stop — не получать рассылки', disable_web_page_preview: true, reply_markup: { inline_keyboard: [[{ text: '✅ Отправить всем', callback_data: 'ad:bcok' }, { text: '❌ Отмена', callback_data: 'ad:bcno' }]] } })
+  }
+}
+
 async function onMessage(env, m) {
   const cfg = await config(env)
   if (m.chat?.type === 'group' || m.chat?.type === 'supergroup') return onGroup(env, cfg, m)
   if (m.chat?.type !== 'private') return // в каналах молчим
   const text = (m.text || '').trim(), owner = env.OWNER_ID && String(m.from?.id) === String(env.OWNER_ID), en = isEn(cfg, m.from)
   const [cmd0, arg] = text.split(/\s+/, 2), cmd = (cmd0 || '').split('@')[0].toLowerCase()
+  if (!owner && (await kget(env, 'block', [])).includes(m.from.id)) return // заблокирован админом — молчим
   if (!owner && cfg.features.antiflood) { const f = flooded(m.from.id); if (f === 'warn') return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? 'Too many messages — please wait a minute 🙏' : 'Слишком часто — подождите минуту 🙏' }); if (f) return }
   if (!owner && env.APEX_KV) await remember(env, m.from)
+  // ── Панель админа на кнопках (только владелец)
+  if (owner && cfg.features.admin) {
+    if (text === '🛠 Админ' || cmd === '/admin') return adminMenu(env, cfg, m.chat.id)
+    const wait = await kget(env, 'await', null)
+    if (wait && text && !m.reply_to_message && !text.startsWith('/') && text !== '❌ Отмена') return adminInput(env, cfg, m.chat.id, wait, text)
+    if (wait && (text === '❌ Отмена' || text === '/cancel')) { await kput(env, 'await', null); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: 'Отменено', reply_markup: ADMIN_KB }) }
+  }
   // Владелец ответил на пересланный вопрос — отправляем ответ человеку
   if (owner && m.reply_to_message && env.APEX_KV) {
     const to = await env.APEX_KV.get('fw:' + m.reply_to_message.message_id)
@@ -343,6 +437,7 @@ async function onMessage(env, m) {
       const k = 'ref:' + m.from.id
       if (!(await kget(env, k, null))) { await kput(env, k, arg.slice(4)); const rc = await kget(env, 'refc', {}); rc[arg.slice(4)] = (rc[arg.slice(4)] || 0) + 1; await kput(env, 'refc', rc) }
     }
+    if (owner && cfg.features.admin && !arg) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: '👋 Вы владелец бота. Кнопка «🛠 Админ» внизу — панель управления. Её видите только вы.', reply_markup: ADMIN_KB })
     const f = arg && cfg.features.deeplinks && topicsOf(cfg, en).find(t => t.id === arg)
     if (f) return answer(env, cfg, m.chat.id, f, en)
     return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? EN.greeting : fill(cfg, cfg.greeting), reply_markup: menu(cfg, en) })
@@ -470,8 +565,7 @@ export async function tick(env, force) {
   }
   if (ch) await kput(env, 'fu', fu)
   // Рассылка / опрос из пульта: по 25 человек за раз (у Cloudflare лимит запросов), продолжаем на следующем шаге
-  const bc = cfg.broadcast
-  if (bc && cfg.features.broadcast) {
+  for (const bc of [cfg.broadcast, await kget(env, 'bcadm', null)]) if (bc && cfg.features.broadcast) {
     const k = 'bc:' + bc.id, st = await kget(env, k, { i: 0, ok: 0, fail: 0, polls: [] })
     const users = await kget(env, 'users', [])
     if (bc.poll && !cfg.features.polls) st.done = true
@@ -548,7 +642,8 @@ export default {
           const cq = u.callback_query, d = cq.data || '', owner = env.OWNER_ID && String(cq.from.id) === String(env.OWNER_ID)
           if (d.startsWith('join:')) await join(env, cq, d.slice(5))
           // Кнопки владельца (функции, быстрые ответы): у остальных молча ничего не делают и ничего не показывают
-          else if ((d.startsWith('ft:') || d.startsWith('qr:')) && !owner) await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id })
+          else if ((d.startsWith('ft:') || d.startsWith('qr:') || d.startsWith('ad:')) && !owner) await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id })
+          else if (d.startsWith('ad:') && owner) await onAdmin(env, await config(env), cq, d)
           else if (d.startsWith('ft:') && owner) { // /settings: переключить функцию
             const k = d.slice(3), cfg0 = await config(env)
             if (k in cfg0.features) { await setFeature(env, k, !cfg0.features[k]); const cfg = await config(env); await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: (FEAT_NAMES[k] || k) + (cfg.features[k] ? ' — включено' : ' — выключено') }); if (cq.message) await tg(env, 'editMessageReplyMarkup', { chat_id: cq.message.chat.id, message_id: cq.message.message_id, reply_markup: settingsKb(cfg) }) }

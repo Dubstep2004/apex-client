@@ -191,7 +191,7 @@ async function dragRow(p, rowSel, from, to) { // перетащить строк
       if (r.best !== 24) bad(W, '«Когда читают чаще»: нет графика по часам')
       if (r.hist !== 1) bad(W, 'история техработ пустая')
       if (r.sched !== 1) bad(W, 'расписание пометок не рисуется')
-      if (r.feat < 25) bad(W, 'функций бота в пульте меньше 25: ' + r.feat)
+      if (r.feat < 26) bad(W, 'функций бота в пульте меньше 26: ' + r.feat)
       const pf = await p.evaluate(() => { pfOff = new Set(['sched', 'botq']); pfApply(); showTab('servers'); const a = getComputedStyle($('schedBlock')).display, b = getComputedStyle($('btBlock')).display, n = document.querySelectorAll('#pfList [data-pf]').length; pfOff = new Set(); pfApply(); return { a, b, n, back: getComputedStyle($('schedBlock')).display } })
       const mb = await p.evaluate(async () => { tgSet = { ...(tgSet || {}), bots: [{ slot: 2, id: 'en', name: 'English' }] }; botSelRender(); const pills = document.querySelectorAll('#botSel [data-bslot]').length; curBot = botList()[1]; const path = botCfgPath() + ' ' + botFilePath(); botSelRender(); const vis = !document.querySelector('.botx[data-slot="2"]').hidden && document.querySelector('.botx[data-slot="3"]').hidden; curBot = botList()[0]; tgSet.bots = []; botSelRender(); return { pills, path, vis } })
       if (mb.pills !== 2 || mb.path !== 'docs/tg/bot-en.json docs/stats/bot2.enc.json' || !mb.vis) bad(W, 'несколько ботов в пульте: ' + JSON.stringify(mb))
