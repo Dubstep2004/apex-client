@@ -11,6 +11,12 @@ const app = fs.readFileSync(path.join(DOCS, 'config/app.json'), 'utf8'), b64 = s
 const releases = [{ id: 1, tag_name: 'v9.9.9', name: 'APEX CLIENT 9.9.9', prerelease: false, draft: false, published_at: new Date().toISOString(), body: '- проверка', assets: [{ id: 5, name: 'apex-client-9.9.9.apk', size: 6e7, download_count: 3, browser_download_url: 'https://github.com/x.apk' }] }]
 const problems = []
 const bad = (where, what) => { problems.push(where + ': ' + what); console.log('::error title=' + where + '::' + what) }
+// 2.40: функция, объявленная дважды, молча заменяет первую (так «Неделя» на обзоре чуть не пропала)
+{
+  const html = require('fs').readFileSync(require('path').join(__dirname, '..', 'docs/admin/index.html'), 'utf8'), seen = {}
+  for (const m of html.matchAll(/^\s*(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/gm)) seen[m[1]] = (seen[m[1]] || 0) + 1
+  for (const [n, c] of Object.entries(seen)) if (c > 1) bad('Пульт', 'функция ' + n + ' объявлена ' + c + ' раза — вторая затирает первую')
+}
 
 async function github(page) {
   await page.route('https://api.github.com/**', async rt => {
@@ -169,6 +175,22 @@ async function dragRow(p, rowSel, from, to) { // перетащить строк
       if (process.env.SHOT3 && width < 500) { await p.evaluate(() => showTab('tg')); const e3 = await p.$('#srvBlock'); if (e3) { await e3.scrollIntoViewIfNeeded(); await e3.screenshot({ path: process.env.SHOT3 + '.png' }) } }
       if (process.env.SHOT4 && width < 500) { await p.evaluate(() => showTab('home')); await p.waitForTimeout(800); const e4 = await p.$('#statBlock'); await e4.scrollIntoViewIfNeeded(); await e4.screenshot({ path: process.env.SHOT4 + '-stat.png' }); await p.evaluate(() => { showTab('tg'); tgSet = { ...(tgSet || {}), botHost: 'server' }; hostApply() }); const e5 = await p.$('#hostBlock'); await e5.scrollIntoViewIfNeeded(); await e5.screenshot({ path: process.env.SHOT4 + '-host.png' }); await p.evaluate(() => { tgSet.botHost = 'cloudflare'; hostApply(); showTab('tg') }) }
       if (process.env.SHOT5 && width < 500) { const fs = require('fs'); const bot = fs.readFileSync(__dirname + '/../tools/tg-bot/worker.js', 'utf8'), menu = fs.readFileSync(__dirname + '/../tools/tg-bot/apex.sh', 'utf8'); await p.evaluate(([bot, menu]) => { showTab('help'); $('newsBox').open = true; nwCache.bot = { list: nwParse(bot.split('\n').filter(l => l.startsWith('// ')).map(l => l.slice(3))), cur: '' }; nwCache.menu = { list: nwParse((menu.match(/^CHANGES='([\s\S]*?)'$/m) || [])[1].split('\n')), cur: (menu.match(/^APEX_VER="(.+?)"/m) || [])[1] } }, [bot, menu]); for (const [pp, kk] of [['bot', ''], ['menu', ''], ['pult', 'u']]) { await p.evaluate(([a, b]) => { nwProd = a; nwKindSel = b; return nwRender() }, [pp, kk]); const e = await p.$('#newsBox'); await e.scrollIntoViewIfNeeded(); await e.screenshot({ path: process.env.SHOT5 + '-' + pp + '.png' }) } await p.evaluate(() => { nwProd = 'pult'; nwKindSel = ''; nwRender(); $('newsBox').open = false; showTab('tg') }) }
+    }
+    // 2.40: бот в пульте, лучшее время, расписание, «неделя к неделе»
+    {
+      const r = await p.evaluate(() => {
+        btData = { at: Date.now(), host: 'свой сервер', users: 12, stop: 1, q: [{ id: 5, uid: 7, name: '@ivan', text: 'не работает <b>', at: Date.now() - 6e4, kind: 'text' }, { id: 6, uid: 8, name: 'Петя', text: 'спасибо', at: Date.now(), ans: 'бот' }], stats: { d: { install: 3, _miss: 1 } }, fb: [{ ok: true }], cmp: [{ name: 'Германия', at: Date.now() }], polls: { p: { q: 'Как VPN?', o: [['Хорошо', 3], ['Плохо', 1]] } }, refs: [['7', 2]], remind: [1], broadcast: { id: 'b1', ok: 10, fail: 1, done: true } }
+        btRender(); tgState = { ...(tgState || {}), views: [1, 2, 3, 4].map(i => ({ id: String(i), text: 'пост', views: i * 10, at: '2026-11-1' + i + 'T0' + i + ':00' })), log: [{ kind: 'Техработы', text: 'Германия — шли 40 минут', at: Date.now(), ok: true }] }
+        renderBest(); renderMarkHist(); renderWeekCmp(); $('schedList').innerHTML = schedRow({ name: 'Германия', state: 'slow', from: '20:00', to: '23:00' })
+        return { q: document.querySelectorAll('#btQ .btq').length, xss: !!document.querySelector('#btQ b:not(.btqh b)') && document.querySelector('#btQ p').innerHTML.includes('<b>'), sum: document.querySelectorAll('#btSum div').length, best: document.querySelectorAll('#tgBest .besth i').length, hist: document.querySelectorAll('#markHist .tglog').length, sched: document.querySelectorAll('#schedList .sched').length, feat: document.querySelectorAll('#bcFeatList [data-feat]').length }
+      })
+      if (r.q !== 1) bad(W, 'бот в пульте: «только без ответа» показывает ' + r.q)
+      if (r.xss) bad(W, 'бот в пульте: текст вопроса не экранирован')
+      if (r.sum < 6) bad(W, 'бот в пульте: нет итогов статистики')
+      if (r.best !== 24) bad(W, '«Когда читают чаще»: нет графика по часам')
+      if (r.hist !== 1) bad(W, 'история техработ пустая')
+      if (r.sched !== 1) bad(W, 'расписание пометок не рисуется')
+      if (r.feat < 18) bad(W, 'функций бота в пульте меньше 18: ' + r.feat)
     }
     // 2.39: переключатели автопостов подряд — каждое сохранение берёт свежий settings.json, ни одно не теряется
     {

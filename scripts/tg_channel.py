@@ -40,6 +40,22 @@ def read(path, default):
     except (OSError, ValueError): return default
 
 
+def sched_windows(rule, base):
+    """Окна правила [начало, конец) в мс вокруг дня base (МСК): вчера, сегодня, завтра — чтобы ловить окна через полночь."""
+    out = []
+    try:
+        fh, fm = map(int, str(rule.get('from', '')).split(':')); th, tm = map(int, str(rule.get('to', '')).split(':'))
+    except ValueError: return out
+    for k in (-1, 0, 1):
+        d = (base + datetime.timedelta(days=k)).replace(hour=fh, minute=fm, second=0, microsecond=0)
+        if rule.get('days') == 'work' and d.weekday() >= 5: continue
+        if rule.get('days') == 'weekend' and d.weekday() < 5: continue
+        e = d.replace(hour=th, minute=tm)
+        if e <= d: e += datetime.timedelta(days=1)
+        out.append((int(d.timestamp() * 1000), int(e.timestamp() * 1000)))
+    return out
+
+
 def next_due():
     """Режим --next для будильника в telegram.yml: через сколько секунд следующее дело и какой робот нужен.
     GitHub запускает «каждые 10 минут» очень редко (бывает раз в несколько часов), поэтому после каждого
@@ -57,6 +73,9 @@ def next_due():
     for p in st.get('polls') or []: due.append((p.get('until') or 0, 'telegram'))
     for c in st.get('contests') or []:
         if not c.get('drawn'): due.append((c.get('until') or 0, 'telegram'))
+    for rule in (s.get('msched') or [])[:20]:  # 2.40: начало и конец окон «по расписанию»
+        if rule.get('off'): continue
+        for a, b in sched_windows(rule, datetime.datetime.now(MSK)): due += [(a + 20000, 'telegram'), (b + 20000, 'telegram')]
     pend = read('docs/config/pending.json', {})
     if pend.get('at') and not pend.get('error'): due.append((max(pend['at'], t), 'apply-pending'))
     m = datetime.datetime.now(MSK)
@@ -631,6 +650,21 @@ def post(kind, text):
     broadcast(kind, re.sub('<[^>]+>', '', text), CHATS, lambda chat: [tg('sendMessage', chat_id=chat, text=text, parse_mode='HTML', link_preview_options={'is_disabled': True}).get('message_id')])
     return True
 
+
+# ── 1b. 2.40: пометки серверов по расписанию (пульт → «Серверы» → «По расписанию»; правила в docs/tg/settings.json → msched)
+sched_changed = False
+for rule in (settings.get('msched') or [])[:20]:
+    name = str(rule.get('name', '')).strip()[:40]
+    if not name or rule.get('off'): continue
+    srv = app.setdefault('servers', {}).setdefault('status', {})
+    for a, b in sched_windows(rule, datetime.datetime.now(MSK)):
+        if a <= now < b and (name not in srv or (srv[name] or {}).get('auto')):
+            want = {'state': 'slow' if rule.get('state') == 'slow' else 'maintenance', 'from': a, 'until': b, 'note': str(rule.get('note', ''))[:120], 'auto': True}
+            if srv.get(name) != want: srv[name] = want; sched_changed = True
+    if (srv.get(name) or {}).get('auto') and (srv[name].get('until') or 0) <= now: del srv[name]; sched_changed = True
+if sched_changed and not DRY:
+    open(E('TG_APP', 'docs/config/app.json'), 'w').write(json.dumps(app, ensure_ascii=False, indent=2) + '\n')
+    print('пометки по расписанию обновлены')
 
 # ── 2. Техработы на серверах (пометки «обслуживание» из пульта, кроме предпросмотра)
 marks = {n: v for n, v in ((app.get('servers') or {}).get('status') or {}).items()

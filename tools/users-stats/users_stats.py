@@ -98,6 +98,26 @@ try:
 except SystemExit as e:
     print('узлы:', e)  # старая панель или нет прав — без нагрузки, остальное считаем
 
+# 2.40: у скольких подписка закончится за 3 и 7 дней (только числа)
+exp3 = exp7 = 0
+try:
+    st0, n0 = 0, None
+    while st0 < 60000:
+        pg = api(f'/api/users?start={st0}&size=500')
+        us = pg.get('users') or []
+        n0 = pg.get('total', n0)
+        for u in us:
+            try: e = datetime.datetime.fromisoformat(str(u.get('expireAt')).replace('Z', '+00:00'))
+            except ValueError: continue
+            if str(u.get('status', '')).upper() not in ('ACTIVE', ''): continue
+            left = (e - now).total_seconds() / 86400
+            if 0 < left <= 3: exp3 += 1
+            if 0 < left <= 7: exp7 += 1
+        st0 += 500
+        if not us or (n0 is not None and st0 >= n0): break
+except SystemExit as e:
+    print('окончание подписок:', e)
+
 versions = {}
 for at, app, ver in last.values():
     if app == 'APEX CLIENT': versions[ver or '?'] = versions.get(ver or '?', 0) + 1
@@ -119,6 +139,7 @@ data = {
     'versions': sorted(([v, n] for v, n in versions.items()), key=lambda x: [int(p) if p.isdigit() else 0 for p in re.split(r'[.\-]', x[0])], reverse=True)[:12],
     'apexDay': apex_day, 'apexWeek': apex_week,
     'nodes': nodes[:40],
+    'exp3': exp3, 'exp7': exp7,
     'days': days[-120:],
 }
 iv = os.urandom(12)
