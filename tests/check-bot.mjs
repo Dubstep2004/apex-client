@@ -226,5 +226,26 @@ if ((ws.match(/^\/\/ V\|/m) || []).length === 0) fail('worker.js: нет «Чт�
 if (!ws.includes("async scheduled(")) fail('worker.js: нет расписания для Cloudflare (scheduled) — рассылка встанет, если боту не пишут')
 
 fs.rmSync(tmp, { recursive: true, force: true })
+// ── Админ-панель в мини-приложении: только с настоящей подписью Telegram и только владелец
+{
+  const crypto = await import('node:crypto'), TOKEN = '123456:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+  const sign = (user, age = 0, token = TOKEN) => { const p = new URLSearchParams({ auth_date: String(Math.floor(Date.now() / 1000) - age), query_id: 'Q1', user: JSON.stringify(user) })
+    const dcs = [...p.entries()].sort((a, b) => a[0] < b[0] ? -1 : 1).map(([k, v]) => k + '=' + v).join('\n'), sec = crypto.createHmac('sha256', 'WebAppData').update(token).digest()
+    p.set('hash', crypto.createHmac('sha256', sec).update(dcs).digest('hex')); return p.toString() }
+  const mem = {}, env = { BOT_TOKEN: TOKEN, WEBHOOK_SECRET: 'w'.repeat(32), OWNER_ID: '1', APEX_KV: { get: async k => mem[k] ?? null, put: async (k, v) => { mem[k] = String(v) }, delete: async k => { delete mem[k] }, list: async () => ({ keys: [] }) } }
+  mem.q = JSON.stringify([{ id: 5, uid: 7, name: 'Ivan', text: 'помогите', at: Date.now() }]); mem.users = '[7]'
+  const realFetch = globalThis.fetch; globalThis.fetch = async u => String(u).includes('api.telegram.org') ? new Response(JSON.stringify({ ok: true, result: { message_id: 1, username: 'test_bot' } })) : new Response('{}', { status: 404 })
+  const w = (await import(path.join(BOT, 'worker.js') + '?app')).default
+  const call = async (init, act, extra = {}) => { const r = await w.fetch(new Request('https://bot.example/api/app', { method: 'POST', body: JSON.stringify({ init, act, ...extra }) }), env); return [r.status, await r.json().catch(() => ({})), r.headers.get('access-control-allow-origin')] }
+  const pre = await w.fetch(new Request('https://bot.example/api/app', { method: 'OPTIONS' }), env)
+  if (pre.status !== 204 || pre.headers.get('access-control-allow-origin') !== 'https://dubstep2004.github.io') fail('админ-панель: CORS только для визитки')
+  { const [st, b, o] = await call(sign({ id: 1, first_name: 'Owner' }), 'state'); if (st !== 200 || b.role !== 'owner' || !b.q?.length || !b.feats?.length || o !== 'https://dubstep2004.github.io') fail('админ-панель: владелец не получил данные ' + st + JSON.stringify(b).slice(0, 120)) }
+  for (const [name, init] of [['чужой человек', sign({ id: 7 })], ['поддельная подпись', sign({ id: 1 }, 0, '999:BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB')], ['старая подпись', sign({ id: 1 }, 2 * 86400)], ['без подписи', 'user=%7B%22id%22%3A1%7D'], ['пусто', '']]) {
+    const [st, b] = await call(init, 'state'); if (st !== 403 || b.q || b.today) fail('админ-панель: пустила — ' + name) }
+  { const [st] = await call(sign({ id: 7 }), 'bc', { text: 'взлом' }); if (st !== 403 || mem.bcadm) fail('админ-панель: чужой запустил рассылку') }
+  { const [, b] = await call(sign({ id: 1 }), 'reply', { qid: 5, text: 'Ответ из панели' }); if (!b.ok || !/Ответ из панели/.test(JSON.parse(mem.q)[0].ansText || '')) fail('админ-панель: ответ на вопрос не прошёл') }
+  { const [, b] = await call(sign({ id: 1 }), 'feat', { k: 'quiz' }); if (!b.ok || b.on !== false) fail('админ-панель: переключение функции') }
+  globalThis.fetch = realFetch
+}
 console.log(errs.length ? `✗ Бот и меню: ошибок ${errs.length}` : '✓ Бот и меню — без ошибок')
 process.exit(errs.length ? 1 : 0)

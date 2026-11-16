@@ -28,6 +28,7 @@ const env = {
   WEBHOOK_SECRET: (process.env.WEBHOOK_SECRET || '').trim() || crypto.randomBytes(24).toString('hex'),
   OWNER_ID: (process.env.OWNER_ID || '').trim(),
   SUPPORT: (process.env.SUPPORT || '').trim(),
+  BOT_PUBLIC_URL: (process.env.BOT_PUBLIC_URL || '').trim(), // https-адрес бота (домен с сертификатом → BOT_PORT) — для админ-панели в мини-приложении
   REMNA_URL: (process.env.REMNA_URL || '').trim(), REMNA_TOKEN: (process.env.REMNA_TOKEN || '').trim(), REMNA_COOKIE: (process.env.REMNA_COOKIE || '').trim(), // /sub и бонус за друзей — по желанию
   BOT_CONFIG: (process.env.BOT_CONFIG || '').trim(),
   HOST_INFO: 'свой сервер ' + os.hostname(),
@@ -134,6 +135,10 @@ if (port > 0 && process.env.WEBHOOK_SECRET) {
     try {
       const chunks = []; let size = 0
       for await (const c of req) { size += c.length; if (size > 65536) { res.writeHead(413).end(); return } chunks.push(c) }
+      if (req.url === '/api/app') { // мини-приложение: подпись Telegram проверяет worker.js; CORS — только визитка
+        const r = await worker.fetch(new Request('https://localhost/api/app', { method: req.method === 'OPTIONS' ? 'OPTIONS' : 'POST', ...(req.method === 'POST' ? { body: Buffer.concat(chunks) } : {}) }), env)
+        res.writeHead(r.status, Object.fromEntries(r.headers)).end(await r.text()); return
+      }
       if (!(['/api/data', '/api/reply', '/api/draw', '/api/admin'].includes(req.url) && req.method === 'POST')) { res.writeHead(404).end(); return }
       const h = {}; for (const k of ['x-key', 'x-ts', 'x-sig']) h[k] = String(req.headers[k] || '')
       const r = await worker.fetch(new Request('http://localhost' + req.url, { method: 'POST', headers: { ...h, 'content-type': 'application/json' }, body: Buffer.concat(chunks) }), env)

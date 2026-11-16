@@ -25,6 +25,8 @@
 //   его ответ на пересланное сообщение бот отправит человеку; счёт, какие темы спрашивают чаще.
 
 // ЧТО НОВОГО В БОТЕ (пульт показывает это в «Справка» → «Что нового» → «Бот»; V — версия, n/u/f — новое/улучшено/исправлено)
+// V|4.1|16 ноября 2026
+// n|«📱 Админ-панель» — мини-приложение для владельца: сводка, вопросы с ответом и «решено», рассылка, пользователи (поиск, бан, написать), функции по разделам, ошибки. Защита: каждый запрос подписан Telegram и проверяется ботом, работает только у владельца (помощникам — только вопросы). Нужен https-адрес бота (Cloudflare — сам; свой сервер — BOT_PUBLIC_URL), иначе кнопки открывают панель в чате
 // V|4.0|16 ноября 2026
 // u|Бонус за друзей настраивается в пульте: за скольких приглашённых, сколько дней и «начислять сразу» без вашего нажатия
 // V|3.9|16 ноября 2026
@@ -176,7 +178,7 @@ async function mergeFeatures(env, c) {
 async function setFeature(env, k, v) { const ov = await kget(env, 'fover', {}); ov[k] = { v, at: now() }; await kput(env, 'fover', ov); cfgCache = null }
 // Разделы функций: /settings, «⚙️ Функции» в «🛠 Админ» и меню сервера показывают функции по разделам
 const FEAT_GROUPS = [
-  ['adm', '🛠 Админ и сводки', ['admin', 'morning', 'stats', 'syslog', 'backup']],
+  ['adm', '🛠 Админ и сводки', ['admin', 'adminApp', 'morning', 'stats', 'syslog', 'backup']],
   ['ans', '💬 Ответы людям', ['forward', 'media', 'quick', 'followup', 'translate', 'english', 'qpos', 'night', 'human', 'memory', 'form', 'fuzzy']],
   ['hlp', '🛟 Помощники', ['helpers', 'helpRR']],
   ['cmd', '📋 Команды', ['appFirst', 'miniapp', 'commands', 'sub', 'video', 'status', 'news', 'invite', 'remind', 'complaints', 'version', 'ping', 'quiz', 'deeplinks', 'images']],
@@ -225,9 +227,9 @@ async function config(env) {
   cfgAt = Date.now()
   return cfgCache
 }
-const FEATURES = { appFirst: true, sub: true, video: true, refbonus: true, miniapp: true, memory: true, form: true, quiz: true, fuzzy: true, captcha: false, warns: true, anniv: true, qpos: true, night: true, human: true, fakewarn: true, helpers: true, helpRR: true, chpost: true, contestBot: true, backup: true, syslog: true, morning: true, admin: true, media: true, quick: true, commands: true, images: true, deeplinks: true, contestDM: true, polls: true, broadcast: true, news: true, status: true, ping: true, english: true, forward: false, stats: true, welcome: true, antispam: true, invite: true, remind: true, followup: true, complaints: true, translate: true, antiflood: true, version: true, contestSub: true, contestReal: false }
+const FEATURES = { adminApp: true, appFirst: true, sub: true, video: true, refbonus: true, miniapp: true, memory: true, form: true, quiz: true, fuzzy: true, captcha: false, warns: true, anniv: true, qpos: true, night: true, human: true, fakewarn: true, helpers: true, helpRR: true, chpost: true, contestBot: true, backup: true, syslog: true, morning: true, admin: true, media: true, quick: true, commands: true, images: true, deeplinks: true, contestDM: true, polls: true, broadcast: true, news: true, status: true, ping: true, english: true, forward: false, stats: true, welcome: true, antispam: true, invite: true, remind: true, followup: true, complaints: true, translate: true, antiflood: true, version: true, contestSub: true, contestReal: false }
 // Названия функций — для /settings в боте и меню сервера (apex → «Функции бота»)
-const FEAT_NAMES = { admin: 'Панель админа на кнопках', morning: 'Утренняя сводка в 9:00', chpost: 'Пост в канал из бота', helpers: 'Помощники', qpos: 'Место в очереди', fuzzy: 'Умный поиск с опечатками', memory: 'Память разговора', appFirst: 'Всё в мини-приложении', sub: '/sub — моя подписка', video: 'Видеоинструкция', refbonus: 'Бонус за друзей', miniapp: 'Мини-приложение (кнопка APEX)', form: 'Форма /report', quiz: 'Викторина /quiz', captcha: 'Капча для новичков в группе', warns: '/warn и /ban в группе', anniv: 'Поздравление с годовщиной', night: 'Ночью — «ответим утром»', human: '«Позвать человека»', fakewarn: 'Предупреждение о поддельных ботах', helpRR: 'Помощникам — вопросы по очереди', contestBot: 'Конкурс из бота', backup: 'Копия данных файлом', syslog: 'Система и ошибки', forward: 'Вопросы без ответа — мне', media: 'Фото и голосовые — мне', quick: 'Быстрые ответы', followup: '«Помогло?»', translate: 'Перевод моих ответов', english: 'Ответы на английском', status: '/status', news: '/news', invite: '/invite', remind: '/remind', complaints: 'Жалобы на серверы', version: 'Подсказка версии', broadcast: 'Рассылка', polls: 'Опросы', stats: 'Счёт тем', ping: '/ping', commands: 'Меню команд «/»', images: 'Картинки в ответах', deeplinks: 'Ссылки на темы', antiflood: 'Защита от флуда', welcome: 'Приветствие в группе', antispam: 'Антиспам в группе', contestSub: 'Конкурс: только подписчики', contestReal: 'Конкурс: без пустых аккаунтов', contestDM: 'Конкурс: поздравить победителей' }
+const FEAT_NAMES = { admin: 'Панель админа на кнопках', morning: 'Утренняя сводка в 9:00', chpost: 'Пост в канал из бота', helpers: 'Помощники', qpos: 'Место в очереди', fuzzy: 'Умный поиск с опечатками', memory: 'Память разговора', appFirst: 'Всё в мини-приложении', adminApp: 'Админ-панель в мини-приложении', sub: '/sub — моя подписка', video: 'Видеоинструкция', refbonus: 'Бонус за друзей', miniapp: 'Мини-приложение (кнопка APEX)', form: 'Форма /report', quiz: 'Викторина /quiz', captcha: 'Капча для новичков в группе', warns: '/warn и /ban в группе', anniv: 'Поздравление с годовщиной', night: 'Ночью — «ответим утром»', human: '«Позвать человека»', fakewarn: 'Предупреждение о поддельных ботах', helpRR: 'Помощникам — вопросы по очереди', contestBot: 'Конкурс из бота', backup: 'Копия данных файлом', syslog: 'Система и ошибки', forward: 'Вопросы без ответа — мне', media: 'Фото и голосовые — мне', quick: 'Быстрые ответы', followup: '«Помогло?»', translate: 'Перевод моих ответов', english: 'Ответы на английском', status: '/status', news: '/news', invite: '/invite', remind: '/remind', complaints: 'Жалобы на серверы', version: 'Подсказка версии', broadcast: 'Рассылка', polls: 'Опросы', stats: 'Счёт тем', ping: '/ping', commands: 'Меню команд «/»', images: 'Картинки в ответах', deeplinks: 'Ссылки на темы', antiflood: 'Защита от флуда', welcome: 'Приветствие в группе', antispam: 'Антиспам в группе', contestSub: 'Конкурс: только подписчики', contestReal: 'Конкурс: без пустых аккаунтов', contestDM: 'Конкурс: поздравить победителей' }
 const QUICK = ['Обновите подписку: Настройки → Подписка → «Обновить»', 'Включите автопилот — он сам выберет рабочий сервер', 'Откройте «Проверка сети» на главном и пришлите итог (кнопка «Поделиться»)', 'Обновите приложение до последней версии: ' + SITE + '/update/']
 const fill = (cfg, t) => t.replaceAll('{сайт}', SITE).replaceAll('{поддержка}', cfg.support)
 const topicsOf = (cfg, en) => en ? FAQ_EN : cfg.topics
@@ -467,6 +469,58 @@ async function topScreen(env, cfg) { // частые вопросы + отвеч
 
 // ── Панель админа: всё кнопками. Видна и работает только у владельца (OWNER_ID)
 const ADMIN_KB = { keyboard: [[{ text: '🛠 Админ' }]], resize_keyboard: true, is_persistent: true }
+// Админ-панель в мини-приложении: кнопка рядом с «🛠 Админ» — только у владельца. Данные мини-приложение берёт у бота по https,
+// каждый запрос подписан Telegram (initData) и проверяется здесь: чужой номер — отказ. Без https-адреса — кнопки открывают панель в чате.
+let pubOrigin = ''
+async function apiBase(env) { if (/^https:\/\//.test(env.BOT_PUBLIC_URL || '')) return env.BOT_PUBLIC_URL.replace(/\/+$/, ''); if (!pubOrigin) pubOrigin = await kget(env, 'origin', ''); return pubOrigin }
+async function refreshAdminKb(env, cfg) {
+  if (!(cfg.features.adminApp && cfg.features.miniapp)) { ADMIN_KB.keyboard = [[{ text: '🛠 Админ' }]]; return }
+  await botName(env); const api = await apiBase(env)
+  ADMIN_KB.keyboard = [[{ text: '🛠 Админ' }, { text: '📱 Админ-панель', web_app: { url: appUrl(false) + '&adm=1' + (api ? '&api=' + encodeURIComponent(api) : '') } }]]
+}
+async function checkInit(env, init) { // подпись Telegram: ключ = HMAC('WebAppData', токен), подпись = HMAC(ключ, поля по алфавиту)
+  try {
+    const p = new URLSearchParams(String(init || '')), hash = p.get('hash') || ''; p.delete('hash')
+    if (!/^[0-9a-f]{64}$/.test(hash) || Math.abs(now() / 1000 - +p.get('auth_date')) > 86400) return null
+    const dcs = [...p.entries()].sort((a, b) => a[0] < b[0] ? -1 : 1).map(([k, v]) => k + '=' + v).join('\n'), enc = new TextEncoder()
+    const k1 = await crypto.subtle.importKey('raw', enc.encode('WebAppData'), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+    const sec = await crypto.subtle.sign('HMAC', k1, enc.encode(env.BOT_TOKEN))
+    const k2 = await crypto.subtle.importKey('raw', sec, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+    const sig = [...new Uint8Array(await crypto.subtle.sign('HMAC', k2, enc.encode(dcs)))].map(b => b.toString(16).padStart(2, '0')).join('')
+    if (sig !== hash) return null
+    return JSON.parse(p.get('user') || 'null')
+  } catch { return null }
+}
+async function appApi(env, u, b) { // владелец — всё; помощник — только вопросы
+  const cfg = await config(env), owner = String(u.id) === String(env.OWNER_ID), helper = !owner && await isHelper(env, cfg, u.id)
+  if (!owner && !helper) return { error: 'forbidden' }
+  if (!cfg.features.adminApp) return { error: 'Админ-панель в мини-приложении выключена' }
+  const act = String(b.act || ''), by = owner ? '' : 'помощник ' + (u.username ? '@' + u.username : u.first_name || u.id)
+  if (act === 'state') {
+    const q = (await kget(env, 'q', [])).filter(x => !x.ans).slice(-20).reverse().map(x => ({ id: x.id, name: x.name, text: x.text || '(' + (x.kind || 'файл') + ')', at: x.at, en: !!x.en }))
+    if (!owner) return { role: 'helper', q }
+    return { role: 'owner', today: await todayText(env), q, users: (await kget(env, 'users', [])).length, blocked: (await kget(env, 'block', [])).length, helpers: await kget(env, 'helpers', []),
+      feats: featGroups().map(g => ({ name: g[1], items: g[2].filter(k => k in cfg.features).map(k => ({ k, name: FEAT_NAMES[k], on: !!cfg.features[k] })) })), errs: (await errList(env)).slice(-5).reverse(), quick: cfg.quick.map(t => fill(cfg, t)) }
+  }
+  if (act === 'reply' || act === 'done') {
+    const x = (await kget(env, 'q', [])).find(y => y.id === +b.qid); if (!x) return { error: 'вопрос не найден' }
+    if (x.ans) return { error: 'на вопрос уже ответили' }
+    if (act === 'done') { await markAnswered(env, x.id, 'решено без ответа', '', by); return { ok: true } }
+    const text = String(b.text || '').trim().slice(0, 4000); if (!text) return { error: 'пустой ответ' }
+    const r = await sendToUser(env, cfg, x.uid, text, x.id, by)
+    if (r.ok && !owner && env.OWNER_ID) await tg(env, 'sendMessage', { chat_id: env.OWNER_ID, text: `🛟 ${by} ответил ${x.name}:\n${text.slice(0, 500)}` })
+    return r.ok ? { ok: true } : { error: r.description || 'не отправилось' }
+  }
+  if (!owner) return { error: 'forbidden' }
+  if (act === 'feat') { const k = String(b.k); if (!(k in cfg.features)) return { error: 'нет такой функции' }; await setFeature(env, k, !cfg.features[k]); return { ok: true, on: !cfg.features[k] } }
+  if (act === 'bc') { const text = String(b.text || '').trim().slice(0, 3500); if (text.length < 2) return { error: 'пустой текст' }; await kput(env, 'bcadm', { id: 'a' + now().toString(36), text }); return { ok: true, n: (await kget(env, 'users', [])).length } }
+  if (act === 'users') {
+    const q = String(b.q || '').trim().replace(/^@/, '').toLowerCase(), bl = await kget(env, 'block', [])
+    return { list: (await userList(env, 120)).filter(c => !q || String(c.id) === q || (c.un || '').toLowerCase().includes(q) || (c.name || '').toLowerCase().includes(q)).slice(0, 25).map(c => ({ id: c.id, name: c.name || '', un: c.un || '', blocked: bl.includes(+c.id) })) }
+  }
+  if (['ban', 'unban', 'msg'].includes(act)) return userAction(env, act, b.uid, b.text)
+  return { error: 'неизвестное действие' }
+}
 const back = [{ text: '⬅️ Назад', callback_data: 'ad:menu' }]
 const ADMIN_SECS = { // «🛠 Админ» по разделам
   rep: ['📊 Сводки и контроль', [[{ text: '📊 Сегодня', callback_data: 'ad:today' }, { text: '🔥 Частые вопросы', callback_data: 'ad:stats' }], [{ text: '🛰 Серверы', callback_data: 'ad:status' }, { text: '🖥 Система и ошибки', callback_data: 'ad:sys' }], [{ text: '🏓 Проверка бота', callback_data: 'ad:ping' }]]],
@@ -690,6 +744,12 @@ async function onAppData(env, cfg, m) {
   let d = {}; try { d = JSON.parse(m.web_app_data.data || '{}') } catch {}
   const en = isEn(cfg, m.from), as = text => onMessage(env, { ...m, web_app_data: undefined, text }), cut = (x, n) => String(x || '').trim().slice(0, n)
   if (!env.OWNER_ID || String(m.from.id) !== String(env.OWNER_ID)) { if ((await kget(env, 'block', [])).includes(m.from.id)) return; if (env.APEX_KV) await remember(env, m.from) }
+  if (d.a === 'adm') { // админ-панель без https-адреса: открываем нужный экран в чате (только владелец)
+    if (String(m.from.id) !== String(env.OWNER_ID) || !cfg.features.admin) return
+    if (d.s === 'today') return as('/today'); if (d.s === 'q') return as('/queue'); if (d.s === 'top') return as('/top'); if (d.s === 'users') return as('/users'); if (d.s === 'feat') return as('/settings')
+    if (ADMIN_SECS[d.s]) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: ADMIN_SECS[d.s][0], reply_markup: { inline_keyboard: [...ADMIN_SECS[d.s][1], [{ text: '⬅️ Назад', callback_data: 'ad:menu' }]] } })
+    return adminMenu(env, cfg, m.chat.id)
+  }
   const cmds = { sub: '/sub', invite: '/invite', remind: '/remind', stop: '/stop', status: '/status', news: '/news', video: '/video' }
   if (cmds[d.a]) return as(cmds[d.a])
   if (d.a === 'cmp' && /^[\p{L} -]{2,20}$/u.test(cut(d.name, 20))) { const n = cut(d.name, 20); return as('не работает ' + n[0].toUpperCase() + n.slice(1)) }
@@ -732,6 +792,7 @@ async function onMessage(env, m) {
   }
   // ── Панель админа на кнопках (только владелец)
   if (owner && cfg.features.admin) {
+    await refreshAdminKb(env, cfg)
     if (text === '🛠 Админ' || cmd === '/admin') return adminMenu(env, cfg, m.chat.id)
     const wait = await kget(env, 'await', null)
     if (wait && text && !m.reply_to_message && !text.startsWith('/') && text !== '❌ Отмена') return adminInput(env, cfg, m.chat.id, wait, text)
@@ -1073,6 +1134,17 @@ export default {
   async fetch(req, env) {
     const url = new URL(req.url)
     if (!env.BOT_TOKEN || !env.WEBHOOK_SECRET) return new Response('Добавьте секреты BOT_TOKEN и WEBHOOK_SECRET', { status: 500 })
+    if (url.pathname === '/api/app') { // мини-приложение (визитка) → бот; проверка подписи Telegram в checkInit
+      const cors = { 'access-control-allow-origin': SITE, 'access-control-allow-methods': 'POST', 'access-control-allow-headers': 'content-type', 'access-control-max-age': '600', 'content-type': 'application/json' }
+      if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors })
+      if (req.method !== 'POST') return new Response('{}', { status: 405, headers: cors })
+      const b = JSON.parse((await req.text()).slice(0, 20000) || '{}'), u = await checkInit(env, b.init)
+      if (!u) return new Response(JSON.stringify({ error: 'forbidden' }), { status: 403, headers: cors })
+      let r; try { r = await appApi(env, u, b) } catch (e) { await logErr(env, 'мини-приложение', e); r = { error: 'ошибка бота' } }
+      return new Response(JSON.stringify(r), { status: r.error === 'forbidden' ? 403 : 200, headers: cors })
+    }
+    if (url.protocol === 'https:' && url.pathname === '/tg' && pubOrigin !== url.origin) { // запоминаем свой https-адрес для админ-панели
+      if (!pubOrigin) pubOrigin = await kget(env, 'origin', ''); if (pubOrigin !== url.origin) { pubOrigin = url.origin; await kput(env, 'origin', url.origin) } }
     // Однократная настройка: адрес бота для Telegram
     if (url.pathname === '/setup') {
       if (url.searchParams.get('key') !== env.WEBHOOK_SECRET) return new Response('Неверный ключ', { status: 403 })
