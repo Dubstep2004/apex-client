@@ -223,6 +223,20 @@ if (!/rc=1/.test(rs.stdout) || !/ссылки/.test(rs.stdout)) fail('apex.sh: �
   { const w = await import(path.join(BOT, 'worker.js')), used = w.FEAT_GROUPS.flatMap(g => g[2]), miss = Object.keys(w.FEAT_NAMES).filter(k => !used.includes(k)); if (miss.length) fail('функции без раздела в /settings: ' + miss.join(', ')) }
   if (!rows.some(x => /\|status\|[^|]*\|0\|📋 Команды$/.test(x))) fail('меню → «Функции бота»: не видно, что /status выключен в боте или нет раздела')
 }
+// «Адрес бота (https)»: домен → Caddy только для /api/*, без дублей при повторе; мусор не принимается
+{
+  const d = path.join(tmp, 'dom'), bin = path.join(d, 'bin'); fs.mkdirSync(bin, { recursive: true })
+  fs.writeFileSync(path.join(bin, 'curl'), '#!/bin/bash\ncase "$*" in *ipify*) echo 1.2.3.4;; *OPTIONS*) echo -n 204;; *) exit 1;; esac\n', { mode: 0o755 })
+  fs.writeFileSync(path.join(bin, 'getent'), '#!/bin/bash\necho "1.2.3.4 STREAM $3"\n', { mode: 0o755 })
+  for (const c of ['apt-get', 'systemctl', 'ufw', 'caddy']) fs.writeFileSync(path.join(bin, c), '#!/bin/bash\n[ "$1" = status ] && echo "Status: active"\nexit 0\n', { mode: 0o755 })
+  fs.writeFileSync(path.join(d, 'Caddyfile'), ':80 {\n\troot * /usr/share/caddy\n}\n'); fs.writeFileSync(path.join(d, 'env'), '')
+  const run = input => { fs.writeFileSync(path.join(d, 'in'), input); fs.writeFileSync(path.join(d, 'run.sh'), `source <(sed -n '/^say()/,/^need_root/p;/^envget()/,/^}/p;/^do_domain()/,/^link_show()/{/^link_show()/!p}' "${sh}"); TTY=/dev/stdin; ENVF="${d}/env"; CADDYF="${d}/Caddyfile"; SVC=apex-bot; P=; sleep(){ :; }; step(){ :; }; item(){ :; }; T(){ echo "$*"; }; do_domain\n`); return spawnSync('bash', ['-c', `cat "${d}/in" | bash "${d}/run.sh"`], { encoding: 'utf8', env: { ...process.env, PATH: bin + ':' + process.env.PATH }, timeout: 30000 }) }
+  const r1 = run('Bot.Example.COM\n'), cf = () => fs.readFileSync(path.join(d, 'Caddyfile'), 'utf8'), envs = () => fs.readFileSync(path.join(d, 'env'), 'utf8')
+  if (!/работает/.test(r1.stdout) || !/^bot\.example\.com \{/m.test(cf()) || !/@api path \/api\/\*/.test(cf()) || /^:80 \{/m.test(cf()) || !/BOT_PUBLIC_URL=https:\/\/bot\.example\.com/.test(envs())) fail('меню → «Адрес бота»: не настроилось ' + (r1.stdout + r1.stderr).slice(-300))
+  const r2 = run('2\nbot.example.com\n'); if (!/работает/.test(r2.stdout) || (cf().match(/^bot\.example\.com \{/gm) || []).length !== 1) fail('меню → «Адрес бота»: повтор дублирует сайт в Caddy или не прошёл ' + r2.stdout.slice(-200))
+  run('3\n'); if (/bot\.example\.com/.test(cf()) || /BOT_PUBLIC_URL=https/.test(envs())) fail('меню → «Адрес бота»: «Убрать» не убрало')
+  const r4 = run('http://evil;rm -rf /\n'); if (!/не похоже на домен/.test(r4.stdout)) fail('меню → «Адрес бота»: принял мусор вместо домена')
+}
 const ws = fs.readFileSync(path.join(BOT, 'worker.js'), 'utf8')
 if (!/x-telegram-bot-api-secret-token/.test(ws) || !/WEBHOOK_SECRET/.test(ws)) fail('worker.js: нет проверки секретного слова')
 if ((ws.match(/^\/\/ V\|/m) || []).length === 0) fail('worker.js: нет «Что нового в боте»')

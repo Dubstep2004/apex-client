@@ -10,11 +10,11 @@
 set -uo pipefail
 export LC_ALL=C.UTF-8 2>/dev/null  # русские буквы — по одной, а не по байтам
 
-APEX_VER="2.8"
+APEX_VER="2.9"
 SRC="https://raw.githubusercontent.com/Dubstep2004/apex-client/main/tools/tg-bot"
 API="https://api.github.com/repos/Dubstep2004/apex-client/commits?path=tools/tg-bot&per_page=1"
 DIR=${APEX_DIR:-/opt/apex-bot}; SELF=${APEX_SELF:-/usr/local/bin/apex}
-CONF=${APEX_CONF:-/etc/apex-menu.conf}   # настройки самого меню: какой бот выбран, язык, цвет, что включено
+CONF=${APEX_CONF:-/etc/apex-menu.conf}; CADDYF=${APEX_CADDY:-/etc/caddy/Caddyfile}   # Caddy — для «Адрес бота (https)»   # настройки самого меню: какой бот выбран, язык, цвет, что включено
 cget() { [ -f "$CONF" ] && sed -n "s/^$1=//p" "$CONF" | tail -1; }
 cset() { local k=$1 v=$2; touch "$CONF"; chmod 600 "$CONF"; grep -v "^$k=" "$CONF" >"$CONF.tmp" 2>/dev/null; printf '%s=%s\n' "$k" "$v" >>"$CONF.tmp"; mv "$CONF.tmp" "$CONF"; }
 # 2.0: несколько ботов на одном сервере. Основной — apex-bot; дополнительные — apex-bot-<имя> со своими настройками и данными
@@ -105,7 +105,10 @@ item()    { printf '   %s%3s%s  %s%s%s\n' "$ACC$B" "$1" "$R" "${3:-}" "$2" "$R";
 
 # ── Что нового ─────────────────────────────────────────────────────
 # Строки: «V|версия|дата» — заголовок; «n|текст» — новое, «u|…» — улучшено, «f|…» — исправлено.
-CHANGES='V|2.8|17 ноября 2026
+CHANGES='V|2.9|17 ноября 2026
+f|SSH: если настройки не прошли проверку, меню больше не перезапускает SSH (раньше могло оставить без входа); после смены порта проверяет, что SSH его слушает
+u|«Связь с пультом» показывает https-адрес, если настроен свой домен
+V|2.8|17 ноября 2026
 n|«Настройки» → «Адрес бота (https)»: свой домен для бота — Caddy сам получает сертификат, наружу только /api/*. Нужен для полной админ-панели в мини-приложении и общего счётчика рекламы
 V|2.7|16 ноября 2026
 n|«Настройки» → «Панель подписок»: адрес и токен Remnawave для /sub (срок подписки) и кнопки «🎁 +7 дней» за друзей; токен не виден при вводе и хранится только в настройках бота
@@ -518,9 +521,9 @@ do_ssh() {
        command -v ufw >/dev/null && ufw status | grep -q active && ufw allow "$np/tcp" >/dev/null && ok "Файрвол: порт $np открыт"
        printf '# APEX ШТАБ\nPort %s\n' "$np" >/etc/ssh/sshd_config.d/99-apex-port.conf
        sshd -t || { rm -f /etc/ssh/sshd_config.d/99-apex-port.conf; err "Настройка не прошла проверку — отменено"; return; }
-       systemctl daemon-reload; systemctl restart ssh.socket 2>/dev/null; systemctl restart ssh 2>/dev/null || systemctl restart sshd 2>/dev/null
-       ok "SSH теперь на порту $np"; warn "НЕ закрывайте это окно: откройте второе и проверьте вход  ssh -p $np root@сервер . Не входит — верните порт здесь же" ;;
-    2) if [ "$pass" = no ]; then rm -f /etc/ssh/sshd_config.d/99-apex-keys.conf; sshd -t && systemctl reload ssh 2>/dev/null || systemctl reload sshd; ok "Вход по паролю снова разрешён"
+       systemctl daemon-reload; systemctl restart ssh.socket 2>/dev/null; systemctl restart ssh 2>/dev/null || systemctl restart sshd 2>/dev/null; sleep 1
+       if ss -ltn 2>/dev/null | grep -q ":$np "; then ok "SSH теперь на порту $np"; else warn "SSH пока не слушает порт $np — проверьте: ss -ltn | grep $np"; fi; warn "НЕ закрывайте это окно: откройте второе и проверьте вход  ssh -p $np root@сервер . Не входит — верните порт здесь же" ;;
+    2) if [ "$pass" = no ]; then rm -f /etc/ssh/sshd_config.d/99-apex-keys.conf; if sshd -t; then { systemctl reload ssh 2>/dev/null || systemctl reload sshd; }; ok "Вход по паролю снова разрешён"; else err "Настройки SSH не прошли проверку — ничего не перезапускаю, проверьте: sshd -t"; fi
        else
          [ "$keys" -gt 0 ] || { err "На сервере нет ни одного SSH-ключа — без пароля вы не войдёте. Сначала добавьте ключ (ssh-copy-id)"; return; }
          confirm "Запретить вход по паролю? Входить можно будет только по ключу" || return
@@ -625,7 +628,7 @@ do_domain() {
     case "$(ask "Пункт: ")" in
       1) domain_check "${cur#https://}"; return ;;
       2) ;;
-      3) local d=${cur#https://}; [ -f /etc/caddy/Caddyfile ] && sed -i "/^# apex-bot $d\$/,/^# end apex-bot $d\$/d" /etc/caddy/Caddyfile && systemctl reload caddy 2>/dev/null
+      3) local d=${cur#https://}; [ -f $CADDYF ] && sed -i "/^# apex-bot $d\$/,/^# end apex-bot $d\$/d" $CADDYF && systemctl reload caddy 2>/dev/null
          envset BOT_PUBLIC_URL ""; systemctl restart "$SVC"; ok "Адрес убран"; return ;;
       *) return ;;
     esac
@@ -646,9 +649,9 @@ do_domain() {
     say "  Ставлю Caddy (веб-сервер с автоматическим https)…"
     { apt-get update -qq >/dev/null 2>&1; DEBIAN_FRONTEND=noninteractive apt-get install -y -qq caddy >/dev/null 2>&1; } || { err "Не получилось поставить Caddy (apt install caddy)"; return; }
   fi
-  [ -f /etc/caddy/Caddyfile ] && sed -i "/^# apex-bot $d\$/,/^# end apex-bot $d\$/d" /etc/caddy/Caddyfile
-  grep -q '^:80 {' /etc/caddy/Caddyfile 2>/dev/null && sed -i '/^:80 {/,/^}/d' /etc/caddy/Caddyfile # заглушка Caddy по умолчанию мешает сертификату
-  cat >> /etc/caddy/Caddyfile <<EOC
+  [ -f $CADDYF ] && sed -i "/^# apex-bot $d\$/,/^# end apex-bot $d\$/d" $CADDYF
+  grep -q '^:80 {' $CADDYF 2>/dev/null && sed -i '/^:80 {/,/^}/d' $CADDYF # заглушка Caddy по умолчанию мешает сертификату
+  cat >> $CADDYF <<EOC
 # apex-bot $d
 $d {
 	@api path /api/*
@@ -661,7 +664,7 @@ $d {
 }
 # end apex-bot $d
 EOC
-  caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null 2>&1 || { err "Ошибка в /etc/caddy/Caddyfile — проверьте файл"; return; }
+  caddy validate --config $CADDYF --adapter caddyfile >/dev/null 2>&1 || { err "Ошибка в $CADDYF — проверьте файл"; return; }
   command -v ufw >/dev/null && ufw status | grep -q active && { ufw allow 80/tcp >/dev/null; ufw allow 443/tcp >/dev/null; ok "Файрвол: открыты 80 и 443 (нужны для сертификата и https)"; }
   systemctl enable --now caddy >/dev/null 2>&1; systemctl reload caddy 2>/dev/null || systemctl restart caddy
   envset BOT_PUBLIC_URL "https://$d"; systemctl restart "$SVC"
@@ -682,7 +685,7 @@ link_show() {
   say ""
   if [ -n "$P" ]; then say "  Впишите в пульт: ${B}Telegram → «Настройки бота» → поля «Бот 2» или «Бот 3»${R} (номер бота «$P» — в переключателе «Бот в личке»):"
   else say "  Впишите в пульт: ${B}Telegram → Настройка → «Настройки бота»${R}:"; fi
-  say "   Адрес бота  ${C2}http://$ip:$(envget BOT_PORT)${R}"
+  if [ -n "$(envget BOT_PUBLIC_URL)" ]; then say "   Адрес бота  ${C2}$(envget BOT_PUBLIC_URL)${R}  ${DIM}(https, свой домен)${R}"; else say "   Адрес бота  ${C2}http://$ip:$(envget BOT_PORT)${R}"; fi
   say "   Слово       ${C2}$(envget WEBHOOK_SECRET)${R}"
   say "  ${DIM}Слово — как пароль: только в пульт, никому не отправляйте.${R}"
 }
