@@ -25,6 +25,10 @@
 //   его ответ на пересланное сообщение бот отправит человеку; счёт, какие темы спрашивают чаще.
 
 // ЧТО НОВОГО В БОТЕ (пульт показывает это в «Справка» → «Что нового» → «Бот»; V — версия, n/u/f — новое/улучшено/исправлено)
+// V|3.1|16 ноября 2026
+// n|Умный поиск: бот понимает вопросы с опечатками («устоновить», «падписка»)
+// n|Группа: капча «✅ Я не робот» для новичков (не нажал за 5 минут — удаляется); /warn, /unwarn и /ban ответом на сообщение — на третьем предупреждении бан на сутки
+// n|Поздравление с годовщиной: через год после первого сообщения боту
 // V|3.0|16 ноября 2026
 // n|Человек видит своё место в очереди; ночью бот предупреждает, что поддержка ответит утром; кнопка «🙋 Позвать человека» — следующее сообщение сразу в поддержку
 // n|В приветствии — предупреждение о поддельных ботах: официальный только этот, пароли и оплату в личке не просим
@@ -181,9 +185,9 @@ async function config(env) {
   cfgAt = Date.now()
   return cfgCache
 }
-const FEATURES = { qpos: true, night: true, human: true, fakewarn: true, helpers: true, helpRR: true, chpost: true, contestBot: true, backup: true, syslog: true, morning: true, admin: true, media: true, quick: true, commands: true, images: true, deeplinks: true, contestDM: true, polls: true, broadcast: true, news: true, status: true, ping: true, english: true, forward: false, stats: true, welcome: true, antispam: true, invite: true, remind: true, followup: true, complaints: true, translate: true, antiflood: true, version: true, contestSub: true, contestReal: false }
+const FEATURES = { fuzzy: true, captcha: false, warns: true, anniv: true, qpos: true, night: true, human: true, fakewarn: true, helpers: true, helpRR: true, chpost: true, contestBot: true, backup: true, syslog: true, morning: true, admin: true, media: true, quick: true, commands: true, images: true, deeplinks: true, contestDM: true, polls: true, broadcast: true, news: true, status: true, ping: true, english: true, forward: false, stats: true, welcome: true, antispam: true, invite: true, remind: true, followup: true, complaints: true, translate: true, antiflood: true, version: true, contestSub: true, contestReal: false }
 // Названия функций — для /settings в боте и меню сервера (apex → «Функции бота»)
-const FEAT_NAMES = { admin: 'Панель админа на кнопках', morning: 'Утренняя сводка в 9:00', chpost: 'Пост в канал из бота', helpers: 'Помощники', qpos: 'Место в очереди', night: 'Ночью — «ответим утром»', human: '«Позвать человека»', fakewarn: 'Предупреждение о поддельных ботах', helpRR: 'Помощникам — вопросы по очереди', contestBot: 'Конкурс из бота', backup: 'Копия данных файлом', syslog: 'Система и ошибки', forward: 'Вопросы без ответа — мне', media: 'Фото и голосовые — мне', quick: 'Быстрые ответы', followup: '«Помогло?»', translate: 'Перевод моих ответов', english: 'Ответы на английском', status: '/status', news: '/news', invite: '/invite', remind: '/remind', complaints: 'Жалобы на серверы', version: 'Подсказка версии', broadcast: 'Рассылка', polls: 'Опросы', stats: 'Счёт тем', ping: '/ping', commands: 'Меню команд «/»', images: 'Картинки в ответах', deeplinks: 'Ссылки на темы', antiflood: 'Защита от флуда', welcome: 'Приветствие в группе', antispam: 'Антиспам в группе', contestSub: 'Конкурс: только подписчики', contestReal: 'Конкурс: без пустых аккаунтов', contestDM: 'Конкурс: поздравить победителей' }
+const FEAT_NAMES = { admin: 'Панель админа на кнопках', morning: 'Утренняя сводка в 9:00', chpost: 'Пост в канал из бота', helpers: 'Помощники', qpos: 'Место в очереди', fuzzy: 'Умный поиск с опечатками', captcha: 'Капча для новичков в группе', warns: '/warn и /ban в группе', anniv: 'Поздравление с годовщиной', night: 'Ночью — «ответим утром»', human: '«Позвать человека»', fakewarn: 'Предупреждение о поддельных ботах', helpRR: 'Помощникам — вопросы по очереди', contestBot: 'Конкурс из бота', backup: 'Копия данных файлом', syslog: 'Система и ошибки', forward: 'Вопросы без ответа — мне', media: 'Фото и голосовые — мне', quick: 'Быстрые ответы', followup: '«Помогло?»', translate: 'Перевод моих ответов', english: 'Ответы на английском', status: '/status', news: '/news', invite: '/invite', remind: '/remind', complaints: 'Жалобы на серверы', version: 'Подсказка версии', broadcast: 'Рассылка', polls: 'Опросы', stats: 'Счёт тем', ping: '/ping', commands: 'Меню команд «/»', images: 'Картинки в ответах', deeplinks: 'Ссылки на темы', antiflood: 'Защита от флуда', welcome: 'Приветствие в группе', antispam: 'Антиспам в группе', contestSub: 'Конкурс: только подписчики', contestReal: 'Конкурс: без пустых аккаунтов', contestDM: 'Конкурс: поздравить победителей' }
 const QUICK = ['Обновите подписку: Настройки → Подписка → «Обновить»', 'Включите автопилот — он сам выберет рабочий сервер', 'Откройте «Проверка сети» на главном и пришлите итог (кнопка «Поделиться»)', 'Обновите приложение до последней версии: ' + SITE + '/update/']
 const fill = (cfg, t) => t.replaceAll('{сайт}', SITE).replaceAll('{поддержка}', cfg.support)
 const topicsOf = (cfg, en) => en ? FAQ_EN : cfg.topics
@@ -229,13 +233,26 @@ async function statusText() {
 }
 
 function findFaq(cfg, text, en) {
-  const t = (text || '').toLowerCase()
+  const t = (text || '').toLowerCase().replaceAll('ё', 'е')
   let best = null, score = 0
   for (const f of topicsOf(cfg, en)) {
-    const s = f.words.filter(w => t.includes(w)).length
+    const s = f.words.filter(w => t.includes(w.replaceAll('ё', 'е'))).length
+    if (s > score) { best = f; score = s }
+  }
+  if (best || !cfg.features.fuzzy) return best
+  // Умный поиск: слова с опечаткой («устоновить», «падписка») — начало слова совпадает с точностью до 1–2 букв
+  const words = t.split(/[^\p{L}\d]+/u).filter(w => w.length >= 4)
+  for (const f of topicsOf(cfg, en)) {
+    const s = f.words.filter(k => k.length >= 5 && words.some(w => lev(w.slice(0, k.length + 1), k) <= (k.length >= 7 ? 2 : 1) || lev(w.slice(0, k.length), k) <= (k.length >= 7 ? 2 : 1))).length
     if (s > score) { best = f; score = s }
   }
   return best
+}
+function lev(a, b) { // расстояние между словами (сколько букв поменять)
+  if (Math.abs(a.length - b.length) > 2) return 9
+  let p = Array.from({ length: b.length + 1 }, (_, i) => i)
+  for (let i = 1; i <= a.length; i++) { const c = [i]; for (let j = 1; j <= b.length; j++) c[j] = Math.min(p[j] + 1, c[j - 1] + 1, p[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); p = c }
+  return p[b.length]
 }
 
 // ── 2.0: пользователи бота (для рассылки), флуд, версии, новости, перевод
@@ -352,7 +369,29 @@ async function sendToUser(env, cfg, to, text, fwid, by) { // ответ влад
   return r
 }
 
-async function onGroup(env, cfg, m) { // группа: приветствие и защита от ссылок от новичков
+const ALL_PERMS = { can_send_messages: true, can_send_audios: true, can_send_documents: true, can_send_photos: true, can_send_videos: true, can_send_video_notes: true, can_send_voice_notes: true, can_send_polls: true, can_send_other_messages: true, can_add_web_page_previews: true }
+async function groupAdmin(env, chat, uid) { if (String(uid) === String(env.OWNER_ID)) return true; const st = (await tg(env, 'getChatMember', { chat_id: chat, user_id: uid })).result?.status; return st === 'administrator' || st === 'creator' }
+async function onGroup(env, cfg, m) { // группа: приветствие, капча, предупреждения и защита от ссылок от новичков
+  // /warn и /ban ответом на сообщение — только админы группы; 3 предупреждения — бан на сутки
+  const gc = (m.text || '').split(/[\s@]/)[0].toLowerCase()
+  if (cfg.features.warns && (gc === '/warn' || gc === '/ban' || gc === '/unwarn') && m.reply_to_message?.from && !m.reply_to_message.from.is_bot) {
+    if (!await groupAdmin(env, m.chat.id, m.from.id)) return
+    const u = m.reply_to_message.from, name = u.first_name || 'участник', w = await kget(env, 'warn', {}), k = m.chat.id + ':' + u.id
+    if (gc === '/unwarn') { delete w[k]; await kput(env, 'warn', w); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: `✅ Предупреждения ${name} сняты` }) }
+    w[k] = gc === '/ban' ? 3 : (w[k] || 0) + 1; const ks = Object.keys(w); if (ks.length > 500) delete w[ks[0]]
+    if (w[k] >= 3) { delete w[k]; await kput(env, 'warn', w); await tg(env, 'banChatMember', { chat_id: m.chat.id, user_id: u.id, until_date: Math.floor(now() / 1000) + 86400 }); await tg(env, 'deleteMessage', { chat_id: m.chat.id, message_id: m.reply_to_message.message_id }); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: `🚫 ${name} удалён из группы на сутки` }) }
+    await kput(env, 'warn', w)
+    return tg(env, 'sendMessage', { chat_id: m.chat.id, reply_parameters: { message_id: m.reply_to_message.message_id, allow_sending_without_reply: true }, text: `⚠️ ${name}, предупреждение ${w[k]} из 3. На третьем — бан на сутки.` })
+  }
+  if (m.new_chat_members && cfg.features.captcha) { // капча: новичок пишет только после «Я не робот», не нажал за 5 минут — удаляем
+    const cap = await kget(env, 'capt', [])
+    for (const u of m.new_chat_members.filter(u => !u.is_bot).slice(0, 5)) {
+      const rr = await tg(env, 'restrictChatMember', { chat_id: m.chat.id, user_id: u.id, permissions: { can_send_messages: false } }); if (!rr.ok) continue
+      const r = await tg(env, 'sendMessage', { chat_id: m.chat.id, text: `👋 ${u.first_name || 'Привет'}, нажмите кнопку в течение 5 минут, чтобы писать в группе.`, reply_markup: { inline_keyboard: [[{ text: '✅ Я не робот', callback_data: 'cap:' + u.id }]] } })
+      cap.push({ chat: m.chat.id, uid: u.id, mid: r.result?.message_id, at: now() })
+    }
+    await kput(env, 'capt', cap.slice(-100))
+  }
   if (m.new_chat_members && cfg.features.welcome) {
     for (const u of m.new_chat_members.filter(u => !u.is_bot).slice(0, 5)) {
       const j = await kget(env, 'joined', {}); j[u.id] = now(); for (const k in j) if (now() - j[k] > 86400000) delete j[k]; await kput(env, 'joined', j)
@@ -799,6 +838,23 @@ export async function tick(env, force) {
     if (cfg.short) await tg(env, 'setMyShortDescription', { short_description: cfg.short })
     await kput(env, 'sig', sig)
   }
+  // Капча: кто не нажал «Я не робот» за 5 минут — удаляем из группы (сможет зайти снова)
+  { const cap = await kget(env, 'capt', []), old = cap.filter(c => now() - c.at > 300000)
+    if (old.length) { await kput(env, 'capt', cap.filter(c => now() - c.at <= 300000)); for (const c of old.slice(0, 10)) { await tg(env, 'banChatMember', { chat_id: c.chat, user_id: c.uid, until_date: Math.floor(now() / 1000) + 60 }); await tg(env, 'unbanChatMember', { chat_id: c.chat, user_id: c.uid, only_if_banned: true }); if (c.mid) await tg(env, 'deleteMessage', { chat_id: c.chat, message_id: c.mid }) } } }
+  // Годовщина: в 12:00 МСК поздравляем тех, кто написал боту впервые ровно год (два, три…) назад — по 40 карточек за шаг
+  if (cfg.features.anniv) {
+    const msk = new Date(now() + 3 * 3600000), day = msk.toISOString().slice(0, 10), md = day.slice(5)
+    if (msk.getUTCHours() >= 12) {
+      const st = await kget(env, 'anv', { day: '', i: 0 })
+      if (st.day !== day) { st.day = day; st.i = 0; st.done = false }
+      if (!st.done) {
+        const ids = await kget(env, 'users', [])
+        for (const id of ids.slice(st.i, st.i + 40)) { const c = await kget(env, 'u:' + id, null), f = c?.first && new Date(c.first + 3 * 3600000).toISOString().slice(0, 10), y = f ? +day.slice(0, 4) - +f.slice(0, 4) : 0
+          if (f && f.slice(5) === md && y >= 1) await tg(env, 'sendMessage', { chat_id: id, text: `🎉 ${y === 1 ? 'Год' : y + (y < 5 ? ' года' : ' лет')} с APEX CLIENT! Спасибо, что вы с нами 💙\nЕсли что-то не работает — просто напишите сюда.` }) }
+        st.i += 40; if (st.i >= ids.length) st.done = true; await kput(env, 'anv', st)
+      }
+    }
+  }
   // Конкурсы из бота: итоги в назначенное время — в канал и владельцу
   if (cfg.features.contestBot) {
     const auto = await kget(env, 'cauto', []), due = auto.filter(a => a.at <= now())
@@ -907,6 +963,10 @@ export default {
         if (u.callback_query) {
           const cq = u.callback_query, d = cq.data || '', owner = env.OWNER_ID && String(cq.from.id) === String(env.OWNER_ID)
           if (d.startsWith('join:')) await join(env, cq, d.slice(5))
+          else if (d.startsWith('cap:')) { // капча: нажать может только сам новичок
+            if (String(cq.from.id) !== d.slice(4)) await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: 'Эта кнопка — для новичка 🙂' })
+            else { const cap = await kget(env, 'capt', []), chat = cq.message?.chat?.id; await kput(env, 'capt', cap.filter(c => !(c.uid === cq.from.id && c.chat === chat))); await tg(env, 'restrictChatMember', { chat_id: chat, user_id: cq.from.id, permissions: ALL_PERMS }); await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: 'Добро пожаловать! 🙌' }); if (cq.message) await tg(env, 'deleteMessage', { chat_id: chat, message_id: cq.message.message_id }) }
+          }
           // Кнопки владельца (функции, быстрые ответы): у остальных молча ничего не делают и ничего не показывают
           else if (d.startsWith('ad:') && !owner && await isHelper(env, await config(env), cq.from.id)) await onAdmin(env, await config(env), cq, d) // помощник: onAdmin пускает только к вопросам
           else if ((d.startsWith('ft:') || d.startsWith('qr:') || d.startsWith('ad:')) && !owner && !(d.startsWith('qr:') && await isHelper(env, await config(env), cq.from.id))) await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id })
