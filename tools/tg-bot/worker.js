@@ -25,6 +25,9 @@
 //   его ответ на пересланное сообщение бот отправит человеку; счёт, какие темы спрашивают чаще.
 
 // ЧТО НОВОГО В БОТЕ (пульт показывает это в «Справка» → «Что нового» → «Бот»; V — версия, n/u/f — новое/улучшено/исправлено)
+// V|2.8|16 ноября 2026
+// n|«📢 Пост в канал» из бота с предпросмотром; «➕ Новый конкурс» — пост в канале с кнопкой «🎉 Участвую», итоги бот подводит сам в назначенный день
+// n|«💾 Копия данных» — файл со всеми данными бота вам в личку; «🖥 Система и ошибки» — где работает, сколько без перезапуска, последние ошибки; на своём сервере — «♻️ Перезапустить»
 // V|2.7|16 ноября 2026
 // n|«📊 Опрос» в «🛠 Админ»: вопрос и варианты одним сообщением, предпросмотр, отправка всем; «📊 Итоги опросов» — голоса и проценты
 // n|Шаблон ответа с правкой: «✏️» рядом с шаблоном — бот покажет текст, вы поправите и отправите
@@ -116,6 +119,20 @@ async function tg(env, method, body) {
   const r = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/${method}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
   return r.json()
 }
+async function tgFile(env, chat, name, content, caption) { // отправить файл: тело multipart собираем строкой (так работает и через прокси на сервере)
+  const b = 'apex' + now().toString(36) + Math.random().toString(36).slice(2), part = (k, v) => `--${b}\r\ncontent-disposition: form-data; name="${k}"\r\n\r\n${v}\r\n`
+  const body = part('chat_id', chat) + (caption ? part('caption', caption) : '') + `--${b}\r\ncontent-disposition: form-data; name="document"; filename="${name}"\r\ncontent-type: application/json\r\n\r\n${content}\r\n--${b}--\r\n`
+  const r = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendDocument`, { method: 'POST', headers: { 'content-type': 'multipart/form-data; boundary=' + b }, body: new TextEncoder().encode(body) })
+  return r.json()
+}
+// Журнал ошибок: на своём сервере — в памяти (server.js), на Cloudflare — в KV, последние 20, хранится неделю
+async function logErr(env, where, e) {
+  const x = { at: now(), where, msg: String(e?.message || e).slice(0, 200) }
+  if (Array.isArray(env.ERRLOG)) { env.ERRLOG.push(x); env.ERRLOG.splice(0, env.ERRLOG.length - 20); return }
+  try { const l = await kget(env, 'errlog', []); l.push(x); await kput(env, 'errlog', l.slice(-20), 7 * 86400) } catch {}
+}
+const errList = async env => Array.isArray(env.ERRLOG) ? env.ERRLOG : await kget(env, 'errlog', [])
+const mskTime = t => new Date(t + 3 * 3600000).toISOString().slice(5, 16).replace('T', ' ').replace(/^(\d\d)-(\d\d)/, '$2.$1')
 
 // Функции: по умолчанию ← пульт (bot.json) ← переключено в боте (/settings) или в меню сервера (KV «fover», с временем).
 // Что новее — то и действует: сохранили в пульте позже — пульт главнее.
@@ -159,9 +176,9 @@ async function config(env) {
   cfgAt = Date.now()
   return cfgCache
 }
-const FEATURES = { morning: true, admin: true, media: true, quick: true, commands: true, images: true, deeplinks: true, contestDM: true, polls: true, broadcast: true, news: true, status: true, ping: true, english: true, forward: false, stats: true, welcome: true, antispam: true, invite: true, remind: true, followup: true, complaints: true, translate: true, antiflood: true, version: true, contestSub: true, contestReal: false }
+const FEATURES = { chpost: true, contestBot: true, backup: true, syslog: true, morning: true, admin: true, media: true, quick: true, commands: true, images: true, deeplinks: true, contestDM: true, polls: true, broadcast: true, news: true, status: true, ping: true, english: true, forward: false, stats: true, welcome: true, antispam: true, invite: true, remind: true, followup: true, complaints: true, translate: true, antiflood: true, version: true, contestSub: true, contestReal: false }
 // Названия функций — для /settings в боте и меню сервера (apex → «Функции бота»)
-const FEAT_NAMES = { admin: 'Панель админа на кнопках', morning: 'Утренняя сводка в 9:00', forward: 'Вопросы без ответа — мне', media: 'Фото и голосовые — мне', quick: 'Быстрые ответы', followup: '«Помогло?»', translate: 'Перевод моих ответов', english: 'Ответы на английском', status: '/status', news: '/news', invite: '/invite', remind: '/remind', complaints: 'Жалобы на серверы', version: 'Подсказка версии', broadcast: 'Рассылка', polls: 'Опросы', stats: 'Счёт тем', ping: '/ping', commands: 'Меню команд «/»', images: 'Картинки в ответах', deeplinks: 'Ссылки на темы', antiflood: 'Защита от флуда', welcome: 'Приветствие в группе', antispam: 'Антиспам в группе', contestSub: 'Конкурс: только подписчики', contestReal: 'Конкурс: без пустых аккаунтов', contestDM: 'Конкурс: поздравить победителей' }
+const FEAT_NAMES = { admin: 'Панель админа на кнопках', morning: 'Утренняя сводка в 9:00', chpost: 'Пост в канал из бота', contestBot: 'Конкурс из бота', backup: 'Копия данных файлом', syslog: 'Система и ошибки', forward: 'Вопросы без ответа — мне', media: 'Фото и голосовые — мне', quick: 'Быстрые ответы', followup: '«Помогло?»', translate: 'Перевод моих ответов', english: 'Ответы на английском', status: '/status', news: '/news', invite: '/invite', remind: '/remind', complaints: 'Жалобы на серверы', version: 'Подсказка версии', broadcast: 'Рассылка', polls: 'Опросы', stats: 'Счёт тем', ping: '/ping', commands: 'Меню команд «/»', images: 'Картинки в ответах', deeplinks: 'Ссылки на темы', antiflood: 'Защита от флуда', welcome: 'Приветствие в группе', antispam: 'Антиспам в группе', contestSub: 'Конкурс: только подписчики', contestReal: 'Конкурс: без пустых аккаунтов', contestDM: 'Конкурс: поздравить победителей' }
 const QUICK = ['Обновите подписку: Настройки → Подписка → «Обновить»', 'Включите автопилот — он сам выберет рабочий сервер', 'Откройте «Проверка сети» на главном и пришлите итог (кнопка «Поделиться»)', 'Обновите приложение до последней версии: ' + SITE + '/update/']
 const fill = (cfg, t) => t.replaceAll('{сайт}', SITE).replaceAll('{поддержка}', cfg.support)
 const topicsOf = (cfg, en) => en ? FAQ_EN : cfg.topics
@@ -350,7 +367,8 @@ const adminKb = () => ({ inline_keyboard: [
   [{ text: '📊 Итоги опросов', callback_data: 'ad:pres' }, { text: '⚙️ Функции', callback_data: 'ad:feat' }],
   [{ text: '🛰 Серверы', callback_data: 'ad:status' }, { text: '🎁 Конкурсы', callback_data: 'ad:contests' }],
   [{ text: '👥 Пользователи', callback_data: 'ad:users' }, { text: '🔥 Частые вопросы', callback_data: 'ad:stats' }],
-  [{ text: '🚫 Заблокированные', callback_data: 'ad:blocked' }],
+  [{ text: '📢 Пост в канал', callback_data: 'ad:post' }, { text: '💾 Копия данных', callback_data: 'ad:backup' }],
+  [{ text: '🚫 Заблокированные', callback_data: 'ad:blocked' }, { text: '🖥 Система и ошибки', callback_data: 'ad:sys' }],
   [{ text: '🏓 Проверка бота', callback_data: 'ad:ping' }]] })
 async function adminMenu(env, cfg, chat, edit) {
   const q = (await kget(env, 'q', [])).filter(x => !x.ans).length
@@ -431,7 +449,22 @@ async function onAdmin(env, cfg, cq, d) {
     if (!env.APEX_KV) return adminScreen(env, cfg, chat, mid, 'Конкурсы выключены: нет хранилища')
     const list = (await env.APEX_KV.list({ prefix: 'c:' })).keys.slice(-8), rows = [], lines = []
     for (const k of list) { const c = JSON.parse(await env.APEX_KV.get(k.name) || '{}'), cid = k.name.slice(2); lines.push(`${cid} — ${(c.ids || []).length} уч.${c.closed ? ', итоги подведены' : ''}`); if (!c.closed) rows.push([{ text: '🏆 Итоги ' + cid, callback_data: 'ad:draw:' + cid }]) }
-    return adminScreen(env, cfg, chat, mid, '🎁 Конкурсы\n\n' + (lines.join('\n') || 'Пока нет — их создаёт пульт: Telegram → Конкурс'), rows)
+    const auto = await kget(env, 'cauto', [])
+    return adminScreen(env, cfg, chat, mid, '🎁 Конкурсы\n\n' + (lines.join('\n') || 'Пока нет — создайте здесь или в пульте: Telegram → Конкурс') + (auto.length ? '\n\n⏰ Итоги подведу сам:\n' + auto.map(a => `${a.cid} — ${mskTime(a.at)} МСК, победителей ${a.n}`).join('\n') : ''), [...(cfg.features.contestBot ? [[{ text: '➕ Новый конкурс', callback_data: 'ad:cnew' }]] : []), ...rows])
+  }
+  if (act === 'cnew') { // конкурс из бота: текст поста → срок → пост в канале с кнопкой «🎉 Участвую»
+    if (!cfg.features.contestBot) return adminScreen(env, cfg, chat, mid, '🎁 Конкурс из бота выключен — включите в «⚙️ Функции»')
+    if (!cfg.channel) return adminScreen(env, cfg, chat, mid, '⚠️ Не указан канал — впишите его в пульте: Telegram → Бот → Канал')
+    await kput(env, 'await', { kind: 'contest' }, 1800)
+    return tg(env, 'sendMessage', { chat_id: chat, text: `🎁 Новый конкурс в ${cfg.channel}\nНапишите текст поста: что разыгрываем и условия. Кнопку «🎉 Участвую» и дату итогов бот добавит сам.`, reply_markup: { keyboard: [[{ text: '❌ Отмена' }]], resize_keyboard: true } })
+  }
+  if (act === 'cgo') {
+    const d = await kget(env, 'cdraft', null); if (!d) return adminScreen(env, cfg, chat, mid, 'Черновик конкурса устарел — начните заново')
+    const [days, n] = String(arg).split('_').map(Number), cid = 'b' + now().toString(36), at = now() + Math.min(Math.max(days, 1), 30) * 86400000
+    const r = await tg(env, 'sendMessage', { chat_id: cfg.channel, text: `${d}\n\n🏆 Итоги: ${mskTime(at)} МСК`, disable_web_page_preview: true, reply_markup: { inline_keyboard: [[{ text: '🎉 Участвую', callback_data: 'join:' + cid }]] } })
+    if (!r.ok) return adminScreen(env, cfg, chat, mid, '⚠️ Канал не принял пост: ' + (r.description || 'ошибка') + '\nБот должен быть админом канала с правом «Публиковать».')
+    await kput(env, 'cdraft', null); const auto = await kget(env, 'cauto', []); auto.push({ cid, at, n: Math.min(Math.max(n, 1), 10), mid: r.result?.message_id }); await kput(env, 'cauto', auto.slice(-10))
+    return adminScreen(env, cfg, chat, mid, `✅ Конкурс ${cid} опубликован. Итоги подведу сам ${mskTime(at)} МСК и напишу в канал и вам.`, [[{ text: '⬅️ К конкурсам', callback_data: 'ad:contests' }]])
   }
   if (act === 'draw') { const r = await draw(env, arg, 1); return adminScreen(env, cfg, chat, mid, r.error ? '⚠️ ' + r.error : `🏆 Конкурс ${arg}: участников ${r.count}\nПобедитель: ${r.winners.map(who).join(', ') || 'нет'}`, [[{ text: '⬅️ К конкурсам', callback_data: 'ad:contests' }]]) }
   if (act === 'bc') { await kput(env, 'await', { kind: 'bc' }, 1800); return tg(env, 'sendMessage', { chat_id: chat, text: `📣 Рассылка всем, кто писал боту (${(await kget(env, 'users', [])).length} чел.).\nНапишите текст следующим сообщением — я покажу, как он выглядит, и спрошу подтверждение.`, reply_markup: { keyboard: [[{ text: '❌ Отмена' }]], resize_keyboard: true } }) }
@@ -440,7 +473,35 @@ async function onAdmin(env, cfg, cq, d) {
     await kput(env, 'bcadm', { id: 'a' + now().toString(36), text: draft }); await kput(env, 'bcdraft', null)
     return adminScreen(env, cfg, chat, mid, '✅ Рассылка запущена — бот отправляет по 25 человек в минуту.')
   }
-  if (act === 'bcno') { await kput(env, 'bcdraft', null); await kput(env, 'polldraft', null); return adminMenu(env, cfg, chat, mid) }
+  if (act === 'bcno') { for (const k of ['bcdraft', 'polldraft', 'postdraft', 'cdraft']) await kput(env, k, null); return adminMenu(env, cfg, chat, mid) }
+  if (act === 'post') { // пост в канал из бота
+    if (!cfg.features.chpost) return adminScreen(env, cfg, chat, mid, '📢 Пост в канал выключен — включите в «⚙️ Функции»')
+    if (!cfg.channel) return adminScreen(env, cfg, chat, mid, '⚠️ Не указан канал — впишите его в пульте: Telegram → Бот → Канал')
+    await kput(env, 'await', { kind: 'post' }, 1800)
+    return tg(env, 'sendMessage', { chat_id: chat, text: `📢 Пост в ${cfg.channel}\nНапишите текст следующим сообщением — покажу, как он выглядит, и спрошу подтверждение.`, reply_markup: { keyboard: [[{ text: '❌ Отмена' }]], resize_keyboard: true } })
+  }
+  if (act === 'postok') {
+    const d = await kget(env, 'postdraft', null); if (!d) return adminScreen(env, cfg, chat, mid, 'Черновик поста устарел — начните заново')
+    const r = await tg(env, 'sendMessage', { chat_id: cfg.channel, text: d, disable_web_page_preview: false }); if (r.ok) await kput(env, 'postdraft', null)
+    return adminScreen(env, cfg, chat, mid, r.ok ? '✅ Опубликовано в ' + cfg.channel : '⚠️ Канал не принял пост: ' + (r.description || 'ошибка') + '\nБот должен быть админом канала с правом «Публиковать».')
+  }
+  if (act === 'backup') { // копия всех данных бота файлом — только вам в личку
+    if (!cfg.features.backup) return adminScreen(env, cfg, chat, mid, '💾 Копия данных выключена — включите в «⚙️ Функции»')
+    const r = await tgFile(env, chat, `apex-bot-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(await dataExport(env), null, 1), '💾 Копия данных бота: вопросы, пользователи, статистика, опросы. Храните у себя, никому не пересылайте.')
+    return adminScreen(env, cfg, chat, mid, r.ok ? '💾 Файл с копией отправлен ниже 👇' : '⚠️ Не отправилось: ' + (r.description || 'ошибка'))
+  }
+  if (act === 'sys') { // система: где работает, сколько, последние ошибки; перезапуск — только на своём сервере
+    if (!cfg.features.syslog) return adminScreen(env, cfg, chat, mid, '🖥 Система и ошибки выключены — включите в «⚙️ Функции»')
+    const errs = (await errList(env)).slice(-8).reverse(), up = env.STARTED ? Math.round((now() - env.STARTED) / 60000) : null
+    const text = `🖥 Система\n\nГде работает: ${env.HOST_INFO || 'Cloudflare'}${up != null ? `\nРаботает без перезапуска: ${up >= 1440 ? Math.floor(up / 1440) + ' д ' : ''}${Math.floor(up % 1440 / 60)} ч ${up % 60} мин` : ''}\n\n` + (errs.length ? '⚠️ Последние ошибки:\n' + errs.map(e => `${mskTime(e.at)} — ${e.where}: ${e.msg}`).join('\n') : '✅ Ошибок нет')
+    return adminScreen(env, cfg, chat, mid, text, [[{ text: '🔄 Обновить', callback_data: 'ad:sys' }, ...(errs.length ? [{ text: '🧹 Очистить', callback_data: 'ad:sysclr' }] : [])], ...(env.RESTART ? [[{ text: '♻️ Перезапустить бота', callback_data: 'ad:rst' }]] : [])])
+  }
+  if (act === 'sysclr') { if (Array.isArray(env.ERRLOG)) env.ERRLOG.length = 0; else await kput(env, 'errlog', []); return onAdmin(env, cfg, { ...cq, id: cq.id + 'x' }, 'ad:sys') }
+  if (act === 'rst') {
+    if (!env.RESTART || !cfg.features.syslog) return adminScreen(env, cfg, chat, mid, 'Перезапуск есть только на своём сервере')
+    if (arg !== 'ok') return adminScreen(env, cfg, chat, mid, '♻️ Перезапустить бота? Он вернётся через несколько секунд.', [[{ text: '♻️ Да, перезапустить', callback_data: 'ad:rst:ok' }]])
+    await adminScreen(env, cfg, chat, mid, '♻️ Перезапускаю… Через несколько секунд нажмите «🛠 Админ».'); env.RESTART(); return
+  }
   if (act === 'poll') { // опрос из бота: вопрос и варианты одним сообщением
     if (!cfg.features.polls) return adminScreen(env, cfg, chat, mid, '📊 Опросы выключены — включите в «⚙️ Функции»')
     await kput(env, 'await', { kind: 'poll' }, 1800)
@@ -471,6 +532,12 @@ async function adminInput(env, cfg, chat, wait, text) { // ждали от вл�
     return tg(env, 'sendMessage', { chat_id: chat, text: hits.length ? `🔎 Нашлось: ${hits.length}` : '🔎 Никого не нашлось', reply_markup: hits.length ? { inline_keyboard: hits.map(c => [{ text: `👤 ${(c.name || c.id).toString().slice(0, 22)}${c.un ? ' @' + c.un : ''}`, callback_data: 'ad:uc:' + c.id }]) } : ADMIN_KB })
   }
   if (wait.kind === 'msg') { const r = await userAction(env, 'msg', wait.uid, text); return tg(env, 'sendMessage', { chat_id: chat, text: r.ok ? '✅ Отправлено' : '⚠️ ' + r.error, reply_markup: ADMIN_KB }) }
+  if (wait.kind === 'post' || wait.kind === 'contest') {
+    const t = text.slice(0, 3500); await kput(env, wait.kind === 'post' ? 'postdraft' : 'cdraft', t, 3600)
+    await tg(env, 'sendMessage', { chat_id: chat, text: 'Так увидят в канале 👇', reply_markup: ADMIN_KB })
+    if (wait.kind === 'post') return tg(env, 'sendMessage', { chat_id: chat, text: t, reply_markup: { inline_keyboard: [[{ text: '✅ Опубликовать', callback_data: 'ad:postok' }, { text: '❌ Отмена', callback_data: 'ad:bcno' }]] } })
+    return tg(env, 'sendMessage', { chat_id: chat, text: t + '\n\n🏆 Итоги: …\n\nКогда подвести итоги?', reply_markup: { inline_keyboard: [[{ text: '1 день', callback_data: 'ad:cgo:1_1' }, { text: '3 дня', callback_data: 'ad:cgo:3_1' }, { text: '7 дней', callback_data: 'ad:cgo:7_1' }], [{ text: '7 дней, 3 победителя', callback_data: 'ad:cgo:7_3' }], [{ text: '❌ Отмена', callback_data: 'ad:bcno' }]] } })
+  }
   if (wait.kind === 'poll') {
     const [q, ...opts] = text.split('\n').map(x => x.trim()).filter(Boolean), options = [...new Set(opts)].slice(0, 10)
     if (!q || options.length < 2) return tg(env, 'sendMessage', { chat_id: chat, text: '⚠️ Нужно: первая строка — вопрос, дальше хотя бы 2 варианта. Нажмите «📊 Опрос» ещё раз.', reply_markup: ADMIN_KB })
@@ -674,6 +741,18 @@ export async function tick(env, force) {
     if (cfg.short) await tg(env, 'setMyShortDescription', { short_description: cfg.short })
     await kput(env, 'sig', sig)
   }
+  // Конкурсы из бота: итоги в назначенное время — в канал и владельцу
+  if (cfg.features.contestBot) {
+    const auto = await kget(env, 'cauto', []), due = auto.filter(a => a.at <= now())
+    if (due.length) {
+      await kput(env, 'cauto', auto.filter(a => a.at > now()))
+      for (const a of due) {
+        const r = await draw(env, a.cid, a.n), names = r.winners?.map(who).join(', ') || 'участников не было'
+        if (cfg.channel) await tg(env, 'sendMessage', { chat_id: cfg.channel, text: `🏆 Итоги конкурса\nУчастников: ${r.count || 0}\nПобедители: ${names}\n\nПоздравляем! 🎉`, ...(a.mid ? { reply_parameters: { message_id: a.mid, allow_sending_without_reply: true } } : {}) })
+        if (env.OWNER_ID) await tg(env, 'sendMessage', { chat_id: env.OWNER_ID, text: `🏆 Конкурс ${a.cid}: участников ${r.count || 0}, победители: ${names}` })
+      }
+    }
+  }
   // Утренняя сводка владельцу в 9:00 МСК (раз в день)
   if (cfg.features.morning && env.OWNER_ID) {
     const msk = new Date(now() + 3 * 3600000), day = msk.toISOString().slice(0, 10)
@@ -795,8 +874,8 @@ export default {
             if (f) await answer(env, cfg, cq.message.chat.id, f, en)
           }
         }
-      } catch (e) { /* ответим на следующее сообщение; Telegram не должен повторять запрос */ }
-      try { await tick(env) } catch {}
+      } catch (e) { await logErr(env, u.message ? 'сообщение' : u.callback_query ? 'кнопка' : 'обновление', e) } // Telegram не должен повторять запрос
+      try { await tick(env) } catch (e) { await logErr(env, 'tick', e) }
       return new Response('ok')
     }
     return new Response('APEX CLIENT bot', { headers: { 'content-type': 'text/plain; charset=utf-8' } })

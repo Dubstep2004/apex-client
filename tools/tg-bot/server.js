@@ -30,7 +30,11 @@ const env = {
   SUPPORT: (process.env.SUPPORT || '').trim(),
   BOT_CONFIG: (process.env.BOT_CONFIG || '').trim(),
   HOST_INFO: 'свой сервер ' + os.hostname(),
+  STARTED: Date.now(),
+  ERRLOG: [], // журнал ошибок для «🖥 Система и ошибки» (в памяти, последние 20)
+  RESTART: () => setTimeout(() => process.exit(0), 1500), // systemd поднимет бота заново (Restart=always)
 }
+{ const ce = console.error.bind(console); console.error = (...a) => { ce(...a); try { env.ERRLOG.push({ at: Date.now(), where: 'сервер', msg: a.map(String).join(' ').replace(/bot\d+:[\w-]+/g, 'bot…').slice(0, 200) }); env.ERRLOG.splice(0, env.ERRLOG.length - 20) } catch {} } }
 if (!/^\d+:[\w-]{30,}$/.test(env.BOT_TOKEN)) { console.error('Нет BOT_TOKEN в /etc/apex-bot.env — впишите токен от @BotFather и перезапустите: systemctl restart apex-bot'); process.exit(1) }
 
 // Хранилище конкурсов: то же, что Cloudflare KV (get / put / list), но в одном файле
