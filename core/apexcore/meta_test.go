@@ -69,6 +69,48 @@ func TestDescriptionAdsMetaCore(t *testing.T) {
 	checkAll(t, n, `{"clashApi":9095,"xrayAuth":"sec"}`)
 }
 
+func TestAIServers(t *testing.T) {
+	yes := []string{"Доступ к нейросетям", "🇺🇸 США | ChatGPT", "🤖 AI", "Для ИИ", "Нейросети ✅", "Gemini, Claude", "США • GPT"}
+	no := []string{"Германия", "Таиланд", "Швейцария • Wi-Fi", "⚠️ РЕКЛАМА НА YOUTUBE ЕСТЬ!", "Mail", "Обход LTE", "Китай", "Найроби"}
+	for _, s := range yes {
+		if !mentionsAI(s) {
+			t.Errorf("must be AI: %q", s)
+		}
+	}
+	for _, s := range no {
+		if mentionsAI(s) {
+			t.Errorf("must not be AI: %q", s)
+		}
+	}
+	desc := base64.StdEncoding.EncodeToString([]byte("🤖 Доступ к нейросетям"))
+	body := "vless://" + testUUID + "@1.1.1.1:443?type=ws&security=tls&sni=a.example.com#США?serverDescription=" + desc + "\n" +
+		"vless://" + testUUID + "@2.2.2.2:443?type=ws&security=tls&sni=b.example.com#Германия"
+	out, _ := ParseSubscription(base64.StdEncoding.EncodeToString([]byte(body)))
+	var res parseResult
+	json.Unmarshal([]byte(out), &res)
+	if len(res.Nodes) != 2 || !res.Nodes[0].AI || res.Nodes[1].AI {
+		t.Fatalf("bad ai flags: %+v", res.Nodes)
+	}
+	data, _ := json.Marshal(res.Nodes)
+	lookupIPs = func(string) []string { return nil }
+	sb, _, err := buildAll(string(data), AutoTag, `{"excludeAi":true}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var c struct {
+		Outbounds []struct {
+			Tag       string   `json:"tag"`
+			Outbounds []string `json:"outbounds"`
+		} `json:"outbounds"`
+	}
+	json.Unmarshal([]byte(sb), &c)
+	for _, o := range c.Outbounds {
+		if o.Tag == AutoTag && strings.Join(o.Outbounds, ",") != "node-2" {
+			t.Fatalf("ai servers must be excluded from autopilot: %v", o.Outbounds)
+		}
+	}
+}
+
 func TestMentionsAds(t *testing.T) {
 	yes := []string{"⚠️ РЕКЛАМА НА YOUTUBE ЕСТЬ! 📢", "Финляндия (есть реклама)", "YouTube with ads"}
 	no := []string{"Россия | Ютуб без рекламы", "YouTube без рекламы", "Нидерланды • Wi-Fi", "Реклама: нет", "no ads", "ad-free", "Германия | Ютуб для роутера", "Loading"}

@@ -79,6 +79,8 @@ type routeOptions struct {
 	XrayPort int `json:"xrayPort"`
 	// ExcludeAds — автопилот не выбирает серверы с пометкой о рекламе
 	ExcludeAds bool `json:"excludeAds"`
+	// ExcludeAI — автопилот не выбирает серверы для нейросетей (их включают отдельно, кнопкой «Нейросети»)
+	ExcludeAI bool `json:"excludeAi"`
 	// ClashAPI — порт локального API для замера задержки (0 — выключено)
 	ClashAPI int `json:"clashApi"`
 
@@ -244,7 +246,7 @@ func buildAll(nodesJSON string, selectedTag string, optionsJSON string) (string,
 		splitDescription(n)
 		fillMeta(n)
 		tags = append(tags, n.Tag)
-		if (len(allowed) == 0 || allowed[n.Category]) && !(opts.ExcludeAds && n.Ads) {
+		if (len(allowed) == 0 || allowed[n.Category]) && !(opts.ExcludeAds && n.Ads) && !(opts.ExcludeAI && n.AI) {
 			autoTags = append(autoTags, n.Tag)
 		}
 		if n.Tag == selectedTag {

@@ -2,6 +2,14 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.22.0 · 16 ноября 2026
+
+<img src="img/tags/new.svg" alt="Новое" height="22">
+
+- Кнопка «Нейросети» на главном экране: одно нажатие — сервер для ChatGPT, Gemini и других нейросетей, второе — обратно на автопилот
+- Серверы «Доступ к нейросетям» — отдельной категорией в списке серверов, автопилот их не выбирает
+- Настройки → «Без серверов для нейросетей»: можно разрешить автопилоту выбирать и их
+
 ## 3.21.3 · 14 ноября 2026
 
 <img src="img/tags/new.svg" alt="Новое" height="22">

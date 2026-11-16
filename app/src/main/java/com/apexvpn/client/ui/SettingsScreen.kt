@@ -264,6 +264,13 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
             ) { InfoHint("Без серверов с рекламой", "Некоторые бесплатные серверы в подписке показывают рекламу. С этой настройкой автопилот их не выбирает."); ApexSwitch(s.excludeAds, { v -> viewModel.change { copy(excludeAds = v) } }) }
             GroupDivider()
             ListRow(
+                "Без серверов для нейросетей",
+                "Автопилот не выбирает серверы «Доступ к нейросетям» — включайте их кнопкой «Нейросети» на главном",
+                leading = { tile(Icons.Rounded.SmartToy) },
+                onClick = { viewModel.change { copy(excludeAi = !excludeAi) } },
+            ) { InfoHint("Без серверов для нейросетей", "Серверы для ChatGPT, Gemini и других нейросетей нужны не всегда и бывают медленнее. С этой настройкой автопилот их не выбирает, а включить их можно одной кнопкой «Нейросети» на главном экране."); ApexSwitch(s.excludeAi, { v -> viewModel.change { copy(excludeAi = v) } }) }
+            GroupDivider()
+            ListRow(
                 "IPv6",
                 if (s.ipv6) "Сайты могут открываться по IPv6" else "Только IPv4 — стабильнее",
                 leading = { tile(Icons.Rounded.SettingsEthernet) },

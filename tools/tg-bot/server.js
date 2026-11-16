@@ -8,12 +8,14 @@
 //   OWNER_ID       — по желанию: ваш номер в Telegram (команды /draw и /contests);
 //   SUPPORT        — по желанию: ссылка поддержки;
 //   WEBHOOK_SECRET — по желанию: секретное слово для /api/draw (нужно, только если включён BOT_PORT);
-//   BOT_PORT       — по желанию: порт для итогов конкурсов от робота GitHub (нужен HTTPS-адрес перед ним).
+//   BOT_PORT       — по желанию: порт для итогов конкурсов от робота GitHub (нужен HTTPS-адрес перед ним);
+//   NOTIFY=1       — по желанию: сообщать владельцу (OWNER_ID), что бот запущен или остановлен.
 // Одновременно бот может работать только в одном месте: запуск здесь отключает адрес Cloudflare.
 import fs from 'node:fs'
 import http from 'node:http'
 import crypto from 'node:crypto'
 import path from 'node:path'
+import os from 'node:os'
 import worker from './worker.js'
 
 const DATA = process.env.BOT_DATA || '/var/lib/apex-bot'
@@ -43,6 +45,10 @@ const api = async (method, body, ms = 60000) => {
   return r.json()
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms))
+// По желанию (меню apex → «Уведомления владельцу»): сообщение владельцу при запуске и остановке
+const NOTIFY = process.env.NOTIFY === '1' && /^\d{4,15}$/.test(env.OWNER_ID)
+const notify = text => NOTIFY ? api('sendMessage', { chat_id: env.OWNER_ID, text }, 10000).catch(() => {}) : Promise.resolve()
+for (const sig of ['SIGTERM', 'SIGINT']) process.once(sig, async () => { await notify('⏸ Бот остановлен на сервере ' + os.hostname()); process.exit(0) })
 
 // Передаём каждое обновление коду бота так же, как это делает Telegram в Cloudflare
 const handle = u => worker.fetch(new Request('http://localhost/tg', {
@@ -54,6 +60,7 @@ async function main() {
   if (!me.ok) { console.error('Telegram не принял токен: ' + me.description); process.exit(1) }
   const wh = await api('deleteWebhook', { drop_pending_updates: false }, 20000).catch(() => ({}))
   console.log(`Бот @${me.result.username} запущен на сервере${wh.ok ? ' (адрес Cloudflare отключён)' : ''}`)
+  notify('🟢 Бот @' + me.result.username + ' запущен на сервере ' + os.hostname())
   let offset = 0, fails = 0
   for (;;) {
     try {

@@ -292,9 +292,43 @@ app = read(E('TG_APP', 'docs/config/app.json'), {})
 SUPPORT = ((app.get('links') or {}).get('support') or '').strip()
 SUPPORT = SUPPORT if SUPPORT.startswith('https://') else 'https://t.me/Apexx_support'
 
+def bot_status():
+    """2.36: статус бота для пульта — где работает (Cloudflare или свой сервер), ждут ли сообщения ответа, ошибки.
+    В состояние пишется только вид работы и числа — без адреса Worker и токена (файл открытый)."""
+    st = {'at': now, 'ok': False, 'mode': '', 'user': '', 'pending': 0, 'err': '', 'errAt': 0, 'alive': None}
+    try:
+        me = tg('getMe'); st['user'] = me.get('username', '')
+    except Exception as e:
+        st['err'] = 'Telegram не принял токен бота: ' + str(e)[:120]; return st
+    try:
+        wh = tg('getWebhookInfo')
+    except Exception as e:
+        st['err'] = str(e)[:160]; return st
+    url = wh.get('url') or ''
+    st['mode'] = 'cloudflare' if '.workers.dev' in url else ('webhook' if url else 'server')
+    st['pending'] = int(wh.get('pending_update_count') or 0)
+    if wh.get('last_error_date') and now - wh['last_error_date'] * 1000 < 6 * 3600_000:
+        st['err'], st['errAt'] = str(wh.get('last_error_message') or '')[:160], wh['last_error_date'] * 1000
+    if url and not DRY:
+        try:  # жив ли сам Worker: на главной он отвечает «APEX CLIENT bot»
+            origin = '/'.join(url.split('/')[:3])
+            st['alive'] = b'APEX' in urllib.request.urlopen(urllib.request.Request(origin, headers={'User-Agent': 'APEX-robot'}), timeout=15).read(200)
+        except Exception:
+            st['alive'] = False
+    # Свой сервер забирает сообщения сам — если их копится много, он не работает
+    st['ok'] = (st['alive'] is not False and not st['err'] and st['pending'] < 5) if url else st['pending'] < 3
+    return st
+
+
+# 2.36: раз в час — свежий статус бота для пульта (чаще не нужно: каждое изменение — запись в репозиторий)
+if not DRY and now - int((state.get('bot') or {}).get('at') or 0) > 3600_000:
+    b = bot_status(); old = state.get('bot') or {}
+    if any(b.get(k) != old.get(k) for k in ('ok', 'mode', 'user', 'err', 'alive')) or now - int(old.get('at') or 0) > 6 * 3600_000 or (b['pending'] > 0) != (int(old.get('pending') or 0) > 0):
+        state['bot'] = b; changed = True
+
 # ── 0. Задания из пульта (docs/tg/outbox.json). Пульт ждёт итог в state['results'][id].
 ALLOWED = {'sendMessage': {'text', 'link_preview_options'}, 'sendPoll': {'question', 'options', 'is_anonymous', 'allows_multiple_answers'},
-           'getChat': set(), 'sendVersion': {'version'}, 'deleteLast': set(), 'editLast': {'text'}, 'ping': set(), 'translate': {'text'}, 'contest': {'text', 'until', 'n', 'button'}, 'refreshVersions': set(), 'setButtons': {'mid', 'buttons'}, 'workerSetup': set()}
+           'getChat': set(), 'sendVersion': {'version'}, 'deleteLast': set(), 'editLast': {'text'}, 'ping': set(), 'translate': {'text'}, 'contest': {'text', 'until', 'n', 'button'}, 'refreshVersions': set(), 'setButtons': {'mid', 'buttons'}, 'workerSetup': set(), 'botStatus': set()}
 box = read(E('TG_OUTBOX', 'docs/tg/outbox.json'), {})
 results = state['results']
 for it in (box.get('items') or [])[-40:]:
@@ -410,6 +444,9 @@ for it in (box.get('items') or [])[-40:]:
                         else: errs.append(f'{ver}: {e}')
             if not found: errs.append('не нашёл постов о версиях — откройте пульт позже (робот собирает их номера раз в 3 часа)')
             log('Обновлены посты о версиях', ', '.join(sorted(set(done))), not errs, '; '.join(errs))
+        elif method == 'botStatus':  # 2.36: «Проверить сейчас» в пульте
+            state['bot'] = bot_status()
+            done = ['работает' if state['bot']['ok'] else (state['bot']['err'] or 'не отвечает')]
         elif method == 'ping':
             done = [f'робот работает · чатов: {len(CHATS)} · английский канал: {"да" if CHATS_EN else "нет"} · личка владельца: {"да" if OWNER else "нет"} · картинки: {"да" if tg_card else "нет"}']
         elif method == 'sendVersion':

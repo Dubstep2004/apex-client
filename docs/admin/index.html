@@ -228,6 +228,8 @@
 
   .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; background: var(--field); border: 1px solid var(--line); border-radius: var(--r-md); padding: 4px; }
   .seg button { border: 0; background: none; border-radius: 10px; padding: 9px 6px; color: var(--dim); font-weight: 700; cursor: pointer; }
+  .seg2 { grid-template-columns: repeat(2, 1fr); } .seg button.on[data-host] { background: var(--panel2); color: var(--text); box-shadow: inset 0 0 0 1px var(--line); }
+  section[data-host=server] .cf-only, section[data-host=cloudflare] .srv-only { display: none !important; }
   .seg button.on[data-v=info] { background: #7c8cff2e; color: var(--info); }
   .seg button.on[data-v=warn] { background: #f5b7592e; color: var(--warn-text); }
   .seg button.on[data-v=alert] { background: #f0616d2e; color: var(--alert); }
@@ -488,6 +490,18 @@
   .ci .ok .dotc { background: var(--go1); } .ci .fail .dotc { background: var(--alert); } .ci .run .dotc { background: var(--warn); }
   .ci b { flex: 1; font-weight: 600; } .ci small { color: var(--dim); text-align: right; }
   .ci a { color: inherit; text-decoration: none; display: contents; }
+  /* 2.36: статус бота и пульта */
+  .stgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+  .sttile { background: var(--field); border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; min-width: 0; }
+  .sthead { display: flex; align-items: center; gap: 9px; } .sthead b { flex: 1; font-size: 15px; }
+  .sttile .dotc { flex: none; width: 11px; height: 11px; border-radius: 50%; background: var(--faint); }
+  .sttile.ok .dotc { background: var(--go1); box-shadow: 0 0 0 4px #2fd38b22; } .sttile.warn .dotc { background: var(--warn); } .sttile.bad .dotc { background: var(--alert); box-shadow: 0 0 0 4px #f0616d22; }
+  .stmain { margin: 8px 0 6px; font-weight: 700; font-size: 16px; }
+  .sttile.ok .stmain { color: var(--go1); } .sttile.bad .stmain { color: var(--alert); } .sttile.warn .stmain { color: var(--warn-text); }
+  .stl { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+  .stl li { display: flex; justify-content: space-between; gap: 10px; font-size: 13.5px; padding: 5px 0; border-top: 1px solid var(--line); }
+  .stl li span { color: var(--dim); } .stl li b { font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+  .stl li b.no { color: var(--alert); } .stl li b.yes { color: var(--go1); }
   .helptools { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 0; margin: 0 0 8px; background: var(--bg); }
   .helptools input { flex: 1 1 220px; min-width: 0; padding: 10px 12px; }
   .helpdoc .hit { background: #f5b75944; color: var(--text); border-radius: 3px; }
@@ -528,6 +542,7 @@
     .toast { top: 12px; }
   }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+.srv-menu{margin:4px 0 0;padding-left:18px;display:grid;gap:4px}
 .srv-cmd{margin:8px 0 0;padding:10px 12px;border-radius:12px;background:rgba(127,127,140,.16);border:1px solid rgba(127,127,140,.3);color:inherit;overflow-x:auto;white-space:pre;font-size:12.5px;user-select:all}
 </style>
 </head>
@@ -595,7 +610,12 @@
       <div class="phone-inline" data-preview></div>
       <div class="block"><h2>Версии</h2><p class="note">Пульт обновляется сам вместе с репозиторием, приложение — через релизы.</p><div class="vers" id="vers"></div></div>
       <div class="block" id="pendBlock" hidden><h2>⏰ Отложенное сохранение</h2><p class="note" id="pendText"></p><button class="btn quiet small" id="pendCancel">Отменить</button></div>
-      <div class="block"><h2>Состояние</h2><p class="note" id="ciNote">Проверяем сборки и автопроверки…</p><ul class="ci" id="ciList"></ul>
+      <div class="block" id="statBlock"><h2>Статус</h2>
+        <div class="stgrid">
+          <div class="sttile" id="stBot"><div class="sthead"><span class="dotc"></span><b>🤖 Бот</b><button class="btn quiet small" id="stBotCheck" type="button">Проверить</button></div><p class="stmain" id="stBotMain">Загружаем…</p><ul class="stl" id="stBotList"></ul></div>
+          <div class="sttile" id="stPult"><div class="sthead"><span class="dotc"></span><b>🎛 Пульт</b></div><p class="stmain" id="stPultMain">Загружаем…</p><ul class="stl" id="stPultList"></ul></div>
+        </div></div>
+      <div class="block"><h2>Сборки и проверки</h2><p class="note" id="ciNote">Проверяем сборки и автопроверки…</p><ul class="ci" id="ciList"></ul>
         <div class="qact" style="margin-top:10px"><button class="btn quiet small" id="notifyBtn">🔔 Уведомлять, если сборка упала</button><button class="btn quiet small" id="bigBtn">📺 Большой экран</button></div></div>
       <div class="block"><h2>Неделя</h2><div class="relsum" id="weekSum"></div><p class="note" id="weekNote">Считаем…</p></div>
       <div class="block" id="tgStatBlock" hidden><h2>Telegram-канал</h2><div class="relsum" id="tgStat"></div><p class="note">Робот считает подписчиков раз в день.</p></div>
@@ -831,28 +851,25 @@
         <label class="sw"><div class="t"><b>🎉 Праздничные открытки</b><span>31 декабря, 14 февраля, 8 марта и 31 октября — поздравление в праздничной теме</span></div><span class="tog"><input type="checkbox" id="tgHoliday"><i></i></span></label>
         <p class="help"><b>Уведомления вам в личку</b> (упала сборка, в пульте сохранили изменения, ошибка робота): напишите своему боту /start, узнайте свой номер у @userinfobot и добавьте секрет <code>TG_OWNER</code> с этим номером. <b>Английский канал:</b> секрет <code>TG_CHAT_EN</code> — @имя канала.</p></div>
       <h2 class="tgsec" id="tgs-setup">⚙️ Настройка</h2><p class="note tgsecn">Один раз: бот и секреты GitHub.</p>
-      <div class="block"><h2>Бот</h2>
-        <label class="f" for="tgTok">Токен бота</label><input id="tgTok" type="password" autocomplete="off" placeholder="123456789:AA…">
-        <label class="f" for="tgChat">Канал и/или группа</label><input id="tgChat" type="text" placeholder="@apex_news, @apex_chat или -100…">
-        <p class="help">Токен хранится только в этом браузере, зашифрованный вашим входом в пульт, и на GitHub не попадает. Где взять: в Telegram откройте @BotFather → /newbot → скопируйте токен. Затем в канале: Управление → Администраторы → добавить бота.</p>
-        <p class="help"><b>Без VPN:</b> если Telegram не открывается (в России так бывает) или токен здесь не сохранён, пульт отправит через робота GitHub — до минуты, в чаты из секрета <code>TG_CHAT</code> (см. «Сам, без пульта» ниже).</p>
-        <div class="rowx" style="margin-top:10px"><button class="btn quiet small" id="tgSave">Запомнить</button><button class="btn quiet small" id="tgTest">Проверить</button><button class="btn quiet small" id="tgForget">Забыть</button></div>
-        <label class="sw" style="margin-top:12px"><div class="t"><b>Предлагать отправить новый баннер</b><span>После «Сохранить» пульт спросит, отправить ли новые баннеры в канал</span></div><span class="tog"><input type="checkbox" id="tgAuto"><i></i></span></label>
-      </div>
+      <div class="block" id="hostBlock"><h2>🧭 Где работает бот</h2>
+        <p class="note">Бот, который отвечает в личке и принимает «Участвую», работает в одном месте. Выберите где — пульт покажет только нужное.</p>
+        <div class="seg seg2" id="hostSeg" role="radiogroup" aria-label="Где работает бот"><button type="button" data-host="cloudflare" role="radio">☁️ Cloudflare</button><button type="button" data-host="server" role="radio">🖥 Свой сервер</button></div></div>
       <div class="block" id="bsBlock"><h2>🔐 Настройки бота</h2>
         <p class="note">Токен, канал, секретное слово и доступ к Cloudflare. Сохраняются зашифрованными прямо в секреты GitHub — видеть их потом не сможет никто, даже пульт: только заменить. Пустое поле — не менять.</p>
         <div id="bsList"></div>
         <label class="f" for="bsTok">Токен бота <small>TG_BOT_TOKEN · от @BotFather</small></label><input id="bsTok" type="password" autocomplete="off" placeholder="123456789:AA…">
         <label class="f" for="bsChat">Канал и/или группа <small>TG_CHAT</small></label><input id="bsChat" type="text" autocomplete="off" placeholder="@apex_client_news">
-        <label class="f" for="bsKey">Секретное слово <small>BOT_WORKER_KEY · защита бота</small></label><div class="rowx"><input id="bsKey" type="text" autocomplete="off" placeholder="нажмите «Создать»" style="flex:1;min-width:0"><button class="btn quiet small" id="bsKeyGen" type="button">Создать</button></div>
+        <div class="cf-only"><label class="f" for="bsKey">Секретное слово <small>BOT_WORKER_KEY · защита бота</small></label><div class="rowx"><input id="bsKey" type="text" autocomplete="off" placeholder="нажмите «Создать»" style="flex:1;min-width:0"><button class="btn quiet small" id="bsKeyGen" type="button">Создать</button></div></div>
         <label class="f" for="bsOwner">Ваш номер в Telegram <small>TG_OWNER · по желанию, узнать у @userinfobot</small></label><input id="bsOwner" type="text" inputmode="numeric" autocomplete="off" placeholder="123456789">
         <label class="f" for="bsEn">Английский канал <small>TG_CHAT_EN · по желанию</small></label><input id="bsEn" type="text" autocomplete="off" placeholder="@apex_client_en">
+        <div class="cf-only">
         <label class="f" for="bsAcc">Cloudflare Account ID <small>CF_ACCOUNT_ID</small></label><input id="bsAcc" type="text" autocomplete="off" placeholder="dash.cloudflare.com → Workers &amp; Pages → справа «Account ID»">
         <label class="f" for="bsCf">Cloudflare API-токен <small>CF_API_TOKEN</small></label><input id="bsCf" type="password" autocomplete="off" placeholder="My Profile → API Tokens → шаблон «Edit Cloudflare Workers»">
+        </div>
         <button class="btn go" id="bsSave" style="margin-top:12px;width:100%">Сохранить настройки</button>
-        <button class="btn quiet" id="bsApply" style="margin-top:8px;width:100%">Применить к боту в Cloudflare</button>
-        <p class="help">«Применить» — робот сам загрузит код бота в Cloudflare, пропишет токен и слово, подключит конкурсы и адрес для Telegram. Нажимайте после смены токена или обновления пульта. Нужен API-токен с шаблоном «Edit Cloudflare Workers» (в нём есть и хранилище KV); для перевода добавьте в токен право «Workers AI».</p></div>
-      <div class="block"><h2>💬 Бот отвечает сам (Cloudflare)</h2>
+        <button class="btn quiet cf-only" id="bsApply" style="margin-top:8px;width:100%">Применить к боту в Cloudflare</button>
+        <p class="help cf-only">«Применить» — робот сам загрузит код бота в Cloudflare, пропишет токен и слово, подключит конкурсы и адрес для Telegram. Нажимайте после смены токена или обновления пульта. Нужен API-токен с шаблоном «Edit Cloudflare Workers» (в нём есть и хранилище KV); для перевода добавьте в токен право «Workers AI».</p></div>
+      <div class="block cf-only"><h2>💬 Бот отвечает сам (Cloudflare)</h2>
         <p class="note">Бот в личке отвечает на частые вопросы и принимает нажатия «Участвую» в конкурсах. Работает на бесплатном Cloudflare Workers — круглосуточно. Проще всего: зарегистрируйтесь на <b>dash.cloudflare.com</b>, впишите Account ID и API-токен в «🔐 Настройки бота» выше и нажмите «Применить». Ниже — то же самое вручную.</p>
         <details><summary class="f">Настроить вручную</summary>
         <ol class="note us-steps">
@@ -868,17 +885,24 @@
         </ol>
         </details>
         <p class="help">Токен бота хранится только в секретах GitHub и Cloudflare. Робот GitHub продолжает публиковать посты как раньше.</p></div>
-      <div class="block" id="srvBlock"><h2>🖥 Бот на своём сервере (Ubuntu)</h2>
+      <div class="block srv-only" id="srvBlock"><h2>🖥 Бот на своём сервере · меню «APEX ШТАБ»</h2>
         <p class="note">Тот же бот, что в Cloudflare, но на вашем сервере: Ubuntu 22.04 / 24.04 или Debian 12, хватит самого маленького VPS. Домен, HTTPS и открытые порты не нужны — бот сам забирает сообщения у Telegram. Конкурсы и тексты из пульта работают так же.</p>
         <ol class="note us-steps">
           <li>Зайдите на сервер по SSH (под root или пользователем с sudo).</li>
           <li>Вставьте команду и нажмите Enter: <button class="btn quiet small" id="srvCmd" type="button">Скопировать команду</button>
-            <pre class="srv-cmd"><code id="srvCmdText">curl -fsSL https://raw.githubusercontent.com/Dubstep2004/apex-client/main/tools/tg-bot/install.sh | sudo bash</code></pre></li>
-          <li>Скрипт спросит токен бота от @BotFather (при вводе его не видно — так и надо) и, по желанию, ваш номер в Telegram от @userinfobot — для команд /draw и /contests.</li>
-          <li>Увидите «✅ Готово» — напишите боту <code>/start</code>.</li>
+            <pre class="srv-cmd"><code id="srvCmdText">sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/Dubstep2004/apex-client/main/tools/tg-bot/apex.sh)"</code></pre></li>
+          <li>Откроется меню <b>APEX ШТАБ</b> → пункт <b>1 «Установить бота»</b>. Скрипт спросит токен от @BotFather (при вводе его не видно — так и надо) и, по желанию, ваш номер в Telegram от @userinfobot.</li>
+          <li>Напишите боту <code>/start</code>. Дальше меню открывается командой <code>sudo apex</code>.</li>
         </ol>
-        <p class="note"><b>Обновить бота</b> — запустите ту же команду ещё раз: код обновится, настройки останутся. <b>Журнал</b>: <code>journalctl -u apex-bot -f</code>. <b>Сменить токен</b>: <code>sudo nano /etc/apex-bot.env</code>, затем <code>sudo systemctl restart apex-bot</code>.</p>
-        <p class="help">Бот работает только в одном месте: запуск на сервере отключает Cloudflare, а «Применить к боту в Cloudflare» — наоборот, забирает бота обратно. Выберите что-то одно. Итоги конкурсов на сервере подводятся командой <code>/draw номер</code> в личке бота. Токен хранится только на сервере в /etc/apex-bot.env — никому его не отправляйте.</p></div>
+        <p class="f" style="margin-top:12px">Что есть в меню</p>
+        <ul class="note srv-menu">
+          <li><b>Бот</b> — статус и проверка, перезапуск, остановить / запустить, журнал в реальном времени</li>
+          <li><b>Настройки</b> — сменить токен, номер владельца, ссылку поддержки; уведомления вам, когда бот запустился или остановился</li>
+          <li><b>Обновления</b> — обновить бота, обновить само меню, автообновление каждую ночь</li>
+          <li><b>Конкурсы и копии</b> — список конкурсов, резервная копия настроек и участников, восстановление</li>
+          <li><b>Удаление</b> — удалить бота (с предложением сделать копию) или само меню</li>
+        </ul>
+        <p class="help">Бот работает только в одном месте: запуск на сервере отключает Cloudflare, а «Применить к боту в Cloudflare» — наоборот. Итоги конкурсов на сервере подводятся командой <code>/draw номер</code> в личке бота. Токен хранится только на сервере в /etc/apex-bot.env — никому его не отправляйте. Без меню тоже можно: <code>sudo apex update</code>, <code>restart</code>, <code>status</code>, <code>logs</code>, <code>backup</code>.</p></div>
       <div class="block" id="bcBlock"><h2>📝 Тексты бота</h2>
         <p class="note">Что бот отвечает в личке: приветствие, темы-кнопки, слова для поиска и ответы. Бот подхватит изменения за 5 минут — код в Cloudflare менять не нужно. Если вы ставили бота до этой версии пульта, один раз обновите код: «Скопировать код бота» → вставить в Cloudflare → Deploy. В текстах можно писать <code>{сайт}</code> и <code>{поддержка}</code> — подставятся ссылки.</p>
         <label class="f" for="bcGreet">Приветствие (/start)</label><textarea id="bcGreet" rows="2" maxlength="1000"></textarea>
@@ -888,6 +912,14 @@
         <div id="bcTopics"></div>
         <div class="rowx" style="margin-top:10px"><button class="btn quiet small" id="bcAdd" type="button">＋ Добавить тему</button><button class="btn quiet small" id="bcUndo" type="button">Отменить изменения</button></div>
         <button class="btn go" id="bcSave" style="margin-top:12px;width:100%">Сохранить тексты бота</button></div>
+      <div class="block"><h2>📱 Бот в этом браузере</h2>
+        <label class="f" for="tgTok">Токен бота</label><input id="tgTok" type="password" autocomplete="off" placeholder="123456789:AA…">
+        <label class="f" for="tgChat">Канал и/или группа</label><input id="tgChat" type="text" placeholder="@apex_news, @apex_chat или -100…">
+        <p class="help">Токен хранится только в этом браузере, зашифрованный вашим входом в пульт, и на GitHub не попадает. Где взять: в Telegram откройте @BotFather → /newbot → скопируйте токен. Затем в канале: Управление → Администраторы → добавить бота.</p>
+        <p class="help"><b>Без VPN:</b> если Telegram не открывается (в России так бывает) или токен здесь не сохранён, пульт отправит через робота GitHub — до минуты, в чаты из секрета <code>TG_CHAT</code> (см. «Сам, без пульта» ниже).</p>
+        <div class="rowx" style="margin-top:10px"><button class="btn quiet small" id="tgSave">Запомнить</button><button class="btn quiet small" id="tgTest">Проверить</button><button class="btn quiet small" id="tgForget">Забыть</button></div>
+        <label class="sw" style="margin-top:12px"><div class="t"><b>Предлагать отправить новый баннер</b><span>После «Сохранить» пульт спросит, отправить ли новые баннеры в канал</span></div><span class="tog"><input type="checkbox" id="tgAuto"><i></i></span></label>
+      </div>
       <div class="block"><h2>🌐 Перевод на английский</h2>
         <p class="note">Кнопка «Перевести с русского» у английского текста — бесплатный переводчик Cloudflare. Один раз добавьте секреты GitHub: <code>CF_ACCOUNT_ID</code> (Cloudflare → Workers &amp; Pages → справа «Account ID») и <code>CF_AI_TOKEN</code> (My Profile → API Tokens → Create Token → шаблон «Workers AI»). Перевод всегда показывается вам перед отправкой.</p></div>
       <div class="block"><h2>🤖 Сам, без пульта</h2>
@@ -1041,7 +1073,7 @@
     <!-- Справка -->
     <section data-tab="help" hidden class="helpdoc">
       <h1>Справка для владельца</h1>
-      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 14 ноября 2026 · приложение 3.21.3 · пульт 2.35.</p>
+      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 16 ноября 2026 · приложение 3.22.0 · пульт 2.36.</p>
       <div class="helptools">
         <input id="hq" type="search" placeholder="Найти в справке, например «техработы»" aria-label="Найти в справке" autocomplete="off">
         <button class="btn quiet small" id="hOpen" type="button">Развернуть всё</button>
@@ -1267,6 +1299,10 @@
 
       <div class="block"><details><summary>🆕 Что нового в пульте</summary>
         <div class="tbl"><table id="pultLog">
+          <tr data-k="n"><td>2.36</td><td>«Обзор» → «Статус»: работает ли бот (Cloudflare или свой сервер, ждут ли сообщения ответа, ошибки) и сам пульт (токен, права, запросы к GitHub, робот канала); кнопка «Проверить»</td></tr>
+          <tr data-k="n"><td>2.36</td><td>Telegram → Настройка → «Где работает бот»: Cloudflare или свой сервер — пульт показывает только нужное; настройки разложены по порядку</td></tr>
+          <tr data-k="n"><td>2.36</td><td>Меню «APEX ШТАБ» для своего сервера: установить, обновить, перезапустить, журнал, токен, уведомления, резервные копии, автообновление, удалить бота и меню</td></tr>
+          <tr data-k="u"><td>2.36</td><td>«Сборки и проверки» на обзоре показывают и робота канала</td></tr>
           <tr data-k="n"><td>2.35</td><td>Telegram → Настройка → «🖥 Бот на своём сервере»: бот ставится на свой Ubuntu-сервер одной командой — без Cloudflare, домена и HTTPS</td></tr>
           <tr data-k="n"><td>2.34</td><td>Telegram → Настройка → «🔐 Настройки бота»: токен, канал, секретное слово, номер владельца и Cloudflare — сохраняются в секреты GitHub прямо из пульта; «Применить к боту в Cloudflare» загружает и подключает бота одной кнопкой</td></tr>
           <tr data-k="n"><td>2.33</td><td>Telegram → Настройка → «Тексты бота»: приветствие, темы-кнопки, слова для поиска и ответы бота редактируются в пульте — без правки кода в Cloudflare</td></tr>
@@ -1379,7 +1415,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.35', PANEL_DATE = '14 ноября 2026'
+const PANEL_VERSION = '2.36', PANEL_DATE = '16 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -1440,12 +1476,13 @@ const TEMPLATES = [
 ]
 
 const $ = id => document.getElementById(id)
-let token = '', saved = '', releases = [], banners = [], marks = [], annId = ''
+let tokenExp = 0, token = '', saved = '', releases = [], banners = [], marks = [], annId = ''
 const files = {}
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
 // Срок токена: GitHub присылает его в каждом ответе (если браузер его отдаёт)
 function tokenExpiry(s) {
   const t = Date.parse(s.replace(' UTC', 'Z').replace(' ', 'T')); if (!t) return
+  tokenExp = t
   const days = Math.floor((t - Date.now()) / 864e5), el = $('tokwarn'); if (!el) return
   const date = new Date(t).toLocaleDateString('ru', { day: 'numeric', month: 'long' })
   el.hidden = days > 7
@@ -2091,7 +2128,7 @@ async function loadAll() {
   const [app, sub, hide, site, wl] = await Promise.all([getFile(APP), getFile(SUB), getFile(HIDE), getFile(SITE), getFile(WALLS)])
   fillApp(app); saved = JSON.stringify(collectApp(true)); undoStack = [saved]; offerDraft(); changed()
   fillSub(sub); $('hideJson').value = hide ? JSON.stringify(hide, null, 2) : ''; fillSite(site); fillWalls(wl)
-  renderVersions(); loadReleases().then(loadDays); loadCI(); loadPending()
+  renderVersions(); loadReleases().then(loadDays); loadCI(); loadStatus(); loadPending()
 }
 let retryBtn = null
 window.addEventListener('offline', () => toast('Интернет пропал. Изменения не потеряются — сохраните, когда сеть вернётся', false))
@@ -2443,6 +2480,7 @@ const CI = [
   ['Dubstep2004/apex-client', 'Проверка пульта и страниц', 'Автопроверка пульта'],
   ['Dubstep2004/apex-client', 'Config check', 'Проверка настроек'],
   ['Dubstep2004/apex-client', 'pages build and deployment', 'Публикация пульта'],
+  ['Dubstep2004/apex-client', 'Telegram-канал', 'Робот канала'],
   ['Dubstep2004/dubstep2004.github.io', 'Проверка визитки', 'Автопроверка визитки'],
   ['Dubstep2004/dubstep2004.github.io', 'pages build and deployment', 'Публикация визитки'],
 ]
@@ -2472,7 +2510,46 @@ async function loadCI() {
     $('ciNote').textContent = 'Не удалось узнать состояние сборок' + (e === 403 ? ' — GitHub ограничил запросы, попробуйте через час.' : ' — проверьте интернет.')
   }
 }
-setInterval(() => { if (!$('app').hidden && (document.visibilityState === 'visible' || load('apex_admin_notify') === 'on')) loadCI() }, 5 * 60e3)
+setInterval(() => { if (!$('app').hidden && (document.visibilityState === 'visible' || load('apex_admin_notify') === 'on')) { loadCI(); loadStatus() } }, 5 * 60e3)
+
+// ── 2.36: «Статус» на обзоре — бот (по данным робота GitHub, раз в час или по кнопке) и сам пульт
+const ago = t => { const m = Math.round((Date.now() - t) / 60e3); return m < 1 ? 'только что' : m < 60 ? m + ' мин назад' : m < 1440 ? Math.round(m / 60) + ' ч назад' : new Date(t).toLocaleString('ru', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }
+const stRow = (k, v, cls = '') => `<li><span>${esc(k)}</span><b class="${cls}">${esc(v)}</b></li>`
+function stSet(id, cls, main, rows) { const el = $(id); el.className = 'sttile ' + cls; $(id + 'Main').textContent = main; $(id + 'List').innerHTML = rows.join('') }
+function renderBotStatus(st) {
+  const b = st?.bot
+  if (!b) return stSet('stBot', '', 'Нет данных', [stRow('Что сделать', 'нажмите «Проверить»')])
+  const mode = { cloudflare: 'Cloudflare', server: 'свой сервер', webhook: 'свой адрес' }[b.mode] || '—'
+  let cls = b.ok ? 'ok' : 'bad', main = b.ok ? 'Работает' : 'Не отвечает'
+  if (!b.user) { cls = 'bad'; main = 'Токен не принят' }
+  else if (!b.ok && b.pending > 0 && !b.err && b.alive !== false) { cls = 'warn'; main = 'Ждут ответа: ' + b.pending }
+  const rows = [stRow('Бот', b.user ? '@' + b.user : '—'), stRow('Где работает', mode)]
+  if (b.mode === 'server') rows.push(stRow('Ждут ответа', String(b.pending || 0), b.pending > 2 ? 'no' : 'yes'))
+  if (b.alive !== null && b.alive !== undefined) rows.push(stRow('Cloudflare Worker', b.alive ? 'отвечает' : 'не отвечает', b.alive ? 'yes' : 'no'))
+  if (b.err) rows.push(stRow('Ошибка', b.err + (b.errAt ? ' · ' + ago(b.errAt) : ''), 'no'))
+  rows.push(stRow('Проверено', ago(b.at)))
+  stSet('stBot', cls, main, rows)
+}
+async function loadStatus() {
+  try { const st = await tgReadState(); if (st) tgState = st; renderBotStatus(st) } catch { renderBotStatus(null) }
+  const rows = [stRow('Версия пульта', PANEL_VERSION)]
+  let cls = 'ok', main = 'Всё в порядке'
+  const bad = (m, c = 'bad') => { if (cls !== 'bad') { cls = c; main = m } }
+  if (tokenExp) { const d = Math.floor((tokenExp - Date.now()) / 864e5); rows.push(stRow('Токен GitHub', d < 0 ? 'истёк' : 'ещё ' + d + ' дн.', d > 7 ? 'yes' : 'no')); if (d < 0) bad('Токен истёк'); else if (d <= 7) bad('Токен скоро истечёт', 'warn') }
+  else rows.push(stRow('Токен GitHub', 'бессрочный', 'yes'))
+  try { await api('/actions/secrets/public-key'); rows.push(stRow('Менять секреты', 'можно', 'yes')) }
+  catch (e) { rows.push(stRow('Менять секреты', e.status === 403 ? 'нет права Secrets' : 'не проверить', 'no')); if (e.status === 403) bad('Нет права менять секреты', 'warn') }
+  try {
+    const r = await fetch('https://api.github.com/rate_limit', { headers: { Authorization: 'Bearer ' + token } }).then(x => x.json()), c = r?.resources?.core
+    if (c) { rows.push(stRow('Запросы к GitHub', c.remaining + ' из ' + c.limit, c.remaining > 200 ? 'yes' : 'no')); if (c.remaining < 50) bad('GitHub ограничил запросы', 'warn') }
+  } catch {}
+  const last = (tgState?.log || []).slice(-1)[0]
+  rows.push(stRow('Робот канала', last ? ago(last.at) : 'ещё не работал'))
+  if (last && !last.ok) bad('Робот: ' + last.kind + ' — ошибка', 'warn')
+  if (!navigator.onLine) bad('Нет интернета')
+  stSet('stPult', cls, main, rows)
+}
+$('stBotCheck').onclick = () => guarded($('stBotCheck'), async () => { await tgRelay('botStatus', {}); renderBotStatus(tgState); toast('Статус бота обновлён') })
 
 $('q').addEventListener('input', runSearch)
 if (matchMedia('(hover: hover)').matches) $('q').placeholder = 'Поиск   Ctrl+K' 
@@ -2847,7 +2924,7 @@ async function tgRelay(method, body, opts = {}) {
   const box = (await getFile(TG_BOX)) || {}, now = Date.now()
   const keep = (box.items || []).filter(x => (x.opts?.when || 0) > now), rest = (box.items || []).filter(x => !((x.opts?.when || 0) > now))
   box.items = [...rest.slice(-20), ...keep, { id, method, body, opts, at: now }]
-  await putFile(TG_BOX, box, 'Telegram из пульта: ' + ({ sendMessage: 'сообщение', sendPoll: 'опрос', getChat: 'проверка', sendVersion: 'новая версия', deleteLast: 'удалить пост', editLast: 'исправить пост', ping: 'проверка робота' }[method] || method) + (opts.when ? ' на ' + new Date(opts.when).toLocaleString('ru', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''))
+  await putFile(TG_BOX, box, 'Telegram из пульта: ' + ({ sendMessage: 'сообщение', sendPoll: 'опрос', getChat: 'проверка', sendVersion: 'новая версия', deleteLast: 'удалить пост', editLast: 'исправить пост', ping: 'проверка робота', botStatus: 'статус бота' }[method] || method) + (opts.when ? ' на ' + new Date(opts.when).toLocaleString('ru', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''))
   if (opts.when) { renderTgSched(); return { scheduled: true } }
   toast('Отправляет робот GitHub (VPN не нужен) — до минуты…')
   for (let i = 0; i < 30; i++) {
@@ -2993,7 +3070,7 @@ function renderTgState() {
   renderTgStat()
 }
 async function tgOpen() { // при открытии вкладки
-  await tgLoadSettings().catch(() => {}); bcLoad().catch(() => {}); bsRender(); renderTgPick(); tgPreview(); renderTgSched().catch(() => {})
+  await tgLoadSettings().catch(() => {}); hostApply(); bcLoad().catch(() => {}); bsRender(); renderTgPick(); tgPreview(); renderTgSched().catch(() => {})
   $('tgDigest').checked = tgSet?.digest !== false; $('tgHoliday').checked = tgSet?.holidays !== false
   $('tgAutoVer').checked = tgSet?.version !== false; $('tgAutoVideo').checked = tgSet?.video !== false; $('tgAutoMaint').checked = tgSet?.maint !== false; $('tgAutoBtn').checked = tgSet?.buttons !== false; $('tgAutoRemind').checked = tgSet?.remind !== false
   tgState = await tgReadState(); renderTgState()
@@ -3202,6 +3279,16 @@ $('bcSave').onclick = () => guarded($('bcSave'), async () => {
   await putFile(BOT_CFG, c, 'Пульт: тексты бота'); bcData = c; toast('Сохранено — бот подхватит за 5 минут')
 })
 // 2.27: код бота для Cloudflare и секретное слово
+// 2.36: где работает бот — Cloudflare или свой сервер (на всех устройствах: docs/tg/settings.json → botHost)
+function hostApply() {
+  const h = tgSet?.botHost === 'server' ? 'server' : 'cloudflare'
+  document.querySelector('section[data-tab=tg]').dataset.host = h
+  $('hostSeg').querySelectorAll('button').forEach(b => { const on = b.dataset.host === h; b.classList.toggle('on', on); b.setAttribute('aria-checked', on) })
+}
+$('hostSeg').onclick = e => { const b = e.target.closest('[data-host]'); if (!b || b.classList.contains('on')) return; guarded(b, async () => {
+  await tgSaveSettings(s => { s.botHost = b.dataset.host }); hostApply()
+  toast(b.dataset.host === 'server' ? 'Бот — на своём сервере. Блоки Cloudflare скрыты' : 'Бот — в Cloudflare')
+}) }
 // 2.35: команда установки бота на свой сервер
 $('srvCmd').onclick = async () => {
   try { await navigator.clipboard.writeText($('srvCmdText').textContent.trim()); toast('Команда скопирована — вставьте её на сервере') } catch { toast('Не удалось скопировать — выделите команду вручную', false) }

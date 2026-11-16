@@ -43,12 +43,19 @@ func splitDescription(n *Node) {
 	// Пометка о рекламе — прежде всего в описании (как «⚠️ РЕКЛАМА НА YOUTUBE ЕСТЬ!»).
 	// «Ютуб без рекламы», «no ads» — наоборот, сервер без рекламы.
 	n.Ads = mentionsAds(n.Description) || mentionsAds(n.Name)
+	// 3.22: серверы для нейросетей («Доступ к нейросетям», «ChatGPT», «AI») — автопилот их не выбирает
+	n.AI = mentionsAI(n.Description) || mentionsAI(n.Name)
 }
 
 var (
 	adsRe   = regexp.MustCompile(`(?i)реклам|\bads?\b|advert`)
 	noAdsRe = regexp.MustCompile(`(?i)(без|нет|no|without|free)\s*(\p{L}+\s+)?(реклам|ads?\b|advert)|(реклам\p{L}*|ads?)[\s:\-—]*(нет|free)`)
 )
+
+// В Go \b понимает только латиницу — для «ИИ» и «AI» границы слова записаны явно.
+var aiRe = regexp.MustCompile(`(?i)нейросет|нейронк|нейро-?сет|chat\s?gpt|openai|gemini|claude|deepseek|perplexity|copilot|midjourney|(^|[^\p{L}])(ии|ai|gpt|grok)([^\p{L}]|$)`)
+
+func mentionsAI(s string) bool { return aiRe.MatchString(s) }
 
 func mentionsAds(s string) bool {
 	return adsRe.MatchString(s) && !noAdsRe.MatchString(s)

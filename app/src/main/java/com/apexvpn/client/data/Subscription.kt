@@ -31,6 +31,8 @@ data class Node(
     val description: String = "",
     /** Пометка «реклама на YouTube» — автопилот такие не выбирает */
     val ads: Boolean = false,
+    /** 3.22. Сервер для нейросетей («Доступ к нейросетям», ChatGPT, AI) — автопилот такие не выбирает */
+    val ai: Boolean = false,
     /** Сервер работает только через ядро Xray (XHTTP, mKCP…) */
     val xrayOnly: Boolean = false,
 )
@@ -333,6 +335,7 @@ object Subscription {
                 udp = o.optBoolean("udp", type in Protocols.udpTypes),
                 description = o.optString("description"),
                 ads = o.optBoolean("ads"),
+                ai = o.optBoolean("ai"),
                 xrayOnly = o.isNull("outbound") || !o.has("outbound"),
             )
         }

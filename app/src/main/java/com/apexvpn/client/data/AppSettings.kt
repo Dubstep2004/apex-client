@@ -54,6 +54,7 @@ data class Settings(
     val favorites: Set<String> = emptySet(),          // по названию сервера
     val core: CoreMode = CoreMode.Auto,               // ядро: авто / только Xray / только sing-box
     val excludeAds: Boolean = true,                   // автопилот не выбирает серверы с рекламой
+    val excludeAi: Boolean = true,                    // 3.22: автопилот не выбирает серверы для нейросетей
     val protocol: String = "",                        // категория протокола в списке и для автопилота; "" — все
     // Уведомления и фон
     val speedInNotification: Boolean = true,
@@ -317,6 +318,7 @@ object AppSettings {
         put("profile", s.profile.id)
         put("core", s.core.id)
         put("excludeAds", s.excludeAds)
+        put("excludeAi", s.excludeAi)
         put("clashApi", Prefs.clashApiPort)
         // 197. Счётчик рекламы: DNS приложения, если он запущен
         if (s.adBlock && AdCounter.running) put("adsDnsPort", Prefs.adsDnsPort)
@@ -409,7 +411,7 @@ object AppSettings {
         put("ipv6", s.ipv6); put("profile", s.profile.id); put("failover", s.failover); put("killSwitch", s.killSwitch); put("autoDl", s.autoDownloadUpdates); put("appIcon", s.appIcon)
         put("wifiRules", s.wifiRules); put("trustedWifi", list(s.trustedWifi))
         put("share", s.share); put("sharePort", s.sharePort); put("shareUser", s.shareUser); put("sharePass", s.sharePass)
-        put("favorites", list(s.favorites)); put("protocol", s.protocol); put("core", s.core.id); put("excludeAds", s.excludeAds)
+        put("favorites", list(s.favorites)); put("protocol", s.protocol); put("core", s.core.id); put("excludeAds", s.excludeAds); put("excludeAi", s.excludeAi)
         put("speedNotif", s.speedInNotification); put("expiryAlerts", s.expiryAlerts)
         put("autoUpdates", s.autoCheckUpdates); put("updateMode", s.updateMode); put("updateWifiOnly", s.updateWifiOnly); put("betaChannel", s.betaChannel); put("crashReports", s.crashReports); put("refreshHours", s.refreshHours)
         put("theme", s.theme.id); put("design", s.design.id); put("accent", s.accent.id); put("customAccent", s.customAccent)
@@ -479,6 +481,7 @@ object AppSettings {
             protocol = o.optString("protocol", d.protocol),
             core = CoreMode.of(o.optString("core", if (o.optBoolean("xrayAll")) "xray" else d.core.id)),
             excludeAds = o.optBoolean("excludeAds", d.excludeAds),
+            excludeAi = o.optBoolean("excludeAi", d.excludeAi),
             speedInNotification = o.optBoolean("speedNotif", d.speedInNotification),
             expiryAlerts = o.optBoolean("expiryAlerts", d.expiryAlerts),
             autoCheckUpdates = o.optBoolean("autoUpdates", d.autoCheckUpdates),

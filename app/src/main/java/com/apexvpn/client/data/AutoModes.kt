@@ -80,7 +80,7 @@ object AutoModes {
     fun lastSpeed(context: Context) = sp(context).getLong("speed_at", 0)
 
     /** Обычные серверы: без России, LTE-обхода и рекламы. */
-    private fun pool(nodes: List<Node>) = nodes.filter { !ServerInfo.isSpecial(it.name) && !it.ads }.ifEmpty { nodes }
+    private fun pool(nodes: List<Node>) = nodes.filter { !ServerInfo.isSpecial(it.name) && !it.ads && !it.ai }.ifEmpty { nodes }
 
     /**
      * Замер пинга: 4 круга по всем серверам — среднее, джиттер (разброс) и потери.

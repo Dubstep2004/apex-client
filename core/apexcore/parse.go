@@ -40,6 +40,8 @@ type Node struct {
 	Description string `json:"description,omitempty"`
 	// Ads — в описании или названии есть пометка о рекламе
 	Ads bool `json:"ads,omitempty"`
+	// AI — сервер для нейросетей («Доступ к нейросетям», ChatGPT, AI)
+	AI bool `json:"ai,omitempty"`
 }
 
 type parseResult struct {

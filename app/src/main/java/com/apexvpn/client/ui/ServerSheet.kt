@@ -116,7 +116,9 @@ fun ServerSheet(viewModel: MainViewModel, onDismiss: () -> Unit) {
     val favorites = groups.filter { g -> g.nodes.any { it.name in settings.favorites } || g.title in settings.favorites }
     // Серверы с рекламой на YouTube — отдельной категорией внизу
     val withAds = groups.filter { g -> g.nodes.all { it.ads } }
-    val clean = groups - withAds.toSet()
+    // 3.22. Серверы для нейросетей — своей категорией
+    val withAi = (groups - withAds.toSet()).filter { g -> g.nodes.all { it.ai } }
+    val clean = groups - withAds.toSet() - withAi.toSet()
     val regular = clean.filter { g -> g.nodes.none { ServerInfo.isSpecial(it.name) } }
     val special = clean.filter { g -> g.nodes.any { ServerInfo.isSpecial(it.name) } }
     val fastest = regular.filter { groupKey(it) != Int.MAX_VALUE }.minByOrNull { groupKey(it) }?.title
@@ -287,6 +289,10 @@ fun ServerSheet(viewModel: MainViewModel, onDismiss: () -> Unit) {
                     if (special.isNotEmpty()) {
                         SectionLabel("Особые")
                         Group { special.forEach { row(it, false) } }
+                    }
+                    if (withAi.isNotEmpty()) {
+                        SectionLabel("Доступ к нейросетям", if (settings.excludeAi) "автопилот не выбирает" else null)
+                        Group { withAi.sortedBy { groupKey(it) }.forEach { row(it, false) } }
                     }
                     if (withAds.isNotEmpty()) {
                         SectionLabel("Реклама на YouTube есть", if (settings.excludeAds) "автопилот не выбирает" else null)
