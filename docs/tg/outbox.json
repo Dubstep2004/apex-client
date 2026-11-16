@@ -91,6 +91,13 @@
       "body": {},
       "opts": {},
       "at": 1794828604366
+    },
+    {
+      "id": "mwji9win8czp5",
+      "method": "botStatus",
+      "body": {},
+      "opts": {},
+      "at": 1794848197953
     }
   ]
 }
