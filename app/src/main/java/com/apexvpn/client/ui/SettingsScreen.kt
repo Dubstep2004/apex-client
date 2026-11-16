@@ -265,10 +265,10 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
             GroupDivider()
             ListRow(
                 "Без серверов для нейросетей",
-                "Автопилот не выбирает серверы «Доступ к нейросетям» — включайте их кнопкой «Нейросети» на главном",
+                "Автопилот не выбирает серверы «Доступ к нейросетям» — их можно выбрать вручную в списке серверов",
                 leading = { tile(Icons.Rounded.SmartToy) },
                 onClick = { viewModel.change { copy(excludeAi = !excludeAi) } },
-            ) { InfoHint("Без серверов для нейросетей", "Серверы для ChatGPT, Gemini и других нейросетей нужны не всегда и бывают медленнее. С этой настройкой автопилот их не выбирает, а включить их можно одной кнопкой «Нейросети» на главном экране."); ApexSwitch(s.excludeAi, { v -> viewModel.change { copy(excludeAi = v) } }) }
+            ) { InfoHint("Без серверов для нейросетей", "Серверы для ChatGPT, Gemini и других нейросетей нужны не всегда и бывают медленнее. С этой настройкой автопилот их не выбирает — выберите такой сервер вручную, когда он нужен."); ApexSwitch(s.excludeAi, { v -> viewModel.change { copy(excludeAi = v) } }) }
             GroupDivider()
             ListRow(
                 "IPv6",

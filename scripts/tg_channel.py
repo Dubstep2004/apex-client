@@ -320,15 +320,26 @@ def bot_status():
     return st
 
 
+def bot_hist(b):
+    """2.37: история для пульта — точки «работал / не работал» за 8 дней (новая точка, только если состояние сменилось
+    или прошло 6 часов — чтобы график недели был ровным, а файл не рос)."""
+    h = [x for x in state.get('botHist') or [] if now - x[0] < 8 * 86400_000]
+    if not h or h[-1][1] != int(bool(b['ok'])) or now - h[-1][0] > 6 * 3600_000:
+        h.append([now, int(bool(b['ok']))])
+    state['botHist'] = h[-200:]
+
+
 # 2.36: раз в час — свежий статус бота для пульта (чаще не нужно: каждое изменение — запись в репозиторий)
 if not DRY and now - int((state.get('bot') or {}).get('at') or 0) > 3600_000:
     b = bot_status(); old = state.get('bot') or {}
     if any(b.get(k) != old.get(k) for k in ('ok', 'mode', 'user', 'err', 'alive')) or now - int(old.get('at') or 0) > 6 * 3600_000 or (b['pending'] > 0) != (int(old.get('pending') or 0) > 0):
         state['bot'] = b; changed = True
+    if not state.get('botHist') or state['botHist'][-1][1] != int(bool(b['ok'])) or now - state['botHist'][-1][0] > 6 * 3600_000:
+        bot_hist(b); changed = True
 
 # ── 0. Задания из пульта (docs/tg/outbox.json). Пульт ждёт итог в state['results'][id].
 ALLOWED = {'sendMessage': {'text', 'link_preview_options'}, 'sendPoll': {'question', 'options', 'is_anonymous', 'allows_multiple_answers'},
-           'getChat': set(), 'sendVersion': {'version'}, 'deleteLast': set(), 'editLast': {'text'}, 'ping': set(), 'translate': {'text'}, 'contest': {'text', 'until', 'n', 'button'}, 'refreshVersions': set(), 'setButtons': {'mid', 'buttons'}, 'workerSetup': set(), 'botStatus': set()}
+           'getChat': set(), 'sendVersion': {'version'}, 'deleteLast': set(), 'editLast': {'text'}, 'ping': set(), 'translate': {'text'}, 'contest': {'text', 'until', 'n', 'button'}, 'refreshVersions': set(), 'setButtons': {'mid', 'buttons'}, 'workerSetup': set(), 'botStatus': set(), 'dropWebhook': set()}
 box = read(E('TG_OUTBOX', 'docs/tg/outbox.json'), {})
 results = state['results']
 for it in (box.get('items') or [])[-40:]:
@@ -444,8 +455,13 @@ for it in (box.get('items') or [])[-40:]:
                         else: errs.append(f'{ver}: {e}')
             if not found: errs.append('не нашёл постов о версиях — откройте пульт позже (робот собирает их номера раз в 3 часа)')
             log('Обновлены посты о версиях', ', '.join(sorted(set(done))), not errs, '; '.join(errs))
+        elif method == 'dropWebhook':  # 2.37: «Отключить Cloudflare» — Telegram перестаёт слать сообщения в Worker
+            tg('deleteWebhook', drop_pending_updates=False)
+            state['bot'] = bot_status(); bot_hist(state['bot'])
+            done = ['Cloudflare отключён — сообщения теперь забирает ваш сервер' if state['bot']['mode'] == 'server' else 'адрес бота убран']
+            log('Отключён Cloudflare', done[0])
         elif method == 'botStatus':  # 2.36: «Проверить сейчас» в пульте
-            state['bot'] = bot_status()
+            state['bot'] = bot_status(); bot_hist(state['bot'])
             done = ['работает' if state['bot']['ok'] else (state['bot']['err'] or 'не отвечает')]
         elif method == 'ping':
             done = [f'робот работает · чатов: {len(CHATS)} · английский канал: {"да" if CHATS_EN else "нет"} · личка владельца: {"да" if OWNER else "нет"} · картинки: {"да" if tg_card else "нет"}']

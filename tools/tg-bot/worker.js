@@ -18,6 +18,11 @@
 // Telegram → Настройка → «Тексты бота» → «Сохранить». Бот берёт их из docs/tg/bot.json на сайте
 // (обновляет раз в 5 минут) — код в Cloudflare менять не нужно. Нет файла — встроенные тексты ниже.
 // BOT_CONFIG — по желанию: свой адрес файла настроек.
+//
+// 2.37 — функции, которые включаются и выключаются в пульте (Telegram → Настройка → «Функции бота»):
+//   /status — работают ли серверы (техработы из пульта); /ping, /stats, /help — для владельца;
+//   ответы на английском, если Telegram у человека не на русском; вопрос без ответа — владельцу в личку,
+//   его ответ на пересланное сообщение бот отправит человеку; счёт, какие темы спрашивают чаще.
 
 const SITE = 'https://dubstep2004.github.io'
 const CONFIG_URL = SITE + '/apex-client/tg/bot.json'
@@ -36,6 +41,22 @@ const FAQ = [
   { id: 'support', title: '💬 Поддержка и продление', words: ['поддерж', 'продл', 'оплат', 'подписк', 'купить', 'цена', 'админ', 'человек'],
     text: null },
 ]
+
+const FAQ_EN = [
+  { id: 'install', title: '📥 How to install', words: ['install', 'download', 'apk', 'get the app'],
+    text: 'How to install APEX CLIENT:\n1. Open ' + SITE + '/en/ on your phone and tap «Download».\n2. Open the downloaded file and tap «Install» (the first time Android asks to allow installs from the browser).\n3. Paste your subscription link and tap the shield.' },
+  { id: 'connect', title: '🔌 Can\'t connect', words: ['connect', 'not work', "doesn't work", 'error', 'broken', 'fail'],
+    text: 'If it does not connect:\n1. Open «Network check» on the home screen — it shows what is wrong and what to do.\n2. Turn on Autopilot — it picks a working server.\n3. Refresh the subscription: Settings → Subscription → «Refresh».' },
+  { id: 'update', title: '⬆️ How to update', words: ['update', 'new version', 'upgrade'],
+    text: 'Updates arrive by themselves: a «New version» banner or an «Update available» window appears — tap «Update». Settings and subscription are kept.' },
+  { id: 'slow', title: '🐢 Slow', words: ['slow', 'speed', 'lag', 'ping'],
+    text: 'If it is slow: run «Speed test» in the app, choose the «Speed» or «Games» mode, or try another server — Autopilot picks the fastest one.' },
+  { id: 'support', title: '💬 Support', words: ['support', 'help', 'pay', 'renew', 'subscription', 'price', 'human'],
+    text: 'Support will help with connection, subscription and renewal: {поддержка}' },
+]
+const EN = { greeting: 'Hi! I am the APEX CLIENT bot 👋\nChoose a topic or just type your question.', notFound: 'I could not find a ready answer 🤔 Choose a topic or contact support.', other: '📋 Other topics', support: '💬 Contact support', pick: 'Choose a topic:', sent: 'Your question has been sent to support — the answer will come here 🙌' }
+const RU_LANGS = /^(ru|uk|be|kk|uz|ky|tg|hy|az|ka)/
+const isEn = (cfg, u) => cfg.features.english && !!u?.language_code && !RU_LANGS.test(u.language_code)
 
 const json = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { 'content-type': 'application/json' } })
 
@@ -62,18 +83,57 @@ async function config(env) {
     notFound: (c?.notFound && String(c.notFound).slice(0, 1000)) || 'Не нашёл готового ответа 🤔 Выберите тему или напишите в поддержку — там помогут.',
     support: (c?.support && String(c.support).startsWith('https://')) ? String(c.support) : ((env.SUPPORT && env.SUPPORT.startsWith('https://')) ? env.SUPPORT : 'https://t.me/Apexx_support'),
     topics: topics.length ? topics : FAQ.map(f => ({ ...f, text: f.text || 'Поддержка поможет с подключением, подпиской и продлением: {поддержка}' })),
+    // Функции бота: пульт → «Функции бота». Нет настройки — значение по умолчанию
+    features: Object.fromEntries(Object.entries({ status: true, ping: true, english: true, forward: false, stats: true }).map(([k, d]) => [k, typeof c?.features?.[k] === 'boolean' ? c.features[k] : d])),
   }
   cfgAt = Date.now()
   return cfgCache
 }
 const fill = (cfg, t) => t.replaceAll('{сайт}', SITE).replaceAll('{поддержка}', cfg.support)
-const menu = cfg => ({ inline_keyboard: cfg.topics.map(f => [{ text: f.title, callback_data: 'faq:' + f.id }]) })
-const after = cfg => ({ inline_keyboard: [[{ text: '📋 Другие темы', callback_data: 'menu' }], [{ text: '💬 Написать в поддержку', url: cfg.support }]] })
+const topicsOf = (cfg, en) => en ? FAQ_EN : cfg.topics
+const menu = (cfg, en) => ({ inline_keyboard: topicsOf(cfg, en).map(f => [{ text: f.title, callback_data: (en ? 'faqen:' : 'faq:') + f.id }]) })
+const after = (cfg, en) => ({ inline_keyboard: [[{ text: en ? EN.other : '📋 Другие темы', callback_data: en ? 'menuen' : 'menu' }], [{ text: en ? EN.support : '💬 Написать в поддержку', url: cfg.support }]] })
 
-function findFaq(cfg, text) {
+// Счёт тем: st:<день> → { тема: число, _miss: без ответа } — для /stats (хранится 8 дней)
+async function count(env, cfg, id) {
+  if (!cfg.features.stats || !env.APEX_KV) return
+  try {
+    const day = new Date().toISOString().slice(0, 10), k = 'st:' + day
+    const o = JSON.parse(await env.APEX_KV.get(k) || '{}'); o[id] = (o[id] || 0) + 1
+    await env.APEX_KV.put(k, JSON.stringify(o), { expirationTtl: 8 * 86400 })
+  } catch {}
+}
+async function statsText(env, cfg) {
+  if (!env.APEX_KV) return 'Нет хранилища APEX_KV — статистика не ведётся'
+  const sum = {}
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10)
+    Object.entries(JSON.parse(await env.APEX_KV.get('st:' + day) || '{}')).forEach(([k, v]) => { sum[k] = (sum[k] || 0) + v })
+  }
+  const title = id => (cfg.topics.find(t => t.id === id) || FAQ_EN.find(t => t.id === id) || {}).title || id
+  const rows = Object.entries(sum).filter(([k]) => k !== '_miss').sort((a, b) => b[1] - a[1]).map(([k, v], i) => `${i + 1}. ${title(k)} — ${v}`)
+  return '📊 Вопросы за 7 дней\n\n' + (rows.join('\n') || 'Пока нет') + (sum._miss ? `\n\nБез готового ответа: ${sum._miss}` : '') + (cfg.features.stats ? '' : '\n\n(счёт выключен в пульте)')
+}
+
+// /status: техработы и пометки серверов из пульта (docs/config/app.json на сайте)
+async function statusText() {
+  let st = {}
+  try { const r = await fetch(SITE + '/apex-client/config/app.json', { cf: { cacheTtl: 120 } }); if (r.ok) st = (await r.json())?.servers?.status || {} } catch {}
+  const now = Date.now(), rows = []
+  for (const [name, v] of Object.entries(st)) {
+    if (!v || typeof v !== 'object') continue
+    const until = v.until ? ' до ' + new Date(v.until).toLocaleString('ru', { timeZone: 'Europe/Moscow', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + ' МСК' : ''
+    if (v.state === 'maintenance' && (!v.from || v.from <= now) && (!v.until || v.until > now)) rows.push('🔧 ' + name + ' — техработы' + until)
+    else if (v.state === 'maintenance' && v.from > now) rows.push('🗓 ' + name + ' — техработы с ' + new Date(v.from).toLocaleString('ru', { timeZone: 'Europe/Moscow', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + ' МСК')
+    else if (v.state === 'slow' && (!v.until || v.until > now)) rows.push('🐢 ' + name + ' — может работать медленно' + until)
+  }
+  return (rows.length ? '🛰 Состояние серверов\n\n' + rows.join('\n') : '✅ Все серверы работают в обычном режиме') + '\n\nПодробнее: ' + SITE + '/status/'
+}
+
+function findFaq(cfg, text, en) {
   const t = (text || '').toLowerCase()
   let best = null, score = 0
-  for (const f of cfg.topics) {
+  for (const f of topicsOf(cfg, en)) {
     const s = f.words.filter(w => t.includes(w)).length
     if (s > score) { best = f; score = s }
   }
@@ -83,7 +143,23 @@ function findFaq(cfg, text) {
 async function onMessage(env, m) {
   if (m.chat?.type !== 'private') return // в группах и каналах молчим
   const cfg = await config(env)
-  const text = (m.text || '').trim(), owner = env.OWNER_ID && String(m.from?.id) === String(env.OWNER_ID)
+  const text = (m.text || '').trim(), owner = env.OWNER_ID && String(m.from?.id) === String(env.OWNER_ID), en = isEn(cfg, m.from)
+  const cmd = text.split(/[\s@]/)[0].toLowerCase()
+  // Владелец ответил на пересланный вопрос — отправляем ответ человеку
+  if (owner && m.reply_to_message && env.APEX_KV) {
+    const to = await env.APEX_KV.get('fw:' + m.reply_to_message.message_id)
+    if (to) {
+      const r = await tg(env, 'copyMessage', { chat_id: to, from_chat_id: m.chat.id, message_id: m.message_id })
+      return tg(env, 'sendMessage', { chat_id: m.chat.id, text: r.ok ? '✅ Ответ отправлен' : '⚠️ Не отправилось: ' + (r.description || 'ошибка') })
+    }
+  }
+  if (owner && cmd === '/ping' && cfg.features.ping) {
+    const t0 = Date.now(); await config(env)
+    return tg(env, 'sendMessage', { chat_id: m.chat.id, text: `🏓 Работаю · ${env.HOST_INFO || 'Cloudflare'}\nФункции: ${Object.entries(cfg.features).map(([k, v]) => (v ? '✅' : '▫️') + k).join(' ')}\nОтвет за ${Date.now() - t0} мс` })
+  }
+  if (owner && cmd === '/stats') return tg(env, 'sendMessage', { chat_id: m.chat.id, text: await statsText(env, cfg) })
+  if (owner && cmd === '/help') return tg(env, 'sendMessage', { chat_id: m.chat.id, text: 'Команды владельца:\n/ping — работает ли бот\n/stats — какие темы спрашивают за неделю\n/status — состояние серверов\n/contests — конкурсы\n/draw <номер> [победителей] — подвести итоги\nОтветьте на пересланный вопрос — бот отправит ответ человеку.' })
+  if (cmd === '/status' && cfg.features.status) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: await statusText(), disable_web_page_preview: true })
   if (owner && text.startsWith('/draw')) {
     const [, cid, n] = text.split(/\s+/)
     const r = await draw(env, cid, +n || 1)
@@ -95,12 +171,22 @@ async function onMessage(env, m) {
     const rows = await Promise.all(list.keys.slice(0, 20).map(async k => { const c = JSON.parse(await env.APEX_KV.get(k.name) || '{}'); return `${k.name.slice(2)} — ${(c.ids || []).length} уч.${c.closed ? ', завершён' : ''}` }))
     return tg(env, 'sendMessage', { chat_id: m.chat.id, text: rows.join('\n') || 'Конкурсов нет' })
   }
-  if (text === '/start' || text === '/help' || !text) {
-    return tg(env, 'sendMessage', { chat_id: m.chat.id, text: fill(cfg, cfg.greeting), reply_markup: menu(cfg) })
+  if (cmd === '/start' || cmd === '/help' || (!text && !m.photo && !m.document && !m.voice)) {
+    return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? EN.greeting : fill(cfg, cfg.greeting), reply_markup: menu(cfg, en) })
   }
-  const f = findFaq(cfg, text)
-  if (f) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: fill(cfg, f.text), disable_web_page_preview: true, reply_markup: after(cfg) })
-  return tg(env, 'sendMessage', { chat_id: m.chat.id, text: fill(cfg, cfg.notFound), reply_markup: { inline_keyboard: [...menu(cfg).inline_keyboard, [{ text: '💬 Написать в поддержку', url: cfg.support }]] } })
+  const f = findFaq(cfg, text, en)
+  if (f) { await count(env, cfg, f.id); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: fill(cfg, f.text), disable_web_page_preview: true, reply_markup: after(cfg, en) }) }
+  await count(env, cfg, '_miss')
+  // Вопрос без ответа — владельцу (если включено в пульте)
+  if (cfg.features.forward && env.OWNER_ID && env.APEX_KV && !owner) {
+    const fw = await tg(env, 'forwardMessage', { chat_id: env.OWNER_ID, from_chat_id: m.chat.id, message_id: m.message_id })
+    if (fw.ok) {
+      await env.APEX_KV.put('fw:' + fw.result.message_id, String(m.chat.id), { expirationTtl: 14 * 86400 })
+      await tg(env, 'sendMessage', { chat_id: env.OWNER_ID, reply_to_message_id: fw.result.message_id, text: '❓ Вопрос без готового ответа от ' + who({ username: m.from?.username, name: m.from?.first_name }) + '. Ответьте на пересланное сообщение — бот отправит ответ.' })
+      return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? EN.sent : 'Передал ваш вопрос в поддержку — ответ придёт сюда 🙌', reply_markup: menu(cfg, en) })
+    }
+  }
+  return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? EN.notFound : fill(cfg, cfg.notFound), reply_markup: { inline_keyboard: [...menu(cfg, en).inline_keyboard, [{ text: en ? EN.support : '💬 Написать в поддержку', url: cfg.support }]] } })
 }
 
 const who = u => u.username ? '@' + u.username : (u.name || 'участник')
@@ -162,11 +248,11 @@ export default {
         if (u.callback_query) {
           const cq = u.callback_query, d = cq.data || ''
           if (d.startsWith('join:')) await join(env, cq, d.slice(5))
-          else if (d === 'menu') { const cfg = await config(env); await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id }); await tg(env, 'sendMessage', { chat_id: cq.message.chat.id, text: 'Выберите тему:', reply_markup: menu(cfg) }) }
-          else if (d.startsWith('faq:')) {
-            const cfg = await config(env), f = cfg.topics.find(x => x.id === d.slice(4))
+          else if (d === 'menu' || d === 'menuen') { const cfg = await config(env), en = d === 'menuen'; await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id }); await tg(env, 'sendMessage', { chat_id: cq.message.chat.id, text: en ? EN.pick : 'Выберите тему:', reply_markup: menu(cfg, en) }) }
+          else if (d.startsWith('faq:') || d.startsWith('faqen:')) {
+            const en = d.startsWith('faqen:'), cfg = await config(env), f = topicsOf(cfg, en).find(x => x.id === d.slice(en ? 6 : 4))
             await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id })
-            if (f) await tg(env, 'sendMessage', { chat_id: cq.message.chat.id, text: fill(cfg, f.text), disable_web_page_preview: true, reply_markup: after(cfg) })
+            if (f) { await count(env, cfg, f.id); await tg(env, 'sendMessage', { chat_id: cq.message.chat.id, text: fill(cfg, f.text), disable_web_page_preview: true, reply_markup: after(cfg, en) }) }
           }
         }
       } catch (e) { /* ответим на следующее сообщение; Telegram не должен повторять запрос */ }

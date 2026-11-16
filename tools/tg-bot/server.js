@@ -9,13 +9,16 @@
 //   SUPPORT        — по желанию: ссылка поддержки;
 //   WEBHOOK_SECRET — по желанию: секретное слово для /api/draw (нужно, только если включён BOT_PORT);
 //   BOT_PORT       — по желанию: порт для итогов конкурсов от робота GitHub (нужен HTTPS-адрес перед ним);
-//   NOTIFY=1       — по желанию: сообщать владельцу (OWNER_ID), что бот запущен или остановлен.
+//   NOTIFY=1       — по желанию: сообщать владельцу (OWNER_ID), что бот запущен или остановлен;
+//   TG_PROXY       — по желанию: http://[логин:пароль@]адрес:порт, если Telegram с сервера не открывается.
 // Одновременно бот может работать только в одном месте: запуск здесь отключает адрес Cloudflare.
 import fs from 'node:fs'
 import http from 'node:http'
 import crypto from 'node:crypto'
 import path from 'node:path'
 import os from 'node:os'
+import https from 'node:https'
+import net from 'node:net'
 import worker from './worker.js'
 
 const DATA = process.env.BOT_DATA || '/var/lib/apex-bot'
@@ -26,6 +29,7 @@ const env = {
   OWNER_ID: (process.env.OWNER_ID || '').trim(),
   SUPPORT: (process.env.SUPPORT || '').trim(),
   BOT_CONFIG: (process.env.BOT_CONFIG || '').trim(),
+  HOST_INFO: 'свой сервер ' + os.hostname(),
 }
 if (!/^\d+:[\w-]{30,}$/.test(env.BOT_TOKEN)) { console.error('Нет BOT_TOKEN в /etc/apex-bot.env — впишите токен от @BotFather и перезапустите: systemctl restart apex-bot'); process.exit(1) }
 
@@ -33,11 +37,45 @@ if (!/^\d+:[\w-]{30,}$/.test(env.BOT_TOKEN)) { console.error('Нет BOT_TOKEN �
 let kv = {}
 try { kv = JSON.parse(fs.readFileSync(KV_FILE, 'utf8')) } catch { kv = {} }
 const saveKv = () => { fs.mkdirSync(DATA, { recursive: true }); fs.writeFileSync(KV_FILE + '.tmp', JSON.stringify(kv)); fs.renameSync(KV_FILE + '.tmp', KV_FILE) }
+// Срок хранения (expirationTtl) — как в Cloudflare: kv.__exp[ключ] = когда удалить
+const alive = k => !(kv.__exp && kv.__exp[k] && kv.__exp[k] < Date.now())
 env.APEX_KV = {
-  async get(k) { return Object.prototype.hasOwnProperty.call(kv, k) ? kv[k] : null },
-  async put(k, v) { kv[k] = String(v); saveKv() },
-  async delete(k) { delete kv[k]; saveKv() },
-  async list({ prefix = '' } = {}) { return { keys: Object.keys(kv).filter(k => k.startsWith(prefix)).sort().map(name => ({ name })), list_complete: true } },
+  async get(k) { return Object.prototype.hasOwnProperty.call(kv, k) && k !== '__exp' && alive(k) ? kv[k] : null },
+  async put(k, v, o = {}) {
+    kv[k] = String(v)
+    if (o.expirationTtl) { kv.__exp = kv.__exp || {}; kv.__exp[k] = Date.now() + o.expirationTtl * 1000 }
+    for (const [x, t] of Object.entries(kv.__exp || {})) if (t < Date.now()) { delete kv[x]; delete kv.__exp[x] }
+    saveKv()
+  },
+  async delete(k) { delete kv[k]; if (kv.__exp) delete kv.__exp[k]; saveKv() },
+  async list({ prefix = '' } = {}) { return { keys: Object.keys(kv).filter(k => k !== '__exp' && k.startsWith(prefix) && alive(k)).sort().map(name => ({ name })), list_complete: true } },
+}
+
+// Прокси для Telegram (TG_PROXY): запросы к api.telegram.org идут через HTTP-прокси (CONNECT), остальные — напрямую
+const PROXY = (() => { try { const u = new URL((process.env.TG_PROXY || '').trim()); return /^https?:$/.test(u.protocol) ? u : null } catch { return null } })()
+if (PROXY) {
+  const direct = globalThis.fetch
+  globalThis.fetch = async (input, init = {}) => {
+    const url = new URL(typeof input === 'string' ? input : input.url)
+    if (url.hostname !== 'api.telegram.org') return direct(input, init)
+    const sock = await new Promise((ok, bad) => {
+      const c = net.connect(+PROXY.port || 80, PROXY.hostname)
+      const auth = PROXY.username ? 'Proxy-Authorization: Basic ' + Buffer.from(decodeURIComponent(PROXY.username) + ':' + decodeURIComponent(PROXY.password)).toString('base64') + '\r\n' : ''
+      c.setTimeout(20000, () => c.destroy(new Error('прокси не отвечает')))
+      c.once('error', bad)
+      c.once('connect', () => c.write(`CONNECT api.telegram.org:443 HTTP/1.1\r\nHost: api.telegram.org:443\r\n${auth}\r\n`))
+      c.once('data', d => { const line = d.toString().split('\r\n')[0]; if (/ 200 /.test(line)) { c.setTimeout(0); ok(c) } else { c.destroy(); bad(new Error('прокси: ' + line)) } })
+    })
+    const body = init.body == null ? null : Buffer.from(init.body)
+    return new Promise((ok, bad) => {
+      const req = https.request({ host: 'api.telegram.org', path: url.pathname + url.search, method: init.method || 'GET', headers: { ...(init.headers || {}), ...(body ? { 'content-length': body.length } : {}) }, socket: sock, servername: 'api.telegram.org', agent: false }, res => {
+        const ch = []; res.on('data', c => ch.push(c)); res.on('end', () => ok(new Response(Buffer.concat(ch), { status: res.statusCode, headers: { 'content-type': res.headers['content-type'] || 'application/json' } })))
+      })
+      req.on('error', bad); if (init.signal) init.signal.addEventListener('abort', () => req.destroy(new Error('timeout')))
+      if (body) req.write(body); req.end()
+    })
+  }
+  console.log('Telegram — через прокси ' + PROXY.hostname + ':' + (PROXY.port || 80))
 }
 
 const api = async (method, body, ms = 60000) => {

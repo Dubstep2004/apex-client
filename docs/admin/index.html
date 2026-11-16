@@ -502,6 +502,11 @@
   .stl li { display: flex; justify-content: space-between; gap: 10px; font-size: 13.5px; padding: 5px 0; border-top: 1px solid var(--line); }
   .stl li span { color: var(--dim); } .stl li b { font-weight: 600; text-align: right; overflow-wrap: anywhere; }
   .stl li b.no { color: var(--alert); } .stl li b.yes { color: var(--go1); }
+  .sthist { margin-top: 10px; } .sthist p { margin: 0 0 6px; font-size: 13px; color: var(--dim); }
+  .sthist .days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .sthist .d { text-align: center; font-size: 11px; color: var(--faint); } .sthist .d i { display: block; height: 22px; border-radius: 6px; margin-bottom: 3px; background: var(--line); }
+  .sthist .d.ok i { background: var(--go1); } .sthist .d.mid i { background: var(--warn); } .sthist .d.bad i { background: var(--alert); }
+  .bfeat .sw { margin-top: 8px; }
   .helptools { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 0; margin: 0 0 8px; background: var(--bg); }
   .helptools input { flex: 1 1 220px; min-width: 0; padding: 10px 12px; }
   .helpdoc .hit { background: #f5b75944; color: var(--text); border-radius: 3px; }
@@ -612,11 +617,11 @@
       <div class="block" id="pendBlock" hidden><h2>⏰ Отложенное сохранение</h2><p class="note" id="pendText"></p><button class="btn quiet small" id="pendCancel">Отменить</button></div>
       <div class="block" id="statBlock"><h2>Статус</h2>
         <div class="stgrid">
-          <div class="sttile" id="stBot"><div class="sthead"><span class="dotc"></span><b>🤖 Бот</b><button class="btn quiet small" id="stBotCheck" type="button">Проверить</button></div><p class="stmain" id="stBotMain">Загружаем…</p><ul class="stl" id="stBotList"></ul></div>
+          <div class="sttile" id="stBot"><div class="sthead"><span class="dotc"></span><b>🤖 Бот</b><button class="btn quiet small" id="stBotCheck" type="button">Проверить</button></div><p class="stmain" id="stBotMain">Загружаем…</p><ul class="stl" id="stBotList"></ul><div class="sthist" id="stBotHist" hidden></div></div>
           <div class="sttile" id="stPult"><div class="sthead"><span class="dotc"></span><b>🎛 Пульт</b></div><p class="stmain" id="stPultMain">Загружаем…</p><ul class="stl" id="stPultList"></ul></div>
         </div></div>
       <div class="block"><h2>Сборки и проверки</h2><p class="note" id="ciNote">Проверяем сборки и автопроверки…</p><ul class="ci" id="ciList"></ul>
-        <div class="qact" style="margin-top:10px"><button class="btn quiet small" id="notifyBtn">🔔 Уведомлять, если сборка упала</button><button class="btn quiet small" id="bigBtn">📺 Большой экран</button></div></div>
+        <div class="qact" style="margin-top:10px"><button class="btn quiet small" id="notifyBtn">🔔 Уведомлять: упала сборка или бот</button><button class="btn quiet small" id="bigBtn">📺 Большой экран</button></div></div>
       <div class="block"><h2>Неделя</h2><div class="relsum" id="weekSum"></div><p class="note" id="weekNote">Считаем…</p></div>
       <div class="block" id="tgStatBlock" hidden><h2>Telegram-канал</h2><div class="relsum" id="tgStat"></div><p class="note">Робот считает подписчиков раз в день.</p></div>
       <div class="block" id="appNewsBlock" hidden><h2>Что нового в приложении</h2><div id="appNews"></div><p class="note"><a href="https://dubstep2004.github.io/versions/" target="_blank" rel="noopener">Все версии и изменения</a></p></div>
@@ -853,7 +858,8 @@
       <h2 class="tgsec" id="tgs-setup">⚙️ Настройка</h2><p class="note tgsecn">Один раз: бот и секреты GitHub.</p>
       <div class="block" id="hostBlock"><h2>🧭 Где работает бот</h2>
         <p class="note">Бот, который отвечает в личке и принимает «Участвую», работает в одном месте. Выберите где — пульт покажет только нужное.</p>
-        <div class="seg seg2" id="hostSeg" role="radiogroup" aria-label="Где работает бот"><button type="button" data-host="cloudflare" role="radio">☁️ Cloudflare</button><button type="button" data-host="server" role="radio">🖥 Свой сервер</button></div></div>
+        <div class="seg seg2" id="hostSeg" role="radiogroup" aria-label="Где работает бот"><button type="button" data-host="cloudflare" role="radio">☁️ Cloudflare</button><button type="button" data-host="server" role="radio">🖥 Свой сервер</button></div>
+        <div class="srv-only" style="margin-top:10px"><button class="btn quiet small" id="dropCf" type="button">Отключить Cloudflare</button><p class="help">Если бот раньше работал в Cloudflare: Telegram перестанет отправлять туда сообщения, их будет забирать ваш сервер. Сервер и сам делает это при запуске.</p></div></div>
       <div class="block" id="bsBlock"><h2>🔐 Настройки бота</h2>
         <p class="note">Токен, канал, секретное слово и доступ к Cloudflare. Сохраняются зашифрованными прямо в секреты GitHub — видеть их потом не сможет никто, даже пульт: только заменить. Пустое поле — не менять.</p>
         <div id="bsList"></div>
@@ -896,14 +902,15 @@
         </ol>
         <p class="f" style="margin-top:12px">Что есть в меню</p>
         <ul class="note srv-menu">
-          <li><b>Бот</b> — статус и проверка, перезапуск, остановить / запустить, журнал в реальном времени</li>
-          <li><b>Настройки</b> — сменить токен, номер владельца, ссылку поддержки; уведомления вам, когда бот запустился или остановился</li>
-          <li><b>Обновления</b> — обновить бота, обновить само меню, автообновление каждую ночь</li>
-          <li><b>Конкурсы и копии</b> — список конкурсов, резервная копия настроек и участников, восстановление</li>
+          <li><b>Бот</b> — статус и проверка, перезапуск, остановить / запустить, журнал, журнал только с ошибками</li>
+          <li><b>Настройки</b> — токен, номер владельца, ссылка поддержки, проверка связи с Telegram и прокси, если с сервера Telegram не открывается</li>
+          <li><b>Включить / выключить</b> — уведомления вам, автообновление по ночам, резервная копия каждый день в 4:00, запуск вместе с сервером</li>
+          <li><b>Обновления</b> — обновить бота и само меню</li>
+          <li><b>Копии и перенос</b> — конкурсы, резервная копия, восстановление, перенос бота на другой сервер</li>
           <li><b>Удаление</b> — удалить бота (с предложением сделать копию) или само меню</li>
         </ul>
-        <p class="help">Бот работает только в одном месте: запуск на сервере отключает Cloudflare, а «Применить к боту в Cloudflare» — наоборот. Итоги конкурсов на сервере подводятся командой <code>/draw номер</code> в личке бота. Токен хранится только на сервере в /etc/apex-bot.env — никому его не отправляйте. Без меню тоже можно: <code>sudo apex update</code>, <code>restart</code>, <code>status</code>, <code>logs</code>, <code>backup</code>.</p></div>
-      <div class="block" id="bcBlock"><h2>📝 Тексты бота</h2>
+        <p class="help">Бот работает только в одном месте: запуск на сервере отключает Cloudflare, а «Применить к боту в Cloudflare» — наоборот. Итоги конкурсов на сервере подводятся командой <code>/draw номер</code> в личке бота. Токен хранится только на сервере в /etc/apex-bot.env — никому его не отправляйте. Без меню тоже можно: <code>sudo apex update</code>, <code>restart</code>, <code>status</code>, <code>logs</code>, <code>errors</code>, <code>backup</code>, <code>import файл</code>.</p></div>
+      <div class="block" id="bcBlock"><h2>📝 Тексты и функции бота</h2>
         <p class="note">Что бот отвечает в личке: приветствие, темы-кнопки, слова для поиска и ответы. Бот подхватит изменения за 5 минут — код в Cloudflare менять не нужно. Если вы ставили бота до этой версии пульта, один раз обновите код: «Скопировать код бота» → вставить в Cloudflare → Deploy. В текстах можно писать <code>{сайт}</code> и <code>{поддержка}</code> — подставятся ссылки.</p>
         <label class="f" for="bcGreet">Приветствие (/start)</label><textarea id="bcGreet" rows="2" maxlength="1000"></textarea>
         <label class="f" for="bcNot">Если ответа не нашлось</label><textarea id="bcNot" rows="2" maxlength="1000"></textarea>
@@ -911,7 +918,15 @@
         <p class="f" style="margin-top:14px">Темы — кнопки в меню бота, по порядку</p>
         <div id="bcTopics"></div>
         <div class="rowx" style="margin-top:10px"><button class="btn quiet small" id="bcAdd" type="button">＋ Добавить тему</button><button class="btn quiet small" id="bcUndo" type="button">Отменить изменения</button></div>
-        <button class="btn go" id="bcSave" style="margin-top:12px;width:100%">Сохранить тексты бота</button></div>
+        <div class="bfeat" id="bcFeat"><p class="f" style="margin-top:16px">Функции бота — включаются и выключаются здесь</p>
+          <p class="help">Новые функции работают с кодом бота от 16 ноября: на своём сервере — <code>sudo apex</code> → «Обновить бота» (или автообновление), в Cloudflare — «Применить к боту в Cloudflare».</p>
+          <label class="sw"><div class="t"><b>🛰 /status — состояние серверов</b><span>Любой может спросить, есть ли техработы (берётся из пульта)</span></div><span class="tog"><input type="checkbox" data-feat="status"><i></i></span></label>
+          <label class="sw"><div class="t"><b>🇬🇧 Ответы на английском</b><span>Если Telegram у человека не на русском — меню и ответы на английском</span></div><span class="tog"><input type="checkbox" data-feat="english"><i></i></span></label>
+          <label class="sw"><div class="t"><b>📨 Вопросы без ответа — вам в личку</b><span>Нужен ваш номер (TG_OWNER / OWNER_ID). Ответьте на пересланное сообщение — бот отправит ответ человеку</span></div><span class="tog"><input type="checkbox" data-feat="forward"><i></i></span></label>
+          <label class="sw"><div class="t"><b>📊 Счёт популярных тем</b><span>Команда /stats у вас в личке бота: что спрашивают чаще за неделю</span></div><span class="tog"><input type="checkbox" data-feat="stats"><i></i></span></label>
+          <label class="sw"><div class="t"><b>🏓 /ping для владельца</b><span>Бот отвечает, где работает и какие функции включены</span></div><span class="tog"><input type="checkbox" data-feat="ping"><i></i></span></label>
+        </div>
+        <button class="btn go" id="bcSave" style="margin-top:12px;width:100%">Сохранить тексты и функции бота</button></div>
       <div class="block"><h2>📱 Бот в этом браузере</h2>
         <label class="f" for="tgTok">Токен бота</label><input id="tgTok" type="password" autocomplete="off" placeholder="123456789:AA…">
         <label class="f" for="tgChat">Канал и/или группа</label><input id="tgChat" type="text" placeholder="@apex_news, @apex_chat или -100…">
@@ -1073,7 +1088,7 @@
     <!-- Справка -->
     <section data-tab="help" hidden class="helpdoc">
       <h1>Справка для владельца</h1>
-      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 16 ноября 2026 · приложение 3.22.0 · пульт 2.36.</p>
+      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 16 ноября 2026 · приложение 3.22.0 · пульт 2.37.</p>
       <div class="helptools">
         <input id="hq" type="search" placeholder="Найти в справке, например «техработы»" aria-label="Найти в справке" autocomplete="off">
         <button class="btn quiet small" id="hOpen" type="button">Развернуть всё</button>
@@ -1299,6 +1314,10 @@
 
       <div class="block"><details><summary>🆕 Что нового в пульте</summary>
         <div class="tbl"><table id="pultLog">
+          <tr data-k="n"><td>2.37</td><td>«Статус» → бот: неделя по дням — сколько процентов времени работал и сколько раз падал; уведомление в браузере, если бот перестал отвечать</td></tr>
+          <tr data-k="n"><td>2.37</td><td>Меню «APEX ШТАБ» 1.1: прокси для Telegram, журнал только с ошибками, копия каждый день в 4:00, перенос на другой сервер, раздел «Включить / выключить»</td></tr>
+          <tr data-k="n"><td>2.37</td><td>«Где работает бот» → «Свой сервер»: кнопка «Отключить Cloudflare»</td></tr>
+          <tr data-k="n"><td>2.37</td><td>«Тексты и функции бота»: включить или выключить /status, ответы на английском, пересылку вопросов без ответа вам в личку, счёт популярных тем (/stats) и /ping</td></tr>
           <tr data-k="n"><td>2.36</td><td>«Обзор» → «Статус»: работает ли бот (Cloudflare или свой сервер, ждут ли сообщения ответа, ошибки) и сам пульт (токен, права, запросы к GitHub, робот канала); кнопка «Проверить»</td></tr>
           <tr data-k="n"><td>2.36</td><td>Telegram → Настройка → «Где работает бот»: Cloudflare или свой сервер — пульт показывает только нужное; настройки разложены по порядку</td></tr>
           <tr data-k="n"><td>2.36</td><td>Меню «APEX ШТАБ» для своего сервера: установить, обновить, перезапустить, журнал, токен, уведомления, резервные копии, автообновление, удалить бота и меню</td></tr>
@@ -1415,7 +1434,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.36', PANEL_DATE = '16 ноября 2026'
+const PANEL_VERSION = '2.37', PANEL_DATE = '16 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -2529,6 +2548,27 @@ function renderBotStatus(st) {
   if (b.err) rows.push(stRow('Ошибка', b.err + (b.errAt ? ' · ' + ago(b.errAt) : ''), 'no'))
   rows.push(stRow('Проверено', ago(b.at)))
   stSet('stBot', cls, main, rows)
+  renderBotHist(st.botHist || [])
+  // 2.37: уведомление в браузере, если бот перестал отвечать (кнопка «🔔 Уведомлять» в «Сборках и проверках»)
+  if (cls === 'bad' && Date.now() - b.at < 3 * 3600e3) notifyOnce('bot_' + b.at, '🔴 Бот не отвечает', main + ' — откройте пульт → «Обзор» → «Статус»')
+}
+// 2.37: неделя бота — по точкам робота [время, 1/0]: доля времени «работал» за каждый день
+function renderBotHist(h) {
+  const el = $('stBotHist'); if (!h.length) { el.hidden = true; return }
+  const day0 = new Date(); day0.setHours(0, 0, 0, 0)
+  const days = [...Array(7)].map((_, i) => { const a = day0.getTime() - (6 - i) * 864e5; return [a, Math.min(a + 864e5, Date.now())] })
+  let upAll = 0, allT = 0
+  const cells = days.map(([a, z]) => {
+    let up = 0, known = 0
+    h.forEach(([t, ok], i) => { const s = Math.max(t, a), e = Math.min(i + 1 < h.length ? h[i + 1][0] : Date.now(), z); if (e > s) { known += e - s; if (ok) up += e - s } })
+    upAll += up; allT += known
+    const p = known ? up / known : null, cls = p === null ? '' : p > 0.99 ? 'ok' : p > 0.8 ? 'mid' : 'bad'
+    const lbl = new Date(a).toLocaleDateString('ru', { weekday: 'short' })
+    return `<div class="d ${cls}" title="${p === null ? 'нет данных' : Math.round(p * 100) + '%'}"><i></i>${esc(lbl)}</div>`
+  })
+  const falls = h.filter(([t, ok], i) => !ok && i > 0 && h[i - 1][1] && Date.now() - t < 7 * 864e5).length
+  el.hidden = false
+  el.innerHTML = `<p>Неделя: работал ${allT ? Math.round(upAll / allT * 1000) / 10 : '—'}%${falls ? ' · падал ' + falls + ' раз' : ' · без падений'}</p><div class="days">${cells.join('')}</div>`
 }
 async function loadStatus() {
   try { const st = await tgReadState(); if (st) tgState = st; renderBotStatus(st) } catch { renderBotStatus(null) }
@@ -2742,7 +2782,7 @@ function notifyOnce(key, title, body) {
   try { const a = new AudioContext(), o = a.createOscillator(), g = a.createGain(); o.frequency.value = 660; g.gain.setValueAtTime(.15, a.currentTime); g.gain.exponentialRampToValueAtTime(.001, a.currentTime + .5); o.connect(g).connect(a.destination); o.start(); o.stop(a.currentTime + .5) } catch {}
   try { navigator.vibrate?.([120, 60, 120]) } catch {}
 }
-function renderNotifyBtn() { $('notifyBtn').textContent = load('apex_admin_notify') === 'on' && 'Notification' in window && Notification.permission === 'granted' ? '🔕 Не уведомлять' : '🔔 Уведомлять, если сборка упала' }
+function renderNotifyBtn() { $('notifyBtn').textContent = load('apex_admin_notify') === 'on' && 'Notification' in window && Notification.permission === 'granted' ? '🔕 Не уведомлять' : '🔔 Уведомлять: упала сборка или бот' }
 $('notifyBtn').onclick = async () => {
   if (!('Notification' in window)) return toast('Этот браузер не умеет уведомления', false)
   if (load('apex_admin_notify') === 'on' && Notification.permission === 'granted') { store('apex_admin_notify', null); renderNotifyBtn(); return toast('Уведомления выключены') }
@@ -3243,9 +3283,11 @@ $('bsApply').onclick = () => guarded($('bsApply'), async () => {
 // 2.33: тексты бота на Cloudflare — docs/tg/bot.json (бот читает его сам, раз в 5 минут)
 const BOT_CFG = 'docs/tg/bot.json'
 let bcData = null
+const BOT_FEAT = { status: true, ping: true, english: true, forward: false, stats: true } // как в worker.js
 function bcRender() {
   const c = bcData || {}
   $('bcGreet').value = c.greeting || ''; $('bcNot').value = c.notFound || ''; $('bcSup').value = c.support || ''
+  document.querySelectorAll('[data-feat]').forEach(x => { const v = c.features?.[x.dataset.feat]; x.checked = typeof v === 'boolean' ? v : BOT_FEAT[x.dataset.feat] })
   $('bcTopics').innerHTML = (c.topics || []).map((t, i) => `<div class="bct" data-i="${i}">
     <div class="rowx"><input data-f="title" maxlength="40" value="${esc(t.title || '')}" placeholder="Кнопка, например 📥 Как установить" aria-label="Название темы">
       <button class="pill" data-mv="-1" type="button" aria-label="Выше">↑</button><button class="pill" data-mv="1" type="button" aria-label="Ниже">↓</button><button class="pill x" data-rm type="button" aria-label="Удалить тему">×</button></div>
@@ -3257,7 +3299,8 @@ function bcCollect() {
     const old = (bcData?.topics || [])[+el.dataset.i] || {}, g = f => el.querySelector(`[data-f="${f}"]`).value.trim()
     return { id: old.id || ('t' + Date.now().toString(36) + i), title: g('title'), words: g('words').split(',').map(w => w.trim().toLowerCase()).filter(Boolean), text: g('text') }
   })
-  return { greeting: $('bcGreet').value.trim(), notFound: $('bcNot').value.trim(), support: $('bcSup').value.trim(), topics }
+  const features = Object.fromEntries([...document.querySelectorAll('[data-feat]')].map(x => [x.dataset.feat, x.checked]))
+  return { greeting: $('bcGreet').value.trim(), notFound: $('bcNot').value.trim(), support: $('bcSup').value.trim(), topics, features }
 }
 async function bcLoad() { bcData = (await getFile(BOT_CFG).catch(() => null)) || { topics: [] }; bcRender() }
 $('bcTopics').addEventListener('click', e => {
@@ -3276,7 +3319,7 @@ $('bcSave').onclick = () => guarded($('bcSave'), async () => {
   if (c.support && !/^https:\/\/\S+$/.test(c.support)) throw new Error('Ссылка поддержки должна начинаться с https://')
   if (!c.topics.length) throw new Error('Нужна хотя бы одна тема')
   c.topics.forEach((t, i) => { if (!t.title || !t.text) throw new Error('Тема ' + (i + 1) + ': нужны название и ответ') })
-  await putFile(BOT_CFG, c, 'Пульт: тексты бота'); bcData = c; toast('Сохранено — бот подхватит за 5 минут')
+  await putFile(BOT_CFG, c, 'Пульт: тексты и функции бота'); bcData = c; toast('Сохранено — бот подхватит за 5 минут')
 })
 // 2.27: код бота для Cloudflare и секретное слово
 // 2.36: где работает бот — Cloudflare или свой сервер (на всех устройствах: docs/tg/settings.json → botHost)
@@ -3289,6 +3332,10 @@ $('hostSeg').onclick = e => { const b = e.target.closest('[data-host]'); if (!b 
   await tgSaveSettings(s => { s.botHost = b.dataset.host }); hostApply()
   toast(b.dataset.host === 'server' ? 'Бот — на своём сервере. Блоки Cloudflare скрыты' : 'Бот — в Cloudflare')
 }) }
+$('dropCf').onclick = () => guarded($('dropCf'), async () => {
+  if (!confirm('Отключить бота в Cloudflare? Сообщения начнёт забирать ваш сервер.')) return
+  const r = await tgRelay('dropWebhook', {}); renderBotStatus(tgState); toast(r.done?.[0] || 'Готово')
+})
 // 2.35: команда установки бота на свой сервер
 $('srvCmd').onclick = async () => {
   try { await navigator.clipboard.writeText($('srvCmdText').textContent.trim()); toast('Команда скопирована — вставьте её на сервере') } catch { toast('Не удалось скопировать — выделите команду вручную', false) }

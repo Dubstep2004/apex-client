@@ -5,16 +5,17 @@
 # Ubuntu 22.04 / 24.04, Debian 12. Первый запуск (от root):
 #   sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/Dubstep2004/apex-client/main/tools/tg-bot/apex.sh)"
 # Потом меню открывается командой:  sudo apex
-# Без меню:  apex install | update | restart | stop | start | status | logs | backup | self-update | uninstall | remove
+# Без меню:  apex install | update | restart | stop | start | status | logs | errors | backup | import <файл> | self-update | uninstall | remove
 set -uo pipefail
 
-APEX_VER="1.0"
+APEX_VER="1.1"
 SRC="https://raw.githubusercontent.com/Dubstep2004/apex-client/main/tools/tg-bot"
 API="https://api.github.com/repos/Dubstep2004/apex-client/commits?path=tools/tg-bot&per_page=1"
 DIR=${APEX_DIR:-/opt/apex-bot}; ENVF=${APEX_ENV:-/etc/apex-bot.env}; DATA=${APEX_DATA:-/var/lib/apex-bot}; SELF=${APEX_SELF:-/usr/local/bin/apex}
 UNIT=${APEX_UNIT:-/etc/systemd/system/apex-bot.service}
 TIMER=/etc/systemd/system/apex-bot-update.timer; TSVC=/etc/systemd/system/apex-bot-update.service
-BACKUPS=/root/apex-bot-backups
+BTIMER=/etc/systemd/system/apex-bot-backup.timer; BSVC=/etc/systemd/system/apex-bot-backup.service
+BACKUPS=${APEX_BACKUPS:-/root/apex-bot-backups}
 
 # ── Оформление ─────────────────────────────────────────────────────
 if [ -t 1 ]; then
@@ -43,7 +44,9 @@ envset() {  # envset KEY VALUE — меняет строку в /etc/apex-bot.en
     awk -v k="$k" -v v="$v" 'BEGIN{d=0} $0 ~ "^#? *"k"=" { if(!d){print k"="v; d=1}; next } {print}' "$ENVF" >"$ENVF.tmp" && cat "$ENVF.tmp" >"$ENVF" && rm -f "$ENVF.tmp"
   else printf '%s=%s\n' "$k" "$v" >>"$ENVF"; fi
 }
-tgapi() { local t; t=$(envget BOT_TOKEN); [ -n "$t" ] || return 1; curl -fsS -m 8 "https://api.telegram.org/bot$t/$1" 2>/dev/null; }
+pxarg() { local p; p=$(envget TG_PROXY); [ -n "$p" ] && printf -- "-x\n%s\n" "$p"; }
+tgapi() { local t; t=$(envget BOT_TOKEN); [ -n "$t" ] || return 1; local -a px; mapfile -t px < <(pxarg); curl -fsS -m 8 "${px[@]}" "https://api.telegram.org/bot$t/$1" 2>/dev/null; }
+onoff() { if [ "$1" = 1 ]; then printf "%s● вкл%s" "$OK" "$R"; else printf "%s○ выкл%s" "$DIM" "$R"; fi; }
 jget()  { sed -n "s/.*\"$1\":\"\{0,1\}\([^\",}]*\).*/\1/p" | head -1; }
 remote_sha() { curl -fsS -m 6 -H 'Accept: application/vnd.github+json' "$API" 2>/dev/null | sed -n 's/^ *"sha": "\([0-9a-f]\{40\}\)".*/\1/p' | head -1; }
 local_sha()  { cat "$DIR/.version" 2>/dev/null; }
@@ -69,7 +72,7 @@ banner() {
   host=$(. /etc/os-release 2>/dev/null; echo "${PRETTY_NAME:-Linux}")
   say "   $st   ${DIM}│${R} $who"
   say "   ${DIM}Память $mem · $(df -h / | awk 'NR==2{print "диск "$5}') · $host${R}"
-  [ -n "${UPD:-}" ] && say "   ${WR}★ Есть обновление бота — пункт 9${R}"
+  [ -n "${UPD:-}" ] && say "   ${WR}★ Есть обновление бота — пункт 14${R}"
   say ""
 }
 dur() { local s=$1 d h m; d=$((s/86400)); h=$((s%86400/3600)); m=$((s%3600/60)); if [ $d -gt 0 ]; then echo "${d} д ${h} ч"; elif [ $h -gt 0 ]; then echo "${h} ч ${m} мин"; else echo "${m} мин"; fi; }
@@ -152,7 +155,7 @@ do_update() {
   step "Обновление бота"
   local r l; r=$(remote_sha); l=$(local_sha)
   if [ -n "$r" ] && [ "$r" = "$l" ] && [ -z "${FORCE:-}" ]; then ok "Уже последняя версия"; return 0; fi
-  fetch_code && systemctl restart apex-bot && sleep 3 && { running && ok "Бот перезапущен на новой версии" || err "Бот не запустился — журнал: пункт 4"; }
+  fetch_code && systemctl restart apex-bot && sleep 3 && { running && ok "Бот перезапущен на новой версии" || err "Бот не запустился — журнал: пункт 5"; }
   UPD=
 }
 do_self_update() {
@@ -171,10 +174,13 @@ do_status() {
   if printf '%s' "$wh" | grep -q '"url":"http'; then warn "Бот подключён к Cloudflare — сервер и Cloudflare спорят. Перезапуск (пункт 2) заберёт бота сюда"
   else ok "Сообщения забирает этот сервер"; fi
   local p; p=$(printf '%s' "$wh" | jget pending_update_count); [ -n "$p" ] && [ "$p" != 0 ] && warn "Ждут ответа: $p сообщ."
-  [ -n "$(envget OWNER_ID)" ] && ok "Владелец: $(envget OWNER_ID)" || warn "Номер владельца не задан — /draw и /contests не работают (пункт 6)"
+  [ -n "$(envget OWNER_ID)" ] && ok "Владелец: $(envget OWNER_ID)" || warn "Номер владельца не задан — /draw и /contests не работают (пункт 7)"
+  [ -n "$(envget TG_PROXY)" ] && ok "Telegram — через прокси"
   [ -f "$TIMER" ] && ok "Автообновление: раз в день" || say "  ${DIM}• Автообновление выключено${R}"
+  [ -f "$BTIMER" ] && ok "Ежедневная копия: в 4:00" || say "  ${DIM}• Ежедневная копия выключена${R}"
+  systemctl is-enabled --quiet apex-bot 2>/dev/null && ok "Автозапуск при старте сервера" || warn "Автозапуск выключен — после перезагрузки сервера бот не запустится"
   local r l; r=$(remote_sha); l=$(local_sha)
-  if [ -n "$r" ] && [ "$r" != "$l" ]; then warn "Есть обновление бота (пункт 9)"; elif [ -n "$r" ]; then ok "Последняя версия кода"; fi
+  if [ -n "$r" ] && [ "$r" != "$l" ]; then warn "Есть обновление бота (пункт 14)"; elif [ -n "$r" ]; then ok "Последняя версия кода"; fi
   [ -f "$DATA/kv.json" ] && ok "Конкурсы: $(grep -o '"c:[^"]*"' "$DATA/kv.json" | wc -l) шт."
 }
 do_logs() { say "  ${DIM}Журнал бота. Выход — Ctrl+C${R}"; trap 'echo' INT; journalctl -u apex-bot -n 40 -f --no-pager -o short-iso; trap - INT; }
@@ -195,17 +201,81 @@ do_backup() {
   say "  ${DIM}Внутри токен бота — не отправляйте этот файл никому.${R}"
   ls -1t "$BACKUPS"/apex-bot-*.tar.gz 2>/dev/null | tail -n +11 | xargs -r rm -f   # храним 10 последних
 }
+do_errors() {
+  step "Ошибки за последние сутки"
+  local out; out=$(journalctl -u apex-bot --since "-24h" --no-pager -o short-iso 2>/dev/null | grep -iE 'ошибк|error|нет связи|не принял|не запустил|failed|conflict|прокси|уже работает|exception|enoent|eacces')
+  if [ -z "$out" ]; then ok "Ошибок нет"; return; fi
+  printf '%s\n' "$out" | tail -40 | while IFS= read -r l; do printf '  %s%s%s %s%s%s\n' "$DIM" "${l:0:19}" "$R" "$BD" "${l:20}" "$R"; done
+  say "  ${DIM}Всего строк с ошибками: $(printf '%s\n' "$out" | wc -l)${R}"
+}
+tg_check() {
+  step "Связь с Telegram"
+  local p code; p=$(envget TG_PROXY)
+  code=$(curl -s -o /dev/null -w '%{http_code}' -m 8 https://api.telegram.org 2>/dev/null)
+  if [ "$code" != 000 ]; then ok "Напрямую — открывается"; else err "Напрямую — не открывается (провайдер или страна блокирует)"; fi
+  if [ -n "$p" ]; then
+    code=$(curl -s -o /dev/null -w '%{http_code}' -m 10 -x "$p" https://api.telegram.org 2>/dev/null)
+    [ "$code" != 000 ] && ok "Через прокси — открывается" || err "Через прокси — не открывается"
+  fi
+  [ -n "$(tgapi getMe)" ] && ok "Бот отвечает через $([ -n "$p" ] && echo прокси || echo прямую связь)" || warn "getMe не прошёл — проверьте токен или связь"
+  say ""
+  if [ -n "$p" ]; then
+    item 1 "Сменить прокси"; item 2 "Выключить прокси" "$BD"; item 0 "Назад" "$DIM"
+  else
+    say "  ${DIM}Если Telegram с сервера не открывается — укажите HTTP-прокси.${R}"
+    item 1 "Включить прокси"; item 0 "Назад" "$DIM"
+  fi
+  case "$(ask "Пункт: ")" in
+    1) local np; np=$(ask "Прокси ${DIM}(http://адрес:порт или http://логин:пароль@адрес:порт)${R}: ")
+       [[ "$np" =~ ^https?://[^[:space:]]+:[0-9]+/?$ ]] || { err "Нужен вид http://адрес:порт"; return; }
+       code=$(curl -s -o /dev/null -w '%{http_code}' -m 10 -x "$np" https://api.telegram.org 2>/dev/null)
+       [ "$code" != 000 ] || { err "Через этот прокси Telegram не открывается — не сохраняю"; return; }
+       envset TG_PROXY "$np"; systemctl restart apex-bot; ok "Прокси включён, бот перезапущен" ;;
+    2) [ -n "$p" ] && { envset TG_PROXY ""; systemctl restart apex-bot; ok "Прокси выключен"; } ;;
+  esac
+}
+restore_file() {  # restore_file <архив> — только два файла: настройки и конкурсы
+  local f=$1
+  tar -tzf "$f" 2>/dev/null | grep -qx "${ENVF#/}" || { err "Это не копия APEX: внутри нет ${ENVF#/}"; return 1; }
+  installed && systemctl stop apex-bot
+  mkdir -p "$DATA"
+  tar -xzf "$f" -C / "${ENVF#/}" 2>/dev/null; tar -xzf "$f" -C / "${DATA#/}/kv.json" 2>/dev/null
+  if installed; then chown root:apexbot "$ENVF"; chmod 640 "$ENVF"; chown -R apexbot:apexbot "$DATA"; systemctl start apex-bot; ok "Восстановлено и перезапущено"
+  else ok "Настройки и конкурсы на месте — ставлю бота"; do_install; fi
+}
 do_restore() {
   need_root; local list n f
-  mapfile -t list < <(ls -1t "$BACKUPS"/apex-bot-*.tar.gz 2>/dev/null)
-  [ ${#list[@]} -gt 0 ] || { warn "Копий нет (пункт 13 — сделать)"; return; }
-  step "Резервные копии"; for i in "${!list[@]}"; do printf '   %s%2d%s  %s\n' "$ACC" $((i+1)) "$R" "$(basename "${list[$i]}")"; done
-  n=$(ask "Номер копии (Enter — отмена): "); [[ "$n" =~ ^[0-9]+$ ]] && [ "$n" -ge 1 ] && [ "$n" -le ${#list[@]} ] || return
-  f=${list[$((n-1))]}
+  mapfile -t list < <(ls -1t "$BACKUPS"/apex-bot-*.tar.gz /root/apex-bot-*.tar.gz 2>/dev/null)
+  step "Восстановить из копии"
+  for i in "${!list[@]}"; do printf '   %s%3d%s  %s\n' "$ACC$B" $((i+1)) "$R" "${list[$i]}"; done
+  [ ${#list[@]} -gt 0 ] || say "  ${DIM}Копий на этом сервере нет. Перенос: положите файл apex-bot-….tar.gz в /root/ или укажите путь.${R}"
+  n=$(ask "Номер копии или путь к файлу (Enter — отмена): ")
+  if [[ "$n" =~ ^[0-9]+$ ]] && [ "$n" -ge 1 ] && [ "$n" -le ${#list[@]} ]; then f=${list[$((n-1))]}
+  elif [ -n "$n" ] && [ -f "$n" ]; then f=$n
+  else [ -n "$n" ] && err "Нет такого файла"; return; fi
   confirm "Восстановить $(basename "$f")? Текущие настройки и конкурсы заменятся" || return
-  systemctl stop apex-bot; tar -xzf "$f" -C / && chown root:apexbot "$ENVF" && chmod 640 "$ENVF"; chown -R apexbot:apexbot "$DATA"
-  systemctl start apex-bot; ok "Восстановлено и перезапущено"
+  restore_file "$f"
 }
+do_move() {
+  need_root; step "Перенос бота на другой сервер"
+  do_backup >/dev/null; local f ip; f=$(ls -1t "$BACKUPS"/apex-bot-*.tar.gz | head -1); ip=$(hostname -I 2>/dev/null | awk '{print $1}')
+  ok "Копия готова: $f"
+  say ""
+  say "  ${B}На новом сервере:${R}"
+  say "  ${ACC}1${R}  Скопируйте копию к себе:"
+  say "     ${C2}scp root@${ip:-ЭТОТ-СЕРВЕР}:$f /root/${R}"
+  say "  ${ACC}2${R}  Поставьте меню (команда из пульта) и откройте ${B}sudo apex${R}"
+  say "  ${ACC}3${R}  Пункт ${B}«Восстановить из копии»${R} — бот встанет с теми же настройками и конкурсами"
+  say "  ${ACC}4${R}  Вернитесь сюда и остановите или удалите бота — два сервера сразу спорят за сообщения"
+  say ""; say "  ${DIM}В копии токен бота — не отправляйте файл никому.${R}"
+}
+backup_on() {
+  printf '[Unit]\nDescription=APEX bot daily backup\n[Service]\nType=oneshot\nEnvironment=QUIET=1\nExecStart=%s backup\n' "$SELF" >"$BSVC"
+  printf '[Unit]\nDescription=APEX bot daily backup (04:00)\n[Timer]\nOnCalendar=*-*-* 04:00\nPersistent=true\n[Install]\nWantedBy=timers.target\n' >"$BTIMER"
+  systemctl daemon-reload; systemctl enable --now apex-bot-backup.timer >/dev/null 2>&1 && ok "Копия каждый день в 4:00 → $BACKUPS (хранятся 10 последних)"
+}
+backup_off() { systemctl disable --now apex-bot-backup.timer >/dev/null 2>&1; rm -f "$BTIMER" "$BSVC"; systemctl daemon-reload; ok "Ежедневная копия выключена"; }
+toggle_boot() { if systemctl is-enabled --quiet apex-bot 2>/dev/null; then systemctl disable apex-bot >/dev/null 2>&1; warn "Автозапуск выключен — после перезагрузки сервера запускайте бота вручную"; else systemctl enable apex-bot >/dev/null 2>&1; ok "Бот будет запускаться вместе с сервером"; fi; }
 auto_on() {
   cat >"$TSVC" <<EOF
 [Unit]
@@ -234,7 +304,7 @@ do_uninstall() {
   say ""; warn "Будут удалены: служба, код бота, настройки (токен) и конкурсы."
   confirm "Сначала сделать резервную копию?" && do_backup
   confirm "${BD}Удалить бота?${R}" || return
-  systemctl disable --now apex-bot >/dev/null 2>&1; [ -f "$TIMER" ] && auto_off
+  systemctl disable --now apex-bot >/dev/null 2>&1; [ -f "$TIMER" ] && auto_off; [ -f "$BTIMER" ] && backup_off
   rm -f "$UNIT"; systemctl daemon-reload
   rm -rf "$DIR" "$DATA" "$ENVF"; id apexbot >/dev/null 2>&1 && userdel apexbot 2>/dev/null
   ok "Бот удалён. Меню осталось: sudo apex (пункт «Удалить меню» — убрать и его)"
@@ -244,11 +314,12 @@ do_remove_menu() {
   installed && warn "Бот останется работать — управлять им можно будет командами systemctl."
   confirm "Удалить меню APEX ШТАБ (команду apex)?" || return
   [ -f "$TIMER" ] && { warn "Автообновление использует меню — выключаю"; auto_off; }
+  [ -f "$BTIMER" ] && { warn "Ежедневная копия использует меню — выключаю"; backup_off; }
   rm -f "$SELF"; ok "Меню удалено. Вернуть: команда установки из пульта"; exit 0
 }
 toggle_notify() {
   if [ "$(envget NOTIFY)" = 1 ]; then envset NOTIFY 0; ok "Уведомления выключены"
-  else [ -n "$(envget OWNER_ID)" ] || { warn "Сначала укажите номер владельца (пункт 6)"; return; }; envset NOTIFY 1; ok "Владелец получит сообщение при запуске и остановке бота"; fi
+  else [ -n "$(envget OWNER_ID)" ] || { warn "Сначала укажите номер владельца (пункт 7)"; return; }; envset NOTIFY 1; ok "Владелец получит сообщение при запуске и остановке бота"; fi
   systemctl restart apex-bot
 }
 set_owner()   { local o; o=$(ask "Номер в Telegram ${DIM}(узнать у @userinfobot; пусто — убрать)${R}: "); if [ -z "$o" ] || [[ "$o" =~ ^[0-9]{4,15}$ ]]; then envset OWNER_ID "$o"; systemctl restart apex-bot; ok "Сохранено"; else err "Только цифры"; fi; }
@@ -258,9 +329,10 @@ set_support() { local u; u=$(ask "Ссылка поддержки ${DIM}(https:/
 menu_missing() {
   section "Начало"
   item 1 "Установить бота" "$B"
+  item 18 "Восстановить из копии ${DIM}(перенос с другого сервера)${R}"
   section "Меню"
-  item 10 "Обновить меню"
-  item 16 "Удалить меню"
+  item 15 "Обновить меню"
+  item 21 "Удалить меню"
   item 0 "Выход" "$DIM"
   say ""
 }
@@ -271,22 +343,28 @@ menu_full() {
   item 2 "Перезапустить"
   item 3 "$on"
   item 4 "Журнал в реальном времени"
+  item 5 "Журнал: только ошибки"
   section "Настройки"
-  item 5 "Сменить токен бота"
-  item 6 "Номер владельца ${DIM}$(envget OWNER_ID)${R}"
-  item 7 "Ссылка поддержки"
-  item 8 "Уведомления владельцу ${DIM}$([ "$(envget NOTIFY)" = 1 ] && echo вкл || echo выкл)${R}"
+  item 6 "Сменить токен бота"
+  item 7 "Номер владельца ${DIM}$(envget OWNER_ID)${R}"
+  item 8 "Ссылка поддержки"
+  item 9 "Связь с Telegram и прокси ${DIM}$([ -n "$(envget TG_PROXY)" ] && echo '· через прокси')${R}"
+  section "Включить / выключить"
+  item 10 "Уведомления владельцу      $(onoff "$([ "$(envget NOTIFY)" = 1 ] && echo 1)")"
+  item 11 "Автообновление по ночам    $(onoff "$([ -f "$TIMER" ] && echo 1)")"
+  item 12 "Копия каждый день в 4:00   $(onoff "$([ -f "$BTIMER" ] && echo 1)")"
+  item 13 "Запуск вместе с сервером   $(onoff "$(systemctl is-enabled --quiet apex-bot 2>/dev/null && echo 1)")"
   section "Обновления"
-  item 9 "Обновить бота"
-  item 10 "Обновить меню"
-  item 11 "Автообновление ${DIM}$([ -f "$TIMER" ] && echo вкл || echo выкл)${R}"
-  section "Конкурсы и копии"
-  item 12 "Список конкурсов"
-  item 13 "Сделать резервную копию"
-  item 14 "Восстановить из копии"
+  item 14 "Обновить бота"
+  item 15 "Обновить меню"
+  section "Копии и перенос"
+  item 16 "Список конкурсов"
+  item 17 "Сделать резервную копию"
+  item 18 "Восстановить из копии"
+  item 19 "Перенести на другой сервер"
   section "Удаление"
-  item 15 "Удалить бота" "$BD"
-  item 16 "Удалить меню" "$BD"
+  item 20 "Удалить бота" "$BD"
+  item 21 "Удалить меню" "$BD"
   item 0 "Выход" "$DIM"
   say ""
 }
@@ -299,26 +377,31 @@ main_menu() {
     local c; c=$(ask "${B}Выберите пункт:${R} ")
     say ""
     if ! installed; then
-      case "$c" in 1) do_install ;; 10) do_self_update ;; 16) do_remove_menu ;; 0|q|"") exit 0 ;; *) warn "Нет такого пункта" ;; esac
+      case "$c" in 1) do_install ;; 18) do_restore ;; 15) do_self_update ;; 21) do_remove_menu ;; 0|q|"") exit 0 ;; *) warn "Нет такого пункта" ;; esac
       pause; continue
     fi
     case "$c" in
       1) do_status ;;
-      2) systemctl restart apex-bot; sleep 2; running && ok "Перезапущен" || err "Не запустился — журнал: пункт 4" ;;
+      2) systemctl restart apex-bot; sleep 2; running && ok "Перезапущен" || err "Не запустился — журнал: пункт 5" ;;
       3) if running; then systemctl stop apex-bot; ok "Остановлен"; else systemctl start apex-bot; sleep 2; running && ok "Запущен" || err "Не запустился"; fi ;;
       4) do_logs; continue ;;
-      5) set_token && systemctl restart apex-bot && ok "Бот перезапущен с новым токеном" ;;
-      6) set_owner ;;
-      7) set_support ;;
-      8) toggle_notify ;;
-      9) do_update ;;
-      10) do_self_update ;;
+      5) do_errors ;;
+      6) set_token && systemctl restart apex-bot && ok "Бот перезапущен с новым токеном" ;;
+      7) set_owner ;;
+      8) set_support ;;
+      9) tg_check ;;
+      10) toggle_notify ;;
       11) if [ -f "$TIMER" ]; then auto_off; else auto_on; fi ;;
-      12) do_contests ;;
-      13) do_backup ;;
-      14) do_restore ;;
-      15) do_uninstall ;;
-      16) do_remove_menu ;;
+      12) if [ -f "$BTIMER" ]; then backup_off; else backup_on; fi ;;
+      13) toggle_boot ;;
+      14) do_update ;;
+      15) do_self_update ;;
+      16) do_contests ;;
+      17) do_backup ;;
+      18) do_restore ;;
+      19) do_move ;;
+      20) do_uninstall ;;
+      21) do_remove_menu ;;
       0|q|"") clear 2>/dev/null; exit 0 ;;
       *) warn "Нет такого пункта" ;;
     esac
@@ -347,6 +430,8 @@ case "${1:-}" in
   start) need_root; systemctl start apex-bot && ok "Запущен" ;;
   status) do_status ;;
   logs) do_logs ;;
+  errors) do_errors ;;
+  import) need_root; [ -f "${2:-}" ] || { err "Укажите файл: apex import /root/apex-bot-….tar.gz"; exit 1; }; restore_file "$2" ;;
   backup) do_backup ;;
   uninstall) do_uninstall ;;
   remove) do_remove_menu ;;

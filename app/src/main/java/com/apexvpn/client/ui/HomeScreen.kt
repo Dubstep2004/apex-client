@@ -42,7 +42,6 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.NetworkCheck
-import androidx.compose.material.icons.rounded.Psychology
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.WarningAmber
@@ -384,23 +383,7 @@ fun HomeScreen(
         }
         // 3.21: «Проверка сети» — отдельной строкой, чтобы на узком экране кнопки не сжимались
         Spacer(Modifier.height(10.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Chip(Icons.Rounded.NetworkCheck, "Проверка сети") { onOpenPage(Page.NetCheck) }
-            // 3.22. «Нейросети»: одним нажатием — на сервер для нейросетей, вторым — обратно на автопилот
-            val aiNodes = remember(sub.nodes) { sub.nodes.filter { it.ai && !it.ads } }
-            if (aiNodes.isNotEmpty()) {
-                val aiPings by viewModel.pings.collectAsStateWithLifecycle()
-                val onAi = selected?.ai == true
-                Chip(Icons.Rounded.Psychology, "Нейросети", active = onAi) {
-                    if (onAi) {
-                        viewModel.select(AUTO_TAG); viewModel.showMessage("Автопилот")
-                    } else {
-                        val best = aiNodes.mapNotNull { n -> aiPings[n.tag]?.takeIf { it > 0 }?.let { n to it } }.minByOrNull { it.second }?.first ?: aiNodes.first()
-                        viewModel.select(best.tag); viewModel.showMessage("Нейросети · ${ServerInfo.title(best.name)}")
-                    }
-                }
-            }
-        }
+        Row { Chip(Icons.Rounded.NetworkCheck, "Проверка сети") { onOpenPage(Page.NetCheck) } }
 
         // 49. Живой пинг
         if (status == VpnStatus.Started && livePing.isNotEmpty()) {
