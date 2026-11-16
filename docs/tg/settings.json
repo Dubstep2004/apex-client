@@ -2,5 +2,5 @@
   "holidays": true,
   "version": true,
   "digest": false,
-  "video": true
+  "video": false
 }
