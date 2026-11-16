@@ -1,5 +1,6 @@
 {
   "holidays": true,
   "version": true,
-  "digest": false
+  "digest": false,
+  "video": false
 }
