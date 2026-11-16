@@ -35,6 +35,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -138,6 +139,16 @@ fun ModeScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit) {
                 leading = { IconTile(Color(0xFFE5484D)) { Icon(Icons.Rounded.Block, null, tint = Color.White) } },
                 onClick = { viewModel.change { copy(adBlock = !adBlock) } },
             ) { ApexSwitch(s.adBlock, { v -> viewModel.change { copy(adBlock = v) } }) }
+            if (s.adBlock && com.apexvpn.client.data.AppConfig.value.adsStatsUrl.isNotEmpty()) {
+                val share by com.apexvpn.client.data.AdCounter.share.collectAsState()
+                GroupDivider()
+                // 3.24: общий счётчик — только число за день, без адресов сайтов
+                ListRow(
+                    title = "Делиться числом заблокированной рекламы",
+                    subtitle = "Раз в день — только число, без адресов сайтов, имени и номера. Из таких чисел складывается общий счётчик",
+                    onClick = { com.apexvpn.client.data.AdCounter.setShare(!share) },
+                ) { ApexSwitch(share, { com.apexvpn.client.data.AdCounter.setShare(it) }) }
+            }
             if (s.adBlock) {
                 val ctx = androidx.compose.ui.platform.LocalContext.current
                 GroupDivider()

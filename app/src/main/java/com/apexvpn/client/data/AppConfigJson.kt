@@ -69,6 +69,7 @@ object AppConfigJson {
             rulesForceAt = o.optJSONObject("rules")?.optLong("forceAt", 0)?.takeIf { it in 1..(System.currentTimeMillis() + 86_400_000) } ?: 0,
             rulesBuild = o.optJSONObject("rules")?.optJSONArray("build")?.let { a -> (0 until a.length()).map { a.optInt(it, -1) }.filter { it in 0..23 }.distinct().take(4) }?.takeIf { it.isNotEmpty() } ?: listOf(6),
             adExtra = o.optJSONObject("ads")?.optJSONArray("block")?.let { a -> (0 until a.length()).map { a.optString(it).trim().lowercase() }.filter { it.length in 3..253 }.take(500) }.orEmpty(),
+            adsStatsUrl = o.optJSONObject("ads")?.optString("statsUrl").orEmpty().trim().takeIf { Regex("^https://[A-Za-z0-9.-]+(:\\d+)?/?$").matches(it) }.orEmpty(),
             adAllow = o.optJSONObject("ads")?.optJSONArray("allow")?.let { a -> (0 until a.length()).map { a.optString(it).trim().lowercase() }.filter { it.length in 3..253 }.take(500) }.orEmpty(),
             netApps = o.optJSONArray("netCheck")?.let { a ->
                 (0 until a.length()).mapNotNull { i -> a.optJSONObject(i) }

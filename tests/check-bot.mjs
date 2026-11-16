@@ -248,6 +248,12 @@ fs.rmSync(tmp, { recursive: true, force: true })
   { const [st] = await call(sign({ id: 7 }), 'bc', { text: 'взлом' }); if (st !== 403 || mem.bcadm) fail('админ-панель: чужой запустил рассылку') }
   { const [, b] = await call(sign({ id: 1 }), 'reply', { qid: 5, text: 'Ответ из панели' }); if (!b.ok || !/Ответ из панели/.test(JSON.parse(mem.q)[0].ansText || '')) fail('админ-панель: ответ на вопрос не прошёл') }
   { const [, b] = await call(sign({ id: 1 }), 'feat', { k: 'quiz' }); if (!b.ok || b.on !== false) fail('админ-панель: переключение функции') }
+  // общий счётчик рекламы: только числа, чужой день и мусор — отказ, повтор — не удваивает
+  const ads = async b => (await w.fetch(new Request('https://bot.example/api/ads', { method: 'POST', body: JSON.stringify(b) }), env)).status
+  const day = new Date(Date.now() - 864e5).toISOString().slice(0, 10)
+  if (await ads({ day, dev: 'abcdef1234567890', ads: 120 }) !== 200 || await ads({ day, dev: 'abcdef1234567890', ads: 150 }) !== 200 || await ads({ day, dev: '0011223344556677', ads: 999999 }) !== 200) fail('счётчик рекламы: не принял')
+  if (await ads({ day: '2020-01-01', dev: 'abcdef1234567890', ads: 5 }) !== 400 || await ads({ day, dev: 'x', ads: 5 }) !== 400) fail('счётчик рекламы: принял мусор')
+  { const st = JSON.parse(mem['adst:' + day]).d; if (st.abcdef1234567890 !== 150 || st['0011223344556677'] !== 50000) fail('счётчик рекламы: неверный подсчёт ' + JSON.stringify(st)) }
   globalThis.fetch = realFetch
 }
 console.log(errs.length ? `✗ Бот и меню: ошибок ${errs.length}` : '✓ Бот и меню — без ошибок')

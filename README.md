@@ -17,7 +17,7 @@
 <p><b>Два ядра</b> · все популярные протоколы · <b>свои списки</b> с шаблонами · <b>3D-глобус</b> · <b>13 дизайнов</b>, палитры и <b>живое видео на фоне</b><br>
 автопилот с белыми списками · DNS «Авто» для каждой сети · базы сайтов каждый день · часы Wear OS</p>
 
-<sub>📱 Android — <b>3.23.0</b> (Android 7+) · sing-box 1.13 · Xray 26</sub><br>
+<sub>📱 Android — <b>3.24.0</b> (Android 7+) · sing-box 1.13 · Xray 26</sub><br>
 <sub>🌐 Сайт: <a href="https://dubstep2004.github.io">dubstep2004.github.io</a> · 💬 Поддержка: <a href="https://t.me/Apexx_support">@Apexx_support</a></sub><br>
 <a href="https://t.me/apex_client_news"><img src="docs/stats/tg-members.svg" alt="Канал APEX CLIENT в Telegram" height="22"></a>
 
@@ -869,7 +869,18 @@ core/apexcore/          Go: разбор подписки → конфиги sin
 
 <img src="docs/img/tags/new.svg" alt="Новое" height="22"> <img src="docs/img/tags/improved.svg" alt="Улучшено" height="22"> <img src="docs/img/tags/changed.svg" alt="Изменено" height="22"> <img src="docs/img/tags/fixed.svg" alt="Исправлено" height="22"> <img src="docs/img/tags/removed.svg" alt="Удалено" height="22">
 
-### 3.23.0 · 17 ноября 2026
+### 3.24.0 · 17 ноября 2026
+
+<img src="docs/img/tags/new.svg" alt="Новое" height="22">
+
+- Общий счётчик рекламы: раз в день приложение отправляет только число заблокированной рекламы — без адресов сайтов, имени и номера. Выключается в «Режиме»
+
+#### 📚 Все версии (146)
+
+Каждая версия — отдельная вкладка.
+
+<details>
+<summary><b>3.23.0</b> · 17 ноября 2026</summary>
 
 <img src="docs/img/tags/new.svg" alt="Новое" height="22">
 
@@ -881,9 +892,7 @@ core/apexcore/          Go: разбор подписки → конфиги sin
 - Базы сайтов проверяются вскоре после того, как на GitHub собраны свежие
 - Под «Блокировкой рекламы» честная подсказка: рекламу внутри YouTube, Instagram и VK так не убрать — она идёт с тех же серверов, что и видео
 
-#### 📚 Все версии (145)
-
-Каждая версия — отдельная вкладка.
+</details>
 
 <details>
 <summary><b>3.22.2</b> · 17 ноября 2026</summary>

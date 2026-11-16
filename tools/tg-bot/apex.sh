@@ -10,7 +10,7 @@
 set -uo pipefail
 export LC_ALL=C.UTF-8 2>/dev/null  # русские буквы — по одной, а не по байтам
 
-APEX_VER="2.7"
+APEX_VER="2.8"
 SRC="https://raw.githubusercontent.com/Dubstep2004/apex-client/main/tools/tg-bot"
 API="https://api.github.com/repos/Dubstep2004/apex-client/commits?path=tools/tg-bot&per_page=1"
 DIR=${APEX_DIR:-/opt/apex-bot}; SELF=${APEX_SELF:-/usr/local/bin/apex}
@@ -105,7 +105,9 @@ item()    { printf '   %s%3s%s  %s%s%s\n' "$ACC$B" "$1" "$R" "${3:-}" "$2" "$R";
 
 # ── Что нового ─────────────────────────────────────────────────────
 # Строки: «V|версия|дата» — заголовок; «n|текст» — новое, «u|…» — улучшено, «f|…» — исправлено.
-CHANGES='V|2.7|16 ноября 2026
+CHANGES='V|2.8|17 ноября 2026
+n|«Настройки» → «Адрес бота (https)»: свой домен для бота — Caddy сам получает сертификат, наружу только /api/*. Нужен для полной админ-панели в мини-приложении и общего счётчика рекламы
+V|2.7|16 ноября 2026
 n|«Настройки» → «Панель подписок»: адрес и токен Remnawave для /sub (срок подписки) и кнопки «🎁 +7 дней» за друзей; токен не виден при вводе и хранится только в настройках бота
 V|2.6|16 ноября 2026
 u|«Функции бота» — по разделам: Админ и сводки, Ответы людям, Помощники, Команды, Рассылки и канал, Конкурсы, Группа, Защита и прочее
@@ -611,6 +613,70 @@ do_link() {
     systemctl restart "$SVC"; sleep 2; ok "Связь включена"; link_show
   fi
 }
+# 2.8: свой домен с https для бота — админ-панель в мини-приложении и общий счётчик рекламы.
+# Caddy сам получает сертификат Let's Encrypt; наружу — только /api/*, всё остальное 404.
+do_domain() {
+  step "Адрес бота (https)"
+  say "  ${DIM}Нужен для полной админ-панели в мини-приложении. Сделайте у своего домена запись A: например bot.ваш-домен → IP этого сервера.${R}"
+  local cur; cur=$(envget BOT_PUBLIC_URL)
+  if [ -n "$cur" ]; then
+    say "  Сейчас: ${C2}$cur${R}"
+    item 1 "Проверить"; item 2 "Сменить домен"; item 3 "Убрать адрес" "$BD"; item 0 "$(T Назад)" "$DIM"
+    case "$(ask "Пункт: ")" in
+      1) domain_check "${cur#https://}"; return ;;
+      2) ;;
+      3) local d=${cur#https://}; [ -f /etc/caddy/Caddyfile ] && sed -i "/^# apex-bot $d\$/,/^# end apex-bot $d\$/d" /etc/caddy/Caddyfile && systemctl reload caddy 2>/dev/null
+         envset BOT_PUBLIC_URL ""; systemctl restart "$SVC"; ok "Адрес убран"; return ;;
+      *) return ;;
+    esac
+  fi
+  local d; d=$(ask "Домен ${DIM}(например bot.example.com)${R}: " | tr 'A-Z' 'a-z' | sed 's#^https\?://##; s#/.*##')
+  [[ "$d" =~ ^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$ ]] || { err "Это не похоже на домен"; return; }
+  local ip dip; ip=$(curl -fsS -m 6 https://api.ipify.org 2>/dev/null); dip=$(getent ahostsv4 "$d" | awk 'NR==1{print $1}')
+  if [ -z "$dip" ]; then err "Домен $d пока не указывает ни на какой сервер — добавьте запись A → ${ip:-IP сервера} и подождите 5–10 минут"; return; fi
+  if [ -n "$ip" ] && [ "$dip" != "$ip" ]; then warn "Домен указывает на $dip, а у сервера $ip"; confirm "Всё равно продолжить? (например, если сервер за NAT)" || return; fi
+  # Связь с пультом (порт и слово) — включаем, если ещё нет
+  local port; port=$(envget BOT_PORT)
+  if [ -z "$port" ]; then
+    local dp=8787 idx; [ -n "$P" ] && { idx=$(ls /etc/apex-bot-*.env 2>/dev/null | grep -n "/etc/apex-bot-$P.env" | cut -d: -f1); dp=$((8787 + ${idx:-1})); }
+    port=$dp; [ -n "$(envget WEBHOOK_SECRET)" ] || envset WEBHOOK_SECRET "$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n' | cut -c1-40)"
+    envset BOT_PORT "$port"; envset BOT_HOST 127.0.0.1
+  fi
+  if ! command -v caddy >/dev/null; then
+    say "  Ставлю Caddy (веб-сервер с автоматическим https)…"
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq caddy >/dev/null 2>&1 || { err "Не получилось поставить Caddy (apt install caddy)"; return; }
+  fi
+  [ -f /etc/caddy/Caddyfile ] && sed -i "/^# apex-bot $d\$/,/^# end apex-bot $d\$/d" /etc/caddy/Caddyfile
+  grep -q '^:80 {' /etc/caddy/Caddyfile 2>/dev/null && sed -i '/^:80 {/,/^}/d' /etc/caddy/Caddyfile # заглушка Caddy по умолчанию мешает сертификату
+  cat >> /etc/caddy/Caddyfile <<EOC
+# apex-bot $d
+$d {
+	@api path /api/*
+	handle @api {
+		reverse_proxy 127.0.0.1:$port
+	}
+	handle {
+		respond 404
+	}
+}
+# end apex-bot $d
+EOC
+  caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null 2>&1 || { err "Ошибка в /etc/caddy/Caddyfile — проверьте файл"; return; }
+  command -v ufw >/dev/null && ufw status | grep -q active && { ufw allow 80/tcp >/dev/null; ufw allow 443/tcp >/dev/null; ok "Файрвол: открыты 80 и 443 (нужны для сертификата и https)"; }
+  systemctl enable --now caddy >/dev/null 2>&1; systemctl reload caddy 2>/dev/null || systemctl restart caddy
+  envset BOT_PUBLIC_URL "https://$d"; systemctl restart "$SVC"
+  say "  Жду сертификат (до минуты)…"; sleep 15
+  domain_check "$d"
+  say ""
+  say "  ${B}Дальше:${R} напишите боту «🛠 Админ» — кнопка «📱 Открыть админ-панель» откроет полную панель."
+  say "  ${DIM}В пульте можно сменить «Адрес бота» на https://$d — связь станет защищённой (тогда порт $port снаружи можно закрыть).${R}"
+}
+domain_check() {
+  local d=$1 code
+  code=$(curl -s -o /dev/null -m 15 -w '%{http_code}' -X OPTIONS "https://$d/api/app")
+  if [ "$code" = 204 ]; then ok "https://$d работает — бот отвечает мини-приложению"
+  else err "https://$d не отвечает (код ${code:-нет связи}). Проверьте запись A, порты 80/443 и журнал: journalctl -u caddy -n 30"; fi
+}
 link_show() {
   local ip; ip=$(curl -fsS -m 6 https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')
   say ""
@@ -762,7 +828,7 @@ sub_menu() {  # sub_menu <раздел> — показывает пункты р
         HELP=([1]='Работает ли служба, принят ли токен, кто забирает сообщения, что включено' [2]='Перезапуск бота — настройки и данные сохраняются' [3]='Остановить или запустить бота' [4]='Журнал в реальном времени, выход — Ctrl+C' [5]='Только строки с ошибками за сутки' [6]='Сколько людей писали, частые темы, «Помогло?», приглашения' [7]='Конкурсы и число участников') ;;
       'Настройки')
         item 1 "$(T 'Сменить токен бота')"; item 2 "$(T 'Номер владельца') ${DIM}$(envget OWNER_ID)${R}"; item 3 "$(T 'Ссылка поддержки')"; item 4 "$(T 'Связь с Telegram и прокси') ${DIM}$([ -n "$(envget TG_PROXY)" ] && echo '· через прокси')${R}"
-        item 5 "$(T 'Связь с пультом')    $(onoff "$([ -n "$(envget BOT_PORT)" ] && echo 1)")"; item 6 "$(T 'Язык меню') ${DIM}· $( [ "$(cget MLANG)" = en ] && echo English || echo Русский)${R}"; item 7 "$(T 'Цвет меню') ${DIM}· $(cget THEME | sed 's/^$/teal/')${R}"; item 8 "$(T 'Панель подписок (/sub, бонус)') $(onoff "$([ -n "$(envget REMNA_TOKEN)" ] && echo 1)")"
+        item 5 "$(T 'Связь с пультом')    $(onoff "$([ -n "$(envget BOT_PORT)" ] && echo 1)")"; item 6 "$(T 'Язык меню') ${DIM}· $( [ "$(cget MLANG)" = en ] && echo English || echo Русский)${R}"; item 7 "$(T 'Цвет меню') ${DIM}· $(cget THEME | sed 's/^$/teal/')${R}"; item 8 "$(T 'Панель подписок (/sub, бонус)') $(onoff "$([ -n "$(envget REMNA_TOKEN)" ] && echo 1)")"; item 9 "$(T 'Адрес бота (https)') $(onoff "$([ -n "$(envget BOT_PUBLIC_URL)" ] && echo 1)")"
         HELP=([1]='Новый токен от @BotFather — бот перезапустится' [2]='Ваш номер в Telegram: уведомления, /stats, /draw, вопросы без ответа' [3]='Куда бот отправляет за помощью (иначе — из пульта)' [4]='Открывается ли Telegram с сервера; HTTP-прокси, если нет' [5]='Пульт видит вопросы и статистику бота, вы отвечаете людям из пульта' [6]='Русский или английский' [7]='Бирюзовый, фиолетовый или монохромный — под ваш терминал' [8]='Remnawave: /sub показывает человеку срок и трафик, «+7 дней» продлевает за друзей') ;;
       'Включить / выключить')
         item 1 "$(T 'Уведомления владельцу')            $(onoff "$([ "$(envget NOTIFY)" = 1 ] && echo 1)")"
@@ -801,6 +867,7 @@ sub_menu() {  # sub_menu <раздел> — показывает пункты р
       'Настройки|1') set_token && systemctl restart "$SVC" && ok "Бот перезапущен с новым токеном" ;; 'Настройки|2') set_owner ;; 'Настройки|3') set_support ;; 'Настройки|4') tg_check ;; 'Настройки|5') do_link ;;
       'Настройки|6') [ "$(cget MLANG)" = en ] && cset MLANG ru || cset MLANG en; continue ;;
       'Настройки|8') set_remna ;;
+      'Настройки|9') do_domain ;;
       'Настройки|7') case "$(cget THEME)" in purple) cset THEME mono ;; mono) cset THEME "" ;; *) cset THEME purple ;; esac; exec "$SELF" ;;
       'Включить / выключить|1') toggle_notify ;; 'Включить / выключить|2') if [ -f "$TIMER" ]; then auto_off; else auto_on; fi ;;
       'Включить / выключить|3') if [ -f "$BTIMER" ]; then backup_off; else backup_on; fi ;;

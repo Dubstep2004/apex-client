@@ -2,6 +2,12 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.24.0 · 17 ноября 2026
+
+<img src="img/tags/new.svg" alt="Новое" height="22">
+
+- Общий счётчик рекламы: раз в день приложение отправляет только число заблокированной рекламы — без адресов сайтов, имени и номера. Выключается в «Режиме»
+
 ## 3.23.0 · 17 ноября 2026
 
 <img src="img/tags/new.svg" alt="Новое" height="22">

@@ -89,6 +89,9 @@ class AppConfigTest {
         assertEquals(listOf(6, 18), c.rulesBuild)
         assertEquals(12, c.rulesHours)
         assertEquals(listOf(6), AppConfigJson.parse("{}")!!.rulesBuild)
+        assertEquals("https://bot.example.com", AppConfigJson.parse("""{"ads":{"statsUrl":"https://bot.example.com"}}""")!!.adsStatsUrl)
+        assertEquals("", AppConfigJson.parse("""{"ads":{"statsUrl":"http://bot.example.com"}}""")!!.adsStatsUrl)
+        assertEquals("", AppConfigJson.parse("""{"ads":{"statsUrl":"https://bot.example.com/x?y"}}""")!!.adsStatsUrl)
     }
 
     @Test fun lastBuildIsBeforeNow() {

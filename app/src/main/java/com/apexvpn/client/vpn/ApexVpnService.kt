@@ -369,6 +369,7 @@ class ApexVpnService : VpnService(), PlatformInterface, CommandServerHandler {
                 // Фоновые задачи Android на многих телефонах (Realme, Xiaomi, Huawei) не запускаются, пока приложение закрыто
                 if (tick % 1800 == 60L && status == VpnStatus.Started && settings.rulesAuto) scope.launch {
                     if (runCatching { com.apexvpn.client.data.RulesUpdater.update(this@ApexVpnService) }.getOrNull() is com.apexvpn.client.data.RulesUpdater.Result.Updated) reloadVpn()
+                    runCatching { com.apexvpn.client.data.AdCounter.report() } // 3.24: число за вчера, раз в день
                 }
 
                 // Скорость: весь трафик ядра идёт через сокеты этого приложения

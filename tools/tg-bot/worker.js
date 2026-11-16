@@ -25,6 +25,8 @@
 //   его ответ на пересланное сообщение бот отправит человеку; счёт, какие темы спрашивают чаще.
 
 // ЧТО НОВОГО В БОТЕ (пульт показывает это в «Справка» → «Что нового» → «Бот»; V — версия, n/u/f — новое/улучшено/исправлено)
+// V|4.3|17 ноября 2026
+// n|Общий счётчик рекламы: телефоны (3.24.0) раз в день присылают боту число заблокированной рекламы — без имён и адресов; /ads и строка в /today и утренней сводке. Нужен https-адрес бота
 // V|4.2|17 ноября 2026
 // n|Группа: бот сам отвечает на частые вопросы темой (вкл/выкл, по умолчанию выключено; одна тема — не чаще раза в 10 минут)
 // n|Новости канала на сайте: бот запоминает последние 20 постов канала, робот выкладывает их на визитку — dubstep2004.github.io/news/
@@ -188,7 +190,7 @@ const FEAT_GROUPS = [
   ['bc', '📣 Рассылки и канал', ['broadcast', 'polls', 'chpost', 'chnews']],
   ['con', '🎁 Конкурсы', ['contestBot', 'contestSub', 'contestReal', 'contestDM']],
   ['grp', '👥 Группа', ['welcome', 'antispam', 'captcha', 'warns', 'groupFaq']],
-  ['etc', '🛡 Защита и прочее', ['antiflood', 'fakewarn', 'anniv', 'refbonus']]]
+  ['etc', '🛡 Защита и прочее', ['antiflood', 'fakewarn', 'anniv', 'refbonus', 'adstats']]]
 const featGroups = () => { const used = new Set(FEAT_GROUPS.flatMap(g => g[2])), rest = Object.keys(FEAT_NAMES).filter(k => !used.has(k)); return rest.length ? [...FEAT_GROUPS, ['oth', '📦 Другое', rest]] : FEAT_GROUPS }
 const groupOf = k => featGroups().find(g => g[2].includes(k))?.[0]
 const settingsKb = (cfg, sec) => { // без раздела — список разделов с числом включённых; с разделом — переключатели
@@ -230,9 +232,9 @@ async function config(env) {
   cfgAt = Date.now()
   return cfgCache
 }
-const FEATURES = { chnews: true, groupFaq: false, adminApp: true, appFirst: true, sub: true, video: true, refbonus: true, miniapp: true, memory: true, form: true, quiz: true, fuzzy: true, captcha: false, warns: true, anniv: true, qpos: true, night: true, human: true, fakewarn: true, helpers: true, helpRR: true, chpost: true, contestBot: true, backup: true, syslog: true, morning: true, admin: true, media: true, quick: true, commands: true, images: true, deeplinks: true, contestDM: true, polls: true, broadcast: true, news: true, status: true, ping: true, english: true, forward: false, stats: true, welcome: true, antispam: true, invite: true, remind: true, followup: true, complaints: true, translate: true, antiflood: true, version: true, contestSub: true, contestReal: false }
+const FEATURES = { adstats: true, chnews: true, groupFaq: false, adminApp: true, appFirst: true, sub: true, video: true, refbonus: true, miniapp: true, memory: true, form: true, quiz: true, fuzzy: true, captcha: false, warns: true, anniv: true, qpos: true, night: true, human: true, fakewarn: true, helpers: true, helpRR: true, chpost: true, contestBot: true, backup: true, syslog: true, morning: true, admin: true, media: true, quick: true, commands: true, images: true, deeplinks: true, contestDM: true, polls: true, broadcast: true, news: true, status: true, ping: true, english: true, forward: false, stats: true, welcome: true, antispam: true, invite: true, remind: true, followup: true, complaints: true, translate: true, antiflood: true, version: true, contestSub: true, contestReal: false }
 // Названия функций — для /settings в боте и меню сервера (apex → «Функции бота»)
-const FEAT_NAMES = { admin: 'Панель админа на кнопках', morning: 'Утренняя сводка в 9:00', chpost: 'Пост в канал из бота', helpers: 'Помощники', qpos: 'Место в очереди', fuzzy: 'Умный поиск с опечатками', memory: 'Память разговора', appFirst: 'Всё в мини-приложении', adminApp: 'Админ-панель в мини-приложении', chnews: 'Новости канала на сайте', groupFaq: 'Ответы на частые вопросы в группе', sub: '/sub — моя подписка', video: 'Видеоинструкция', refbonus: 'Бонус за друзей', miniapp: 'Мини-приложение (кнопка APEX)', form: 'Форма /report', quiz: 'Викторина /quiz', captcha: 'Капча для новичков в группе', warns: '/warn и /ban в группе', anniv: 'Поздравление с годовщиной', night: 'Ночью — «ответим утром»', human: '«Позвать человека»', fakewarn: 'Предупреждение о поддельных ботах', helpRR: 'Помощникам — вопросы по очереди', contestBot: 'Конкурс из бота', backup: 'Копия данных файлом', syslog: 'Система и ошибки', forward: 'Вопросы без ответа — мне', media: 'Фото и голосовые — мне', quick: 'Быстрые ответы', followup: '«Помогло?»', translate: 'Перевод моих ответов', english: 'Ответы на английском', status: '/status', news: '/news', invite: '/invite', remind: '/remind', complaints: 'Жалобы на серверы', version: 'Подсказка версии', broadcast: 'Рассылка', polls: 'Опросы', stats: 'Счёт тем', ping: '/ping', commands: 'Меню команд «/»', images: 'Картинки в ответах', deeplinks: 'Ссылки на темы', antiflood: 'Защита от флуда', welcome: 'Приветствие в группе', antispam: 'Антиспам в группе', contestSub: 'Конкурс: только подписчики', contestReal: 'Конкурс: без пустых аккаунтов', contestDM: 'Конкурс: поздравить победителей' }
+const FEAT_NAMES = { admin: 'Панель админа на кнопках', morning: 'Утренняя сводка в 9:00', chpost: 'Пост в канал из бота', helpers: 'Помощники', qpos: 'Место в очереди', fuzzy: 'Умный поиск с опечатками', memory: 'Память разговора', appFirst: 'Всё в мини-приложении', adminApp: 'Админ-панель в мини-приложении', chnews: 'Новости канала на сайте', adstats: 'Общий счётчик рекламы (/ads)', groupFaq: 'Ответы на частые вопросы в группе', sub: '/sub — моя подписка', video: 'Видеоинструкция', refbonus: 'Бонус за друзей', miniapp: 'Мини-приложение (кнопка APEX)', form: 'Форма /report', quiz: 'Викторина /quiz', captcha: 'Капча для новичков в группе', warns: '/warn и /ban в группе', anniv: 'Поздравление с годовщиной', night: 'Ночью — «ответим утром»', human: '«Позвать человека»', fakewarn: 'Предупреждение о поддельных ботах', helpRR: 'Помощникам — вопросы по очереди', contestBot: 'Конкурс из бота', backup: 'Копия данных файлом', syslog: 'Система и ошибки', forward: 'Вопросы без ответа — мне', media: 'Фото и голосовые — мне', quick: 'Быстрые ответы', followup: '«Помогло?»', translate: 'Перевод моих ответов', english: 'Ответы на английском', status: '/status', news: '/news', invite: '/invite', remind: '/remind', complaints: 'Жалобы на серверы', version: 'Подсказка версии', broadcast: 'Рассылка', polls: 'Опросы', stats: 'Счёт тем', ping: '/ping', commands: 'Меню команд «/»', images: 'Картинки в ответах', deeplinks: 'Ссылки на темы', antiflood: 'Защита от флуда', welcome: 'Приветствие в группе', antispam: 'Антиспам в группе', contestSub: 'Конкурс: только подписчики', contestReal: 'Конкурс: без пустых аккаунтов', contestDM: 'Конкурс: поздравить победителей' }
 const QUICK = ['Обновите подписку: Настройки → Подписка → «Обновить»', 'Включите автопилот — он сам выберет рабочий сервер', 'Откройте «Проверка сети» на главном и пришлите итог (кнопка «Поделиться»)', 'Обновите приложение до последней версии: ' + SITE + '/update/']
 const fill = (cfg, t) => t.replaceAll('{сайт}', SITE).replaceAll('{поддержка}', cfg.support)
 const topicsOf = (cfg, en) => en ? FAQ_EN : cfg.topics
@@ -477,13 +479,20 @@ async function onGroup(env, cfg, m) { // группа: приветствие, �
   }
 }
 
+const cfg0AdsLine = async env => { const c = await config(env); if (!c.features.adstats) return ''; const [y] = await adsStats(env, 1); return y ? `\n🛡 Рекламы заблокировано вчера: ${y.ads.toLocaleString('ru')} (телефонов: ${y.devs})` : '' }
+async function adsStats(env, days = 7) { // по дням: сколько рекламы заблокировано у всех и на скольких телефонах
+  const out = []
+  for (let i = 1; i <= days; i++) { const day = new Date(now() - i * 86400000).toISOString().slice(0, 10), st = await kget(env, 'adst:' + day, null); if (st) { const v = Object.values(st.d || {}); out.push({ day, ads: v.reduce((a, b) => a + b, 0), devs: v.length }) } }
+  return out
+}
 async function todayText(env) {
   const day = new Date().toISOString().slice(0, 10), st = await kget(env, 'st:' + day, {}), q = await kget(env, 'q', [])
   const today = Object.values(st).reduce((a, b) => a + b, 0), cmp = (await kget(env, 'cmp', [])).filter(x => now() - x.at < 86400000), byName = {}
   cmp.forEach(x => { byName[x.name] = (byName[x.name] || 0) + 1 })
   const ids = await kget(env, 'users', []); let fresh = 0
   for (const id of ids.slice(-60)) { const c = await kget(env, 'u:' + id, null); if (c?.first && now() - c.first < 86400000) fresh++ }
-  return `📊 Сегодня\n\nВопросов боту: ${today} (без готового ответа: ${st._miss || 0})\nЖдут вашего ответа: ${q.filter(x => !x.ans).length}\nНовых людей за сутки: ${fresh}\nВсего писали боту: ${ids.length}\nЖалобы на серверы: ${Object.entries(byName).map(([n, c]) => n + ' — ' + c).join(', ') || 'нет'}\nСпама удалено в группе: ${await kget(env, 'spam', 0)}`
+  const ad = cfg0AdsLine ? await cfg0AdsLine(env) : ''
+  return `📊 Сегодня${ad}\n\nВопросов боту: ${today} (без готового ответа: ${st._miss || 0})\nЖдут вашего ответа: ${q.filter(x => !x.ans).length}\nНовых людей за сутки: ${fresh}\nВсего писали боту: ${ids.length}\nЖалобы на серверы: ${Object.entries(byName).map(([n, c]) => n + ' — ' + c).join(', ') || 'нет'}\nСпама удалено в группе: ${await kget(env, 'spam', 0)}`
 }
 async function topScreen(env, cfg) { // частые вопросы + отвеченные вопросы, из которых можно сделать тему
   const st = await statsText(env, cfg), ans = (await kget(env, 'q', [])).filter(x => x.ansText && x.text).slice(-5).reverse(), kt = await kget(env, 'ktopics', [])
@@ -840,6 +849,8 @@ async function onMessage(env, m) {
   }
   if (owner && (cmd === '/settings' || cmd === '/features')) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: '⚙️ Функции бота — нажмите, чтобы включить или выключить. Действует сразу, пульт и меню сервера это видят.', reply_markup: settingsKb(cfg) })
   if (owner && cmd === '/user' && /^\d+$/.test(arg || '')) { const c = await userCard(env, arg); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: c.text, reply_markup: { inline_keyboard: c.rows } }) }
+  if (cmd === '/ads' && cfg.features.adstats) { const st = await adsStats(env, 7), y = st[0], w = st.reduce((a, b) => a + b.ads, 0)
+    return tg(env, 'sendMessage', { chat_id: m.chat.id, text: y ? `🛡 Реклама и трекеры, заблокированные APEX CLIENT\n\nВчера: ${y.ads.toLocaleString('ru')} (на ${y.devs} телефонах)\nЗа 7 дней: ${w.toLocaleString('ru')}\n\nСчитаются только числа — без имён, номеров и адресов сайтов.` : '🛡 Счётчик рекламы пока собирает данные — загляните завтра.' }) }
   if (owner && cmd === '/today') return tg(env, 'sendMessage', { chat_id: m.chat.id, text: await todayText(env), reply_markup: { inline_keyboard: [[{ text: '📥 Вопросы', callback_data: 'ad:q' }, { text: '🛠 Админ', callback_data: 'ad:menu' }]] } })
   if (owner && cmd === '/queue') { const q = (await kget(env, 'q', [])).filter(x => !x.ans).slice(-8).reverse(); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: q.length ? `📥 Без ответа: ${q.length}` : '📥 Вопросов без ответа нет 👍', reply_markup: { inline_keyboard: q.map((x, i) => [{ text: `${i + 1}. ${(x.name || 'человек').slice(0, 16)}: ${(x.text || x.kind || '').slice(0, 24)}`, callback_data: 'ad:qo:' + x.id }]) } }) }
   if (owner && cmd === '/top') { const t = await topScreen(env, cfg); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: t.text, reply_markup: { inline_keyboard: t.rows } }) }
@@ -1067,7 +1078,7 @@ export async function tick(env, force) {
   const sig = JSON.stringify([cfg.features, cfg.description, cfg.short])
   if ((await kget(env, 'sig', '')) !== sig && !cfg.features.commands) { await tg(env, 'deleteMyCommands', {}); if (env.OWNER_ID) await tg(env, 'deleteMyCommands', { scope: { type: 'chat', chat_id: +env.OWNER_ID } }); await kput(env, 'sig', sig) }
   if ((await kget(env, 'sig', '')) !== sig) {
-    const cmds = cfg.features.appFirst && cfg.features.miniapp ? [['start', 'Начать'], ['web', 'Открыть APEX: всё в одном месте'], ['stop', 'Не получать рассылки']] : [['start', 'Начать / темы'], ['download', 'Скачать приложение'], ...(cfg.features.status ? [['status', 'Состояние серверов']] : []), ...(cfg.features.news ? [['news', 'Последние новости']] : []), ...(cfg.features.invite ? [['invite', 'Пригласить друга']] : []), ...(cfg.features.remind ? [['remind', 'Напоминание о продлении']] : []), ...(cfg.features.complaints ? [['problem', 'Сообщить о проблеме с сервером']] : []), ...(cfg.features.form ? [['report', 'Форма: что не работает']] : []), ...(cfg.features.quiz ? [['quiz', 'Викторина по приложению']] : []), ...(cfg.features.sub ? [['sub', 'Моя подписка']] : []), ...(cfg.features.video ? [['video', 'Видеоинструкция']] : []), ...(cfg.features.miniapp ? [['web', 'Открыть APEX: статус, скачать, помощь']] : []), ['stop', 'Не получать рассылки']]
+    const cmds = cfg.features.appFirst && cfg.features.miniapp ? [['start', 'Начать'], ['web', 'Открыть APEX: всё в одном месте'], ['stop', 'Не получать рассылки']] : [['start', 'Начать / темы'], ['download', 'Скачать приложение'], ...(cfg.features.status ? [['status', 'Состояние серверов']] : []), ...(cfg.features.news ? [['news', 'Последние новости']] : []), ...(cfg.features.invite ? [['invite', 'Пригласить друга']] : []), ...(cfg.features.remind ? [['remind', 'Напоминание о продлении']] : []), ...(cfg.features.complaints ? [['problem', 'Сообщить о проблеме с сервером']] : []), ...(cfg.features.form ? [['report', 'Форма: что не работает']] : []), ...(cfg.features.quiz ? [['quiz', 'Викторина по приложению']] : []), ...(cfg.features.sub ? [['sub', 'Моя подписка']] : []), ...(cfg.features.video ? [['video', 'Видеоинструкция']] : []), ...(cfg.features.adstats ? [['ads', 'Сколько рекламы заблокировано']] : []), ...(cfg.features.miniapp ? [['web', 'Открыть APEX: статус, скачать, помощь']] : []), ['stop', 'Не получать рассылки']]
     await tg(env, 'setMyCommands', { commands: cmds.map(([command, description]) => ({ command, description })) })
     await tg(env, 'setChatMenuButton', { menu_button: cfg.features.miniapp ? { type: 'web_app', text: 'APEX', web_app: { url: (await botName(env), appUrl(false)) } } : { type: 'commands' } })
     if (env.OWNER_ID) await tg(env, 'setMyCommands', { scope: { type: 'chat', chat_id: +env.OWNER_ID }, commands: [...cmds, ['today', 'Что было за сутки'], ['queue', 'Вопросы без ответа'], ['top', 'Частые вопросы'], ['users', 'Пользователи'], ['settings', 'Включить и выключить функции'], ['ping', 'Работает ли бот'], ['stats', 'Статистика тем'], ['contests', 'Конкурсы'], ['help', 'Команды владельца']].map(x => Array.isArray(x) ? { command: x[0], description: x[1] } : x) })
@@ -1143,7 +1154,7 @@ async function dataExport(env) {
     q: await kget(env, 'q', []), stats: st, fb: await kget(env, 'fbk', []), cmp: (await kget(env, 'cmp', [])).map(x => ({ name: x.name, at: x.at })), spam: await kget(env, 'spam', 0),
     broadcast: bc && { id: cfg.broadcast.id, ok: bc.ok, fail: bc.fail, done: !!bc.done }, polls: await kget(env, 'pollres', {}),
     refs: Object.entries(refc).sort((a, b) => b[1] - a[1]).slice(0, 20), features: cfg.features, fover: await kget(env, 'fover', {}),
-    chposts: await kget(env, 'chposts', []), helpers: await kget(env, 'helpers', []), by: await answeredBy(env), ulist: await userList(env, 300), block: await kget(env, 'block', []), stopl: (await kget(env, 'stop', [])).slice(-500) }
+    adstats: await adsStats(env, 14), chposts: await kget(env, 'chposts', []), helpers: await kget(env, 'helpers', []), by: await answeredBy(env), ulist: await userList(env, 300), block: await kget(env, 'block', []), stopl: (await kget(env, 'stop', [])).slice(-500) }
 }
 async function hmac(secret, msg) { const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']); return [...new Uint8Array(await crypto.subtle.sign('HMAC', k, new TextEncoder().encode(msg)))].map(b => b.toString(16).padStart(2, '0')).join('') }
 async function seal(secret, obj) { // AES-GCM, ключ = SHA-256('apex-bot:' + слово) — то же делает робот
@@ -1161,6 +1172,18 @@ export default {
   async fetch(req, env) {
     const url = new URL(req.url)
     if (!env.BOT_TOKEN || !env.WEBHOOK_SECRET) return new Response('Добавьте секреты BOT_TOKEN и WEBHOOK_SECRET', { status: 500 })
+    if (url.pathname === '/api/ads') { // общий счётчик рекламы: телефоны раз в день присылают число за вчера — без имени, номера и адресов
+      const H = { 'content-type': 'application/json' }
+      if (req.method !== 'POST') return new Response('{}', { status: 405, headers: H })
+      const cfg = await config(env); if (!cfg.features.adstats) return new Response('{"off":1}', { headers: H })
+      let b = {}; try { b = JSON.parse((await req.text()).slice(0, 500)) } catch {}
+      const day = String(b.day || ''), dev = String(b.dev || '').replace(/[^a-f0-9]/g, '').slice(0, 16), ads = Math.min(Math.max(parseInt(b.ads, 10) || 0, 0), 50000)
+      const today = new Date().toISOString().slice(0, 10), yest = new Date(now() - 86400000).toISOString().slice(0, 10)
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || ![today, yest, new Date(now() - 2 * 86400000).toISOString().slice(0, 10)].includes(day) || dev.length < 8) return new Response('{"error":"bad"}', { status: 400, headers: H }) // день телефона — по его часам: ±сутки
+      const k = 'adst:' + day, st = await kget(env, k, { d: {} })
+      if (Object.keys(st.d).length < 20000 || dev in st.d) { st.d[dev] = Math.max(st.d[dev] || 0, ads); await kput(env, k, st, 40 * 86400) }
+      return new Response('{"ok":1}', { headers: H })
+    }
     if (url.pathname === '/api/app') { // мини-приложение (визитка) → бот; проверка подписи Telegram в checkInit
       const cors = { 'access-control-allow-origin': SITE, 'access-control-allow-methods': 'POST', 'access-control-allow-headers': 'content-type', 'access-control-max-age': '600', 'content-type': 'application/json' }
       if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors })

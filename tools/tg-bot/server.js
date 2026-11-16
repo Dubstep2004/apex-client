@@ -135,6 +135,10 @@ if (port > 0 && process.env.WEBHOOK_SECRET) {
     try {
       const chunks = []; let size = 0
       for await (const c of req) { size += c.length; if (size > 65536) { res.writeHead(413).end(); return } chunks.push(c) }
+      if (req.url === '/api/ads' && req.method === 'POST') { // счётчик рекламы с телефонов — без подписи (только числа)
+        const r = await worker.fetch(new Request('https://localhost/api/ads', { method: 'POST', body: Buffer.concat(chunks) }), env)
+        res.writeHead(r.status, { 'content-type': 'application/json' }).end(await r.text()); return
+      }
       if (req.url === '/api/app') { // мини-приложение: подпись Telegram проверяет worker.js; CORS — только визитка
         const r = await worker.fetch(new Request('https://localhost/api/app', { method: req.method === 'OPTIONS' ? 'OPTIONS' : 'POST', ...(req.method === 'POST' ? { body: Buffer.concat(chunks) } : {}) }), env)
         res.writeHead(r.status, Object.fromEntries(r.headers)).end(await r.text()); return

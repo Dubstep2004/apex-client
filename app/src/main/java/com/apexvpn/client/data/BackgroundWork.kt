@@ -46,6 +46,7 @@ class BackgroundWork(context: Context, params: WorkerParameters) : CoroutineWork
         // 3.6. 1-го числа — итоги прошлого месяца
         runCatching { MonthStats.reportDue()?.let { notifyReport(ctx, it) } }
         runCatching { CrashReporter.cleanup(ctx) }
+        runCatching { AdCounter.report() } // 3.24: общий счётчик рекламы — число за вчера
         // Новая версия на GitHub. «Ставить само» — скачиваем заранее и ставим, когда VPN выключен или экран погас;
         // иначе (или пока не вышло) — уведомление, нажатие сразу обновляет
         if (AppSettings.value.autoCheckUpdates) {
