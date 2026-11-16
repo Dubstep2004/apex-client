@@ -331,6 +331,9 @@
   .add { width: 100%; border: 1px dashed var(--line); background: none; color: var(--dim); border-radius: var(--r-md); padding: 12px; cursor: pointer; font-weight: 700; }
   .add:hover { color: var(--text); border-color: var(--dim); }
   .tpls { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 14px; }
+  .tgcat { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 14px; } .tgcat .pill.on { background: var(--go1); color: var(--go-ink); border-color: transparent; }
+  section[data-tab=tg] > .catoff, section[data-tab] > .block.catoff { display: none !important; }
+  .secf { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 14px; } .secf .pill { font-size: 12.5px; padding: 5px 11px; } .secf .pill.on { background: var(--go1); color: var(--go-ink); border-color: transparent; }
   .tplmini { margin: 6px 0 6px; gap: 6px; } .tplmini .pill { font-size: 12.5px; padding: 4px 10px; }
   .mark { border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px 12px; margin: 0 0 8px; background: var(--field); }
   .mark .top { display: flex; gap: 8px; align-items: center; } .mark .n { background: transparent; border: 0; padding: 6px 2px; font-weight: 700; flex: 1; min-width: 0; }
@@ -822,8 +825,9 @@
     <section data-tab="tg" hidden>
       <h1>Telegram-канал</h1>
       <p class="lead">Новости и опросы в ваш канал или группу (можно в оба сразу — через запятую) прямо из пульта. Нужен свой бот: в канале — администратор с правом публиковать, в группе — просто участник.</p>
+      <div class="tgcat" id="tgCat" role="tablist" aria-label="Что показать"><button type="button" class="pill on" data-cat="">Всё</button><button type="button" class="pill" data-cat="channel">📣 Канал</button><button type="button" class="pill" data-cat="group">👥 Группа</button><button type="button" class="pill" data-cat="bot">💬 Бот в личке</button><button type="button" class="pill" data-cat="setup">⚙️ Настройка</button></div>
       <nav class="tgtoc" aria-label="Разделы">
-        <a href="#tgs-send">✉️ Отправить</a><a href="#tgs-log">📒 Запланировано и журнал</a><a href="#tgs-auto">🤖 Автопосты</a><a href="#tgs-bot">💬 Бот</a><a href="#tgs-setup">⚙️ Настройка</a>
+        <a href="#tgs-send">✉️ Отправить</a><a href="#tgs-log">📒 Журнал</a><a href="#tgs-auto">🤖 Автопосты</a><a href="#tgs-group">👥 Группа</a><a href="#tgs-bot">💬 Бот</a><a href="#tgs-setup">⚙️ Настройка</a>
       </nav>
       <h2 class="tgsec" id="tgs-send">✉️ Отправить</h2><p class="note tgsecn">Пост или опрос в канал — сейчас или позже.</p>
       <div class="block" id="tgVerBanner" hidden><h2>🆕 <span id="tgVerText"></span></h2><p class="note">Робот обычно объявляет версию сам. Если пост не появился — отправьте одной кнопкой.</p><button class="btn go small" id="tgVerGo">Объявить в канале</button></div>
@@ -882,6 +886,14 @@
         <label class="sw"><div class="t"><b>📅 Дайджест по воскресеньям</b><span>В 18:00 МСК — итоги недели карточкой: версии, техработы, подписчики</span></div><span class="tog"><input type="checkbox" id="tgDigest"><i></i></span></label>
         <label class="sw"><div class="t"><b>🎉 Праздничные открытки</b><span>31 декабря, 14 февраля, 8 марта и 31 октября — поздравление в праздничной теме</span></div><span class="tog"><input type="checkbox" id="tgHoliday"><i></i></span></label>
         <p class="help"><b>Уведомления вам в личку</b> (упала сборка, в пульте сохранили изменения, ошибка робота): напишите своему боту /start, узнайте свой номер у @userinfobot и добавьте секрет <code>TG_OWNER</code> с этим номером. <b>Английский канал:</b> секрет <code>TG_CHAT_EN</code> — @имя канала.</p></div>
+      <h2 class="tgsec" id="tgs-group" data-cat="group">👥 Группа</h2><p class="note tgsecn" data-cat="group">Чат, где люди общаются (и группа обсуждений канала). Бот должен быть администратором группы с правом удалять сообщения.</p>
+      <div class="block" id="grpBlock" data-cat="group"><h2>👋 Новички и порядок</h2>
+        <div id="grpFeat"></div>
+        <div id="grpWelcomeBox">
+        <label class="f" for="bcWelcome">Приветствие новичков в группе <small>{имя} — имя человека</small></label><textarea id="bcWelcome" rows="2" maxlength="600"></textarea>
+        </div>
+        <button class="btn go" id="grpSave" type="button" style="margin-top:12px;width:100%">Сохранить настройки группы</button>
+        <p class="help">В канале приветствия нет: Telegram не даёт боту писать подписчикам первым, а пост на каждого засыпал бы ленту. Для канала — закреплённый пост со ссылкой на бота.</p></div>
       <h2 class="tgsec" id="tgs-bot">💬 Бот: вопросы, статистика, рассылка</h2><p class="note tgsecn">То, что бот собирает в личке. Данные забирает робот GitHub и шифрует ключом статистики (как «Пользователи» на обзоре).</p>
       <div class="block" id="btBlock"><h2>📥 Вопросы людей</h2>
         <p class="note" id="btNote">Загружаем…</p>
@@ -896,6 +908,23 @@
         <label class="f" for="btWhen">Когда <small>пусто — сразу</small></label><input id="btWhen" type="datetime-local">
         <button class="btn go" id="btSend" type="button" style="margin-top:12px;width:100%">Отправить в личку</button>
         <p class="help" id="btBcState"></p></div>
+      <div class="block" id="bcBlock"><h2>📝 Тексты и функции бота</h2>
+        <p class="note">Что бот отвечает в личке: приветствие, темы-кнопки, слова для поиска и ответы. Бот подхватит изменения за 5 минут — код в Cloudflare менять не нужно. Если вы ставили бота до этой версии пульта, один раз обновите код: «Скопировать код бота» → вставить в Cloudflare → Deploy. В текстах можно писать <code>{сайт}</code> и <code>{поддержка}</code> — подставятся ссылки.</p>
+        <label class="f" for="bcGreet">Приветствие (/start)</label><textarea id="bcGreet" rows="2" maxlength="1000"></textarea>
+        <label class="f" for="bcNot">Если ответа не нашлось</label><textarea id="bcNot" rows="2" maxlength="1000"></textarea>
+        <label class="f" for="bcSup">Ссылка поддержки</label><input id="bcSup" type="url" placeholder="https://t.me/…">
+        <p class="f" style="margin-top:14px">Темы — кнопки в меню бота, по порядку</p>
+        <div id="bcTopics"></div>
+        <div class="rowx" style="margin-top:10px"><button class="btn quiet small" id="bcAdd" type="button">＋ Добавить тему</button><select id="bcTopicTpl" aria-label="Тема из шаблона"><option value="">＋ Тема из шаблона…</option></select><button class="btn quiet small" id="bcUndo" type="button">Отменить изменения</button></div>
+        <div class="bfeat" id="bcFeat"><p class="f" style="margin-top:16px">Функции бота — включаются и выключаются здесь</p>
+          <p class="help">Новые функции работают с кодом бота от 16 ноября: на своём сервере — <code>sudo apex</code> → «Обновления» → «Обновить бота» (или автообновление), в Cloudflare — «Применить к боту в Cloudflare».</p>
+          <div id="bcFeatList"></div></div>
+        <p class="f" style="margin-top:16px">Ещё тексты</p>
+        <label class="f" for="bcDesc">Описание бота <small>видно до /start, до 512 знаков</small></label><textarea id="bcDesc" rows="2" maxlength="512" placeholder="Помощник APEX CLIENT: установка, обновление, если не подключается"></textarea>
+        <label class="f" for="bcShort">Коротко <small>в профиле бота, до 120 знаков</small></label><input id="bcShort" maxlength="120" placeholder="Поддержка APEX CLIENT">
+        <label class="f" for="bcChannel">Канал для /news <small>@имя</small></label><input id="bcChannel" maxlength="40" placeholder="@apex_client_news">
+        <label class="f" for="bcQuick">Быстрые ответы владельца <small>кнопки под пересланным вопросом, по одному в строке, до 6</small></label><textarea id="bcQuick" rows="4" maxlength="1800"></textarea>
+        <button class="btn go" id="bcSave" style="margin-top:12px;width:100%">Сохранить тексты и функции бота</button></div>
       <h2 class="tgsec" id="tgs-setup">⚙️ Настройка</h2><p class="note tgsecn">Один раз: бот и секреты GitHub.</p>
       <div class="block" id="hostBlock"><h2>🧭 Где работает бот</h2>
         <p class="note">Бот, который отвечает в личке и принимает «Участвую», работает в одном месте. Выберите где — пульт покажет только нужное.</p>
@@ -952,24 +981,6 @@
           <li><b>Удаление</b> — удалить бота (с предложением сделать копию) или само меню</li>
         </ul>
         <p class="help">Бот работает только в одном месте: запуск на сервере отключает Cloudflare, а «Применить к боту в Cloudflare» — наоборот. Итоги конкурсов на сервере подводятся командой <code>/draw номер</code> в личке бота. Токен хранится только на сервере в /etc/apex-bot.env — никому его не отправляйте. Без меню тоже можно: <code>sudo apex update</code>, <code>restart</code>, <code>status</code>, <code>logs</code>, <code>errors</code>, <code>backup</code>, <code>import файл</code>.</p></div>
-      <div class="block" id="bcBlock"><h2>📝 Тексты и функции бота</h2>
-        <p class="note">Что бот отвечает в личке: приветствие, темы-кнопки, слова для поиска и ответы. Бот подхватит изменения за 5 минут — код в Cloudflare менять не нужно. Если вы ставили бота до этой версии пульта, один раз обновите код: «Скопировать код бота» → вставить в Cloudflare → Deploy. В текстах можно писать <code>{сайт}</code> и <code>{поддержка}</code> — подставятся ссылки.</p>
-        <label class="f" for="bcGreet">Приветствие (/start)</label><textarea id="bcGreet" rows="2" maxlength="1000"></textarea>
-        <label class="f" for="bcNot">Если ответа не нашлось</label><textarea id="bcNot" rows="2" maxlength="1000"></textarea>
-        <label class="f" for="bcSup">Ссылка поддержки</label><input id="bcSup" type="url" placeholder="https://t.me/…">
-        <p class="f" style="margin-top:14px">Темы — кнопки в меню бота, по порядку</p>
-        <div id="bcTopics"></div>
-        <div class="rowx" style="margin-top:10px"><button class="btn quiet small" id="bcAdd" type="button">＋ Добавить тему</button><select id="bcTopicTpl" aria-label="Тема из шаблона"><option value="">＋ Тема из шаблона…</option></select><button class="btn quiet small" id="bcUndo" type="button">Отменить изменения</button></div>
-        <div class="bfeat" id="bcFeat"><p class="f" style="margin-top:16px">Функции бота — включаются и выключаются здесь</p>
-          <p class="help">Новые функции работают с кодом бота от 16 ноября: на своём сервере — <code>sudo apex</code> → «Обновления» → «Обновить бота» (или автообновление), в Cloudflare — «Применить к боту в Cloudflare».</p>
-          <div id="bcFeatList"></div></div>
-        <p class="f" style="margin-top:16px">Ещё тексты</p>
-        <label class="f" for="bcDesc">Описание бота <small>видно до /start, до 512 знаков</small></label><textarea id="bcDesc" rows="2" maxlength="512" placeholder="Помощник APEX CLIENT: установка, обновление, если не подключается"></textarea>
-        <label class="f" for="bcShort">Коротко <small>в профиле бота, до 120 знаков</small></label><input id="bcShort" maxlength="120" placeholder="Поддержка APEX CLIENT">
-        <label class="f" for="bcWelcome">Приветствие новичков в группе <small>{имя} — имя человека</small></label><textarea id="bcWelcome" rows="2" maxlength="600"></textarea>
-        <label class="f" for="bcChannel">Канал для /news <small>@имя</small></label><input id="bcChannel" maxlength="40" placeholder="@apex_client_news">
-        <label class="f" for="bcQuick">Быстрые ответы владельца <small>кнопки под пересланным вопросом, по одному в строке, до 6</small></label><textarea id="bcQuick" rows="4" maxlength="1800"></textarea>
-        <button class="btn go" id="bcSave" style="margin-top:12px;width:100%">Сохранить тексты и функции бота</button></div>
       <div class="block"><h2>📱 Бот в этом браузере</h2>
         <label class="f" for="tgTok">Токен бота</label><input id="tgTok" type="password" autocomplete="off" placeholder="123456789:AA…">
         <label class="f" for="tgChat">Канал и/или группа</label><input id="tgChat" type="text" placeholder="@apex_news, @apex_chat или -100…">
@@ -1135,7 +1146,7 @@
         <p class="note">Для второго человека: в этом браузере остаются только «Обзор», «Баннеры», «Объявление», «Telegram» и «Справка» — серверы, обновления и настройки скрыты.</p>
         <label class="sw"><div class="t"><b>Режим помощника в этом браузере</b><span>Выключается здесь же</span></div><span class="tog"><input type="checkbox" id="helperOn"><i></i></span></label>
         <p class="help">Это удобство, а не защита: настоящие права даёт GitHub. Помощнику — свой токен: github.com → Settings → Developer settings → Fine-grained tokens → только репозиторий apex-client → <b>Contents: Read and write</b> (без Secrets и Actions). Тогда он не увидит и не изменит секреты, а все его сохранения видны в «Истории» с его именем.</p></div>
-      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 16 ноября 2026 · приложение 3.22.0 · пульт 2.41.</p>
+      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 16 ноября 2026 · приложение 3.22.0 · пульт 2.42.</p>
       <div class="helptools">
         <input id="hq" type="search" placeholder="Найти в справке, например «техработы»" aria-label="Найти в справке" autocomplete="off">
         <button class="btn quiet small" id="hOpen" type="button">Развернуть всё</button>
@@ -1364,6 +1375,7 @@
         <div class="nwkind" id="nwKind" role="group" aria-label="Сортировка"><button type="button" class="pill on" data-k="">Все</button><button type="button" class="pill" data-k="n">🟢 Новое</button><button type="button" class="pill" data-k="u">🟣 Улучшено</button><button type="button" class="pill" data-k="f">🔵 Исправлено</button></div>
         <div id="nwOther" hidden></div>
         <div class="tbl" id="nwPult"><table id="pultLog">
+          <tr data-k="u"><td>2.42</td><td>Telegram разложен по разделам: «📣 Канал» (посты, журнал, автопосты, конкурсы) · «👥 Группа» (приветствие новичков, антиспам) · «💬 Бот в личке» (вопросы, статистика, рассылка, тексты и функции) · «⚙️ Настройка» — переключатель сверху, выбор запоминается. На всех длинных вкладках — строка разделов «Всё · …»: нажали — остался только нужный блок</td></tr>
           <tr data-k="n"><td>2.41</td><td>Готовые шаблоны: приветствие в группе, /start, «нет ответа», описание бота, быстрые ответы, рассылка, опрос и варианты; «＋ Тема из шаблона» — оплата, устройства, ТВ, часы, игры, банки</td></tr>
           <tr data-k="n"><td>2.40</td><td>Telegram → «💬 Бот»: вопросы людей с ответом прямо из пульта (бот переведёт и спросит «Помогло?»), статистика бота (темы, жалобы, опросы, приглашения), рассылка и опрос в личку</td></tr>
           <tr data-k="n"><td>2.40</td><td>«Тексты и функции бота»: 18 переключателей (рассылка, /news, /invite, /remind, жалобы, перевод, антифлуд, группа, конкурсы…), описание бота, приветствие в группе, быстрые ответы, картинки к темам и ссылки на тему</td></tr>
@@ -1493,7 +1505,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.41', PANEL_DATE = '16 ноября 2026'
+const PANEL_VERSION = '2.42', PANEL_DATE = '16 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -2340,6 +2352,8 @@ function runSearch() {
   $('qres').hidden = false; $('qres')._hits = hits
 }
 function goHit(h) {
+  // 2.42: найденное могло быть в скрытом разделе — показываем всё
+  try { if (h.el?.closest('.catoff')) { const sec = h.el.closest('section[data-tab]'); if (sec?.dataset.tab === 'tg') tgCatApply(''); else sec?.querySelector('.secf [data-sf=""]')?.click() } } catch {}
   if (!h) return; $('qres').hidden = true; $('q').value = ''; showTab(h.id)
   if (h.el) { const d = h.el.closest('details'); if (d) d.open = true; const box = h.el.closest('.block') || h.el; box.scrollIntoView({ behavior: 'smooth', block: 'center' }); box.classList.remove('flash'); void box.offsetWidth; box.classList.add('flash'); const inp = h.el.matches('label.f') ? $(h.el.getAttribute('for')) : null; if (inp) setTimeout(() => inp.focus({ preventScroll: true }), 400) }
 }
@@ -3389,9 +3403,10 @@ const BOT_FEAT = { broadcast: true, news: true, status: true, ping: true, englis
 const BOT_FEAT_INFO = [
   ['Ответы людям', [['forward', '📨 Вопросы без ответа — вам в личку', 'Нужен ваш номер. Ответьте на пересланное сообщение или нажмите ⚡ быстрый ответ; фото и голосовые тоже приходят вам'], ['followup', '🙂 «Помогло?» через день после ответа', 'Итоги — в статистике бота'], ['translate', '🔁 Перевод ваших ответов на английский', 'Для тех, у кого Telegram не на русском (Cloudflare AI)'], ['english', '🇬🇧 Ответы на английском', 'Если Telegram у человека не на русском — меню и ответы на английском']]],
   ['Команды', [['status', '🛰 /status — состояние серверов', 'Техработы и «медленно» из пульта'], ['news', '📰 /news — последние новости', 'Три последних поста канала'], ['invite', '🤝 /invite — пригласить друга', 'Своя ссылка и счёт приглашённых'], ['remind', '🔔 /remind — напомнить о продлении', 'За 3 дня до конца подписки (робот сверяет с Remnawave)'], ['complaints', '⚠️ Жалобы на серверы', '«не работает Германия» — 3 жалобы за час, и вам придёт сообщение'], ['version', '⬆️ Подсказка новой версии', '«у меня 3.20» — бот предложит обновиться'], ['broadcast', '📣 Рассылка и опросы', 'Из пульта — всем, кто писал боту; /stop — отписка'], ['stats', '📊 Счёт популярных тем', '/stats у вас и статистика в пульте'], ['ping', '🏓 /ping для владельца', 'Где работает бот и что включено']]],
-  ['Защита', [['antiflood', '🧯 Защита от флуда', 'Больше 8 сообщений в минуту — пауза'], ['welcome', '👋 Приветствие новичков в группе', 'Текст ниже, с кнопками «Как установить» и «Поддержка»'], ['antispam', '🛡 Антиспам в группе', 'Ссылки от новичков в первые сутки удаляются (бот — админ группы)']]],
+  ['Защита', [['antiflood', '🧯 Защита от флуда', 'Больше 8 сообщений в минуту — пауза']]],
   ['Конкурсы', [['contestSub', '📣 Только подписчики канала', 'Бот должен быть админом канала'], ['contestReal', '🪪 Без пустых аккаунтов', 'Нужно фото профиля или @имя — защита от накруток (Telegram не сообщает возраст аккаунта)']]],
 ]
+const GROUP_FEAT = [['welcome', '👋 Приветствие новичков', 'Сообщение с кнопками «Как установить» и «Поддержка»; текст — ниже'], ['antispam', '🛡 Антиспам', 'Ссылки и пересылки от новичков в первые сутки удаляются']]
 const BOT_QUICK = ['Обновите подписку: Настройки → Подписка → «Обновить»', 'Включите автопилот — он сам выберет рабочий сервер', 'Откройте «Проверка сети» на главном и пришлите итог (кнопка «Поделиться»)', 'Обновите приложение до последней версии: https://dubstep2004.github.io/update/']
 let bcBotName = ''
 function bcRender() {
@@ -3399,6 +3414,7 @@ function bcRender() {
   const c = bcData || {}
   $('bcGreet').value = c.greeting || ''; $('bcNot').value = c.notFound || ''; $('bcSup').value = c.support || ''
   $('bcFeatList').innerHTML = BOT_FEAT_INFO.map(([g, list]) => `<p class="help" style="margin:12px 0 0"><b>${esc(g)}</b></p>` + list.map(([k, t, d]) => `<label class="sw"><div class="t"><b>${esc(t)}</b><span>${esc(d)}</span></div><span class="tog"><input type="checkbox" data-feat="${k}"><i></i></span></label>`).join('')).join('')
+  $('grpFeat').innerHTML = GROUP_FEAT.map(([k, t, d]) => `<label class="sw"><div class="t"><b>${esc(t)}</b><span>${esc(d)}</span></div><span class="tog"><input type="checkbox" data-feat="${k}"><i></i></span></label>`).join('')
   document.querySelectorAll('[data-feat]').forEach(x => { const v = c.features?.[x.dataset.feat]; x.checked = typeof v === 'boolean' ? v : BOT_FEAT[x.dataset.feat] })
   $('bcDesc').value = c.description || ''; $('bcShort').value = c.short || ''; $('bcWelcome').value = c.welcome || 'Добро пожаловать, {имя}! 👋\nЗдесь новости и помощь по APEX CLIENT.'; $('bcChannel').value = c.channel || ''; $('bcQuick').value = (c.quick || BOT_QUICK).join('\n')
   $('bcTopics').innerHTML = (c.topics || []).map((t, i) => `<div class="bct" data-i="${i}">
@@ -3524,6 +3540,46 @@ $('undoSave').onclick = () => guarded($('undoSave'), async () => {
 // Большой экран: светлый / тёмный
 $('bigT').onclick = () => { $('big').classList.toggle('light'); store('apex_admin_bigl', $('big').classList.contains('light') ? '1' : null) }
 if (load('apex_admin_bigl')) $('big').classList.add('light')
+
+// ── 2.42: Telegram — разделы «Канал / Группа / Бот в личке / Настройка»
+function tgCatInit() {
+  let cat = 'channel'
+  document.querySelectorAll('section[data-tab=tg] > *').forEach(el => {
+    if (el.id === 'tgCat' || el.matches('h1, .lead, .tgtoc')) return
+    const h = el.matches('.tgsec') ? el.id : ''
+    if (h) cat = { 'tgs-send': 'channel', 'tgs-log': 'channel', 'tgs-auto': 'channel', 'tgs-group': 'group', 'tgs-bot': 'bot', 'tgs-setup': 'setup' }[h] || cat
+    if (!el.dataset.cat) el.dataset.cat = cat
+  })
+}
+function tgCatApply(c) {
+  document.querySelectorAll('section[data-tab=tg] > [data-cat]').forEach(el => el.classList.toggle('catoff', !!c && el.dataset.cat !== c))
+  $('tgCat').querySelectorAll('[data-cat]').forEach(b => b.classList.toggle('on', b.dataset.cat === c))
+  document.querySelector('section[data-tab=tg] .tgtoc').hidden = !!c
+  store('apex_admin_tgcat', c || null)
+}
+tgCatInit(); tgCatApply(load('apex_admin_tgcat') || '')
+// 2.42: на остальных длинных вкладках — строка «Всё · раздел · раздел…» из заголовков блоков; выбор запоминается
+// Большие вкладки — по смысловым группам, остальные — по блокам; «Справка» — у неё свой поиск
+const SEC_GROUPS = { home: [['🟢 Состояние', /Статус|Сборки|Всё сломано|Сейчас действует|Быстрые/], ['📊 Статистика', /Неделя|Telegram-канал|Пользовател|Скачивани|Версии/], ['📰 События', /Лента|Что нового|Календарь|Отложенное/], ['🧰 Инструменты', /Резервн|Разбор|отчёт/]] }
+function secFilters() {
+  document.querySelectorAll('section[data-tab]').forEach(sec => {
+    const id = sec.dataset.tab; if (id === 'tg' || id === 'help' || sec.querySelector(':scope > .secf')) return
+    const title = b => (b.querySelector(':scope > h2, :scope > details > summary')?.textContent || '').replace(/\s+/g, ' ').trim()
+    const blocks = [...sec.querySelectorAll(':scope > .block')].filter(title)
+    if (blocks.length < 4) return
+    const groups = SEC_GROUPS[id] ? [...SEC_GROUPS[id].map(([n, re]) => [n, blocks.filter(b => re.test(title(b)))]), ['Ещё', blocks.filter(b => !SEC_GROUPS[id].some(([, re]) => re.test(title(b))))]].filter(g => g[1].length)
+      : blocks.map(b => [title(b).slice(0, 28), [b]])
+    const bar = document.createElement('div'); bar.className = 'secf'; bar.setAttribute('role', 'tablist'); bar.setAttribute('aria-label', 'Разделы вкладки')
+    bar.innerHTML = '<button type="button" class="pill on" data-sf="">Всё</button>' + groups.map(([n], i) => `<button type="button" class="pill" data-sf="${i}">${esc(n)}</button>`).join('')
+    ;(sec.querySelector(':scope > .lead') || sec.querySelector(':scope > h1')).after(bar)
+    const apply = v => { const on = v === '' ? null : new Set(groups[+v]?.[1] || []); blocks.forEach(b => b.classList.toggle('catoff', !!on && !on.has(b))); bar.querySelectorAll('[data-sf]').forEach(x => x.classList.toggle('on', x.dataset.sf === v)); store('apex_admin_sf_' + id, v || null) }
+    bar.onclick = e => { const b = e.target.closest('[data-sf]'); if (b) apply(b.dataset.sf) }
+    const saved = load('apex_admin_sf_' + id); if (saved && groups[+saved]) apply(saved)
+  })
+}
+secFilters()
+$('tgCat').onclick = e => { const b = e.target.closest('[data-cat]'); if (b) { tgCatApply(b.dataset.cat); window.scrollTo({ top: 0 }) } }
+$('grpSave').onclick = () => $('bcSave').click()
 
 // ── 2.41: готовые шаблоны под полями — нажали, и текст подставился (непустое поле — с вопросом)
 const SUP = '{поддержка}', WEB = '{сайт}'
