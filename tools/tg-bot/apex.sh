@@ -10,7 +10,7 @@
 set -uo pipefail
 export LC_ALL=C.UTF-8 2>/dev/null  # русские буквы — по одной, а не по байтам
 
-APEX_VER="2.0"
+APEX_VER="2.1"
 SRC="https://raw.githubusercontent.com/Dubstep2004/apex-client/main/tools/tg-bot"
 API="https://api.github.com/repos/Dubstep2004/apex-client/commits?path=tools/tg-bot&per_page=1"
 DIR=${APEX_DIR:-/opt/apex-bot}; SELF=${APEX_SELF:-/usr/local/bin/apex}
@@ -102,7 +102,9 @@ item()    { printf '   %s%3s%s  %s%s%s\n' "$ACC$B" "$1" "$R" "${3:-}" "$2" "$R";
 
 # ── Что нового ─────────────────────────────────────────────────────
 # Строки: «V|версия|дата» — заголовок; «n|текст» — новое, «u|…» — улучшено, «f|…» — исправлено.
-CHANGES='V|2.0|16 ноября 2026
+CHANGES='V|2.1|16 ноября 2026
+f|После «Обновить меню» сразу открывается новое меню, а не консоль
+V|2.0|16 ноября 2026
 n|Меню по разделам: Бот · Настройки · Включить / выключить · Сервер и безопасность · Обновления · Копии · Боты · Удаление
 n|Включить / выключить: копия в Telegram, сторож (бот завис — перезапуск), тревога по диску и памяти, файрвол, защита от перебора паролей, обновления безопасности
 n|Сервер: мониторинг, скорость до Telegram и сайта, порты и файрвол, SSH — порт и вход только по ключу, очистка места, «всё ли настроено», проверка на подмену
@@ -246,6 +248,8 @@ do_self_update() {
   local nv; nv=$(sed -n 's/^APEX_VER="\(.*\)"/\1/p' "$tmp" | head -1)
   install -m 755 "$tmp" "$SELF"; rm -f "$tmp"
   if [ "$nv" != "$APEX_VER" ]; then ok "Меню обновлено: $APEX_VER → $nv"; "$SELF" news "$nv"; else ok "Уже последняя версия меню"; fi
+  # 2.1: из меню — сразу открываем новое меню, а не выходим в консоль
+  if [ -n "${IN_MENU:-}" ]; then pause; exec "$SELF"; fi
   exit 0
 }
 do_status() {
@@ -737,7 +741,7 @@ sub_menu() {  # sub_menu <раздел> — показывает пункты р
   done
 }
 main_menu() {
-  need_root
+  need_root; IN_MENU=1
   local r l; r=$(remote_sha); l=$(local_sha); [ -n "$r" ] && [ -n "$l" ] && [ "$r" != "$l" ] && UPD=1
   local S=('' 'Бот' 'Настройки' 'Включить / выключить' 'Сервер и безопасность' 'Обновления' 'Копии и перенос' 'Боты на сервере' 'Удаление') IC=('' '🤖' '⚙️ ' '🔀' '🛡 ' '⬆️ ' '💾' '🧩' '🗑 ')
   while true; do
