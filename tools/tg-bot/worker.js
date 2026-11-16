@@ -25,6 +25,8 @@
 //   его ответ на пересланное сообщение бот отправит человеку; счёт, какие темы спрашивают чаще.
 
 // ЧТО НОВОГО В БОТЕ (пульт показывает это в «Справка» → «Что нового» → «Бот»; V — версия, n/u/f — новое/улучшено/исправлено)
+// V|2.3|16 ноября 2026
+// f|Кнопки владельца (/settings, быстрые ответы) у других людей молча не работают — без ответа и подсказок; команды владельца у них не видны в меню «/» и отвечают «такой команды нет»
 // V|2.2|16 ноября 2026
 // f|Cloudflare: рассылка, «Помогло?» и меню команд работают по расписанию раз в минуту, а не только когда боту кто-то пишет (после «Применить к боту в Cloudflare»)
 // V|2.1|16 ноября 2026
@@ -545,6 +547,8 @@ export default {
         if (u.callback_query) {
           const cq = u.callback_query, d = cq.data || '', owner = env.OWNER_ID && String(cq.from.id) === String(env.OWNER_ID)
           if (d.startsWith('join:')) await join(env, cq, d.slice(5))
+          // Кнопки владельца (функции, быстрые ответы): у остальных молча ничего не делают и ничего не показывают
+          else if ((d.startsWith('ft:') || d.startsWith('qr:')) && !owner) await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id })
           else if (d.startsWith('ft:') && owner) { // /settings: переключить функцию
             const k = d.slice(3), cfg0 = await config(env)
             if (k in cfg0.features) { await setFeature(env, k, !cfg0.features[k]); const cfg = await config(env); await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: (FEAT_NAMES[k] || k) + (cfg.features[k] ? ' — включено' : ' — выключено') }); if (cq.message) await tg(env, 'editMessageReplyMarkup', { chat_id: cq.message.chat.id, message_id: cq.message.message_id, reply_markup: settingsKb(cfg) }) }

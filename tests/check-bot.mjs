@@ -36,10 +36,10 @@ globalThis.fetch = async (url, init = {}) => {
     if (n === 1) return ok(U.map((message, i) => ({ update_id: i + 1, message })))
     if (n === 2) return ok([{ update_id: 99, message: msg('Ответ владельца', { id: 1 }, { reply_to_message: { message_id: 1000 } }) }, { update_id: 100, message: msg('чужой ответ', { id: 5 }, { reply_to_message: { message_id: 1000 } }) },
       { update_id: 101, callback_query: { id: 'c1', from: { id: 1 }, data: 'qr:0:1000', message: { chat: { id: 1 }, message_id: 7 } } }, { update_id: 102, callback_query: { id: 'c2', from: { id: 5 }, data: 'qr:1:1000', message: { chat: { id: 5 }, message_id: 8 } } },
-      { update_id: 103, message: msg('/settings', { id: 1 }) }, { update_id: 104, callback_query: { id: 'c3', from: { id: 5 }, data: 'ft:status', message: { chat: { id: 5 }, message_id: 9 } } }, { update_id: 105, callback_query: { id: 'c4', from: { id: 1 }, data: 'ft:status', message: { chat: { id: 1 }, message_id: 10 } } }, { update_id: 106, message: msg('/status', { id: 60 }) }])
+      { update_id: 103, message: msg('/settings', { id: 1 }) }, { update_id: 104, callback_query: { id: 'c3', from: { id: 5 }, data: 'ft:status', message: { chat: { id: 5 }, message_id: 9 } } }, { update_id: 105, callback_query: { id: 'c4', from: { id: 1 }, data: 'ft:status', message: { chat: { id: 1 }, message_id: 10 } } }, { update_id: 106, message: msg('/status', { id: 60 }) }, { update_id: 107, message: msg('/settings', { id: 70 }) }, { update_id: 108, message: msg('/stats', { id: 71 }) }, { update_id: 109, message: msg('/ping', { id: 71 }) }, { update_id: 110, message: msg('/contests', { id: 71 }) }, { update_id: 111, message: msg('/draw 1', { id: 71 }) }, { update_id: 112, callback_query: { id: 'c9', from: { id: 77 }, data: 'ft:news', message: { chat: { id: 77 }, message_id: 11 } } }])
     if (n < 6) { await new Promise(r => setTimeout(r, 1500)); return ok([]) }
     process.stdout.write('SENT' + JSON.stringify(sent) + '\\n'); process.exit(0) }
-  sent.push([m, b.chat_id, b.text || '', b.parse_mode || '', b.from_chat_id])
+  sent.push([m, b.chat_id, b.text || '', b.parse_mode || '', b.from_chat_id, b.callback_query_id === 'c9' ? 77 : 0])
   return ok(m === 'forwardMessage' ? { message_id: 1000 + sent.filter(x => x[0] === 'forwardMessage').length - 1 } : {})
 }`)
 const r = spawnSync(process.execPath, ['--import', mock, path.join(BOT, 'server.js')], { env: { ...process.env, BOT_TOKEN: '123456:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', OWNER_ID: '1', BOT_DATA: path.join(tmp, 'data') }, encoding: 'utf8', timeout: 30000 })
@@ -73,6 +73,12 @@ else {
   if (!bc.length || bc.includes(21) || bc.includes(1)) fail('рассылка: не дошла, или пришла тому, кто нажал /stop, или владельцу: ' + JSON.stringify(bc))
   if (!sent.some(s => s[0] === 'setMyCommands')) fail('меню команд «/» не выставлено')
   has(1, /Функции бота — нажмите/, '/settings владельцу не ответил')
+  // Команды владельца у других: не работают и ничего не выдают
+  for (const c of ['/settings', '/stats', '/ping', '/contests', '/draw 1', '/help']) if (to(70).concat(to(71)).some(t => /Функции бота|Вопросы за 7|Работаю|Команды владельца|Конкурс|уч\./.test(t))) fail('команда владельца сработала у другого человека: ' + c)
+  if (!to(70).some(t => /Такой команды нет/.test(t))) fail('чужой /settings должен получить «такой команды нет»')
+  if (sent.some(s => s[0] === 'answerCallbackQuery' && /Отправлено|включено|выключено/.test(s[2]) && s[5] === 77)) fail('кнопка владельца ответила другому человеку')
+  { const ov = JSON.parse(JSON.parse(fs.readFileSync(path.join(tmp, 'data/kv.json'), 'utf8')).fover || '{}'); if (ov.news) fail('чужое нажатие кнопки /settings переключило функцию') }
+  if (!sent.some(s => s[0] === 'answerCallbackQuery' && s[5] === 77 && s[2] === '')) fail('чужая кнопка владельца: нет тихого ответа (у человека будет крутиться загрузка)')
   if (to(60).some(t => /Состояние серверов|Все серверы/.test(t))) fail('/settings: выключили /status кнопкой, а он всё равно отвечает')
   if (sent.filter(s => s[0] === 'editMessageReplyMarkup' && String(s[1]) === '5').length) fail('/settings: кнопки сработали не у владельца')
   const kvj = JSON.parse(fs.readFileSync(path.join(tmp, 'data/kv.json'), 'utf8')); if (!JSON.parse(kvj.fover || '{}').status || JSON.parse(kvj.fover).status.v !== false) fail('/settings: переключение не сохранилось')
