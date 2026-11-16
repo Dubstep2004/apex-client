@@ -311,12 +311,17 @@ app = read(E('TG_APP', 'docs/config/app.json'), {})
 SUPPORT = ((app.get('links') or {}).get('support') or '').strip()
 SUPPORT = SUPPORT if SUPPORT.startswith('https://') else 'https://t.me/Apexx_support'
 
-def bot_api(path, body):
+def bot_cred(slot=1):
+    """2.44: адрес и слово бота: 1 — основной (BOT_WORKER_URL/KEY), 2 и 3 — дополнительные (BOT2_URL/KEY, BOT3_URL/KEY)."""
+    return (E('BOT_WORKER_URL', ''), E('BOT_WORKER_KEY', '')) if slot == 1 else (E(f'BOT{slot}_URL', ''), E(f'BOT{slot}_KEY', ''))
+
+
+def bot_api(path, body, slot=1):
     """2.40: запрос к боту (Cloudflare или свой сервер) — подпись HMAC от слова BOT_WORKER_KEY по времени, без самого слова.
     Адрес может быть и http:// (свой сервер): данные бота зашифрованы, слово по сети не идёт."""
     import hmac as _h, hashlib as _hl
-    wurl, wkey = E('BOT_WORKER_URL', '').rstrip('/'), E('BOT_WORKER_KEY', '')
-    if not (re.match(r'^https?://', wurl) and len(wkey) >= 12): raise TgError('нет секретов BOT_WORKER_URL и BOT_WORKER_KEY — «Связь с пультом» в меню сервера или «Применить» для Cloudflare')
+    wurl, wkey = bot_cred(slot); wurl = wurl.rstrip('/')
+    if not (re.match(r'^https?://', wurl) and len(wkey) >= 12): raise TgError(('нет секретов BOT_WORKER_URL и BOT_WORKER_KEY' if slot == 1 else f'нет секретов BOT{slot}_URL и BOT{slot}_KEY') + ' — «Связь с пультом» в меню сервера, затем «Настройки бота» в пульте')
     ts = str(int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000))
     sig = _h.new(wkey.encode(), ts.encode(), _hl.sha256).hexdigest()
     req = urllib.request.Request(wurl + path, json.dumps(body).encode(), {'x-ts': ts, 'x-sig': sig, 'x-key': wkey if wurl.startswith('https://') else '', 'content-type': 'application/json', 'User-Agent': 'APEX-robot'})
@@ -325,22 +330,23 @@ def bot_api(path, body):
     except Exception as e: raise TgError(f'бот не отвечает ({type(e).__name__})')
 
 
-def bot_sync():
-    """2.40: данные бота для пульта (вопросы, статистика, рассылки, опросы) → docs/stats/bot.enc.json, зашифровано ключом STATS_KEY."""
+def bot_sync(slot=1):
+    """2.40: данные бота для пульта (вопросы, статистика, рассылки, опросы) → docs/stats/bot.enc.json (бот 2 — bot2.enc.json…), зашифровано ключом STATS_KEY."""
     import base64, hashlib
     try: from cryptography.hazmat.primitives.ciphers.aead import AESGCM
     except ImportError: print('данные бота: нет cryptography'); return False
     key = E('STATS_KEY', '')
-    if not key or not E('BOT_WORKER_URL', ''): return False
-    box = bot_api('/api/data', {})
+    if not key or not bot_cred(slot)[0]: return False
+    box = bot_api('/api/data', {}, slot)
     if box.get('error'): raise TgError(box['error'])
-    data = json.loads(AESGCM(hashlib.sha256(('apex-bot:' + E('BOT_WORKER_KEY', '')).encode()).digest()).decrypt(base64.b64decode(box['i']), base64.b64decode(box['c']), None))
+    data = json.loads(AESGCM(hashlib.sha256(('apex-bot:' + bot_cred(slot)[1]).encode()).digest()).decrypt(base64.b64decode(box['i']), base64.b64decode(box['c']), None))
     sig = hashlib.sha256(json.dumps({k: v for k, v in data.items() if k != 'at'}, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
-    if sig == state.get('botsig') and now - int(state.get('botsync') or 0) < 6 * 3600_000: return False
-    iv = os.urandom(12); out = 'docs/stats/bot.enc.json'
+    sk = 'botsig' if slot == 1 else f'botsig{slot}'
+    if sig == state.get(sk) and now - int(state.get('botsync') or 0) < 6 * 3600_000: return False
+    iv = os.urandom(12); out = 'docs/stats/bot.enc.json' if slot == 1 else f'docs/stats/bot{slot}.enc.json'
     enc = AESGCM(hashlib.sha256(('apex-bot-data:' + key).encode()).digest()).encrypt(iv, json.dumps(data, ensure_ascii=False).encode(), None)
     if not DRY: open(out, 'w').write(json.dumps({'v': 1, 'i': base64.b64encode(iv).decode(), 'c': base64.b64encode(enc).decode()}) + '\n')
-    state['botsig'], state['botsync'] = sig, now
+    state[sk], state['botsync'] = sig, now
     if (data.get('features') or {}).get('remind', True): remind_renewals(data.get('remind') or [])
     return True
 
@@ -422,14 +428,16 @@ if not DRY and now - int((state.get('bot') or {}).get('at') or 0) > 3600_000:
 
 # 2.40: данные бота для пульта — при каждом запуске робота, если прошло больше 20 минут
 if not DRY and now - int(state.get('botsync') or 0) > 20 * 60_000:
-    try:
-        if bot_sync(): changed = True
-        else: state['botsync'] = now
-    except Exception as e: print('данные бота:', e)
+    ch = False
+    for _slot in (1, 2, 3):
+        try: ch = bot_sync(_slot) or ch
+        except Exception as e: print(f'данные бота {_slot}:', e)
+    if ch: changed = True
+    else: state['botsync'] = now
 
 # ── 0. Задания из пульта (docs/tg/outbox.json). Пульт ждёт итог в state['results'][id].
 ALLOWED = {'sendMessage': {'text', 'link_preview_options'}, 'sendPoll': {'question', 'options', 'is_anonymous', 'allows_multiple_answers'},
-           'getChat': set(), 'sendVersion': {'version'}, 'deleteLast': set(), 'editLast': {'text'}, 'ping': set(), 'translate': {'text'}, 'contest': {'text', 'until', 'n', 'button'}, 'refreshVersions': set(), 'setButtons': {'mid', 'buttons'}, 'workerSetup': set(), 'botStatus': set(), 'dropWebhook': set(), 'botReply': {'qid', 'text'}, 'botSync': set()}
+           'getChat': set(), 'sendVersion': {'version'}, 'deleteLast': set(), 'editLast': {'text'}, 'ping': set(), 'translate': {'text'}, 'contest': {'text', 'until', 'n', 'button'}, 'refreshVersions': set(), 'setButtons': {'mid', 'buttons'}, 'workerSetup': set(), 'botStatus': set(), 'dropWebhook': set(), 'botReply': {'qid', 'text', 'slot'}, 'botSync': {'slot'}}
 box = read(E('TG_OUTBOX', 'docs/tg/outbox.json'), {})
 results = state['results']
 for it in (box.get('items') or [])[-40:]:
@@ -546,11 +554,13 @@ for it in (box.get('items') or [])[-40:]:
             if not found: errs.append('не нашёл постов о версиях — откройте пульт позже (робот собирает их номера раз в 3 часа)')
             log('Обновлены посты о версиях', ', '.join(sorted(set(done))), not errs, '; '.join(errs))
         elif method == 'botReply':  # 2.40: ответ человеку из пульта — через бота (он переведёт и спросит «Помогло?»)
-            r = bot_api('/api/reply', {'qid': int(body.get('qid') or 0), 'text': str(body.get('text', ''))[:4000]})
+            slot = int(body.get('slot') or 1) if str(body.get('slot') or 1) in ('1', '2', '3') else 1
+            r = bot_api('/api/reply', {'qid': int(body.get('qid') or 0), 'text': str(body.get('text', ''))[:4000]}, slot)
             if r.get('error'): raise TgError(r['error'])
-            done = ['ответ отправлен']; bot_sync()
+            done = ['ответ отправлен']; bot_sync(slot)
         elif method == 'botSync':  # 2.40: «Обновить» в пульте — свежие данные бота
-            bot_sync(); state['botsync'] = now; done = ['данные бота обновлены']
+            slot = int(body.get('slot') or 1) if str(body.get('slot') or 1) in ('1', '2', '3') else 1
+            bot_sync(slot); state['botsync'] = now; done = ['данные бота обновлены']
         elif method == 'dropWebhook':  # 2.37: «Отключить Cloudflare» — Telegram перестаёт слать сообщения в Worker
             tg('deleteWebhook', drop_pending_updates=False)
             state['bot'] = bot_status(); bot_hist(state['bot'])

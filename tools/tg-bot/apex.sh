@@ -10,7 +10,7 @@
 set -uo pipefail
 export LC_ALL=C.UTF-8 2>/dev/null  # русские буквы — по одной, а не по байтам
 
-APEX_VER="2.4"
+APEX_VER="2.5"
 SRC="https://raw.githubusercontent.com/Dubstep2004/apex-client/main/tools/tg-bot"
 API="https://api.github.com/repos/Dubstep2004/apex-client/commits?path=tools/tg-bot&per_page=1"
 DIR=${APEX_DIR:-/opt/apex-bot}; SELF=${APEX_SELF:-/usr/local/bin/apex}
@@ -105,7 +105,9 @@ item()    { printf '   %s%3s%s  %s%s%s\n' "$ACC$B" "$1" "$R" "${3:-}" "$2" "$R";
 
 # ── Что нового ─────────────────────────────────────────────────────
 # Строки: «V|версия|дата» — заголовок; «n|текст» — новое, «u|…» — улучшено, «f|…» — исправлено.
-CHANGES='V|2.4|16 ноября 2026
+CHANGES='V|2.5|16 ноября 2026
+n|Второй и третий бот видны в пульте отдельно: свои тексты, функции, вопросы, статистика и рассылка; при добавлении бота меню само подключает его тексты из пульта и предлагает свободный порт для связи
+V|2.4|16 ноября 2026
 n|«Включить / выключить» → «Функции бота»: любую функцию бота — вопросы мне, рассылку, /status, антиспам, конкурсы… — одним нажатием (то же, что /settings в боте и пульт)
 n|«Функции меню»: спрятать ненужные пункты — мониторинг, SSH, очистку, откат, быстрые команды, подсказки…
 V|2.3|16 ноября 2026
@@ -588,7 +590,8 @@ do_link() {
     esac
   else
     confirm "Включить? Откроется один порт для робота GitHub" || return
-    port=$(ask "Порт ${DIM}(Enter — 8787)${R}: "); port=${port:-8787}; [[ "$port" =~ ^[0-9]+$ ]] && [ "$port" -gt 1024 ] && [ "$port" -lt 65536 ] || { err "Порт — число 1025–65535"; return; }
+    local dp=8787 idx; [ -n "$P" ] && { idx=$(ls /etc/apex-bot-*.env 2>/dev/null | grep -n "/etc/apex-bot-$P.env" | cut -d: -f1); dp=$((8787 + ${idx:-1})); }
+    port=$(ask "Порт ${DIM}(Enter — $dp)${R}: "); port=${port:-$dp}; [[ "$port" =~ ^[0-9]+$ ]] && [ "$port" -gt 1024 ] && [ "$port" -lt 65536 ] || { err "Порт — число 1025–65535"; return; }
     [ -n "$(envget WEBHOOK_SECRET)" ] || envset WEBHOOK_SECRET "$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n' | cut -c1-40)"
     envset BOT_PORT "$port"; envset BOT_HOST 0.0.0.0
     command -v ufw >/dev/null && ufw status | grep -q active && ufw allow "$port/tcp" >/dev/null && ok "Файрвол: порт $port открыт"
@@ -597,7 +600,9 @@ do_link() {
 }
 link_show() {
   local ip; ip=$(curl -fsS -m 6 https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')
-  say ""; say "  Впишите в пульт: ${B}Telegram → Настройка → «Настройки бота»${R}:"
+  say ""
+  if [ -n "$P" ]; then say "  Впишите в пульт: ${B}Telegram → «Настройки бота» → поля «Бот 2» или «Бот 3»${R} (номер бота «$P» — в переключателе «Бот в личке»):"
+  else say "  Впишите в пульт: ${B}Telegram → Настройка → «Настройки бота»${R}:"; fi
   say "   Адрес бота  ${C2}http://$ip:$(envget BOT_PORT)${R}"
   say "   Слово       ${C2}$(envget WEBHOOK_SECRET)${R}"
   say "  ${DIM}Слово — как пароль: только в пульт, никому не отправляйте.${R}"
@@ -613,7 +618,11 @@ do_bots() {
   case "$(ask "Пункт: ")" in
     1) local n; n=$(ask "Имя бота ${DIM}(латиница и цифры, например en или test)${R}: "); [[ "$n" =~ ^[a-z0-9]{1,16}$ ]] || { err "Только латиница и цифры, до 16 знаков"; return; }
        [ -f "/etc/apex-bot-$n.env" ] && { err "Такой бот уже есть"; return; }
-       profile "$n"; cset BOT "$n"; ok "Ставлю бота «$n» — нужен отдельный токен от @BotFather"; do_install ;;
+       profile "$n"; cset BOT "$n"; ok "Ставлю бота «$n» — нужен отдельный токен от @BotFather"
+       ( umask 077; [ -f "$ENVF" ] || printf '# APEX CLIENT — бот «%s». Меню: sudo apex\n' "$n" >"$ENVF" )
+       envset BOT_CONFIG "https://dubstep2004.github.io/apex-client/tg/bot-$n.json"   # тексты и функции этого бота — из пульта
+       do_install
+       say "  ${DIM}В пульте: Telegram → «Бот в личке» → «＋ Бот» → имя ${B}$n${R}${DIM}. Свои тексты, вопросы и рассылка будут у него отдельно.${R}" ;;
     2) local n; n=$(ask "Имя бота ${DIM}(пусто — основной)${R}: "); [ -z "$n" ] || [ -f "/etc/apex-bot-$n.env" ] || { err "Нет такого бота"; return; }
        profile "$n"; cset BOT "$n"; ok "Выбран бот «${n:-основной}»" ;;
     3) local n; n=$(ask "Имя дополнительного бота: "); [[ "$n" =~ ^[a-z0-9]{1,16}$ ]] && [ -f "/etc/apex-bot-$n.env" ] || { err "Нет такого бота (основной удаляется в «Удаление»)"; return; }

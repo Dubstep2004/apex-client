@@ -331,6 +331,7 @@
   .add { width: 100%; border: 1px dashed var(--line); background: none; color: var(--dim); border-radius: var(--r-md); padding: 12px; cursor: pointer; font-weight: 700; }
   .add:hover { color: var(--text); border-color: var(--dim); }
   .tpls { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 14px; }
+  .botsel { padding: 12px 14px; } .botsel-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; } .botsel .help { margin: 8px 0 0; }
   .tgcat { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 14px; } .tgcat .pill.on { background: var(--go1); color: var(--go-ink); border-color: transparent; }
   section[data-tab=tg] > .catoff, section[data-tab] > .block.catoff { display: none !important; }
   .secf { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 14px; } .secf .pill { font-size: 12.5px; padding: 5px 11px; } .secf .pill.on { background: var(--go1); color: var(--go-ink); border-color: transparent; }
@@ -895,6 +896,8 @@
         <button class="btn go" id="grpSave" type="button" style="margin-top:12px;width:100%">Сохранить настройки группы</button>
         <p class="help">В канале приветствия нет: Telegram не даёт боту писать подписчикам первым, а пост на каждого засыпал бы ленту. Для канала — закреплённый пост со ссылкой на бота.</p></div>
       <h2 class="tgsec" id="tgs-bot">💬 Бот: вопросы, статистика, рассылка</h2><p class="note tgsecn">То, что бот собирает в личке. Данные забирает робот GitHub и шифрует ключом статистики (как «Пользователи» на обзоре).</p>
+      <div class="block botsel" id="botSelBlock"><div class="botsel-row"><span class="f" style="margin:0">Бот:</span><div class="tgcat" id="botSel" style="margin:0"></div></div>
+        <p class="help" id="botSelHelp"></p></div>
       <div class="block" id="btBlock"><h2>📥 Вопросы людей</h2>
         <p class="note" id="btNote">Загружаем…</p>
         <div class="rowx"><button class="btn quiet small" id="btSync" type="button">↻ Обновить</button><label class="sw inl"><span class="tog"><input type="checkbox" id="btOnlyNew" checked><i></i></span><span>Только без ответа</span></label></div>
@@ -936,6 +939,8 @@
         <label class="f" for="bsTok">Токен бота <small>TG_BOT_TOKEN · от @BotFather</small></label><input id="bsTok" type="password" autocomplete="off" placeholder="123456789:AA…">
         <label class="f" for="bsChat">Канал и/или группа <small>TG_CHAT</small></label><input id="bsChat" type="text" autocomplete="off" placeholder="@apex_client_news">
         <div><label class="f" for="bsKey">Секретное слово <small>BOT_WORKER_KEY · защита бота</small></label><div class="rowx"><input id="bsKey" type="text" autocomplete="off" placeholder="нажмите «Создать»" style="flex:1;min-width:0"><button class="btn quiet small" id="bsKeyGen" type="button">Создать</button></div></div>
+        <div class="botx" data-slot="2" hidden><label class="f" for="bsUrl2">Бот 2 · адрес <small>BOT2_URL</small></label><input id="bsUrl2" type="url" autocomplete="off" placeholder="http://203.0.113.5:8788"><label class="f" for="bsKey2">Бот 2 · слово <small>BOT2_KEY</small></label><input id="bsKey2" type="password" autocomplete="off"></div>
+        <div class="botx" data-slot="3" hidden><label class="f" for="bsUrl3">Бот 3 · адрес <small>BOT3_URL</small></label><input id="bsUrl3" type="url" autocomplete="off" placeholder="http://203.0.113.5:8789"><label class="f" for="bsKey3">Бот 3 · слово <small>BOT3_KEY</small></label><input id="bsKey3" type="password" autocomplete="off"></div>
         <div class="srv-only"><label class="f" for="bsUrl">Адрес бота <small>BOT_WORKER_URL · из меню сервера: «Настройки» → «Связь с пультом»</small></label><input id="bsUrl" type="url" autocomplete="off" placeholder="http://203.0.113.5:8787"></div>
         <label class="f" for="bsOwner">Ваш номер в Telegram <small>TG_OWNER · по желанию, узнать у @userinfobot</small></label><input id="bsOwner" type="text" inputmode="numeric" autocomplete="off" placeholder="123456789">
         <label class="f" for="bsEn">Английский канал <small>TG_CHAT_EN · по желанию</small></label><input id="bsEn" type="text" autocomplete="off" placeholder="@apex_client_en">
@@ -1149,7 +1154,7 @@
         <p class="note">Для второго человека: в этом браузере остаются только «Обзор», «Баннеры», «Объявление», «Telegram» и «Справка» — серверы, обновления и настройки скрыты.</p>
         <label class="sw"><div class="t"><b>Режим помощника в этом браузере</b><span>Выключается здесь же</span></div><span class="tog"><input type="checkbox" id="helperOn"><i></i></span></label>
         <p class="help">Это удобство, а не защита: настоящие права даёт GitHub. Помощнику — свой токен: github.com → Settings → Developer settings → Fine-grained tokens → только репозиторий apex-client → <b>Contents: Read and write</b> (без Secrets и Actions). Тогда он не увидит и не изменит секреты, а все его сохранения видны в «Истории» с его именем.</p></div>
-      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 16 ноября 2026 · приложение 3.22.0 · пульт 2.43.</p>
+      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 16 ноября 2026 · приложение 3.22.0 · пульт 2.44.</p>
       <div class="helptools">
         <input id="hq" type="search" placeholder="Найти в справке, например «техработы»" aria-label="Найти в справке" autocomplete="off">
         <button class="btn quiet small" id="hOpen" type="button">Развернуть всё</button>
@@ -1378,6 +1383,7 @@
         <div class="nwkind" id="nwKind" role="group" aria-label="Сортировка"><button type="button" class="pill on" data-k="">Все</button><button type="button" class="pill" data-k="n">🟢 Новое</button><button type="button" class="pill" data-k="u">🟣 Улучшено</button><button type="button" class="pill" data-k="f">🔵 Исправлено</button></div>
         <div id="nwOther" hidden></div>
         <div class="tbl" id="nwPult"><table id="pultLog">
+          <tr data-k="n"><td>2.44</td><td>Несколько ботов, как на сервере: в «Бот в личке» переключатель «🤖 Основной · бот 2 · бот 3 · ＋ Бот» — у каждого свои вопросы, статистика, рассылка, тексты и функции; «Настройки бота» — адрес и слово для бота 2 и 3</td></tr>
           <tr data-k="n"><td>2.43</td><td>«Справка» → «🎛 Функции пульта»: 20 новых возможностей пульта включаются и выключаются (на всех устройствах); функций бота стало 25 — то же можно переключать командой /settings в боте и в меню сервера, пульт показывает «переключено в боте»</td></tr>
           <tr data-k="u"><td>2.42</td><td>Telegram разложен по разделам: «📣 Канал» (посты, журнал, автопосты, конкурсы) · «👥 Группа» (приветствие новичков, антиспам) · «💬 Бот в личке» (вопросы, статистика, рассылка, тексты и функции) · «⚙️ Настройка» — переключатель сверху, выбор запоминается. На всех длинных вкладках — строка разделов «Всё · …»: нажали — остался только нужный блок</td></tr>
           <tr data-k="n"><td>2.41</td><td>Готовые шаблоны: приветствие в группе, /start, «нет ответа», описание бота, быстрые ответы, рассылка, опрос и варианты; «＋ Тема из шаблона» — оплата, устройства, ТВ, часы, игры, банки</td></tr>
@@ -1509,7 +1515,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.43', PANEL_DATE = '16 ноября 2026'
+const PANEL_VERSION = '2.44', PANEL_DATE = '16 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -3196,7 +3202,7 @@ function renderTgState() {
   renderTgStat()
 }
 async function tgOpen() { // при открытии вкладки
-  await tgLoadSettings().catch(() => {}); hostApply(); renderBest(); tplRender(); btLoad().catch(() => {}); bcLoad().catch(() => {}); bsRender(); renderTgPick(); tgPreview(); renderTgSched().catch(() => {})
+  await tgLoadSettings().catch(() => {}); hostApply(); renderBest(); tplRender(); { const sv = +load('apex_admin_bot') || 1; curBot = botList().find(b => b.slot === sv) || botList()[0]; botSelRender() } btLoad().catch(() => {}); bcLoad().catch(() => {}); bsRender(); renderTgPick(); tgPreview(); renderTgSched().catch(() => {})
   $('tgDigest').checked = tgSet?.digest !== false; $('tgHoliday').checked = tgSet?.holidays !== false
   $('tgAutoVer').checked = tgSet?.version !== false; $('tgAutoVideo').checked = tgSet?.video !== false; $('tgAutoMaint').checked = tgSet?.maint !== false; $('tgAutoBtn').checked = tgSet?.buttons !== false; $('tgAutoRemind').checked = tgSet?.remind !== false
   tgState = await tgReadState(); renderTgState()
@@ -3359,7 +3365,7 @@ $('tgTr').onclick = () => guarded($('tgTr'), async () => {
   const r = await tgRelay('translate', { text: t }); $('tgEn').value = (r.done || [])[0] || ''; tgPreview(); toast('Перевод готов — проверьте перед отправкой')
 })
 // 2.34: «Настройки бота» — секреты GitHub из пульта (зашифрованы открытым ключом репозитория: sealed box, как требует GitHub)
-const BS = [['TG_BOT_TOKEN', 'bsTok', 'Токен бота'], ['TG_CHAT', 'bsChat', 'Канал / группа'], ['BOT_WORKER_KEY', 'bsKey', 'Секретное слово'], ['TG_OWNER', 'bsOwner', 'Ваш номер'], ['TG_CHAT_EN', 'bsEn', 'Английский канал'], ['CF_ACCOUNT_ID', 'bsAcc', 'Cloudflare Account ID'], ['CF_API_TOKEN', 'bsCf', 'Cloudflare API-токен'], ['BOT_WORKER_URL', 'bsUrl', 'Адрес бота'], ['STATS_KEY', null, 'Ключ статистики']]
+const BS = [['TG_BOT_TOKEN', 'bsTok', 'Токен бота'], ['TG_CHAT', 'bsChat', 'Канал / группа'], ['BOT_WORKER_KEY', 'bsKey', 'Секретное слово'], ['TG_OWNER', 'bsOwner', 'Ваш номер'], ['TG_CHAT_EN', 'bsEn', 'Английский канал'], ['CF_ACCOUNT_ID', 'bsAcc', 'Cloudflare Account ID'], ['CF_API_TOKEN', 'bsCf', 'Cloudflare API-токен'], ['BOT_WORKER_URL', 'bsUrl', 'Адрес бота'], ['BOT2_URL', 'bsUrl2', 'Бот 2 · адрес'], ['BOT2_KEY', 'bsKey2', 'Бот 2 · слово'], ['BOT3_URL', 'bsUrl3', 'Бот 3 · адрес'], ['BOT3_KEY', 'bsKey3', 'Бот 3 · слово'], ['STATS_KEY', null, 'Ключ статистики']]
 const secErr = e => /403|404|Resource not accessible/i.test(e.message) ? new Error('У токена GitHub нет права менять секреты. github.com → Settings → Developer settings → Fine-grained tokens → ваш токен → Repository permissions → Secrets: Read and write') : e
 async function bsRender() {
   try {
@@ -3387,6 +3393,8 @@ $('bsSave').onclick = () => guarded($('bsSave'), async () => {
     if (n === 'BOT_WORKER_KEY' && v.length < 12) throw new Error('Секретное слово — хотя бы 12 символов (нажмите «Создать»)')
     if ((n === 'TG_CHAT' || n === 'TG_CHAT_EN') && !/^(@\w{4,}|-?\d{5,})(\s*,\s*(@\w{4,}|-?\d{5,}))*$/.test(v)) throw new Error(t + ': @имя или -100… (несколько — через запятую)')
     if (n === 'TG_OWNER' && !/^\d{4,15}$/.test(v)) throw new Error('Ваш номер — только цифры')
+    if ((n === 'BOT2_KEY' || n === 'BOT3_KEY') && v.length < 12) throw new Error(t + ': слово из меню сервера — не короче 12 знаков')
+    if (/^BOT[23]_URL$/.test(n) && !/^https?:\/\/[\w.-]+(:\d+)?\/?$/.test(v)) throw new Error(t + ': http://адрес:порт из меню сервера')
     if (n === 'BOT_WORKER_URL' && !/^https?:\/\/[\w.-]+(:\d+)?\/?$/.test(v)) throw new Error('Адрес бота: http://адрес:порт из меню сервера')
   }
   if (!confirm('Сохранить в секреты GitHub: ' + todo.map(x => x[2]).join(', ') + '?')) return
@@ -3400,7 +3408,10 @@ $('bsApply').onclick = () => guarded($('bsApply'), async () => {
   toast('Бот работает: ' + url + ((r.done || []).length > 1 ? ' (' + r.done.slice(1).join('; ') + ')' : '') + ' — напишите ему /start'); bsRender()
 })
 // 2.33: тексты бота на Cloudflare — docs/tg/bot.json (бот читает его сам, раз в 5 минут)
-const BOT_CFG = 'docs/tg/bot.json'
+// 2.44: несколько ботов — как на сервере. Основной: docs/tg/bot.json; бот 2 и 3: docs/tg/bot-<имя>.json (список — settings.json → bots)
+let curBot = { slot: 1, id: '', name: 'Основной' }
+const botCfgPath = () => curBot.slot === 1 ? 'docs/tg/bot.json' : 'docs/tg/bot-' + curBot.id + '.json'
+const botFilePath = () => curBot.slot === 1 ? 'docs/stats/bot.enc.json' : 'docs/stats/bot' + curBot.slot + '.enc.json'
 let bcData = null
 const BOT_FEAT = { media: true, quick: true, commands: true, images: true, deeplinks: true, contestDM: true, polls: true, broadcast: true, news: true, status: true, ping: true, english: true, forward: false, stats: true, welcome: true, antispam: true, invite: true, remind: true, followup: true, complaints: true, translate: true, antiflood: true, version: true, contestSub: true, contestReal: false } // как FEATURES в worker.js
 // 2.40: функции бота — название и что делает; переключатели строятся отсюда
@@ -3440,7 +3451,7 @@ function bcCollect() {
   const extra = { description: $('bcDesc').value.trim(), short: $('bcShort').value.trim(), welcome: $('bcWelcome').value.trim(), channel: $('bcChannel').value.trim(), quick: $('bcQuick').value.split('\n').map(x => x.trim()).filter(Boolean).slice(0, 6) }
   return { ...(bcData?.broadcast ? { broadcast: bcData.broadcast } : {}), greeting: $('bcGreet').value.trim(), notFound: $('bcNot').value.trim(), support: $('bcSup').value.trim(), topics, features, ...extra }
 }
-async function bcLoad() { bcData = (await getFile(BOT_CFG).catch(() => null)) || { topics: [] }; bcRender() }
+async function bcLoad() { bcData = (await getFile(botCfgPath()).catch(() => null)) || { topics: [] }; bcRender() }
 $('bcTopics').addEventListener('click', e => {
   const card = e.target.closest('.bct'); if (!card) return
   const cur = bcCollect(), i = [...card.parentNode.children].indexOf(card)
@@ -3460,7 +3471,7 @@ $('bcSave').onclick = () => guarded($('bcSave'), async () => {
   if (c.channel && !/^@?\w{4,}$/.test(c.channel)) throw new Error('Канал для /news: @имя')
   if (c.features.forward && !confirm('«Вопросы без ответа — вам в личку» работает, только если в «Настройках бота» указан ваш номер. Сохранить?')) return
   c.featuresAt = Date.now() // пульт сохранил позже, чем переключали в боте или меню — действует пульт
-  await putFile(BOT_CFG, c, 'Пульт: тексты и функции бота'); bcData = c; toast('Сохранено — бот подхватит за 5 минут')
+  await putFile(botCfgPath(), c, 'Пульт: тексты и функции бота'); bcData = c; toast('Сохранено — бот подхватит за 5 минут')
 })
 // 2.27: код бота для Cloudflare и секретное слово
 // ── 2.40: пульт — шаблоны техработ, расписание, история, лучшее время, черновики, ссылки, «всё ли в порядке», неделя, отмена сохранения, помощник
@@ -3607,6 +3618,38 @@ $('pfList').addEventListener('change', e => { const x = e.target.closest('[data-
 }) })
 pfApply()
 
+// ── 2.44: переключатель ботов (сортировка «Основной · бот 2 · бот 3»)
+const botList = () => [{ slot: 1, id: '', name: 'Основной' }, ...((tgSet?.bots) || []).filter(b => [2, 3].includes(b.slot) && /^[a-z0-9]{1,16}$/.test(b.id))]
+function botSelRender() {
+  const l = botList(); if (!l.some(b => b.slot === curBot.slot)) curBot = l[0]
+  $('botSel').innerHTML = l.map(b => `<button type="button" class="pill${b.slot === curBot.slot ? ' on' : ''}" data-bslot="${b.slot}">🤖 ${esc(b.name)}</button>`).join('') + (l.length < 3 ? '<button type="button" class="pill" id="botAdd">＋ Бот</button>' : '') + (curBot.slot > 1 ? '<button type="button" class="pill x" id="botDel" aria-label="Убрать бота из пульта">×</button>' : '')
+  $('botSelHelp').innerHTML = curBot.slot === 1 ? 'Ниже — вопросы, статистика, рассылка, тексты и функции <b>основного</b> бота.' : `Бот «${esc(curBot.name)}» — на сервере это бот <code>${esc(curBot.id)}</code>: <code>sudo apex</code> → «Боты на сервере». Связь с пультом: в меню выберите этого бота → «Настройки» → «Связь с пультом», адрес и слово впишите в «Настройки бота» → «Бот ${curBot.slot}».`
+  document.querySelectorAll('.botx').forEach(x => { x.hidden = !l.some(b => String(b.slot) === x.dataset.slot) })
+}
+async function botSwitch(slot) {
+  curBot = botList().find(b => b.slot === slot) || botList()[0]; store('apex_admin_bot', String(curBot.slot))
+  bcData = null; btData = null; $('btQ').innerHTML = ''; $('btStatBlock').hidden = true; botSelRender()
+  await Promise.all([bcLoad().catch(() => {}), btLoad().catch(() => {})])
+}
+$('botSel').addEventListener('click', e => {
+  const b = e.target.closest('[data-bslot]'); if (b) return guarded(b, () => botSwitch(+b.dataset.bslot))
+  if (e.target.closest('#botAdd')) return guarded(e.target.closest('#botAdd'), async () => {
+    const id = (prompt('Имя бота латиницей — то же, что в меню сервера («Боты на сервере» → «Добавить бота»), например en') || '').trim().toLowerCase()
+    if (!id) return; if (!/^[a-z0-9]{1,16}$/.test(id)) throw new Error('Только латиница и цифры, до 16 знаков')
+    if (botList().some(b => b.id === id)) throw new Error('Такой бот уже есть')
+    const name = (prompt('Как называть его в пульте', id === 'en' ? 'English' : id) || id).trim().slice(0, 24)
+    const slot = [2, 3].find(n => !botList().some(b => b.slot === n))
+    await tgSaveSettings(s => { s.bots = [...(s.bots || []), { slot, id, name }] })
+    const main = (await getFile('docs/tg/bot.json').catch(() => null)) || { topics: [] }; delete main.broadcast
+    if (!(await getFile('docs/tg/bot-' + id + '.json').catch(() => null))) await putFile('docs/tg/bot-' + id + '.json', main, 'Пульт: бот «' + name + '» — тексты')
+    await botSwitch(slot); toast('Бот «' + name + '» добавлен — тексты скопированы с основного')
+  })
+  if (e.target.closest('#botDel')) return guarded(e.target.closest('#botDel'), async () => {
+    if (!confirm('Убрать бота «' + curBot.name + '» из пульта? На сервере он останется, его тексты — в docs/tg/bot-' + curBot.id + '.json')) return
+    const sl = curBot.slot; await tgSaveSettings(s => { s.bots = (s.bots || []).filter(b => b.slot !== sl) }); await botSwitch(1); toast('Убран из пульта')
+  })
+})
+
 // ── 2.41: готовые шаблоны под полями — нажали, и текст подставился (непустое поле — с вопросом)
 const SUP = '{поддержка}', WEB = '{сайт}'
 const TPL = {
@@ -3645,12 +3688,11 @@ document.addEventListener('click', e => {
 $('bcTopicTpl').onchange = () => { const t = TOPIC_TPL[+$('bcTopicTpl').value]; $('bcTopicTpl').value = ''; if (!t) return; const cur = bcCollect(); if (cur.topics.length >= 12) return toast('Не больше 12 тем', false); if (cur.topics.some(x => x.id === t.id)) return toast('Такая тема уже есть', false); cur.topics.push({ ...t, words: [...t.words] }); bcData = { ...bcData, ...cur }; bcRender(); toast('Тема добавлена — проверьте текст и сохраните') }
 
 // ── 2.40: бот — вопросы, статистика, рассылка (docs/stats/bot.enc.json, ключ — тот же, что у «Пользователей»)
-const BOT_FILE = 'docs/stats/bot.enc.json'
 let btData = null
 async function btLoad() {
   const k = await usGetKey().catch(() => '')
   if (!k) { $('btNote').innerHTML = 'Нужен ключ статистики: «Обзор» → «Пользователи» → «Создать ключ» (тот же ключ STATS_KEY) — и «Связь с пультом» в меню сервера или «Применить» для Cloudflare.'; return }
-  let f; try { f = JSON.parse(b64dec((await api('/contents/' + BOT_FILE + '?ref=' + BRANCH, { cache: 'no-store' })).content)) } catch { f = null }
+  let f; try { f = JSON.parse(b64dec((await api('/contents/' + botFilePath() + '?ref=' + BRANCH, { cache: 'no-store' })).content)) } catch { f = null }
   if (!f) { $('btNote').innerHTML = 'Робот ещё не забирал данные бота. Проверьте: в «Настройках бота» есть <b>Адрес бота</b> и <b>Секретное слово</b> (из меню сервера: «Настройки» → «Связь с пультом»), затем «↻ Обновить».'; return }
   try { const key = await crypto.subtle.importKey('raw', await crypto.subtle.digest('SHA-256', te.encode('apex-bot-data:' + k)), 'AES-GCM', false, ['decrypt']); btData = JSON.parse(td.decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: s2b(f.i) }, key, s2b(f.c)))) }
   catch { $('btNote').textContent = 'Ключ статистики не подходит к данным бота.'; return }
@@ -3679,10 +3721,10 @@ function btRender() {
   $('btBcState').textContent = d.broadcast ? `Последняя рассылка: доставлено ${d.broadcast.ok}, не дошло ${d.broadcast.fail}${d.broadcast.done ? ' — закончена' : ' — идёт'}` : ''
 }
 $('btOnlyNew').onchange = btRender
-$('btSync').onclick = () => guarded($('btSync'), async () => { await tgRelay('botSync', {}); await btLoad(); toast('Данные бота обновлены') })
+$('btSync').onclick = () => guarded($('btSync'), async () => { await tgRelay('botSync', { slot: curBot.slot }); await btLoad(); toast('Данные бота обновлены') })
 $('btQ').addEventListener('click', e => { const b = e.target.closest('[data-qreply]'); if (!b) return; guarded(b, async () => {
   const inp = document.querySelector(`[data-qa="${b.dataset.qreply}"]`), text = inp.value.trim(); if (!text) throw new Error('Напишите ответ')
-  await tgRelay('botReply', { qid: +b.dataset.qreply, text }); inp.value = ''; await btLoad(); toast('Ответ отправлен через бота')
+  await tgRelay('botReply', { qid: +b.dataset.qreply, text, slot: curBot.slot }); inp.value = ''; await btLoad(); toast('Ответ отправлен через бота')
 }) })
 let btKind = 'text'
 $('btKind').onclick = e => { const b = e.target.closest('[data-k]'); if (!b) return; btKind = b.dataset.k; $('btKind').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); $('btPollBox').hidden = btKind !== 'poll'; $('btTextL').textContent = btKind === 'poll' ? 'Вопрос' : 'Текст' }
@@ -3692,9 +3734,9 @@ $('btSend').onclick = () => guarded($('btSend'), async () => {
   if (btKind === 'poll' && (opts.length < 2 || opts.length > 10)) throw new Error('Опрос: от 2 до 10 вариантов')
   const n = btData?.users
   if (!confirm(`Отправить ${btKind === 'poll' ? 'опрос' : 'сообщение'} в личку ${n ? n + ' людям' : 'всем, кто писал боту'}${when ? ' — ' + fmt(when) : ' сейчас'}?`)) return
-  const c = (await getFile(BOT_CFG)) || { topics: [] }
+  const c = (await getFile(botCfgPath())) || { topics: [] }
   c.broadcast = { id: 'b' + Date.now().toString(36), ...(btKind === 'poll' ? { poll: { q: text, options: opts } } : { text }), ...(when ? { at: when } : {}) }
-  await putFile(BOT_CFG, c, 'Пульт: рассылка бота'); bcData = { ...(bcData || {}), broadcast: c.broadcast }
+  await putFile(botCfgPath(), c, 'Пульт: рассылка бота'); bcData = { ...(bcData || {}), broadcast: c.broadcast }
   $('btText').value = ''; $('btOpts').value = ''; toast('Бот начнёт рассылку в течение 5 минут')
 })
 // 2.36: где работает бот — Cloudflare или свой сервер (на всех устройствах: docs/tg/settings.json → botHost)

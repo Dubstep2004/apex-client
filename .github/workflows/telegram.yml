@@ -42,6 +42,10 @@ jobs:
           BOT_WORKER_URL: ${{ secrets.BOT_WORKER_URL }}
           BOT_WORKER_KEY: ${{ secrets.BOT_WORKER_KEY }}
           STATS_KEY: ${{ secrets.STATS_KEY }}
+          BOT2_URL: ${{ secrets.BOT2_URL }}
+          BOT2_KEY: ${{ secrets.BOT2_KEY }}
+          BOT3_URL: ${{ secrets.BOT3_URL }}
+          BOT3_KEY: ${{ secrets.BOT3_KEY }}
           REMNA_URL: ${{ secrets.REMNA_URL }}
           REMNA_TOKEN: ${{ secrets.REMNA_TOKEN }}
           REMNA_COOKIE: ${{ secrets.REMNA_COOKIE }}
