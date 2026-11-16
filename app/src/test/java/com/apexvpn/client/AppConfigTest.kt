@@ -80,4 +80,26 @@ class AppConfigTest {
         assertTrue(c.isRecommended("🇫🇮 Финляндия"))
         assertTrue(c.blocked("Обход №1"))
     }
+
+    // 3.23: свой список блокировки, белый список и часы сборки баз из пульта
+    @Test fun adsListsAndBuildHours() {
+        val c = AppConfigJson.parse("""{"ads":{"block":[" Bad.Example ","x"],"allow":["good.org"]},"rules":{"build":[6,18,99,6],"hours":12}}""")!!
+        assertEquals(listOf("bad.example"), c.adExtra)
+        assertEquals(listOf("good.org"), c.adAllow)
+        assertEquals(listOf(6, 18), c.rulesBuild)
+        assertEquals(12, c.rulesHours)
+        assertEquals(listOf(6), AppConfigJson.parse("{}")!!.rulesBuild)
+    }
+
+    @Test fun lastBuildIsBeforeNow() {
+        val msk = java.util.TimeZone.getTimeZone("Europe/Moscow")
+        val at = java.util.Calendar.getInstance(msk).apply { set(2026, 10, 17, 10, 0, 0); set(java.util.Calendar.MILLISECOND, 0) }.timeInMillis
+        val b = com.apexvpn.client.data.RulesUpdater.lastBuildAt(listOf(6, 18), at)
+        val c = java.util.Calendar.getInstance(msk).apply { timeInMillis = b }
+        assertEquals(6, c.get(java.util.Calendar.HOUR_OF_DAY)); assertEquals(43, c.get(java.util.Calendar.MINUTE)); assertEquals(17, c.get(java.util.Calendar.DAY_OF_MONTH))
+        // до 06:43 — вчерашняя вечерняя сборка
+        val early = java.util.Calendar.getInstance(msk).apply { set(2026, 10, 17, 5, 0, 0) }.timeInMillis
+        val e = java.util.Calendar.getInstance(msk).apply { timeInMillis = com.apexvpn.client.data.RulesUpdater.lastBuildAt(listOf(6, 18), early) }
+        assertEquals(18, e.get(java.util.Calendar.HOUR_OF_DAY)); assertEquals(16, e.get(java.util.Calendar.DAY_OF_MONTH))
+    }
 }

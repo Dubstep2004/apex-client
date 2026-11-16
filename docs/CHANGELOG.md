@@ -2,6 +2,18 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.23.0 · 17 ноября 2026
+
+<img src="img/tags/new.svg" alt="Новое" height="22">
+
+- «Проверить блокировку» в «Режиме»: страница проверки покажет, какая реклама блокируется
+- Свой список блокировки и белый список от поддержки: нужные сайты разблокируются, лишние закроются у всех без новой версии
+
+<img src="img/tags/improved.svg" alt="Улучшено" height="22">
+
+- Базы сайтов проверяются вскоре после того, как на GitHub собраны свежие
+- Под «Блокировкой рекламы» честная подсказка: рекламу внутри YouTube, Instagram и VK так не убрать — она идёт с тех же серверов, что и видео
+
 ## 3.22.2 · 17 ноября 2026
 
 <img src="img/tags/improved.svg" alt="Улучшено" height="22">

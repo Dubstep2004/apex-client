@@ -191,6 +191,17 @@ object RulesUpdater {
         dir.path
     }.getOrNull()
 
+    /** Последняя сборка баз на GitHub (часы по МСК, :23) плюс 20 минут на публикацию; 0 — неизвестно. */
+    fun lastBuildAt(hours: List<Int>, now: Long = System.currentTimeMillis()): Long {
+        val msk = java.util.TimeZone.getTimeZone("Europe/Moscow")
+        var best = 0L
+        for (d in 0..1) for (h in hours) {
+            val c = java.util.Calendar.getInstance(msk).apply { timeInMillis = now; add(java.util.Calendar.DAY_OF_MONTH, -d); set(java.util.Calendar.HOUR_OF_DAY, h); set(java.util.Calendar.MINUTE, 43); set(java.util.Calendar.SECOND, 0); set(java.util.Calendar.MILLISECOND, 0) }
+            if (c.timeInMillis <= now && c.timeInMillis > best) best = c.timeInMillis
+        }
+        return best
+    }
+
     /** Когда скачаны базы (0 — пока встроенные). */
     fun lastUpdated(context: Context): Long =
         FILES.minOfOrNull { File(remoteDir(context), it).lastModified() } ?: 0L
@@ -225,7 +236,10 @@ object RulesUpdater {
             val chosen = (cfg.rulesHours.takeIf { it > 0 } ?: AppSettings.value.rulesHours).coerceIn(6, 168) * 3600_000L
             val interval = if (p.getBoolean("hasManifest", true)) chosen else maxOf(chosen, DAY)
             val last = maxOf(p.getLong("checkedAt", 0), lastUpdated(context))
-            if (System.currentTimeMillis() - last < interval) return@withContext Result.Skipped
+            // 3.23: вскоре после сборки баз на GitHub (через 20 минут после выбранного в пульте часа) — проверяем вне очереди
+            val built = lastBuildAt(cfg.rulesBuild)
+            val afterBuild = built > 0 && last < built && System.currentTimeMillis() >= built
+            if (System.currentTimeMillis() - last < interval && !afterBuild) return@withContext Result.Skipped
         }
         if (pushed) p.edit { putLong("forceDone", cfg.rulesForceAt) }
         var lastError = "нет источников"

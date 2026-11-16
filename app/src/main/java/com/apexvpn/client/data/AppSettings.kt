@@ -365,6 +365,9 @@ object AppSettings {
             }
             val off = listOfNotNull("ads-hagezi".takeIf { !cfg.on("adsHagezi") }, "threats".takeIf { !cfg.on("threats") })
             if (off.isNotEmpty()) put("disabledSets", JSONArray(off))
+            // 3.23: свой список блокировки (у всех) и белый список рекламы — из пульта
+            if (cfg.adExtra.isNotEmpty()) put("adExtra", JSONArray(cfg.adExtra))
+            if (cfg.adAllow.isNotEmpty()) put("adAllow", JSONArray(cfg.adAllow))
         }
         // …и до первой проверки — сначала серверы, которые были быстрее при прошлом замере
         if (!has("autoOrder")) put("autoOrder", JSONArray(Prefs.lastPings().entries.filter { it.value > 0 }.sortedBy { it.value }.map { it.key }))

@@ -801,7 +801,14 @@
         <p class="help">Качаются только изменившиеся базы, поэтому частая проверка почти не тратит трафик. Приложение проверяет при запуске и каждые полчаса, пока VPN включён (с версии 3.22.2).</p>
         <div class="rowx" style="gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn quiet small" id="rForce" type="button">⚡ Обновить базы у всех сейчас</button><span class="help" id="rForceInfo"></span></div>
       </div>
-      <div class="block"><h2>🧱 Какие базы включены</h2><p class="help">Дополнительные базы можно выключить у всех — например, если какой-то сайт ошибочно попал в список.</p><div id="featsSets"></div></div>
+      <div class="block"><h2>🧱 Какие базы включены</h2><p class="help">Дополнительные базы можно выключить у всех — например, если какой-то сайт ошибочно попал в список.</p><div id="featsSets"></div>
+        <label class="f" for="adBlockList" style="margin-top:12px">🚫 Свой список блокировки — у всех</label>
+        <textarea id="adBlockList" rows="4" placeholder="По одному сайту в строке, например:&#10;ads.example.com&#10;tracker.site.ru"></textarea>
+        <p class="help">Эти сайты и все их поддомены не откроются ни у кого — даже если «Блокировка рекламы» выключена. До 500 сайтов. Нужна версия 3.23.0.</p>
+        <label class="f" for="adAllowList">✅ Белый список — не блокировать</label>
+        <textarea id="adAllowList" rows="3" placeholder="Сайты, которые ошибочно попали в рекламный список, например:&#10;cdn.nuzhnyj-sajt.ru"></textarea>
+        <p class="help">Если после включения блокировки рекламы перестал работать нужный сайт — впишите его сюда. Действует на рекламные базы, но не на свой список выше.</p>
+        <div class="help" id="adListsInfo"></div></div>
       <div class="block"><h2>🏭 Сборка баз на GitHub</h2>
         <p class="help">Робот берёт свежие официальные базы и HaGeZi, проверяет и выкладывает в ветку «rules». Телефоны качают оттуда.</p>
         <div class="rowx" style="gap:10px;flex-wrap:wrap"><label class="f" style="flex:1;min-width:140px">Во сколько собирать (МСК)<select id="rBuild1"><option value="0">00:23</option><option value="1">01:23</option><option value="2">02:23</option><option value="3">03:23</option><option value="4">04:23</option><option value="5">05:23</option><option value="6">06:23</option><option value="7">07:23</option><option value="8">08:23</option><option value="9">09:23</option><option value="10">10:23</option><option value="11">11:23</option><option value="12">12:23</option><option value="13">13:23</option><option value="14">14:23</option><option value="15">15:23</option><option value="16">16:23</option><option value="17">17:23</option><option value="18">18:23</option><option value="19">19:23</option><option value="20">20:23</option><option value="21">21:23</option><option value="22">22:23</option><option value="23">23:23</option></select></label>
@@ -1181,7 +1188,7 @@
         <p class="note">Для второго человека: в этом браузере остаются только «Обзор», «Баннеры», «Объявление», «Telegram» и «Справка» — серверы, обновления и настройки скрыты.</p>
         <label class="sw"><div class="t"><b>Режим помощника в этом браузере</b><span>Выключается здесь же</span></div><span class="tog"><input type="checkbox" id="helperOn"><i></i></span></label>
         <p class="help">Это удобство, а не защита: настоящие права даёт GitHub. Помощнику — свой токен: github.com → Settings → Developer settings → Fine-grained tokens → только репозиторий apex-client → <b>Contents: Read and write</b> (без Secrets и Actions). Тогда он не увидит и не изменит секреты, а все его сохранения видны в «Истории» с его именем.</p></div>
-      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 17 ноября 2026 · приложение 3.22.2 · пульт 2.47.</p>
+      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 17 ноября 2026 · приложение 3.23.0 · пульт 2.47.</p>
       <div class="helptools">
         <input id="hq" type="search" placeholder="Найти в справке, например «техработы»" aria-label="Найти в справке" autocomplete="off">
         <button class="btn quiet small" id="hOpen" type="button">Развернуть всё</button>
@@ -1410,7 +1417,7 @@
         <div class="nwkind" id="nwKind" role="group" aria-label="Сортировка"><button type="button" class="pill on" data-k="">Все</button><button type="button" class="pill" data-k="n">🟢 Новое</button><button type="button" class="pill" data-k="u">🟣 Улучшено</button><button type="button" class="pill" data-k="f">🔵 Исправлено</button></div>
         <div id="nwOther" hidden></div>
         <div class="tbl" id="nwPult"><table id="pultLog">
-          <tr data-k="n"><td>2.47</td><td>Время сборки баз на GitHub — до двух раз в день, по МСК. «Функции» по разделам: «Экстренное выключение», «🔄 Автообновление баз» (вкл/выкл у всех, как часто проверять, «⚡ Обновить базы у всех сейчас»), «🧱 Какие базы включены», «🏭 Сборка баз на GitHub» (когда собраны, статус робота, «Собрать сейчас», список баз с сортировкой)</td></tr>
+          <tr data-k="n"><td>2.47</td><td>«🚫 Свой список блокировки» и «✅ Белый список» — у всех (приложение 3.23.0). Время сборки баз на GitHub — до двух раз в день, по МСК. «Функции» по разделам: «Экстренное выключение», «🔄 Автообновление баз» (вкл/выкл у всех, как часто проверять, «⚡ Обновить базы у всех сейчас»), «🧱 Какие базы включены», «🏭 Сборка баз на GitHub» (когда собраны, статус робота, «Собрать сейчас», список баз с сортировкой)</td></tr>
           <tr data-k="n"><td>2.46</td><td>Telegram → «Бот в личке» → «👥 Пользователи бота»: сколько их, поиск и фильтры (заблокированные, без рассылок, новые), кнопки — написать, забанить и разбанить, отписать, удалить данные</td></tr>
           <tr data-k="n"><td>2.45</td><td>Функции бота: «🛠 Панель админа на кнопках» — включается и выключается здесь, в /settings и в меню сервера</td></tr>
           <tr data-k="n"><td>2.44</td><td>Несколько ботов, как на сервере: в «Бот в личке» переключатель «🤖 Основной · бот 2 · бот 3 · ＋ Бот» — у каждого свои вопросы, статистика, рассылка, тексты и функции; «Настройки бота» — адрес и слово для бота 2 и 3</td></tr>
@@ -1596,7 +1603,8 @@ const tabInfo = id => TABS.find(t => t[0] === id)
 const groupOf = id => GROUPS.find(g => g[3].includes(id)) || GROUPS[0]
 const APP_TABS = ['banner', 'servers', 'announce', 'links', 'update', 'features', 'preview']
 const PART = { banners: ['banner', 'Баннеры'], servers: ['servers', 'Серверы'], announce: ['announce', 'Объявление'], links: ['links', 'Ссылки'],
-  update: ['update', 'Обновления'], features: ['features', 'Функции'], previewCode: ['preview', 'Предпросмотр'] }
+  update: ['update', 'Обновления'], features: ['features', 'Функции'], previewCode: ['preview', 'Предпросмотр'],
+  rules: ['features', 'Базы сайтов'], ads: ['features', 'Свой список и белый список'], netCheck: ['links', 'Проверка сети'] }
 const LEVEL = { info: ['ℹ️', 'Новость'], warn: ['⚠️', 'Внимание'], alert: ['🛑', 'Авария'] }
 const lv = l => LEVEL[l] || LEVEL.info
 const DEVICES = [['phone', 'Телефон'], ['tv', 'Телевизор'], ['watch', 'Часы'], ['site', 'Сайт']]
@@ -1796,6 +1804,7 @@ function fillApp(c) {
   const f = c.features || {}
   const sw = list => list.map(([id, t, d], i) => `<label class="sw ${i ? '' : 'first'}"><div class="t"><b>${t}</b><span>${d}</span></div><span class="tog"><input type="checkbox" id="f_${id}" ${f[id] === false ? '' : 'checked'}><i></i></span></label>`).join('')
   $('feats').innerHTML = sw(FEATURES.filter(x => x[3] === 'main')); $('featsRules').innerHTML = sw(FEATURES.filter(x => x[3] === 'rules')); $('featsSets').innerHTML = sw(FEATURES.filter(x => x[3] === 'sets'))
+  const ad = c.ads || {}; $('adBlockList').value = (ad.block || []).join('\n'); $('adAllowList').value = (ad.allow || []).join('\n'); adListsInfo()
   const r = c.rules || {}, bh = Array.isArray(r.build) && r.build.length ? r.build : [6]; $('rBuild1').value = String(bh[0]); $('rBuild2').value = bh[1] != null ? String(bh[1]) : ''; $('rHours').value = [6, 12, 24, 168].includes(+r.hours) ? String(r.hours) : '0'; rulesForceAt = +r.forceAt || 0; rForceInfo()
   $('pCode').value = c.previewCode || ''
   renderBanners(); renderMarks()
@@ -1819,6 +1828,7 @@ function collectApp(loose = false) {
     links: { support: url($('lSupport').value), channel: url($('lChannel').value), site: url($('lSite').value) },
     update: { required: int($('uRequired').value), revoked: $('uRevoked').value.split(/[,\s]+/).map(x => parseInt(x, 10)).filter(x => x > 0) },
     features: Object.fromEntries(FEATURES.map(([id]) => [id, $('f_' + id)?.checked !== false])),
+    ...adLists(loose),
     rules: { hours: +$('rHours').value || 0, build: [...new Set([+$('rBuild1').value, ...($('rBuild2').value !== '' ? [+$('rBuild2').value] : [])])], ...(rulesForceAt ? { forceAt: rulesForceAt } : {}) },
     previewCode: $('pCode').value.trim(),
     ...netAppsList(loose),
@@ -3617,9 +3627,20 @@ tgCatInit(); tgCatApply(load('apex_admin_tgcat') || '')
 // 2.42: на остальных длинных вкладках — строка «Всё · раздел · раздел…» из заголовков блоков; выбор запоминается
 // Большие вкладки — по смысловым группам, остальные — по блокам; «Справка» — у неё свой поиск
 const SEC_GROUPS = { home: [['🟢 Состояние', /Статус|Сборки|Всё сломано|Сейчас действует|Быстрые/], ['📊 Статистика', /Неделя|Telegram-канал|Пользовател|Скачивани|Версии/], ['📰 События', /Лента|Что нового|Календарь|Отложенное/], ['🧰 Инструменты', /Резервн|Разбор|отчёт/]] }
+// 2.47: свой список блокировки и белый список (app.json → ads.block / ads.allow); пусто — ключа нет
+const adDom = v => { v = v.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/[\/:?#].*$/, '').replace(/^\.+|\.+$/g, '').replace(/^www\./, ''); return /^[a-z0-9.-]{3,253}$/.test(v) && v.includes('.') ? v : '' }
+function adLists(loose) {
+  const read = id => { const raw = $(id).value.split(/[\n,\s]+/).filter(Boolean), ok = [...new Set(raw.map(adDom).filter(Boolean))]; if (!loose && raw.length !== raw.map(adDom).filter(Boolean).length) throw new Error('Не похоже на адрес сайта: ' + raw.filter(x => !adDom(x)).slice(0, 3).join(', ')); return ok.slice(0, 500) }
+  const block = read('adBlockList'), allow = read('adAllowList')
+  if (!loose) { const both = block.filter(x => allow.includes(x)); if (both.length) throw new Error('Сайт и в блокировке, и в белом списке: ' + both.join(', ')) }
+  return block.length || allow.length ? { ads: { ...(block.length ? { block } : {}), ...(allow.length ? { allow } : {}) } } : {}
+}
+function adListsInfo() { const n = id => [...new Set($(id).value.split(/[\n,\s]+/).map(adDom).filter(Boolean))].length; $('adListsInfo').textContent = `Сейчас: заблокировано своих сайтов — ${n('adBlockList')}, в белом списке — ${n('adAllowList')}` }
+$('adBlockList').oninput = $('adAllowList').oninput = adListsInfo
+
 // 2.47: базы сайтов — «обновить у всех», статус сборки на GitHub, список баз с сортировкой
 function rForceInfo() { const el = $('rForceInfo'); if (el) el.textContent = rulesForceAt ? 'Последний раз: ' + new Date(rulesForceAt).toLocaleString('ru', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + (rulesForceAt > Date.now() - 6e4 ? ' — нажмите «Опубликовать»' : '') : '' }
-$('rForce').onclick = () => { rulesForceAt = Date.now(); rForceInfo(); toast('Готово — нажмите «Опубликовать». Телефоны обновят базы при ближайшей проверке приложения (до 30 минут при включённом VPN)') }
+$('rForce').onclick = () => { rulesForceAt = Date.now(); rForceInfo(); changed(); toast('Готово — нажмите «Опубликовать». Телефоны обновят базы при ближайшей проверке приложения (до 30 минут при включённом VPN)') }
 const fmtSize = b => b >= 1048576 ? (b / 1048576).toFixed(1) + ' МБ' : (b / 1024).toFixed(1) + ' КБ'
 function rFilesRender() {
   if (!rulesMan) return

@@ -133,10 +133,27 @@ fun ModeScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit) {
         Group {
             ListRow(
                 title = "Блокировка рекламы",
-                subtitle = "Реклама и трекеры не загружаются",
+                // 3.23: честная подсказка — рекламу внутри YouTube, Instagram и VK блокировщик по адресам не уберёт
+                subtitle = "Реклама и трекеры на сайтах и в приложениях не загружаются. В YouTube, Instagram и VK реклама идёт с тех же серверов, что и видео, — её так не убрать",
                 leading = { IconTile(Color(0xFFE5484D)) { Icon(Icons.Rounded.Block, null, tint = Color.White) } },
                 onClick = { viewModel.change { copy(adBlock = !adBlock) } },
             ) { ApexSwitch(s.adBlock, { v -> viewModel.change { copy(adBlock = v) } }) }
+            if (s.adBlock) {
+                val ctx = androidx.compose.ui.platform.LocalContext.current
+                GroupDivider()
+                // 3.23: проверка в браузере — страница пробует 12 рекламных адресов и показывает процент
+                ListRow(
+                    title = "Проверить блокировку",
+                    subtitle = "Откроется страница проверки — включите VPN перед этим",
+                    leading = { IconTile(Apex.SurfaceHigh) { Icon(Icons.Rounded.Language, null, tint = Color.White) } },
+                    onClick = {
+                        runCatching {
+                            ctx.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(com.apexvpn.client.data.Links.SITE + "/adtest/"))
+                                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                        }
+                    },
+                )
+            }
             GroupDivider()
             // 3.17.9: мошенники, фишинг, вирусы — отдельно от рекламы
             ListRow(

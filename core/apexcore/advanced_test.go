@@ -230,3 +230,27 @@ func TestShareWithProxyInbound(t *testing.T) {
 		_ = os.WriteFile(os.Getenv("APEX_DUMP"), []byte(cfg), 0o644)
 	}
 }
+
+// 3.23: свой список блокировки и белый список из пульта
+func TestAdExtraAndAllow(t *testing.T) {
+	nodes := parseNodes(t, "vless://"+testUUID+"@1.2.3.4:443?type=tcp&security=tls&sni=a.example.com#A")
+	opts, _ := json.Marshal(map[string]any{"adBlock": true, "rulesDir": rulesDirForTest(), "adsDnsPort": 45123,
+		"adExtra": []string{"https://Bad-Ads.example/path", "x", "bad ads.com"}, "adAllow": []string{"good.example.org"}})
+	cfg := checkAll(t, nodes, string(opts))
+	if !strings.Contains(cfg, `"bad-ads.example"`) || strings.Contains(cfg, `"bad ads.com"`) || strings.Contains(cfg, `"x"`) {
+		t.Fatalf("свой список блокировки:\n%s", cfg)
+	}
+	if !strings.Contains(strings.ReplaceAll(cfg, " ", ""), `"invert":true`) || !strings.Contains(cfg, `"good.example.org"`) {
+		t.Fatalf("белый список не исключён из рекламных баз:\n%s", cfg)
+	}
+	// без белого списка — обычное правило по базам
+	opts, _ = json.Marshal(map[string]any{"adBlock": true, "rulesDir": rulesDirForTest()})
+	if cfg = checkAll(t, nodes, string(opts)); strings.Contains(cfg, `"invert"`) {
+		t.Fatalf("лишнее логическое правило:\n%s", cfg)
+	}
+	// свой список работает и без «Блокировки рекламы»
+	opts, _ = json.Marshal(map[string]any{"adExtra": []string{"bad-ads.example"}})
+	if cfg = checkAll(t, nodes, string(opts)); !strings.Contains(cfg, `"bad-ads.example"`) {
+		t.Fatalf("свой список без блокировки рекламы:\n%s", cfg)
+	}
+}

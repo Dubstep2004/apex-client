@@ -63,6 +63,8 @@ type routeOptions struct {
 	AdBlock       bool         `json:"adBlock"`       // блокировка рекламы и трекеров
 	BlockThreats  bool         `json:"blockThreats"`  // мошенники и вирусы (HaGeZi TIF, необязательная база)
 	DisabledSets  []string     `json:"disabledSets"`  // базы, выключенные из веб-админки (ads-hagezi, threats)
+	AdExtra       []string     `json:"adExtra"`       // 3.23: свой список блокировки из пульта — блокируется у всех
+	AdAllow       []string     `json:"adAllow"`       // 3.23: белый список из пульта — не блокируется рекламными базами
 	IPv6          bool         `json:"ipv6"`
 	Profile       string       `json:"profile"` // normal | gaming | calls | battery
 	Share         shareOptions `json:"share"`   // раздача на компьютер
@@ -417,8 +419,11 @@ func buildAll(nodesJSON string, selectedTag string, optionsJSON string) (string,
 	rules = append(rules, userSets["block"].portRules(map[string]any{"action": "reject"})...)
 	rules = append(rules, userSets["proxy"].portRules(map[string]any{"outbound": "proxy"})...)
 	rules = append(rules, userSets["direct"].portRules(map[string]any{"outbound": "direct"})...)
+	if extra := adDomains(opts.AdExtra); len(extra) > 0 {
+		rules = append(rules, map[string]any{"domain_suffix": extra, "action": "reject"})
+	}
 	if sets := nonEmptyTags(map[string]string{"ads": ads, "ads-hagezi": adsHagezi}); len(sets) > 0 {
-		rules = append(rules, map[string]any{"rule_set": sets, "action": "reject"})
+		rules = append(rules, adMatch(sets, opts.AdAllow, map[string]any{"action": "reject"}))
 	}
 	if threats != "" {
 		rules = append(rules, map[string]any{"rule_set": "threats", "action": "reject"})
@@ -539,15 +544,18 @@ func buildAll(nodesJSON string, selectedTag string, optionsJSON string) (string,
 		}
 	}
 	var dnsRules []any
+	if extra := adDomains(opts.AdExtra); len(extra) > 0 {
+		dnsRules = append(dnsRules, map[string]any{"domain_suffix": extra, "action": "reject"})
+	}
 	if adSets := nonEmptyTags(map[string]string{"ads": ads, "ads-hagezi": adsHagezi}); len(adSets) > 0 {
 		if opts.AdsDNSPort > 1024 && opts.AdsDNSPort < 65536 {
 			// Счётчик заблокированной рекламы: запросы уходят в DNS приложения
 			servers = append(servers, map[string]any{
 				"type": "udp", "tag": "adblock", "server": "127.0.0.1", "server_port": opts.AdsDNSPort,
 			})
-			dnsRules = append(dnsRules, map[string]any{"rule_set": adSets, "server": "adblock"})
+			dnsRules = append(dnsRules, adMatch(adSets, opts.AdAllow, map[string]any{"server": "adblock"}))
 		} else {
-			dnsRules = append(dnsRules, map[string]any{"rule_set": adSets, "action": "reject"})
+			dnsRules = append(dnsRules, adMatch(adSets, opts.AdAllow, map[string]any{"action": "reject"}))
 		}
 	}
 	// Свои правила и в DNS: заблокированные не узнаём вовсе, остальные — нужным DNS
@@ -835,6 +843,35 @@ func urlTestOrDefault(u string) string {
 	return "https://www.gstatic.com/generate_204"
 }
 
+
+// adMatch — правило «реклама из баз», кроме белого списка: без него — просто rule_set, с ним — логическое «и не».
+func adMatch(sets []string, allow []string, act map[string]any) map[string]any {
+	r := map[string]any{}
+	if a := adDomains(allow); len(a) > 0 {
+		r["type"], r["mode"] = "logical", "and"
+		r["rules"] = []any{map[string]any{"rule_set": sets}, map[string]any{"domain_suffix": a, "invert": true}}
+	} else {
+		r["rule_set"] = sets
+	}
+	for k, v := range act {
+		r[k] = v
+	}
+	return r
+}
+
+// adDomains — домены из пульта: как cleanDomains, плюс только допустимые символы и не больше 500.
+func adDomains(in []string) []string {
+	var out []string
+	for _, d := range cleanDomains(in) {
+		if len(d) <= 253 && strings.Trim(d, "abcdefghijklmnopqrstuvwxyz0123456789.-") == "" {
+			out = append(out, d)
+			if len(out) >= 500 {
+				break
+			}
+		}
+	}
+	return out
+}
 
 // nonEmptyTags — метки баз, файлы которых есть, в постоянном порядке.
 func nonEmptyTags(m map[string]string) []string {
