@@ -234,7 +234,7 @@ const QUICK = ['Обновите подписку: Настройки → Под
 const fill = (cfg, t) => t.replaceAll('{сайт}', SITE).replaceAll('{поддержка}', cfg.support)
 const topicsOf = (cfg, en) => en ? FAQ_EN : cfg.topics
 const appUrl = en => SITE + '/app/?' + (meName ? 'bot=' + meName + '&' : '') + 'bv=4&' + (en ? 'lang=en' : 'lang=ru') // bv — бот умеет принимать действия из мини-приложения // мини-приложение знает, в какого бота вести кнопки
-const userKb = en => ({ keyboard: [[{ text: en ? '📱 APEX — everything here' : '📱 APEX — всё здесь', web_app: { url: appUrl(en) } }]], resize_keyboard: true, is_persistent: true }) // кнопка внизу: из неё мини-приложение может прислать боту данные
+const userKb = (en, uid) => ({ keyboard: [[{ text: en ? '📱 APEX — everything here' : '📱 APEX — всё здесь', web_app: { url: appUrl(en) + (uid ? '&u=' + uid : '') } }]], resize_keyboard: true, is_persistent: true }) // кнопка внизу: из неё мини-приложение может прислать боту данные
 const menu = (cfg, en) => cfg.features.appFirst && cfg.features.miniapp ? { inline_keyboard: [[{ text: en ? '📱 Open APEX' : '📱 Открыть APEX', web_app: { url: appUrl(en) } }]] } : ({ inline_keyboard: [...topicsOf(cfg, en).map(f => [{ text: f.title, callback_data: (en ? 'faqen:' : 'faq:') + f.id }]), ...(cfg.features.video ? [[{ text: en ? '🎬 Video guide' : '🎬 Видеоинструкция', callback_data: 'vid' }]] : []), ...(cfg.features.miniapp ? [[{ text: en ? '📱 Open APEX' : '📱 Открыть APEX', web_app: { url: appUrl(en) } }]] : [])] })
 const after = (cfg, en) => ({ inline_keyboard: [[{ text: en ? EN.other : '📋 Другие темы', callback_data: en ? 'menuen' : 'menu' }], ...(cfg.features.human && cfg.features.forward && cfg.hasOwner ? [[{ text: en ? '🙋 Ask a human' : '🙋 Позвать человека', callback_data: 'human' }]] : []), [{ text: en ? EN.support : '💬 Написать в поддержку', url: cfg.support }]] })
 const isNight = () => { const h = new Date(now() + 3 * 3600000).getUTCHours(); return h < 9 } // 0:00–8:59 МСК
@@ -475,9 +475,11 @@ let pubOrigin = ''
 async function apiBase(env) { if (/^https:\/\//.test(env.BOT_PUBLIC_URL || '')) return env.BOT_PUBLIC_URL.replace(/\/+$/, ''); if (!pubOrigin) pubOrigin = await kget(env, 'origin', ''); return pubOrigin }
 async function refreshAdminKb(env, cfg) {
   if (!(cfg.features.adminApp && cfg.features.miniapp)) { ADMIN_KB.keyboard = [[{ text: '🛠 Админ' }]]; return }
-  await botName(env); const api = await apiBase(env)
-  ADMIN_KB.keyboard = [[{ text: '🛠 Админ' }, { text: '📱 Админ-панель', web_app: { url: appUrl(false) + '&adm=1' + (api ? '&api=' + encodeURIComponent(api) : '') } }]]
+  ADMIN_KB.keyboard = [[{ text: '🛠 Админ' }, { text: '📱 Админ-панель', web_app: { url: await adminAppUrl(env) } }]]
 }
+// Кнопка внизу (клавиатура) открывает мини-приложение без подписи Telegram — оно умеет только «открыть экран в чате».
+// Полная панель — кнопкой в сообщении «🛠 Админ» (у неё подпись есть, бот её проверяет)
+async function adminAppUrl(env) { await botName(env); const api = await apiBase(env); return appUrl(false) + '&adm=1' + (api ? '&api=' + encodeURIComponent(api) : '') }
 async function checkInit(env, init) { // подпись Telegram: ключ = HMAC('WebAppData', токен), подпись = HMAC(ключ, поля по алфавиту)
   try {
     const p = new URLSearchParams(String(init || '')), hash = p.get('hash') || ''; p.delete('hash')
@@ -531,8 +533,9 @@ const adminKb = () => ({ inline_keyboard: [[{ text: '📥 Вопросы', callb
 async function adminMenu(env, cfg, chat, edit) {
   const q = (await kget(env, 'q', [])).filter(x => !x.ans).length
   const text = `🛠 Панель админа\n\nЖдут ответа: ${q}\nНажмите кнопку 👇`
-  if (edit) return tg(env, 'editMessageText', { chat_id: chat, message_id: edit, text, reply_markup: adminKb() })
-  return tg(env, 'sendMessage', { chat_id: chat, text, reply_markup: adminKb() })
+  const kb = adminKb(); if (cfg.features.adminApp && cfg.features.miniapp) kb.inline_keyboard.unshift([{ text: '📱 Открыть админ-панель', web_app: { url: await adminAppUrl(env) } }])
+  if (edit) return tg(env, 'editMessageText', { chat_id: chat, message_id: edit, text, reply_markup: kb })
+  return tg(env, 'sendMessage', { chat_id: chat, text, reply_markup: kb })
 }
 async function adminScreen(env, cfg, chat, mid, text, rows) { // один экран: текст + кнопки + «Назад», правим то же сообщение
   return tg(env, 'editMessageText', { chat_id: chat, message_id: mid, text: text.slice(0, 4000), disable_web_page_preview: true, reply_markup: { inline_keyboard: [...(rows || []), back] } })
@@ -877,7 +880,7 @@ async function onMessage(env, m) {
     if (owner && cfg.features.admin && !arg) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: '👋 Вы владелец бота. Кнопка «🛠 Админ» внизу — панель управления. Её видите только вы.', reply_markup: ADMIN_KB })
     const f = arg && cfg.features.deeplinks && topicsOf(cfg, en).find(t => t.id === arg)
     if (f) return answer(env, cfg, m.chat.id, f, en)
-    if (cfg.features.appFirst && cfg.features.miniapp) { await botName(env); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: (en ? '👋 Hi! Everything is in the «📱 APEX» button below: server status, help, your subscription, invite link, TV.\nOr just type your question here.' : '👋 Привет! Всё — в кнопке «📱 APEX» внизу: статус серверов, помощь, подписка, ссылка для друзей, телевизор.\nИли просто напишите вопрос сюда.') + await fakeWarn(env, cfg, en), reply_markup: userKb(en) }) }
+    if (cfg.features.appFirst && cfg.features.miniapp) { await botName(env); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: (en ? '👋 Hi! Everything is in the «📱 APEX» button below: server status, help, your subscription, invite link, TV.\nOr just type your question here.' : '👋 Привет! Всё — в кнопке «📱 APEX» внизу: статус серверов, помощь, подписка, ссылка для друзей, телевизор.\nИли просто напишите вопрос сюда.') + await fakeWarn(env, cfg, en), reply_markup: userKb(en, m.from.id) }) }
     return tg(env, 'sendMessage', { chat_id: m.chat.id, text: (en ? EN.greeting : fill(cfg, cfg.greeting)) + await fakeWarn(env, cfg, en), reply_markup: menu(cfg, en) })
   }
   if (cmd === '/help' || (!text && !m.photo && !m.document && !m.voice && !m.video && !m.video_note)) {
