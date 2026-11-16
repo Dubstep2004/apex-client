@@ -25,6 +25,9 @@
 //   его ответ на пересланное сообщение бот отправит человеку; счёт, какие темы спрашивают чаще.
 
 // ЧТО НОВОГО В БОТЕ (пульт показывает это в «Справка» → «Что нового» → «Бот»; V — версия, n/u/f — новое/улучшено/исправлено)
+// V|4.2|17 ноября 2026
+// n|Группа: бот сам отвечает на частые вопросы темой (вкл/выкл, по умолчанию выключено; одна тема — не чаще раза в 10 минут)
+// n|Новости канала на сайте: бот запоминает последние 20 постов канала, робот выкладывает их на визитку — dubstep2004.github.io/news/
 // V|4.1|16 ноября 2026
 // n|«📱 Админ-панель» — мини-приложение для владельца: сводка, вопросы с ответом и «решено», рассылка, пользователи (поиск, бан, написать), функции по разделам, ошибки. Защита: каждый запрос подписан Telegram и проверяется ботом, работает только у владельца (помощникам — только вопросы). Нужен https-адрес бота (Cloudflare — сам; свой сервер — BOT_PUBLIC_URL), иначе кнопки открывают панель в чате
 // V|4.0|16 ноября 2026
@@ -182,9 +185,9 @@ const FEAT_GROUPS = [
   ['ans', '💬 Ответы людям', ['forward', 'media', 'quick', 'followup', 'translate', 'english', 'qpos', 'night', 'human', 'memory', 'form', 'fuzzy']],
   ['hlp', '🛟 Помощники', ['helpers', 'helpRR']],
   ['cmd', '📋 Команды', ['appFirst', 'miniapp', 'commands', 'sub', 'video', 'status', 'news', 'invite', 'remind', 'complaints', 'version', 'ping', 'quiz', 'deeplinks', 'images']],
-  ['bc', '📣 Рассылки и канал', ['broadcast', 'polls', 'chpost']],
+  ['bc', '📣 Рассылки и канал', ['broadcast', 'polls', 'chpost', 'chnews']],
   ['con', '🎁 Конкурсы', ['contestBot', 'contestSub', 'contestReal', 'contestDM']],
-  ['grp', '👥 Группа', ['welcome', 'antispam', 'captcha', 'warns']],
+  ['grp', '👥 Группа', ['welcome', 'antispam', 'captcha', 'warns', 'groupFaq']],
   ['etc', '🛡 Защита и прочее', ['antiflood', 'fakewarn', 'anniv', 'refbonus']]]
 const featGroups = () => { const used = new Set(FEAT_GROUPS.flatMap(g => g[2])), rest = Object.keys(FEAT_NAMES).filter(k => !used.has(k)); return rest.length ? [...FEAT_GROUPS, ['oth', '📦 Другое', rest]] : FEAT_GROUPS }
 const groupOf = k => featGroups().find(g => g[2].includes(k))?.[0]
@@ -227,9 +230,9 @@ async function config(env) {
   cfgAt = Date.now()
   return cfgCache
 }
-const FEATURES = { adminApp: true, appFirst: true, sub: true, video: true, refbonus: true, miniapp: true, memory: true, form: true, quiz: true, fuzzy: true, captcha: false, warns: true, anniv: true, qpos: true, night: true, human: true, fakewarn: true, helpers: true, helpRR: true, chpost: true, contestBot: true, backup: true, syslog: true, morning: true, admin: true, media: true, quick: true, commands: true, images: true, deeplinks: true, contestDM: true, polls: true, broadcast: true, news: true, status: true, ping: true, english: true, forward: false, stats: true, welcome: true, antispam: true, invite: true, remind: true, followup: true, complaints: true, translate: true, antiflood: true, version: true, contestSub: true, contestReal: false }
+const FEATURES = { chnews: true, groupFaq: false, adminApp: true, appFirst: true, sub: true, video: true, refbonus: true, miniapp: true, memory: true, form: true, quiz: true, fuzzy: true, captcha: false, warns: true, anniv: true, qpos: true, night: true, human: true, fakewarn: true, helpers: true, helpRR: true, chpost: true, contestBot: true, backup: true, syslog: true, morning: true, admin: true, media: true, quick: true, commands: true, images: true, deeplinks: true, contestDM: true, polls: true, broadcast: true, news: true, status: true, ping: true, english: true, forward: false, stats: true, welcome: true, antispam: true, invite: true, remind: true, followup: true, complaints: true, translate: true, antiflood: true, version: true, contestSub: true, contestReal: false }
 // Названия функций — для /settings в боте и меню сервера (apex → «Функции бота»)
-const FEAT_NAMES = { admin: 'Панель админа на кнопках', morning: 'Утренняя сводка в 9:00', chpost: 'Пост в канал из бота', helpers: 'Помощники', qpos: 'Место в очереди', fuzzy: 'Умный поиск с опечатками', memory: 'Память разговора', appFirst: 'Всё в мини-приложении', adminApp: 'Админ-панель в мини-приложении', sub: '/sub — моя подписка', video: 'Видеоинструкция', refbonus: 'Бонус за друзей', miniapp: 'Мини-приложение (кнопка APEX)', form: 'Форма /report', quiz: 'Викторина /quiz', captcha: 'Капча для новичков в группе', warns: '/warn и /ban в группе', anniv: 'Поздравление с годовщиной', night: 'Ночью — «ответим утром»', human: '«Позвать человека»', fakewarn: 'Предупреждение о поддельных ботах', helpRR: 'Помощникам — вопросы по очереди', contestBot: 'Конкурс из бота', backup: 'Копия данных файлом', syslog: 'Система и ошибки', forward: 'Вопросы без ответа — мне', media: 'Фото и голосовые — мне', quick: 'Быстрые ответы', followup: '«Помогло?»', translate: 'Перевод моих ответов', english: 'Ответы на английском', status: '/status', news: '/news', invite: '/invite', remind: '/remind', complaints: 'Жалобы на серверы', version: 'Подсказка версии', broadcast: 'Рассылка', polls: 'Опросы', stats: 'Счёт тем', ping: '/ping', commands: 'Меню команд «/»', images: 'Картинки в ответах', deeplinks: 'Ссылки на темы', antiflood: 'Защита от флуда', welcome: 'Приветствие в группе', antispam: 'Антиспам в группе', contestSub: 'Конкурс: только подписчики', contestReal: 'Конкурс: без пустых аккаунтов', contestDM: 'Конкурс: поздравить победителей' }
+const FEAT_NAMES = { admin: 'Панель админа на кнопках', morning: 'Утренняя сводка в 9:00', chpost: 'Пост в канал из бота', helpers: 'Помощники', qpos: 'Место в очереди', fuzzy: 'Умный поиск с опечатками', memory: 'Память разговора', appFirst: 'Всё в мини-приложении', adminApp: 'Админ-панель в мини-приложении', chnews: 'Новости канала на сайте', groupFaq: 'Ответы на частые вопросы в группе', sub: '/sub — моя подписка', video: 'Видеоинструкция', refbonus: 'Бонус за друзей', miniapp: 'Мини-приложение (кнопка APEX)', form: 'Форма /report', quiz: 'Викторина /quiz', captcha: 'Капча для новичков в группе', warns: '/warn и /ban в группе', anniv: 'Поздравление с годовщиной', night: 'Ночью — «ответим утром»', human: '«Позвать человека»', fakewarn: 'Предупреждение о поддельных ботах', helpRR: 'Помощникам — вопросы по очереди', contestBot: 'Конкурс из бота', backup: 'Копия данных файлом', syslog: 'Система и ошибки', forward: 'Вопросы без ответа — мне', media: 'Фото и голосовые — мне', quick: 'Быстрые ответы', followup: '«Помогло?»', translate: 'Перевод моих ответов', english: 'Ответы на английском', status: '/status', news: '/news', invite: '/invite', remind: '/remind', complaints: 'Жалобы на серверы', version: 'Подсказка версии', broadcast: 'Рассылка', polls: 'Опросы', stats: 'Счёт тем', ping: '/ping', commands: 'Меню команд «/»', images: 'Картинки в ответах', deeplinks: 'Ссылки на темы', antiflood: 'Защита от флуда', welcome: 'Приветствие в группе', antispam: 'Антиспам в группе', contestSub: 'Конкурс: только подписчики', contestReal: 'Конкурс: без пустых аккаунтов', contestDM: 'Конкурс: поздравить победителей' }
 const QUICK = ['Обновите подписку: Настройки → Подписка → «Обновить»', 'Включите автопилот — он сам выберет рабочий сервер', 'Откройте «Проверка сети» на главном и пришлите итог (кнопка «Поделиться»)', 'Обновите приложение до последней версии: ' + SITE + '/update/']
 const fill = (cfg, t) => t.replaceAll('{сайт}', SITE).replaceAll('{поддержка}', cfg.support)
 const topicsOf = (cfg, en) => en ? FAQ_EN : cfg.topics
@@ -415,6 +418,26 @@ async function sendToUser(env, cfg, to, text, fwid, by) { // ответ влад
 
 const ALL_PERMS = { can_send_messages: true, can_send_audios: true, can_send_documents: true, can_send_photos: true, can_send_videos: true, can_send_video_notes: true, can_send_voice_notes: true, can_send_polls: true, can_send_other_messages: true, can_add_web_page_previews: true }
 async function groupAdmin(env, chat, uid) { if (String(uid) === String(env.OWNER_ID)) return true; const st = (await tg(env, 'getChatMember', { chat_id: chat, user_id: uid })).result?.status; return st === 'administrator' || st === 'creator' }
+// Новости канала на сайте: бот запоминает последние 20 постов своего канала (только текст), робот выкладывает их на визитку
+async function onChannelPost(env, cfg, p) {
+  if (!cfg.features.chnews) return
+  const want = String(cfg.channel || '').replace(/^@/, '').toLowerCase(), un = String(p.chat?.username || '').toLowerCase()
+  if (want && un !== want && String(p.chat?.id) !== want) return
+  const text = String(p.text || p.caption || '').trim(); if (!text) return
+  const list = (await kget(env, 'chposts', [])).filter(x => x.id !== p.message_id)
+  list.push({ id: p.message_id, at: (p.date || 0) * 1000, text: text.slice(0, 2000), ch: p.chat?.username || '', photo: !!(p.photo || p.video) })
+  list.sort((a, b) => a.id - b.id); await kput(env, 'chposts', list.slice(-20))
+}
+// Частые вопросы в группе: бот отвечает темой, если вопрос на неё похож (не чаще раза в 10 минут на тему)
+const groupFaqAt = new Map()
+async function groupFaq(env, cfg, m) {
+  const t = String(m.text || ''); if (!cfg.features.groupFaq || t.length < 8 || t.startsWith('/') || m.from?.is_bot || !/\?|как|почему|не работает|не подключ|где /i.test(t)) return false
+  const f = findFaq(cfg, t, false); if (!f) return false
+  const k = m.chat.id + ':' + f.id; if (now() - (groupFaqAt.get(k) || 0) < 600000) return false
+  groupFaqAt.set(k, now()); const name = await botName(env)
+  await tg(env, 'sendMessage', { chat_id: m.chat.id, reply_parameters: { message_id: m.message_id, allow_sending_without_reply: true }, text: `${f.title}\n\n${fill(cfg, f.text)}`.slice(0, 3500), disable_web_page_preview: true, ...(name ? { reply_markup: { inline_keyboard: [[{ text: '💬 Спросить в личке', url: 'https://t.me/' + name }]] } } : {}) })
+  return true
+}
 async function onGroup(env, cfg, m) { // группа: приветствие, капча, предупреждения и защита от ссылок от новичков
   // /warn и /ban ответом на сообщение — только админы группы; 3 предупреждения — бан на сутки
   const gc = (m.text || '').split(/[\s@]/)[0].toLowerCase()
@@ -444,6 +467,7 @@ async function onGroup(env, cfg, m) { // группа: приветствие, �
     }
     return
   }
+  if (m.text && !m.new_chat_members && await groupFaq(env, cfg, m)) return
   if (cfg.features.antispam && !m.from?.is_bot && ((m.entities || []).concat(m.caption_entities || []).some(e => ['url', 'text_link', 'mention'].includes(e.type)) || m.forward_origin)) {
     const j = await kget(env, 'joined', {})
     if (j[m.from.id] && now() - j[m.from.id] < 86400000) {
@@ -1119,7 +1143,7 @@ async function dataExport(env) {
     q: await kget(env, 'q', []), stats: st, fb: await kget(env, 'fbk', []), cmp: (await kget(env, 'cmp', [])).map(x => ({ name: x.name, at: x.at })), spam: await kget(env, 'spam', 0),
     broadcast: bc && { id: cfg.broadcast.id, ok: bc.ok, fail: bc.fail, done: !!bc.done }, polls: await kget(env, 'pollres', {}),
     refs: Object.entries(refc).sort((a, b) => b[1] - a[1]).slice(0, 20), features: cfg.features, fover: await kget(env, 'fover', {}),
-    helpers: await kget(env, 'helpers', []), by: await answeredBy(env), ulist: await userList(env, 300), block: await kget(env, 'block', []), stopl: (await kget(env, 'stop', [])).slice(-500) }
+    chposts: await kget(env, 'chposts', []), helpers: await kget(env, 'helpers', []), by: await answeredBy(env), ulist: await userList(env, 300), block: await kget(env, 'block', []), stopl: (await kget(env, 'stop', [])).slice(-500) }
 }
 async function hmac(secret, msg) { const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']); return [...new Uint8Array(await crypto.subtle.sign('HMAC', k, new TextEncoder().encode(msg)))].map(b => b.toString(16).padStart(2, '0')).join('') }
 async function seal(secret, obj) { // AES-GCM, ключ = SHA-256('apex-bot:' + слово) — то же делает робот
@@ -1129,7 +1153,7 @@ async function seal(secret, obj) { // AES-GCM, ключ = SHA-256('apex-bot:' + 
 }
 const okSig = async (env, req) => { const ts = +req.headers.get('x-ts'), sig = req.headers.get('x-sig') || ''; return Math.abs(now() - ts) < 300000 && sig.length === 64 && sig === await hmac(env.WEBHOOK_SECRET, String(ts)) }
 
-export const ALLOWED = ['message', 'callback_query', 'poll']
+export const ALLOWED = ['message', 'callback_query', 'poll', 'channel_post', 'edited_channel_post'] // 3.2: посты канала — для новостей на сайте
 export { FEATURES, FEAT_NAMES, FEAT_GROUPS, CONFIG_URL } // для меню сервера (apex → «Функции бота»)
 export default {
   // Cloudflare: расписание раз в минуту (ставит «Применить к боту в Cloudflare») — рассылка, «Помогло?», меню команд
@@ -1183,6 +1207,8 @@ export default {
       const u = await req.json().catch(() => ({}))
       try {
         if (u.message) await onMessage(env, u.message)
+        const cp = u.channel_post || u.edited_channel_post
+        if (cp) await onChannelPost(env, await config(env), cp)
         if (u.poll) { const pr = await kget(env, 'pollres', {}), p = u.poll; pr[p.id] = { q: p.question, o: p.options.map(o => [o.text, o.voter_count]), at: now() }; const ks = Object.keys(pr); if (ks.length > 300) delete pr[ks[0]]; await kput(env, 'pollres', pr) }
         if (u.callback_query) {
           const cq = u.callback_query, d = cq.data || '', owner = env.OWNER_ID && String(cq.from.id) === String(env.OWNER_ID)

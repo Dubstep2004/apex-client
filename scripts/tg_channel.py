@@ -340,6 +340,7 @@ def bot_sync(slot=1):
     box = bot_api('/api/data', {}, slot)
     if box.get('error'): raise TgError(box['error'])
     data = json.loads(AESGCM(hashlib.sha256(('apex-bot:' + bot_cred(slot)[1]).encode()).digest()).decrypt(base64.b64decode(box['i']), base64.b64decode(box['c']), None))
+    if slot == 1: write_channel_news(data.get('chposts') or [])
     sig = hashlib.sha256(json.dumps({k: v for k, v in data.items() if k != 'at'}, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
     sk = 'botsig' if slot == 1 else f'botsig{slot}'
     if sig == state.get(sk) and now - int(state.get('botsync') or 0) < 6 * 3600_000: return False
@@ -349,6 +350,22 @@ def bot_sync(slot=1):
     state[sk], state['botsync'] = sig, now
     if (data.get('features') or {}).get('remind', True): remind_renewals(data.get('remind') or [])
     return True
+
+
+def write_channel_news(posts):
+    """3.2: новости канала для визитки (/news/) — только тексты постов публичного канала, дата и ссылка."""
+    out = []
+    for p in posts[-20:]:
+        if not isinstance(p, dict) or not str(p.get('text') or '').strip(): continue
+        ch = re.sub(r'[^A-Za-z0-9_]', '', str(p.get('ch') or ''))
+        out.append({'id': int(p.get('id') or 0), 'at': int(p.get('at') or 0), 'text': str(p['text'])[:2000],
+                     'url': f'https://t.me/{ch}/{int(p.get("id") or 0)}' if ch else '', 'photo': bool(p.get('photo'))})
+    out.sort(key=lambda x: -x['at'])
+    path = 'docs/stats/channel.json'
+    try: old = json.load(open(path)).get('posts')
+    except Exception: old = None
+    if old == out or DRY: return
+    open(path, 'w').write(json.dumps({'updated': now, 'posts': out}, ensure_ascii=False, indent=1) + '\n')
 
 
 def remind_renewals(ids):
