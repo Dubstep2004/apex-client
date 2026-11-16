@@ -25,6 +25,8 @@
 //   его ответ на пересланное сообщение бот отправит человеку; счёт, какие темы спрашивают чаще.
 
 // ЧТО НОВОГО В БОТЕ (пульт показывает это в «Справка» → «Что нового» → «Бот»; V — версия, n/u/f — новое/улучшено/исправлено)
+// V|4.0|16 ноября 2026
+// u|Бонус за друзей настраивается в пульте: за скольких приглашённых, сколько дней и «начислять сразу» без вашего нажатия
 // V|3.9|16 ноября 2026
 // n|«Всё в мини-приложении» (вкл. по умолчанию): у людей внизу одна кнопка «📱 APEX — всё здесь», в меню «/» — только /start, /web и /stop; темы, подписка, вопрос, форма, жалоба на сервер — внутри мини-приложения. Выключите — вернутся кнопки тем и все команды (сами команды работают всегда)
 // V|3.8|16 ноября 2026
@@ -212,6 +214,7 @@ async function config(env) {
     // Функции бота: пульт → «Функции бота». Нет настройки — значение по умолчанию
     features: await mergeFeatures(env, c),
     // 2.0: быстрые ответы владельца, описание бота, рассылка/опрос, картинки к темам
+    refBonus: { every: Math.min(Math.max(+c?.refBonus?.every || 3, 1), 50), days: Math.min(Math.max(+c?.refBonus?.days || 7, 1), 90), auto: c?.refBonus?.auto === true }, // бонус за друзей — из пульта
     quick: (Array.isArray(c?.quick) ? c.quick : QUICK).map(x => String(x).slice(0, 300)).filter(Boolean).slice(0, 6),
     description: String(c?.description || '').slice(0, 512), short: String(c?.short || '').slice(0, 120),
     broadcast: c?.broadcast && /^[\w-]{4,40}$/.test(String(c.broadcast.id || '')) ? c.broadcast : null,
@@ -498,15 +501,10 @@ async function onAdmin(env, cfg, cq, d) {
     return onAdmin(env, cfg, { ...cq, id: cq.id + 'x' }, 'ad:helpers')
   }
   if (act === 'hdel') { await kput(env, 'helpers', (await kget(env, 'helpers', [])).filter(h => +h.id !== +arg)); await kput(env, 'await:' + arg, null); await tg(env, 'sendMessage', { chat_id: +arg, text: 'Вы больше не помощник поддержки. Спасибо за помощь! 🙌', reply_markup: { remove_keyboard: true } }); return onAdmin(env, cfg, { ...cq, id: cq.id + 'x' }, 'ad:helpers') }
-  if (act === 'rb') { // бонус за друзей: +7 дней в Remnawave
-    if (!remnaOn(env)) return adminScreen(env, cfg, chat, mid, '🎁 Панель подписок не подключена (REMNA_URL и REMNA_TOKEN в настройках бота). Начислите 7 дней вручную в панели.')
-    try {
-      const [u] = await subsOf(env, arg); if (!u?.uuid) return adminScreen(env, cfg, chat, mid, '🎁 У этого человека нет подписки на его Telegram — начислите вручную')
-      const exp = new Date(Math.max(Date.parse(u.expireAt) || 0, now()) + 7 * 86400000).toISOString()
-      await remna(env, '/api/users', { method: 'PATCH', body: JSON.stringify({ uuid: u.uuid, expireAt: exp }) })
-      await tg(env, 'sendMessage', { chat_id: +arg, text: '🎁 Спасибо, что зовёте друзей! Мы добавили 7 дней к вашей подписке APEX CLIENT 💙' })
-      return adminScreen(env, cfg, chat, mid, '✅ Начислено +7 дней, подписка до ' + new Date(exp).toLocaleDateString('ru', { timeZone: 'Europe/Moscow' }) + '. Человеку отправлено спасибо.')
-    } catch (e) { await logErr(env, 'бонус', e); return adminScreen(env, cfg, chat, mid, '⚠️ Не получилось: ' + e.message + '. Начислите вручную в панели.') }
+  if (act === 'rb') { // бонус за друзей: +N дней в Remnawave (N — из пульта)
+    if (!remnaOn(env)) return adminScreen(env, cfg, chat, mid, `🎁 Панель подписок не подключена (REMNA_URL и REMNA_TOKEN в настройках бота). Начислите ${cfg.refBonus.days} дн. вручную в панели.`)
+    const r = await giveBonus(env, arg, cfg.refBonus.days)
+    return adminScreen(env, cfg, chat, mid, r.ok ? `✅ Начислено +${cfg.refBonus.days} дн., подписка до ${r.until}. Человеку отправлено спасибо.` : '⚠️ Не получилось: ' + r.error + '. Начислите вручную в панели.')
   }
   if (act === 'menu') return adminMenu(env, cfg, chat, mid)
   if (act === 'sec' && ADMIN_SECS[arg]) return adminScreen(env, cfg, chat, mid, ADMIN_SECS[arg][0] + '\n\nВыберите 👇', ADMIN_SECS[arg][1])
@@ -808,7 +806,12 @@ async function onMessage(env, m) {
       const k = 'ref:' + m.from.id
       if (!(await kget(env, k, null))) { await kput(env, k, arg.slice(4)); const rc = await kget(env, 'refc', {}), rid = arg.slice(4); rc[rid] = (rc[rid] || 0) + 1; await kput(env, 'refc', rc)
         // Бонус за друзей: каждые 3 приглашённых — владельцу кнопка «+7 дней» (начисляет только он)
-        if (cfg.features.refbonus && env.OWNER_ID && rc[rid] % 3 === 0) { const c = await kget(env, 'u:' + rid, null); await tg(env, 'sendMessage', { chat_id: env.OWNER_ID, text: `🎁 ${c?.un ? '@' + c.un : c?.name || 'Человек ' + rid} пригласил уже ${rc[rid]} друзей. Начислить бонус?`, reply_markup: { inline_keyboard: [[{ text: '🎁 +7 дней подписки', callback_data: 'ad:rb:' + rid }], [{ text: '👤 Карточка', callback_data: 'ad:uc:' + rid }]] } }) } }
+        const rb = cfg.refBonus
+        if (cfg.features.refbonus && env.OWNER_ID && rc[rid] % rb.every === 0) {
+          const c = await kget(env, 'u:' + rid, null), nm = c?.un ? '@' + c.un : c?.name || 'Человек ' + rid
+          if (rb.auto && remnaOn(env)) { const r = await giveBonus(env, rid, rb.days); await tg(env, 'sendMessage', { chat_id: env.OWNER_ID, text: r.ok ? `🎁 ${nm} пригласил ${rc[rid]} друзей — начислил +${rb.days} дн., подписка до ${r.until}` : `🎁 ${nm} пригласил ${rc[rid]} друзей, но начислить не вышло: ${r.error}`, reply_markup: { inline_keyboard: [[{ text: '👤 Карточка', callback_data: 'ad:uc:' + rid }]] } }) }
+          else await tg(env, 'sendMessage', { chat_id: env.OWNER_ID, text: `🎁 ${nm} пригласил уже ${rc[rid]} друзей. Начислить бонус?`, reply_markup: { inline_keyboard: [[{ text: `🎁 +${rb.days} дней подписки`, callback_data: 'ad:rb:' + rid }], [{ text: '👤 Карточка', callback_data: 'ad:uc:' + rid }]] } })
+        } }
     }
     if (owner && cfg.features.admin && !arg) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: '👋 Вы владелец бота. Кнопка «🛠 Админ» внизу — панель управления. Её видите только вы.', reply_markup: ADMIN_KB })
     const f = arg && cfg.features.deeplinks && topicsOf(cfg, en).find(t => t.id === arg)
@@ -875,6 +878,15 @@ async function remna(env, path, init = {}) {
   return (await r.json()).response
 }
 async function subsOf(env, tid) { const r = await remna(env, '/api/users/by-telegram-id/' + (+tid)); return (Array.isArray(r) ? r : r ? [r] : []).slice(0, 3) }
+async function giveBonus(env, tid, days) { // +N дней к подписке в Remnawave и спасибо человеку
+  try {
+    const [u] = await subsOf(env, tid); if (!u?.uuid) return { error: 'у человека нет подписки на его Telegram — начислите вручную' }
+    const exp = new Date(Math.max(Date.parse(u.expireAt) || 0, now()) + days * 86400000).toISOString()
+    await remna(env, '/api/users', { method: 'PATCH', body: JSON.stringify({ uuid: u.uuid, expireAt: exp }) })
+    await tg(env, 'sendMessage', { chat_id: +tid, text: `🎁 Спасибо, что зовёте друзей! Мы добавили ${days} дн. к вашей подписке APEX CLIENT 💙` })
+    return { ok: true, until: new Date(exp).toLocaleDateString('ru', { timeZone: 'Europe/Moscow' }) }
+  } catch (e) { await logErr(env, 'бонус', e); return { error: e.message } }
+}
 const gb = b => (+b / 1073741824).toFixed(b >= 10737418240 ? 0 : 1) + ' ГБ'
 async function sendHowto(env, chat, en) { // видеоинструкция с визитки (файл меньше 20 МБ — Telegram берёт по ссылке)
   const r = await tg(env, 'sendVideo', { chat_id: chat, video: `${SITE}/media/install-${en ? 'en' : 'ru'}.mp4`, caption: en ? '🎬 How to install and connect APEX CLIENT. More: ' + SITE + '/help/' : '🎬 Как установить и подключить APEX CLIENT. Подробно: ' + SITE + '/help/', supports_streaming: true })
