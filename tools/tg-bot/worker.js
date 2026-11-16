@@ -25,6 +25,8 @@
 //   его ответ на пересланное сообщение бот отправит человеку; счёт, какие темы спрашивают чаще.
 
 // ЧТО НОВОГО В БОТЕ (пульт показывает это в «Справка» → «Что нового» → «Бот»; V — версия, n/u/f — новое/улучшено/исправлено)
+// V|3.9|16 ноября 2026
+// n|«Всё в мини-приложении» (вкл. по умолчанию): у людей внизу одна кнопка «📱 APEX — всё здесь», в меню «/» — только /start, /web и /stop; темы, подписка, вопрос, форма, жалоба на сервер — внутри мини-приложения. Выключите — вернутся кнопки тем и все команды (сами команды работают всегда)
 // V|3.8|16 ноября 2026
 // u|Мини-приложение 2.0: вкладки «Главная», «Помощь» (темы бота с поиском и видео), «Подписка» (кнопки ведут в бота: срок, ссылка для друзей), «ТВ» (короткий адрес для браузера телевизора)
 // V|3.7|16 ноября 2026
@@ -175,7 +177,7 @@ const FEAT_GROUPS = [
   ['adm', '🛠 Админ и сводки', ['admin', 'morning', 'stats', 'syslog', 'backup']],
   ['ans', '💬 Ответы людям', ['forward', 'media', 'quick', 'followup', 'translate', 'english', 'qpos', 'night', 'human', 'memory', 'form', 'fuzzy']],
   ['hlp', '🛟 Помощники', ['helpers', 'helpRR']],
-  ['cmd', '📋 Команды', ['commands', 'sub', 'video', 'miniapp', 'status', 'news', 'invite', 'remind', 'complaints', 'version', 'ping', 'quiz', 'deeplinks', 'images']],
+  ['cmd', '📋 Команды', ['appFirst', 'miniapp', 'commands', 'sub', 'video', 'status', 'news', 'invite', 'remind', 'complaints', 'version', 'ping', 'quiz', 'deeplinks', 'images']],
   ['bc', '📣 Рассылки и канал', ['broadcast', 'polls', 'chpost']],
   ['con', '🎁 Конкурсы', ['contestBot', 'contestSub', 'contestReal', 'contestDM']],
   ['grp', '👥 Группа', ['welcome', 'antispam', 'captcha', 'warns']],
@@ -220,14 +222,15 @@ async function config(env) {
   cfgAt = Date.now()
   return cfgCache
 }
-const FEATURES = { sub: true, video: true, refbonus: true, miniapp: true, memory: true, form: true, quiz: true, fuzzy: true, captcha: false, warns: true, anniv: true, qpos: true, night: true, human: true, fakewarn: true, helpers: true, helpRR: true, chpost: true, contestBot: true, backup: true, syslog: true, morning: true, admin: true, media: true, quick: true, commands: true, images: true, deeplinks: true, contestDM: true, polls: true, broadcast: true, news: true, status: true, ping: true, english: true, forward: false, stats: true, welcome: true, antispam: true, invite: true, remind: true, followup: true, complaints: true, translate: true, antiflood: true, version: true, contestSub: true, contestReal: false }
+const FEATURES = { appFirst: true, sub: true, video: true, refbonus: true, miniapp: true, memory: true, form: true, quiz: true, fuzzy: true, captcha: false, warns: true, anniv: true, qpos: true, night: true, human: true, fakewarn: true, helpers: true, helpRR: true, chpost: true, contestBot: true, backup: true, syslog: true, morning: true, admin: true, media: true, quick: true, commands: true, images: true, deeplinks: true, contestDM: true, polls: true, broadcast: true, news: true, status: true, ping: true, english: true, forward: false, stats: true, welcome: true, antispam: true, invite: true, remind: true, followup: true, complaints: true, translate: true, antiflood: true, version: true, contestSub: true, contestReal: false }
 // Названия функций — для /settings в боте и меню сервера (apex → «Функции бота»)
-const FEAT_NAMES = { admin: 'Панель админа на кнопках', morning: 'Утренняя сводка в 9:00', chpost: 'Пост в канал из бота', helpers: 'Помощники', qpos: 'Место в очереди', fuzzy: 'Умный поиск с опечатками', memory: 'Память разговора', sub: '/sub — моя подписка', video: 'Видеоинструкция', refbonus: 'Бонус за друзей', miniapp: 'Мини-приложение (кнопка APEX)', form: 'Форма /report', quiz: 'Викторина /quiz', captcha: 'Капча для новичков в группе', warns: '/warn и /ban в группе', anniv: 'Поздравление с годовщиной', night: 'Ночью — «ответим утром»', human: '«Позвать человека»', fakewarn: 'Предупреждение о поддельных ботах', helpRR: 'Помощникам — вопросы по очереди', contestBot: 'Конкурс из бота', backup: 'Копия данных файлом', syslog: 'Система и ошибки', forward: 'Вопросы без ответа — мне', media: 'Фото и голосовые — мне', quick: 'Быстрые ответы', followup: '«Помогло?»', translate: 'Перевод моих ответов', english: 'Ответы на английском', status: '/status', news: '/news', invite: '/invite', remind: '/remind', complaints: 'Жалобы на серверы', version: 'Подсказка версии', broadcast: 'Рассылка', polls: 'Опросы', stats: 'Счёт тем', ping: '/ping', commands: 'Меню команд «/»', images: 'Картинки в ответах', deeplinks: 'Ссылки на темы', antiflood: 'Защита от флуда', welcome: 'Приветствие в группе', antispam: 'Антиспам в группе', contestSub: 'Конкурс: только подписчики', contestReal: 'Конкурс: без пустых аккаунтов', contestDM: 'Конкурс: поздравить победителей' }
+const FEAT_NAMES = { admin: 'Панель админа на кнопках', morning: 'Утренняя сводка в 9:00', chpost: 'Пост в канал из бота', helpers: 'Помощники', qpos: 'Место в очереди', fuzzy: 'Умный поиск с опечатками', memory: 'Память разговора', appFirst: 'Всё в мини-приложении', sub: '/sub — моя подписка', video: 'Видеоинструкция', refbonus: 'Бонус за друзей', miniapp: 'Мини-приложение (кнопка APEX)', form: 'Форма /report', quiz: 'Викторина /quiz', captcha: 'Капча для новичков в группе', warns: '/warn и /ban в группе', anniv: 'Поздравление с годовщиной', night: 'Ночью — «ответим утром»', human: '«Позвать человека»', fakewarn: 'Предупреждение о поддельных ботах', helpRR: 'Помощникам — вопросы по очереди', contestBot: 'Конкурс из бота', backup: 'Копия данных файлом', syslog: 'Система и ошибки', forward: 'Вопросы без ответа — мне', media: 'Фото и голосовые — мне', quick: 'Быстрые ответы', followup: '«Помогло?»', translate: 'Перевод моих ответов', english: 'Ответы на английском', status: '/status', news: '/news', invite: '/invite', remind: '/remind', complaints: 'Жалобы на серверы', version: 'Подсказка версии', broadcast: 'Рассылка', polls: 'Опросы', stats: 'Счёт тем', ping: '/ping', commands: 'Меню команд «/»', images: 'Картинки в ответах', deeplinks: 'Ссылки на темы', antiflood: 'Защита от флуда', welcome: 'Приветствие в группе', antispam: 'Антиспам в группе', contestSub: 'Конкурс: только подписчики', contestReal: 'Конкурс: без пустых аккаунтов', contestDM: 'Конкурс: поздравить победителей' }
 const QUICK = ['Обновите подписку: Настройки → Подписка → «Обновить»', 'Включите автопилот — он сам выберет рабочий сервер', 'Откройте «Проверка сети» на главном и пришлите итог (кнопка «Поделиться»)', 'Обновите приложение до последней версии: ' + SITE + '/update/']
 const fill = (cfg, t) => t.replaceAll('{сайт}', SITE).replaceAll('{поддержка}', cfg.support)
 const topicsOf = (cfg, en) => en ? FAQ_EN : cfg.topics
 const appUrl = en => SITE + '/app/?' + (meName ? 'bot=' + meName + '&' : '') + (en ? 'lang=en' : 'lang=ru') // мини-приложение знает, в какого бота вести кнопки
-const menu = (cfg, en) => ({ inline_keyboard: [...topicsOf(cfg, en).map(f => [{ text: f.title, callback_data: (en ? 'faqen:' : 'faq:') + f.id }]), ...(cfg.features.video ? [[{ text: en ? '🎬 Video guide' : '🎬 Видеоинструкция', callback_data: 'vid' }]] : []), ...(cfg.features.miniapp ? [[{ text: en ? '📱 Open APEX' : '📱 Открыть APEX', web_app: { url: appUrl(en) } }]] : [])] })
+const userKb = en => ({ keyboard: [[{ text: en ? '📱 APEX — everything here' : '📱 APEX — всё здесь', web_app: { url: appUrl(en) } }]], resize_keyboard: true, is_persistent: true }) // кнопка внизу: из неё мини-приложение может прислать боту данные
+const menu = (cfg, en) => cfg.features.appFirst && cfg.features.miniapp ? { inline_keyboard: [[{ text: en ? '📱 Open APEX' : '📱 Открыть APEX', web_app: { url: appUrl(en) } }]] } : ({ inline_keyboard: [...topicsOf(cfg, en).map(f => [{ text: f.title, callback_data: (en ? 'faqen:' : 'faq:') + f.id }]), ...(cfg.features.video ? [[{ text: en ? '🎬 Video guide' : '🎬 Видеоинструкция', callback_data: 'vid' }]] : []), ...(cfg.features.miniapp ? [[{ text: en ? '📱 Open APEX' : '📱 Открыть APEX', web_app: { url: appUrl(en) } }]] : [])] })
 const after = (cfg, en) => ({ inline_keyboard: [[{ text: en ? EN.other : '📋 Другие темы', callback_data: en ? 'menuen' : 'menu' }], ...(cfg.features.human && cfg.features.forward && cfg.hasOwner ? [[{ text: en ? '🙋 Ask a human' : '🙋 Позвать человека', callback_data: 'human' }]] : []), [{ text: en ? EN.support : '💬 Написать в поддержку', url: cfg.support }]] })
 const isNight = () => { const h = new Date(now() + 3 * 3600000).getUTCHours(); return h < 9 } // 0:00–8:59 МСК
 async function fakeWarn(env, cfg, en) { if (!cfg.features.fakewarn) return ''; const n = await botName(env); return n ? (en ? `\n\n🛡 The only official bot is @${n}. Support never asks for passwords, SMS codes or payment in private messages.` : `\n\n🛡 Официальный бот — только @${n}. Поддержка никогда не просит пароль, код из СМС или оплату в личке.`) : '' }
@@ -684,10 +687,37 @@ async function adminInput(env, cfg, chat, wait, text, helper) { // ждали т
   }
 }
 
+// Мини-приложение (кнопка «📱 APEX» внизу) присылает действие: {a: 'ask'|'report'|'sub'|'invite'|'remind'|'stop'|'cmp'|'status'|'news', ...}
+async function onAppData(env, cfg, m) {
+  let d = {}; try { d = JSON.parse(m.web_app_data.data || '{}') } catch {}
+  const en = isEn(cfg, m.from), as = text => onMessage(env, { ...m, web_app_data: undefined, text }), cut = (x, n) => String(x || '').trim().slice(0, n)
+  if (!env.OWNER_ID || String(m.from.id) !== String(env.OWNER_ID)) { if ((await kget(env, 'block', [])).includes(m.from.id)) return; if (env.APEX_KV) await remember(env, m.from) }
+  const cmds = { sub: '/sub', invite: '/invite', remind: '/remind', stop: '/stop', status: '/status', news: '/news', video: '/video' }
+  if (cmds[d.a]) return as(cmds[d.a])
+  if (d.a === 'cmp' && /^[\p{L} -]{2,20}$/u.test(cut(d.name, 20))) { const n = cut(d.name, 20); return as('не работает ' + n[0].toUpperCase() + n.slice(1)) }
+  if (d.a === 'ask' || d.a === 'report') {
+    const text = d.a === 'ask' ? cut(d.text, 1500) : `📝 Форма из мини-приложения\nУстройство: ${cut(d.device, 80) || '—'}\nВерсия: ${cut(d.ver, 20) || '—'}\nПроблема: ${cut(d.text, 1200) || '—'}`
+    if (!text) return
+    if (d.a === 'ask') { const f = findFaq(cfg, text, en); if (f && !d.human) return answer(env, cfg, m.chat.id, f, en) }
+    return askOwner(env, cfg, m, text, en)
+  }
+}
+// Вопрос текстом без пересылки (из мини-приложения): карточка владельцу, ответ — реплаем на неё, как обычно
+async function askOwner(env, cfg, m, text, en) {
+  if (!(cfg.features.forward && env.OWNER_ID && env.APEX_KV && await fwAllowed(env, m.from?.id))) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: (en ? 'Write to support: ' : 'Напишите в поддержку: ') + cfg.support })
+  const nm = who({ username: m.from?.username, name: m.from?.first_name })
+  const r = await tg(env, 'sendMessage', { chat_id: env.OWNER_ID, text: `❓ Из мини-приложения от ${nm}${en ? ' (EN — ответ переведу)' : ''}:\n\n${text}\n\nОтветьте на это сообщение — бот отправит ответ человеку.` })
+  if (!r.ok) return
+  const id = r.result.message_id; await env.APEX_KV.put('fw:' + id, String(m.chat.id), { expirationTtl: 14 * 86400 })
+  const q = { id, uid: m.chat.id, name: nm, text: text.slice(0, 500), kind: 'text', at: now(), en: !!en }; await logQuestion(env, q); await notifyHelper(env, cfg, q)
+  const wq = (await kget(env, 'q', [])).filter(x => !x.ans).length
+  return tg(env, 'sendMessage', { chat_id: m.chat.id, text: (en ? 'Sent to support — the answer will come here 🙌' : 'Передал в поддержку — ответ придёт сюда 🙌') + (cfg.features.qpos && wq > 1 ? (en ? `\nYou are #${wq} in the queue.` : `\nВы в очереди: ${wq}-й.`) : '') + (cfg.features.night && isNight() ? (en ? '\n🌙 It is night — support will answer in the morning.' : '\n🌙 Сейчас ночь — поддержка ответит утром (с 9:00 МСК).') : '') })
+}
 async function onMessage(env, m) {
   const cfg = await config(env)
   if (m.chat?.type === 'group' || m.chat?.type === 'supergroup') return onGroup(env, cfg, m)
   if (m.chat?.type !== 'private') return // в каналах молчим
+  if (m.web_app_data) return onAppData(env, cfg, m)
   const text = (m.text || '').trim(), owner = env.OWNER_ID && String(m.from?.id) === String(env.OWNER_ID), en = isEn(cfg, m.from)
   const [cmd0, arg] = text.split(/\s+/, 2); let cmd = (cmd0 || '').split('@')[0].toLowerCase()
   if (cmd === '/start' && /^(sub|invite|video|status|report|quiz)$/.test(arg || '')) cmd = '/' + arg // кнопки мини-приложения: t.me/бот?start=sub
@@ -783,6 +813,7 @@ async function onMessage(env, m) {
     if (owner && cfg.features.admin && !arg) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: '👋 Вы владелец бота. Кнопка «🛠 Админ» внизу — панель управления. Её видите только вы.', reply_markup: ADMIN_KB })
     const f = arg && cfg.features.deeplinks && topicsOf(cfg, en).find(t => t.id === arg)
     if (f) return answer(env, cfg, m.chat.id, f, en)
+    if (cfg.features.appFirst && cfg.features.miniapp) { await botName(env); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: (en ? '👋 Hi! Everything is in the «📱 APEX» button below: server status, help, your subscription, invite link, TV.\nOr just type your question here.' : '👋 Привет! Всё — в кнопке «📱 APEX» внизу: статус серверов, помощь, подписка, ссылка для друзей, телевизор.\nИли просто напишите вопрос сюда.') + await fakeWarn(env, cfg, en), reply_markup: userKb(en) }) }
     return tg(env, 'sendMessage', { chat_id: m.chat.id, text: (en ? EN.greeting : fill(cfg, cfg.greeting)) + await fakeWarn(env, cfg, en), reply_markup: menu(cfg, en) })
   }
   if (cmd === '/help' || (!text && !m.photo && !m.document && !m.voice && !m.video && !m.video_note)) {
@@ -936,7 +967,7 @@ export async function tick(env, force) {
   const sig = JSON.stringify([cfg.features, cfg.description, cfg.short])
   if ((await kget(env, 'sig', '')) !== sig && !cfg.features.commands) { await tg(env, 'deleteMyCommands', {}); if (env.OWNER_ID) await tg(env, 'deleteMyCommands', { scope: { type: 'chat', chat_id: +env.OWNER_ID } }); await kput(env, 'sig', sig) }
   if ((await kget(env, 'sig', '')) !== sig) {
-    const cmds = [['start', 'Начать / темы'], ['download', 'Скачать приложение'], ...(cfg.features.status ? [['status', 'Состояние серверов']] : []), ...(cfg.features.news ? [['news', 'Последние новости']] : []), ...(cfg.features.invite ? [['invite', 'Пригласить друга']] : []), ...(cfg.features.remind ? [['remind', 'Напоминание о продлении']] : []), ...(cfg.features.complaints ? [['problem', 'Сообщить о проблеме с сервером']] : []), ...(cfg.features.form ? [['report', 'Форма: что не работает']] : []), ...(cfg.features.quiz ? [['quiz', 'Викторина по приложению']] : []), ...(cfg.features.sub ? [['sub', 'Моя подписка']] : []), ...(cfg.features.video ? [['video', 'Видеоинструкция']] : []), ...(cfg.features.miniapp ? [['web', 'Открыть APEX: статус, скачать, помощь']] : []), ['stop', 'Не получать рассылки']]
+    const cmds = cfg.features.appFirst && cfg.features.miniapp ? [['start', 'Начать'], ['web', 'Открыть APEX: всё в одном месте'], ['stop', 'Не получать рассылки']] : [['start', 'Начать / темы'], ['download', 'Скачать приложение'], ...(cfg.features.status ? [['status', 'Состояние серверов']] : []), ...(cfg.features.news ? [['news', 'Последние новости']] : []), ...(cfg.features.invite ? [['invite', 'Пригласить друга']] : []), ...(cfg.features.remind ? [['remind', 'Напоминание о продлении']] : []), ...(cfg.features.complaints ? [['problem', 'Сообщить о проблеме с сервером']] : []), ...(cfg.features.form ? [['report', 'Форма: что не работает']] : []), ...(cfg.features.quiz ? [['quiz', 'Викторина по приложению']] : []), ...(cfg.features.sub ? [['sub', 'Моя подписка']] : []), ...(cfg.features.video ? [['video', 'Видеоинструкция']] : []), ...(cfg.features.miniapp ? [['web', 'Открыть APEX: статус, скачать, помощь']] : []), ['stop', 'Не получать рассылки']]
     await tg(env, 'setMyCommands', { commands: cmds.map(([command, description]) => ({ command, description })) })
     await tg(env, 'setChatMenuButton', { menu_button: cfg.features.miniapp ? { type: 'web_app', text: 'APEX', web_app: { url: (await botName(env), appUrl(false)) } } : { type: 'commands' } })
     if (env.OWNER_ID) await tg(env, 'setMyCommands', { scope: { type: 'chat', chat_id: +env.OWNER_ID }, commands: [...cmds, ['today', 'Что было за сутки'], ['queue', 'Вопросы без ответа'], ['top', 'Частые вопросы'], ['users', 'Пользователи'], ['settings', 'Включить и выключить функции'], ['ping', 'Работает ли бот'], ['stats', 'Статистика тем'], ['contests', 'Конкурсы'], ['help', 'Команды владельца']].map(x => Array.isArray(x) ? { command: x[0], description: x[1] } : x) })
