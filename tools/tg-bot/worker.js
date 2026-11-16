@@ -25,6 +25,11 @@
 //   его ответ на пересланное сообщение бот отправит человеку; счёт, какие темы спрашивают чаще.
 
 // ЧТО НОВОГО В БОТЕ (пульт показывает это в «Справка» → «Что нового» → «Бот»; V — версия, n/u/f — новое/улучшено/исправлено)
+// V|3.5|16 ноября 2026
+// n|/sub — срок подписки, остаток дней и трафик (нужны REMNA_URL и REMNA_TOKEN в настройках бота); ссылку подписки бот не показывает
+// n|/video и кнопка «🎬 Видеоинструкция» — ролик «Как установить» прямо в чат
+// n|Бонус за друзей: каждые 3 приглашённых — вам кнопка «🎁 +7 дней», бот продлевает подписку в панели и благодарит человека
+// n|Мини-приложение: кнопка «APEX» слева от поля ввода — статус серверов, скачать, помощь
 // V|3.4|16 ноября 2026
 // u|«🛠 Админ» по разделам: «📊 Сводки и контроль», «👥 Работа с людьми», «📣 Рассылки и канал», «⚙️ Управление ботом»; «📥 Вопросы» и «📊 Сегодня» — сразу сверху
 // V|3.3|16 ноября 2026
@@ -164,11 +169,11 @@ const FEAT_GROUPS = [
   ['adm', '🛠 Админ и сводки', ['admin', 'morning', 'stats', 'syslog', 'backup']],
   ['ans', '💬 Ответы людям', ['forward', 'media', 'quick', 'followup', 'translate', 'english', 'qpos', 'night', 'human', 'memory', 'form', 'fuzzy']],
   ['hlp', '🛟 Помощники', ['helpers', 'helpRR']],
-  ['cmd', '📋 Команды', ['commands', 'status', 'news', 'invite', 'remind', 'complaints', 'version', 'ping', 'quiz', 'deeplinks', 'images']],
+  ['cmd', '📋 Команды', ['commands', 'sub', 'video', 'miniapp', 'status', 'news', 'invite', 'remind', 'complaints', 'version', 'ping', 'quiz', 'deeplinks', 'images']],
   ['bc', '📣 Рассылки и канал', ['broadcast', 'polls', 'chpost']],
   ['con', '🎁 Конкурсы', ['contestBot', 'contestSub', 'contestReal', 'contestDM']],
   ['grp', '👥 Группа', ['welcome', 'antispam', 'captcha', 'warns']],
-  ['etc', '🛡 Защита и прочее', ['antiflood', 'fakewarn', 'anniv']]]
+  ['etc', '🛡 Защита и прочее', ['antiflood', 'fakewarn', 'anniv', 'refbonus']]]
 const featGroups = () => { const used = new Set(FEAT_GROUPS.flatMap(g => g[2])), rest = Object.keys(FEAT_NAMES).filter(k => !used.has(k)); return rest.length ? [...FEAT_GROUPS, ['oth', '📦 Другое', rest]] : FEAT_GROUPS }
 const groupOf = k => featGroups().find(g => g[2].includes(k))?.[0]
 const settingsKb = (cfg, sec) => { // без раздела — список разделов с числом включённых; с разделом — переключатели
@@ -209,13 +214,13 @@ async function config(env) {
   cfgAt = Date.now()
   return cfgCache
 }
-const FEATURES = { memory: true, form: true, quiz: true, fuzzy: true, captcha: false, warns: true, anniv: true, qpos: true, night: true, human: true, fakewarn: true, helpers: true, helpRR: true, chpost: true, contestBot: true, backup: true, syslog: true, morning: true, admin: true, media: true, quick: true, commands: true, images: true, deeplinks: true, contestDM: true, polls: true, broadcast: true, news: true, status: true, ping: true, english: true, forward: false, stats: true, welcome: true, antispam: true, invite: true, remind: true, followup: true, complaints: true, translate: true, antiflood: true, version: true, contestSub: true, contestReal: false }
+const FEATURES = { sub: true, video: true, refbonus: true, miniapp: true, memory: true, form: true, quiz: true, fuzzy: true, captcha: false, warns: true, anniv: true, qpos: true, night: true, human: true, fakewarn: true, helpers: true, helpRR: true, chpost: true, contestBot: true, backup: true, syslog: true, morning: true, admin: true, media: true, quick: true, commands: true, images: true, deeplinks: true, contestDM: true, polls: true, broadcast: true, news: true, status: true, ping: true, english: true, forward: false, stats: true, welcome: true, antispam: true, invite: true, remind: true, followup: true, complaints: true, translate: true, antiflood: true, version: true, contestSub: true, contestReal: false }
 // Названия функций — для /settings в боте и меню сервера (apex → «Функции бота»)
-const FEAT_NAMES = { admin: 'Панель админа на кнопках', morning: 'Утренняя сводка в 9:00', chpost: 'Пост в канал из бота', helpers: 'Помощники', qpos: 'Место в очереди', fuzzy: 'Умный поиск с опечатками', memory: 'Память разговора', form: 'Форма /report', quiz: 'Викторина /quiz', captcha: 'Капча для новичков в группе', warns: '/warn и /ban в группе', anniv: 'Поздравление с годовщиной', night: 'Ночью — «ответим утром»', human: '«Позвать человека»', fakewarn: 'Предупреждение о поддельных ботах', helpRR: 'Помощникам — вопросы по очереди', contestBot: 'Конкурс из бота', backup: 'Копия данных файлом', syslog: 'Система и ошибки', forward: 'Вопросы без ответа — мне', media: 'Фото и голосовые — мне', quick: 'Быстрые ответы', followup: '«Помогло?»', translate: 'Перевод моих ответов', english: 'Ответы на английском', status: '/status', news: '/news', invite: '/invite', remind: '/remind', complaints: 'Жалобы на серверы', version: 'Подсказка версии', broadcast: 'Рассылка', polls: 'Опросы', stats: 'Счёт тем', ping: '/ping', commands: 'Меню команд «/»', images: 'Картинки в ответах', deeplinks: 'Ссылки на темы', antiflood: 'Защита от флуда', welcome: 'Приветствие в группе', antispam: 'Антиспам в группе', contestSub: 'Конкурс: только подписчики', contestReal: 'Конкурс: без пустых аккаунтов', contestDM: 'Конкурс: поздравить победителей' }
+const FEAT_NAMES = { admin: 'Панель админа на кнопках', morning: 'Утренняя сводка в 9:00', chpost: 'Пост в канал из бота', helpers: 'Помощники', qpos: 'Место в очереди', fuzzy: 'Умный поиск с опечатками', memory: 'Память разговора', sub: '/sub — моя подписка', video: 'Видеоинструкция', refbonus: 'Бонус за друзей', miniapp: 'Мини-приложение (кнопка APEX)', form: 'Форма /report', quiz: 'Викторина /quiz', captcha: 'Капча для новичков в группе', warns: '/warn и /ban в группе', anniv: 'Поздравление с годовщиной', night: 'Ночью — «ответим утром»', human: '«Позвать человека»', fakewarn: 'Предупреждение о поддельных ботах', helpRR: 'Помощникам — вопросы по очереди', contestBot: 'Конкурс из бота', backup: 'Копия данных файлом', syslog: 'Система и ошибки', forward: 'Вопросы без ответа — мне', media: 'Фото и голосовые — мне', quick: 'Быстрые ответы', followup: '«Помогло?»', translate: 'Перевод моих ответов', english: 'Ответы на английском', status: '/status', news: '/news', invite: '/invite', remind: '/remind', complaints: 'Жалобы на серверы', version: 'Подсказка версии', broadcast: 'Рассылка', polls: 'Опросы', stats: 'Счёт тем', ping: '/ping', commands: 'Меню команд «/»', images: 'Картинки в ответах', deeplinks: 'Ссылки на темы', antiflood: 'Защита от флуда', welcome: 'Приветствие в группе', antispam: 'Антиспам в группе', contestSub: 'Конкурс: только подписчики', contestReal: 'Конкурс: без пустых аккаунтов', contestDM: 'Конкурс: поздравить победителей' }
 const QUICK = ['Обновите подписку: Настройки → Подписка → «Обновить»', 'Включите автопилот — он сам выберет рабочий сервер', 'Откройте «Проверка сети» на главном и пришлите итог (кнопка «Поделиться»)', 'Обновите приложение до последней версии: ' + SITE + '/update/']
 const fill = (cfg, t) => t.replaceAll('{сайт}', SITE).replaceAll('{поддержка}', cfg.support)
 const topicsOf = (cfg, en) => en ? FAQ_EN : cfg.topics
-const menu = (cfg, en) => ({ inline_keyboard: topicsOf(cfg, en).map(f => [{ text: f.title, callback_data: (en ? 'faqen:' : 'faq:') + f.id }]) })
+const menu = (cfg, en) => ({ inline_keyboard: [...topicsOf(cfg, en).map(f => [{ text: f.title, callback_data: (en ? 'faqen:' : 'faq:') + f.id }]), ...(cfg.features.video ? [[{ text: en ? '🎬 Video guide' : '🎬 Видеоинструкция', callback_data: 'vid' }]] : [])] })
 const after = (cfg, en) => ({ inline_keyboard: [[{ text: en ? EN.other : '📋 Другие темы', callback_data: en ? 'menuen' : 'menu' }], ...(cfg.features.human && cfg.features.forward && cfg.hasOwner ? [[{ text: en ? '🙋 Ask a human' : '🙋 Позвать человека', callback_data: 'human' }]] : []), [{ text: en ? EN.support : '💬 Написать в поддержку', url: cfg.support }]] })
 const isNight = () => { const h = new Date(now() + 3 * 3600000).getUTCHours(); return h < 9 } // 0:00–8:59 МСК
 async function fakeWarn(env, cfg, en) { if (!cfg.features.fakewarn) return ''; const n = await botName(env); return n ? (en ? `\n\n🛡 The only official bot is @${n}. Support never asks for passwords, SMS codes or payment in private messages.` : `\n\n🛡 Официальный бот — только @${n}. Поддержка никогда не просит пароль, код из СМС или оплату в личке.`) : '' }
@@ -483,6 +488,16 @@ async function onAdmin(env, cfg, cq, d) {
     return onAdmin(env, cfg, { ...cq, id: cq.id + 'x' }, 'ad:helpers')
   }
   if (act === 'hdel') { await kput(env, 'helpers', (await kget(env, 'helpers', [])).filter(h => +h.id !== +arg)); await kput(env, 'await:' + arg, null); await tg(env, 'sendMessage', { chat_id: +arg, text: 'Вы больше не помощник поддержки. Спасибо за помощь! 🙌', reply_markup: { remove_keyboard: true } }); return onAdmin(env, cfg, { ...cq, id: cq.id + 'x' }, 'ad:helpers') }
+  if (act === 'rb') { // бонус за друзей: +7 дней в Remnawave
+    if (!remnaOn(env)) return adminScreen(env, cfg, chat, mid, '🎁 Панель подписок не подключена (REMNA_URL и REMNA_TOKEN в настройках бота). Начислите 7 дней вручную в панели.')
+    try {
+      const [u] = await subsOf(env, arg); if (!u?.uuid) return adminScreen(env, cfg, chat, mid, '🎁 У этого человека нет подписки на его Telegram — начислите вручную')
+      const exp = new Date(Math.max(Date.parse(u.expireAt) || 0, now()) + 7 * 86400000).toISOString()
+      await remna(env, '/api/users', { method: 'PATCH', body: JSON.stringify({ uuid: u.uuid, expireAt: exp }) })
+      await tg(env, 'sendMessage', { chat_id: +arg, text: '🎁 Спасибо, что зовёте друзей! Мы добавили 7 дней к вашей подписке APEX CLIENT 💙' })
+      return adminScreen(env, cfg, chat, mid, '✅ Начислено +7 дней, подписка до ' + new Date(exp).toLocaleDateString('ru', { timeZone: 'Europe/Moscow' }) + '. Человеку отправлено спасибо.')
+    } catch (e) { await logErr(env, 'бонус', e); return adminScreen(env, cfg, chat, mid, '⚠️ Не получилось: ' + e.message + '. Начислите вручную в панели.') }
+  }
   if (act === 'menu') return adminMenu(env, cfg, chat, mid)
   if (act === 'sec' && ADMIN_SECS[arg]) return adminScreen(env, cfg, chat, mid, ADMIN_SECS[arg][0] + '\n\nВыберите 👇', ADMIN_SECS[arg][1])
   if (act === 'today') {
@@ -708,6 +723,14 @@ async function onMessage(env, m) {
   if (owner && cmd === '/stats') return tg(env, 'sendMessage', { chat_id: m.chat.id, text: await statsText(env, cfg) })
   if (owner && cmd === '/help') return tg(env, 'sendMessage', { chat_id: m.chat.id, text: 'Команды владельца:\n/settings — включить и выключить функции бота\n/ping — работает ли бот\n/stats — какие темы спрашивают за неделю\n/status — состояние серверов\n/news — последние новости\n/contests — конкурсы\n/draw <номер> [победителей] — подвести итоги\nОтветьте на пересланный вопрос (или нажмите ⚡ быстрый ответ) — бот отправит ответ человеку.' })
   if (cmd === '/status' && cfg.features.status) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: await statusText(), disable_web_page_preview: true })
+  if ((cmd === '/sub' || cmd === '/subscription') && cfg.features.sub) {
+    if (!remnaOn(env)) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: 'Проверка подписки пока не подключена. Срок подписки виден в приложении: Настройки → Подписка.' })
+    let list; try { list = await subsOf(env, m.from.id) } catch (e) { await logErr(env, '/sub', e); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: 'Не получилось проверить подписку — попробуйте позже или напишите в поддержку: ' + cfg.support }) }
+    if (!list.length) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: 'Подписка на этот Telegram не найдена 🤔 Если вы оформляли её с другого аккаунта — проверьте в приложении: Настройки → Подписка.', reply_markup: after(cfg, en) })
+    const ST = { ACTIVE: '✅ активна', EXPIRED: '⏰ закончилась', DISABLED: '⛔ отключена', LIMITED: '📶 закончился трафик' }
+    return tg(env, 'sendMessage', { chat_id: m.chat.id, text: '📅 Ваша подписка\n\n' + list.map(u => { const exp = Date.parse(u.expireAt), left = Math.ceil((exp - now()) / 86400000); return `${ST[u.status] || u.status || '—'}\nДо: ${exp ? new Date(exp).toLocaleDateString('ru', { timeZone: 'Europe/Moscow', day: 'numeric', month: 'long', year: 'numeric' }) : '—'}${left > 0 ? ` (осталось ${left} дн.)` : ''}\nТрафик: ${gb(u.usedTrafficBytes || u.userTraffic?.usedTrafficBytes || 0)}${+u.trafficLimitBytes ? ' из ' + gb(u.trafficLimitBytes) : ' (без лимита)'}` }).join('\n\n') + '\n\nПродлить — через поддержку: ' + cfg.support })
+  }
+  if ((cmd === '/video' || cmd === '/howto') && cfg.features.video) return sendHowto(env, m.chat.id, en)
   if (cmd === '/quiz' && cfg.features.quiz) { const q = quizMsg(0, 0); return tg(env, 'sendMessage', { chat_id: m.chat.id, ...q }) }
   if (cmd === '/report' && cfg.features.form && !owner) { await kput(env, 'pf:' + m.from.id, { step: 0, a: [] }, 1800); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: '📝 Сообщить о проблеме — 3 коротких вопроса.\n\n1/3. Какое у вас устройство? (например: Samsung A52, Android 13 или телевизор Xiaomi)', reply_markup: { keyboard: [[{ text: '❌ Отмена' }]], resize_keyboard: true, one_time_keyboard: true } }) }
   if (cmd === '/download' || cmd === '/app' || cmd === '/version') { const v = await latestVersion(); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: (en ? 'APEX CLIENT ' : 'APEX CLIENT ') + (v || '') + (en ? '\nThe file is too big for Telegram (70 MB) — download it from the site:' : '\nФайл больше, чем пропускает Telegram (70 МБ), — скачайте с сайта:'), reply_markup: { inline_keyboard: [[{ text: en ? '⬇️ Download' : '⬇️ Скачать с сайта', url: SITE }], [{ text: en ? 'Mirror (GitHub)' : 'Запасная ссылка (GitHub)', url: 'https://github.com/Dubstep2004/apex-client/releases/latest' }]] } }) }
@@ -738,7 +761,9 @@ async function onMessage(env, m) {
     // Ссылки t.me/бот?start=тема и приглашения ref_<номер>
     if (arg && /^ref_\d+$/.test(arg) && cfg.features.invite && String(m.from.id) !== arg.slice(4)) {
       const k = 'ref:' + m.from.id
-      if (!(await kget(env, k, null))) { await kput(env, k, arg.slice(4)); const rc = await kget(env, 'refc', {}); rc[arg.slice(4)] = (rc[arg.slice(4)] || 0) + 1; await kput(env, 'refc', rc) }
+      if (!(await kget(env, k, null))) { await kput(env, k, arg.slice(4)); const rc = await kget(env, 'refc', {}), rid = arg.slice(4); rc[rid] = (rc[rid] || 0) + 1; await kput(env, 'refc', rc)
+        // Бонус за друзей: каждые 3 приглашённых — владельцу кнопка «+7 дней» (начисляет только он)
+        if (cfg.features.refbonus && env.OWNER_ID && rc[rid] % 3 === 0) { const c = await kget(env, 'u:' + rid, null); await tg(env, 'sendMessage', { chat_id: env.OWNER_ID, text: `🎁 ${c?.un ? '@' + c.un : c?.name || 'Человек ' + rid} пригласил уже ${rc[rid]} друзей. Начислить бонус?`, reply_markup: { inline_keyboard: [[{ text: '🎁 +7 дней подписки', callback_data: 'ad:rb:' + rid }], [{ text: '👤 Карточка', callback_data: 'ad:uc:' + rid }]] } }) } }
     }
     if (owner && cfg.features.admin && !arg) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: '👋 Вы владелец бота. Кнопка «🛠 Админ» внизу — панель управления. Её видите только вы.', reply_markup: ADMIN_KB })
     const f = arg && cfg.features.deeplinks && topicsOf(cfg, en).find(t => t.id === arg)
@@ -795,6 +820,20 @@ async function onMessage(env, m) {
   await count(env, cfg, '_miss')
   if (!owner && await forwardToOwner(env, cfg, m, en, 'text')) return
   return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? EN.notFound : fill(cfg, cfg.notFound), reply_markup: { inline_keyboard: [...menu(cfg, en).inline_keyboard, [{ text: en ? EN.support : '💬 Написать в поддержку', url: cfg.support }]] } })
+}
+// Подписка (Remnawave): адрес и токен — только в настройках бота (REMNA_URL, REMNA_TOKEN), никогда в ответах; ссылку подписки не показываем
+const remnaOn = env => /^https:\/\//.test(env.REMNA_URL || '') && !!env.REMNA_TOKEN
+async function remna(env, path, init = {}) {
+  const h = { authorization: 'Bearer ' + env.REMNA_TOKEN, accept: 'application/json', 'content-type': 'application/json', 'user-agent': 'APEX-bot' }; if (env.REMNA_COOKIE) h.cookie = env.REMNA_COOKIE
+  const r = await fetch(env.REMNA_URL.replace(/\/+$/, '') + path, { ...init, headers: h, signal: AbortSignal.timeout(15000) }); if (!r.ok) throw new Error('панель ответила ' + r.status)
+  return (await r.json()).response
+}
+async function subsOf(env, tid) { const r = await remna(env, '/api/users/by-telegram-id/' + (+tid)); return (Array.isArray(r) ? r : r ? [r] : []).slice(0, 3) }
+const gb = b => (+b / 1073741824).toFixed(b >= 10737418240 ? 0 : 1) + ' ГБ'
+async function sendHowto(env, chat, en) { // видеоинструкция с визитки (файл меньше 20 МБ — Telegram берёт по ссылке)
+  const r = await tg(env, 'sendVideo', { chat_id: chat, video: `${SITE}/media/install-${en ? 'en' : 'ru'}.mp4`, caption: en ? '🎬 How to install and connect APEX CLIENT. More: ' + SITE + '/help/' : '🎬 Как установить и подключить APEX CLIENT. Подробно: ' + SITE + '/help/', supports_streaming: true })
+  if (!r.ok) return tg(env, 'sendMessage', { chat_id: chat, text: (en ? '🎬 Video guide: ' : '🎬 Видеоинструкция: ') + SITE + (en ? '/en/#install' : '/#install') })
+  return r
 }
 const lastTopic = new Map() // память разговора: uid → {тема, время} (в памяти — без записей в KV)
 const QUIZ = [ // викторина: как пользоваться приложением
@@ -882,8 +921,9 @@ export async function tick(env, force) {
   const sig = JSON.stringify([cfg.features, cfg.description, cfg.short])
   if ((await kget(env, 'sig', '')) !== sig && !cfg.features.commands) { await tg(env, 'deleteMyCommands', {}); if (env.OWNER_ID) await tg(env, 'deleteMyCommands', { scope: { type: 'chat', chat_id: +env.OWNER_ID } }); await kput(env, 'sig', sig) }
   if ((await kget(env, 'sig', '')) !== sig) {
-    const cmds = [['start', 'Начать / темы'], ['download', 'Скачать приложение'], ...(cfg.features.status ? [['status', 'Состояние серверов']] : []), ...(cfg.features.news ? [['news', 'Последние новости']] : []), ...(cfg.features.invite ? [['invite', 'Пригласить друга']] : []), ...(cfg.features.remind ? [['remind', 'Напоминание о продлении']] : []), ...(cfg.features.complaints ? [['problem', 'Сообщить о проблеме с сервером']] : []), ...(cfg.features.form ? [['report', 'Форма: что не работает']] : []), ...(cfg.features.quiz ? [['quiz', 'Викторина по приложению']] : []), ['stop', 'Не получать рассылки']]
+    const cmds = [['start', 'Начать / темы'], ['download', 'Скачать приложение'], ...(cfg.features.status ? [['status', 'Состояние серверов']] : []), ...(cfg.features.news ? [['news', 'Последние новости']] : []), ...(cfg.features.invite ? [['invite', 'Пригласить друга']] : []), ...(cfg.features.remind ? [['remind', 'Напоминание о продлении']] : []), ...(cfg.features.complaints ? [['problem', 'Сообщить о проблеме с сервером']] : []), ...(cfg.features.form ? [['report', 'Форма: что не работает']] : []), ...(cfg.features.quiz ? [['quiz', 'Викторина по приложению']] : []), ...(cfg.features.sub ? [['sub', 'Моя подписка']] : []), ...(cfg.features.video ? [['video', 'Видеоинструкция']] : []), ['stop', 'Не получать рассылки']]
     await tg(env, 'setMyCommands', { commands: cmds.map(([command, description]) => ({ command, description })) })
+    await tg(env, 'setChatMenuButton', { menu_button: cfg.features.miniapp ? { type: 'web_app', text: 'APEX', web_app: { url: SITE + '/app/' } } : { type: 'commands' } })
     if (env.OWNER_ID) await tg(env, 'setMyCommands', { scope: { type: 'chat', chat_id: +env.OWNER_ID }, commands: [...cmds, ['today', 'Что было за сутки'], ['queue', 'Вопросы без ответа'], ['top', 'Частые вопросы'], ['users', 'Пользователи'], ['settings', 'Включить и выключить функции'], ['ping', 'Работает ли бот'], ['stats', 'Статистика тем'], ['contests', 'Конкурсы'], ['help', 'Команды владельца']].map(x => Array.isArray(x) ? { command: x[0], description: x[1] } : x) })
     if (cfg.description) await tg(env, 'setMyDescription', { description: cfg.description })
     if (cfg.short) await tg(env, 'setMyShortDescription', { short_description: cfg.short })
@@ -1048,6 +1088,7 @@ export default {
               if (i + 1 < QUIZ.length) { const n = quizMsg(i + 1, score); await tg(env, 'editMessageText', { chat_id: cq.message.chat.id, message_id: cq.message.message_id, text: head + '\n\n' + n.text, reply_markup: n.reply_markup }) }
               else await tg(env, 'editMessageText', { chat_id: cq.message.chat.id, message_id: cq.message.message_id, text: `${head}\n\n🏁 Готово! Правильных ответов: ${score} из ${QUIZ.length}${score === QUIZ.length ? ' — вы знаете APEX CLIENT на отлично 🏆' : ''}\nЕщё раз — /quiz` }) }
           }
+          else if (d === 'vid') { const cfg = await config(env); await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id }); if (cfg.features.video) await sendHowto(env, cq.message.chat.id, isEn(cfg, cq.from)) }
           else if (d === 'human') { const cfg = await config(env), en = isEn(cfg, cq.from); await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id }); if (cfg.features.human) { await kput(env, 'hw:' + cq.from.id, 1, 1800); await tg(env, 'sendMessage', { chat_id: cq.message.chat.id, text: en ? '🙋 Write your question in one message — I will pass it to a person.' : '🙋 Напишите вопрос одним сообщением — передам человеку из поддержки.' }) } }
           else if (d === 'menu' || d === 'menuen') { const cfg = await config(env), en = d === 'menuen'; await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id }); await tg(env, 'sendMessage', { chat_id: cq.message.chat.id, text: en ? EN.pick : 'Выберите тему:', reply_markup: menu(cfg, en) }) }
           else if (d.startsWith('faq:') || d.startsWith('faqen:')) {

@@ -28,6 +28,7 @@ const env = {
   WEBHOOK_SECRET: (process.env.WEBHOOK_SECRET || '').trim() || crypto.randomBytes(24).toString('hex'),
   OWNER_ID: (process.env.OWNER_ID || '').trim(),
   SUPPORT: (process.env.SUPPORT || '').trim(),
+  REMNA_URL: (process.env.REMNA_URL || '').trim(), REMNA_TOKEN: (process.env.REMNA_TOKEN || '').trim(), REMNA_COOKIE: (process.env.REMNA_COOKIE || '').trim(), // /sub и бонус за друзей — по желанию
   BOT_CONFIG: (process.env.BOT_CONFIG || '').trim(),
   HOST_INFO: 'свой сервер ' + os.hostname(),
   STARTED: Date.now(),
