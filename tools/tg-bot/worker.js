@@ -36,6 +36,7 @@
 // n|Через день после ответа — «Помогло?»; жалобы на сервер («не работает Германия») — вам, если их несколько за час
 // n|Перевод вашего ответа на английский для англоязычных; защита от флуда; «у меня 3.20» — подскажет новую версию
 // n|Данные для пульта: вопросы, статистика, опросы, приглашения — зашифрованы, забирает робот GitHub
+// n|/download — свежая версия: кнопка на сайт и запасная ссылка (файл 70 МБ больше лимита Telegram для ботов)
 // V|1.4|16 ноября 2026
 // f|Пересылка вопросов владельцу: не больше 3 в час от одного человека — личку не завалят спамом
 // V|1.3|16 ноября 2026
@@ -290,6 +291,7 @@ async function onMessage(env, m) {
   if (owner && cmd === '/stats') return tg(env, 'sendMessage', { chat_id: m.chat.id, text: await statsText(env, cfg) })
   if (owner && cmd === '/help') return tg(env, 'sendMessage', { chat_id: m.chat.id, text: 'Команды владельца:\n/ping — работает ли бот\n/stats — какие темы спрашивают за неделю\n/status — состояние серверов\n/news — последние новости\n/contests — конкурсы\n/draw <номер> [победителей] — подвести итоги\nОтветьте на пересланный вопрос (или нажмите ⚡ быстрый ответ) — бот отправит ответ человеку.' })
   if (cmd === '/status' && cfg.features.status) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: await statusText(), disable_web_page_preview: true })
+  if (cmd === '/download' || cmd === '/app') { const v = await latestVersion(); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: (en ? 'APEX CLIENT ' : 'APEX CLIENT ') + (v || '') + (en ? '\nThe file is too big for Telegram (70 MB) — download it from the site:' : '\nФайл больше, чем пропускает Telegram (70 МБ), — скачайте с сайта:'), reply_markup: { inline_keyboard: [[{ text: en ? '⬇️ Download' : '⬇️ Скачать с сайта', url: SITE }], [{ text: en ? 'Mirror (GitHub)' : 'Запасная ссылка (GitHub)', url: 'https://github.com/Dubstep2004/apex-client/releases/latest' }]] } }) }
   if (cmd === '/news' && cfg.features.news) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: await newsText(cfg), disable_web_page_preview: true })
   if (cmd === '/stop') { const st = await kget(env, 'stop', []); if (!st.includes(m.from.id)) st.push(m.from.id); await kput(env, 'stop', st.slice(-50000)); await kput(env, 'users', (await kget(env, 'users', [])).filter(x => x !== m.from.id)); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: 'Хорошо, рассылок больше не будет. Вернуть — /start' }) }
   if (cmd === '/remind' && cfg.features.remind) {
@@ -428,7 +430,7 @@ export async function tick(env, force) {
   // Меню команд «/» и описание бота — когда поменялись в пульте
   const sig = JSON.stringify([cfg.features, cfg.description, cfg.short])
   if ((await kget(env, 'sig', '')) !== sig) {
-    const cmds = [['start', 'Начать / темы'], ...(cfg.features.status ? [['status', 'Состояние серверов']] : []), ...(cfg.features.news ? [['news', 'Последние новости']] : []), ...(cfg.features.invite ? [['invite', 'Пригласить друга']] : []), ...(cfg.features.remind ? [['remind', 'Напоминание о продлении']] : []), ...(cfg.features.complaints ? [['problem', 'Сообщить о проблеме с сервером']] : []), ['stop', 'Не получать рассылки']]
+    const cmds = [['start', 'Начать / темы'], ['download', 'Скачать приложение'], ...(cfg.features.status ? [['status', 'Состояние серверов']] : []), ...(cfg.features.news ? [['news', 'Последние новости']] : []), ...(cfg.features.invite ? [['invite', 'Пригласить друга']] : []), ...(cfg.features.remind ? [['remind', 'Напоминание о продлении']] : []), ...(cfg.features.complaints ? [['problem', 'Сообщить о проблеме с сервером']] : []), ['stop', 'Не получать рассылки']]
     await tg(env, 'setMyCommands', { commands: cmds.map(([command, description]) => ({ command, description })) })
     if (env.OWNER_ID) await tg(env, 'setMyCommands', { scope: { type: 'chat', chat_id: +env.OWNER_ID }, commands: [...cmds, ['ping', 'Работает ли бот'], ['stats', 'Статистика тем'], ['contests', 'Конкурсы'], ['help', 'Команды владельца']].map(x => Array.isArray(x) ? { command: x[0], description: x[1] } : x) })
     if (cfg.description) await tg(env, 'setMyDescription', { description: cfg.description })
