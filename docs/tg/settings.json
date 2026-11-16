@@ -2,5 +2,6 @@
   "holidays": true,
   "version": true,
   "digest": false,
-  "video": false
+  "video": false,
+  "botHost": "server"
 }
