@@ -25,6 +25,10 @@
 //   его ответ на пересланное сообщение бот отправит человеку; счёт, какие темы спрашивают чаще.
 
 // ЧТО НОВОГО В БОТЕ (пульт показывает это в «Справка» → «Что нового» → «Бот»; V — версия, n/u/f — новое/улучшено/исправлено)
+// V|2.1|16 ноября 2026
+// n|/settings — владелец включает и выключает любую функцию кнопками прямо в боте; то же — в меню сервера («Функции бота»)
+// n|Новые переключатели: фото и голосовые, быстрые ответы, меню команд, картинки, ссылки на темы, опросы, поздравление победителей
+// u|Что переключили позже — в пульте, в боте или в меню, — то и действует
 // V|2.0|16 ноября 2026
 // n|Рассылка и опросы в личку всем, кто писал боту (из пульта); /stop — не получать
 // n|Напоминание о продлении подписки — для тех, кто включил /remind
@@ -100,6 +104,17 @@ async function tg(env, method, body) {
   return r.json()
 }
 
+// Функции: по умолчанию ← пульт (bot.json) ← переключено в боте (/settings) или в меню сервера (KV «fover», с временем).
+// Что новее — то и действует: сохранили в пульте позже — пульт главнее.
+async function mergeFeatures(env, c) {
+  const f = Object.fromEntries(Object.entries(FEATURES).map(([k, d]) => [k, typeof c?.features?.[k] === 'boolean' ? c.features[k] : d]))
+  const ov = await kget(env, 'fover', {}), pAt = +c?.featuresAt || 0
+  for (const [k, o] of Object.entries(ov)) if (k in f && typeof o?.v === 'boolean' && (o.at || 0) > pAt) f[k] = o.v
+  return f
+}
+async function setFeature(env, k, v) { const ov = await kget(env, 'fover', {}); ov[k] = { v, at: now() }; await kput(env, 'fover', ov); cfgCache = null }
+const settingsKb = cfg => ({ inline_keyboard: Object.keys(FEAT_NAMES).filter(k => k in cfg.features).reduce((rows, k, i) => { const b = { text: (cfg.features[k] ? '✅ ' : '▫️ ') + FEAT_NAMES[k], callback_data: 'ft:' + k }; if (i % 2) rows[rows.length - 1].push(b); else rows.push([b]); return rows }, []) })
+
 // Настройки из пульта: кэш на 5 минут в памяти Worker; файл не открылся — встроенные тексты
 let cfgCache = null, cfgAt = 0
 async function config(env) {
@@ -119,7 +134,7 @@ async function config(env) {
     support: (c?.support && String(c.support).startsWith('https://')) ? String(c.support) : ((env.SUPPORT && env.SUPPORT.startsWith('https://')) ? env.SUPPORT : 'https://t.me/Apexx_support'),
     topics: topics.length ? topics : FAQ.map(f => ({ ...f, text: f.text || 'Поддержка поможет с подключением, подпиской и продлением: {поддержка}' })),
     // Функции бота: пульт → «Функции бота». Нет настройки — значение по умолчанию
-    features: Object.fromEntries(Object.entries(FEATURES).map(([k, d]) => [k, typeof c?.features?.[k] === 'boolean' ? c.features[k] : d])),
+    features: await mergeFeatures(env, c),
     // 2.0: быстрые ответы владельца, описание бота, рассылка/опрос, картинки к темам
     quick: (Array.isArray(c?.quick) ? c.quick : QUICK).map(x => String(x).slice(0, 300)).filter(Boolean).slice(0, 6),
     description: String(c?.description || '').slice(0, 512), short: String(c?.short || '').slice(0, 120),
@@ -131,7 +146,9 @@ async function config(env) {
   cfgAt = Date.now()
   return cfgCache
 }
-const FEATURES = { broadcast: true, news: true, status: true, ping: true, english: true, forward: false, stats: true, welcome: true, antispam: true, invite: true, remind: true, followup: true, complaints: true, translate: true, antiflood: true, version: true, contestSub: true, contestReal: false }
+const FEATURES = { media: true, quick: true, commands: true, images: true, deeplinks: true, contestDM: true, polls: true, broadcast: true, news: true, status: true, ping: true, english: true, forward: false, stats: true, welcome: true, antispam: true, invite: true, remind: true, followup: true, complaints: true, translate: true, antiflood: true, version: true, contestSub: true, contestReal: false }
+// Названия функций — для /settings в боте и меню сервера (apex → «Функции бота»)
+const FEAT_NAMES = { forward: 'Вопросы без ответа — мне', media: 'Фото и голосовые — мне', quick: 'Быстрые ответы', followup: '«Помогло?»', translate: 'Перевод моих ответов', english: 'Ответы на английском', status: '/status', news: '/news', invite: '/invite', remind: '/remind', complaints: 'Жалобы на серверы', version: 'Подсказка версии', broadcast: 'Рассылка', polls: 'Опросы', stats: 'Счёт тем', ping: '/ping', commands: 'Меню команд «/»', images: 'Картинки в ответах', deeplinks: 'Ссылки на темы', antiflood: 'Защита от флуда', welcome: 'Приветствие в группе', antispam: 'Антиспам в группе', contestSub: 'Конкурс: только подписчики', contestReal: 'Конкурс: без пустых аккаунтов', contestDM: 'Конкурс: поздравить победителей' }
 const QUICK = ['Обновите подписку: Настройки → Подписка → «Обновить»', 'Включите автопилот — он сам выберет рабочий сервер', 'Откройте «Проверка сети» на главном и пришлите итог (кнопка «Поделиться»)', 'Обновите приложение до последней версии: ' + SITE + '/update/']
 const fill = (cfg, t) => t.replaceAll('{сайт}', SITE).replaceAll('{поддержка}', cfg.support)
 const topicsOf = (cfg, en) => en ? FAQ_EN : cfg.topics
@@ -235,7 +252,7 @@ async function forwardToOwner(env, cfg, m, en, kind) {
   const id = fw.result.message_id
   await env.APEX_KV.put('fw:' + id, String(m.chat.id), { expirationTtl: 14 * 86400 })
   await logQuestion(env, { id, uid: m.chat.id, name: who({ username: m.from?.username, name: m.from?.first_name }), text: (m.text || m.caption || '').slice(0, 500), kind, at: now(), en: !!en })
-  const kb = cfg.quick.map((q, i) => [{ text: '⚡ ' + q.slice(0, 40), callback_data: `qr:${i}:${id}` }])
+  const kb = cfg.features.quick ? cfg.quick.map((q, i) => [{ text: '⚡ ' + q.slice(0, 40), callback_data: `qr:${i}:${id}` }]) : []
   await tg(env, 'sendMessage', { chat_id: env.OWNER_ID, reply_to_message_id: id, text: (kind === 'text' ? '❓ Вопрос без готового ответа' : '📎 Прислали ' + kind) + ' от ' + who({ username: m.from?.username, name: m.from?.first_name }) + (en ? ' (пишет по-английски — ответ переведу)' : '') + '. Ответьте на пересланное сообщение или нажмите быстрый ответ.', reply_markup: { inline_keyboard: kb } })
   await tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? EN.sent : 'Передал ' + (kind === 'text' ? 'ваш вопрос' : kind) + ' в поддержку — ответ придёт сюда 🙌', reply_markup: menu(cfg, en) })
   return true
@@ -288,8 +305,9 @@ async function onMessage(env, m) {
     const t0 = now(); await config(env)
     return tg(env, 'sendMessage', { chat_id: m.chat.id, text: `🏓 Работаю · ${env.HOST_INFO || 'Cloudflare'}\nПодписчиков бота: ${(await kget(env, 'users', [])).length}\nФункции: ${Object.entries(cfg.features).map(([k, v]) => (v ? '✅' : '▫️') + k).join(' ')}\nОтвет за ${now() - t0} мс` })
   }
+  if (owner && (cmd === '/settings' || cmd === '/features')) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: '⚙️ Функции бота — нажмите, чтобы включить или выключить. Действует сразу, пульт и меню сервера это видят.', reply_markup: settingsKb(cfg) })
   if (owner && cmd === '/stats') return tg(env, 'sendMessage', { chat_id: m.chat.id, text: await statsText(env, cfg) })
-  if (owner && cmd === '/help') return tg(env, 'sendMessage', { chat_id: m.chat.id, text: 'Команды владельца:\n/ping — работает ли бот\n/stats — какие темы спрашивают за неделю\n/status — состояние серверов\n/news — последние новости\n/contests — конкурсы\n/draw <номер> [победителей] — подвести итоги\nОтветьте на пересланный вопрос (или нажмите ⚡ быстрый ответ) — бот отправит ответ человеку.' })
+  if (owner && cmd === '/help') return tg(env, 'sendMessage', { chat_id: m.chat.id, text: 'Команды владельца:\n/settings — включить и выключить функции бота\n/ping — работает ли бот\n/stats — какие темы спрашивают за неделю\n/status — состояние серверов\n/news — последние новости\n/contests — конкурсы\n/draw <номер> [победителей] — подвести итоги\nОтветьте на пересланный вопрос (или нажмите ⚡ быстрый ответ) — бот отправит ответ человеку.' })
   if (cmd === '/status' && cfg.features.status) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: await statusText(), disable_web_page_preview: true })
   if (cmd === '/download' || cmd === '/app') { const v = await latestVersion(); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: (en ? 'APEX CLIENT ' : 'APEX CLIENT ') + (v || '') + (en ? '\nThe file is too big for Telegram (70 MB) — download it from the site:' : '\nФайл больше, чем пропускает Telegram (70 МБ), — скачайте с сайта:'), reply_markup: { inline_keyboard: [[{ text: en ? '⬇️ Download' : '⬇️ Скачать с сайта', url: SITE }], [{ text: en ? 'Mirror (GitHub)' : 'Запасная ссылка (GitHub)', url: 'https://github.com/Dubstep2004/apex-client/releases/latest' }]] } }) }
   if (cmd === '/news' && cfg.features.news) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: await newsText(cfg), disable_web_page_preview: true })
@@ -321,16 +339,18 @@ async function onMessage(env, m) {
       const k = 'ref:' + m.from.id
       if (!(await kget(env, k, null))) { await kput(env, k, arg.slice(4)); const rc = await kget(env, 'refc', {}); rc[arg.slice(4)] = (rc[arg.slice(4)] || 0) + 1; await kput(env, 'refc', rc) }
     }
-    const f = arg && topicsOf(cfg, en).find(t => t.id === arg)
+    const f = arg && cfg.features.deeplinks && topicsOf(cfg, en).find(t => t.id === arg)
     if (f) return answer(env, cfg, m.chat.id, f, en)
     return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? EN.greeting : fill(cfg, cfg.greeting), reply_markup: menu(cfg, en) })
   }
   if (cmd === '/help' || (!text && !m.photo && !m.document && !m.voice && !m.video && !m.video_note)) {
     return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? EN.greeting : fill(cfg, cfg.greeting), reply_markup: menu(cfg, en) })
   }
+  // Незнакомая или выключенная команда — не пересылаем владельцу, показываем темы
+  if (text.startsWith('/')) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? EN.pick : 'Такой команды нет 🙂 Выберите тему:', reply_markup: menu(cfg, en) })
   // Фото, голосовые, файлы — владельцу
   const kind = m.photo ? 'скриншот' : m.voice || m.video_note ? 'голосовое' : m.document ? 'файл' : m.video ? 'видео' : ''
-  if (kind) { if (await forwardToOwner(env, cfg, m, en, kind)) return; return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? EN.notFound : fill(cfg, cfg.notFound), reply_markup: after(cfg, en) }) }
+  if (kind) { if (cfg.features.media && await forwardToOwner(env, cfg, m, en, kind)) return; return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? EN.notFound : fill(cfg, cfg.notFound), reply_markup: after(cfg, en) }) }
   // «у меня 3.20» — подскажем новую версию
   const vm = cfg.features.version && text.match(/(?:^|\s)v?(\d+\.\d+(?:\.\d+)?)(?:\s|$|[,.!?])/)
   if (vm) {
@@ -356,7 +376,7 @@ async function onMessage(env, m) {
 }
 async function answer(env, cfg, chat, f, en) { // ответ по теме — с картинкой, если она задана в пульте
   await count(env, cfg, f.id)
-  const img = !en && cfg.images[f.id], t = fill(cfg, f.text)
+  const img = !en && cfg.features.images && cfg.images[f.id], t = fill(cfg, f.text)
   if (img) {
     if (t.length <= 1000) return tg(env, 'sendPhoto', { chat_id: chat, photo: img, caption: t, reply_markup: after(cfg, en) })
     await tg(env, 'sendPhoto', { chat_id: chat, photo: img })
@@ -417,7 +437,7 @@ async function draw(env, cid, n) {
   c.closed = true; c.winners = winners
   await env.APEX_KV.put(key, JSON.stringify(c))
   // Победителям — поздравление в личку (дойдёт тем, кто хоть раз писал боту)
-  for (const w of winners) await tg(env, 'sendMessage', { chat_id: w.id, text: '🎉 Поздравляем! Вы победили в конкурсе APEX CLIENT. Напишите в поддержку, чтобы получить приз: ' + (await config(env)).support }).catch?.(() => {})
+  if ((await config(env)).features.contestDM) for (const w of winners) await tg(env, 'sendMessage', { chat_id: w.id, text: '🎉 Поздравляем! Вы победили в конкурсе APEX CLIENT. Напишите в поддержку, чтобы получить приз: ' + (await config(env)).support }).catch?.(() => {})
   return { count: c.ids.length, winners }
 }
 
@@ -429,10 +449,11 @@ export async function tick(env, force) {
   const cfg = await config(env)
   // Меню команд «/» и описание бота — когда поменялись в пульте
   const sig = JSON.stringify([cfg.features, cfg.description, cfg.short])
+  if ((await kget(env, 'sig', '')) !== sig && !cfg.features.commands) { await tg(env, 'deleteMyCommands', {}); if (env.OWNER_ID) await tg(env, 'deleteMyCommands', { scope: { type: 'chat', chat_id: +env.OWNER_ID } }); await kput(env, 'sig', sig) }
   if ((await kget(env, 'sig', '')) !== sig) {
     const cmds = [['start', 'Начать / темы'], ['download', 'Скачать приложение'], ...(cfg.features.status ? [['status', 'Состояние серверов']] : []), ...(cfg.features.news ? [['news', 'Последние новости']] : []), ...(cfg.features.invite ? [['invite', 'Пригласить друга']] : []), ...(cfg.features.remind ? [['remind', 'Напоминание о продлении']] : []), ...(cfg.features.complaints ? [['problem', 'Сообщить о проблеме с сервером']] : []), ['stop', 'Не получать рассылки']]
     await tg(env, 'setMyCommands', { commands: cmds.map(([command, description]) => ({ command, description })) })
-    if (env.OWNER_ID) await tg(env, 'setMyCommands', { scope: { type: 'chat', chat_id: +env.OWNER_ID }, commands: [...cmds, ['ping', 'Работает ли бот'], ['stats', 'Статистика тем'], ['contests', 'Конкурсы'], ['help', 'Команды владельца']].map(x => Array.isArray(x) ? { command: x[0], description: x[1] } : x) })
+    if (env.OWNER_ID) await tg(env, 'setMyCommands', { scope: { type: 'chat', chat_id: +env.OWNER_ID }, commands: [...cmds, ['settings', 'Включить и выключить функции'], ['ping', 'Работает ли бот'], ['stats', 'Статистика тем'], ['contests', 'Конкурсы'], ['help', 'Команды владельца']].map(x => Array.isArray(x) ? { command: x[0], description: x[1] } : x) })
     if (cfg.description) await tg(env, 'setMyDescription', { description: cfg.description })
     if (cfg.short) await tg(env, 'setMyShortDescription', { short_description: cfg.short })
     await kput(env, 'sig', sig)
@@ -449,6 +470,7 @@ export async function tick(env, force) {
   if (bc && cfg.features.broadcast) {
     const k = 'bc:' + bc.id, st = await kget(env, k, { i: 0, ok: 0, fail: 0, polls: [] })
     const users = await kget(env, 'users', [])
+    if (bc.poll && !cfg.features.polls) st.done = true
     if (!st.done && (!bc.at || bc.at <= now())) {
       for (const uid of users.slice(st.i, st.i + 25)) {
         const r = bc.poll ? await tg(env, 'sendPoll', { chat_id: uid, question: String(bc.poll.q).slice(0, 300), options: bc.poll.options.slice(0, 10).map(o => ({ text: String(o).slice(0, 100) })), is_anonymous: true }) : await tg(env, 'sendMessage', { chat_id: uid, text: fill(cfg, String(bc.text)).slice(0, 4000) + '\n\n/stop — не получать рассылки', disable_web_page_preview: true })
@@ -469,7 +491,7 @@ async function dataExport(env) {
   return { at: now(), host: env.HOST_INFO || 'Cloudflare', users: (await kget(env, 'users', [])).length, stop: (await kget(env, 'stop', [])).length, remind: await kget(env, 'rmd', []),
     q: await kget(env, 'q', []), stats: st, fb: await kget(env, 'fbk', []), cmp: (await kget(env, 'cmp', [])).map(x => ({ name: x.name, at: x.at })), spam: await kget(env, 'spam', 0),
     broadcast: bc && { id: cfg.broadcast.id, ok: bc.ok, fail: bc.fail, done: !!bc.done }, polls: await kget(env, 'pollres', {}),
-    refs: Object.entries(refc).sort((a, b) => b[1] - a[1]).slice(0, 20), features: cfg.features }
+    refs: Object.entries(refc).sort((a, b) => b[1] - a[1]).slice(0, 20), features: cfg.features, fover: await kget(env, 'fover', {}) }
 }
 async function hmac(secret, msg) { const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']); return [...new Uint8Array(await crypto.subtle.sign('HMAC', k, new TextEncoder().encode(msg)))].map(b => b.toString(16).padStart(2, '0')).join('') }
 async function seal(secret, obj) { // AES-GCM, ключ = SHA-256('apex-bot:' + слово) — то же делает робот
@@ -480,6 +502,7 @@ async function seal(secret, obj) { // AES-GCM, ключ = SHA-256('apex-bot:' + 
 const okSig = async (env, req) => { const ts = +req.headers.get('x-ts'), sig = req.headers.get('x-sig') || ''; return Math.abs(now() - ts) < 300000 && sig.length === 64 && sig === await hmac(env.WEBHOOK_SECRET, String(ts)) }
 
 export const ALLOWED = ['message', 'callback_query', 'poll']
+export { FEATURES, FEAT_NAMES, CONFIG_URL } // для меню сервера (apex → «Функции бота»)
 export default {
   async fetch(req, env) {
     const url = new URL(req.url)
@@ -518,6 +541,10 @@ export default {
         if (u.callback_query) {
           const cq = u.callback_query, d = cq.data || '', owner = env.OWNER_ID && String(cq.from.id) === String(env.OWNER_ID)
           if (d.startsWith('join:')) await join(env, cq, d.slice(5))
+          else if (d.startsWith('ft:') && owner) { // /settings: переключить функцию
+            const k = d.slice(3), cfg0 = await config(env)
+            if (k in cfg0.features) { await setFeature(env, k, !cfg0.features[k]); const cfg = await config(env); await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: (FEAT_NAMES[k] || k) + (cfg.features[k] ? ' — включено' : ' — выключено') }); if (cq.message) await tg(env, 'editMessageReplyMarkup', { chat_id: cq.message.chat.id, message_id: cq.message.message_id, reply_markup: settingsKb(cfg) }) }
+          }
           else if (d.startsWith('qr:') && owner) { // быстрый ответ владельца
             const [, i, fwid] = d.split(':'), cfg = await config(env), to = await env.APEX_KV?.get('fw:' + fwid)
             const r = to && cfg.quick[+i] ? await sendToUser(env, cfg, to, fill(cfg, cfg.quick[+i]), +fwid) : { ok: false, description: 'вопрос устарел' }

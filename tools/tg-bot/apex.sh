@@ -10,7 +10,7 @@
 set -uo pipefail
 export LC_ALL=C.UTF-8 2>/dev/null  # русские буквы — по одной, а не по байтам
 
-APEX_VER="2.3"
+APEX_VER="2.4"
 SRC="https://raw.githubusercontent.com/Dubstep2004/apex-client/main/tools/tg-bot"
 API="https://api.github.com/repos/Dubstep2004/apex-client/commits?path=tools/tg-bot&per_page=1"
 DIR=${APEX_DIR:-/opt/apex-bot}; SELF=${APEX_SELF:-/usr/local/bin/apex}
@@ -96,7 +96,7 @@ banner() {
   host=$(. /etc/os-release 2>/dev/null; echo "${PRETTY_NAME:-Linux}")
   say "   $st   ${DIM}│${R} $who${P:+  ${DIM}· бот «$P»${R}}"
   say "   ${DIM}Память $mem · $(df -h / | awk 'NR==2{print "диск "$5}') · $host${R}"
-  [ -n "${UPD:-}" ] && say "   ${WR}★ $(T 'Есть обновление — пункт 10 «Обновить всё»')${R}"
+  [ -n "${UPD:-}" ] && mf updbanner && say "   ${WR}★ $(T 'Есть обновление — пункт 10 «Обновить всё»')${R}"
   say ""
 }
 dur() { local s=$1 d h m; d=$((s/86400)); h=$((s%86400/3600)); m=$((s%3600/60)); if [ $d -gt 0 ]; then echo "${d} д ${h} ч"; elif [ $h -gt 0 ]; then echo "${h} ч ${m} мин"; else echo "${m} мин"; fi; }
@@ -105,7 +105,10 @@ item()    { printf '   %s%3s%s  %s%s%s\n' "$ACC$B" "$1" "$R" "${3:-}" "$2" "$R";
 
 # ── Что нового ─────────────────────────────────────────────────────
 # Строки: «V|версия|дата» — заголовок; «n|текст» — новое, «u|…» — улучшено, «f|…» — исправлено.
-CHANGES='V|2.3|16 ноября 2026
+CHANGES='V|2.4|16 ноября 2026
+n|«Включить / выключить» → «Функции бота»: любую функцию бота — вопросы мне, рассылку, /status, антиспам, конкурсы… — одним нажатием (то же, что /settings в боте и пульт)
+n|«Функции меню»: спрятать ненужные пункты — мониторинг, SSH, очистку, откат, быстрые команды, подсказки…
+V|2.3|16 ноября 2026
 f|«Обновить меню» и «Обновить бота» сразу видят новую версию — раньше GitHub до 5 минут отдавал старую
 V|2.2|16 ноября 2026
 n|«Обновить всё» — бот и меню одной кнопкой: в главном меню (10) и в «Обновлениях» (1); без меню — apex all
@@ -440,7 +443,7 @@ declare -A EN=(
   ['Язык меню']='Menu language' ['Цвет меню']='Menu colour' ['Уведомления владельцу']='Owner notifications' ['Автообновление по ночам']='Nightly auto-update'
   ['Копия каждый день в 4:00']='Daily backup at 4:00' ['Копия — вам в Telegram']='Backup to your Telegram' ['Сторож: бот завис — перезапуск']='Watchdog: restart if stuck'
   ['Тревога: диск и память']='Alerts: disk & memory' ['Запуск вместе с сервером']='Start with server' ['Файрвол (открыт только SSH)']='Firewall (SSH only)'
-  ['Защита от перебора паролей']='Brute-force protection' ['Обновления безопасности']='Security updates' ['Мониторинг сервера']='Server monitor'
+  ['Защита от перебора паролей']='Brute-force protection' ['Обновления безопасности']='Security updates' ['Функции бота']='Bot features' ['Функции меню']='Menu features' ['Мониторинг сервера']='Server monitor'
   ['Скорость до Telegram и сайта']='Speed to Telegram & site' ['Порты и файрвол']='Ports & firewall' ['SSH: порт и вход по ключу']='SSH: port & key login'
   ['Очистка места']='Free up space' ['Всё ли настроено']='Setup check' ['Проверка меню и кода на подмену']='Integrity check'
   ['Обновить бота']='Update bot' ['Обновить всё']='Update everything' ['Откатить бота на прошлую версию']='Roll back bot' ['Обновить меню']='Update menu' ['Что нового']='What’s new'
@@ -664,6 +667,50 @@ do_guard() {
 }
 toggle_cfg() { if [ "$(cget "$1")" = 1 ]; then cset "$1" 0; ok "$2 — выключено"; else cset "$1" 1; ok "$2 — включено"; fi; }
 
+# ── 2.4: функции бота из меню (те же, что /settings в боте и «Функции бота» в пульте) ──
+botfeat_list() {  # печатает: номер|ключ|название|1/0
+  [ -f "$DIR/worker.js" ] || return 1
+  ( cd "$DIR" && node --input-type=module -e '
+    const { FEATURES, FEAT_NAMES, CONFIG_URL } = await import(process.argv[1] + "/worker.js")
+    let c = {}; try { const r = await fetch(CONFIG_URL, { signal: AbortSignal.timeout(8000) }); if (r.ok) c = await r.json() } catch {}
+    let ov = {}; try { ov = JSON.parse(JSON.parse((await import("node:fs")).readFileSync(process.argv[2], "utf8")).fover || "{}") } catch {}
+    const pAt = +c.featuresAt || 0
+    Object.keys(FEAT_NAMES).forEach((k, i) => { let v = typeof c.features?.[k] === "boolean" ? c.features[k] : FEATURES[k]; const o = ov[k]; if (o && typeof o.v === "boolean" && (o.at || 0) > pAt) v = o.v; console.log((i + 1) + "|" + k + "|" + FEAT_NAMES[k] + "|" + (v ? 1 : 0)) })
+  ' "$DIR" "$DATA/kv.json" 2>/dev/null )
+}
+do_botfeat() {
+  while true; do
+    banner; section "Функции бота"
+    local rows; rows=$(botfeat_list) || { err "Бот не установлен"; return; }
+    [ -n "$rows" ] || { err "Не удалось прочитать функции — обновите бота («Обновления» → «Обновить бота»)"; return; }
+    while IFS='|' read -r n k t v; do printf '   %s%3s%s  %-34s %s\n' "$ACC$B" "$n" "$R" "$t" "$(onoff "$([ "$v" = 1 ] && echo 1)")"; done <<<"$rows"
+    item 0 "$(T Назад)" "$DIM"; say "   ${DIM}То же — командой /settings в боте и в пульте: Telegram → «Тексты и функции бота»${R}"; say ""
+    local c line k v; c=$(ask "Номер функции: "); [ -z "$c" ] || [ "$c" = 0 ] && return
+    line=$(grep "^$c|" <<<"$rows") || { warn "Нет такого пункта"; pause; continue; }
+    k=$(cut -d'|' -f2 <<<"$line"); v=$(cut -d'|' -f4 <<<"$line")
+    # Бот держит данные в памяти — останавливаем на секунду, меняем, запускаем
+    systemctl stop "$SVC" 2>/dev/null
+    node -e '
+      const fs = require("fs"), f = process.argv[1]; let kv = {}; try { kv = JSON.parse(fs.readFileSync(f, "utf8")) } catch {}
+      const ov = JSON.parse(kv.fover || "{}"); ov[process.argv[2]] = { v: process.argv[3] === "1", at: Date.now() }; kv.fover = JSON.stringify(ov)
+      fs.writeFileSync(f + ".tmp", JSON.stringify(kv)); fs.renameSync(f + ".tmp", f)' "$DATA/kv.json" "$k" "$([ "$v" = 1 ] && echo 0 || echo 1)" && chown apexbot:apexbot "$DATA/kv.json" 2>/dev/null
+    systemctl start "$SVC" 2>/dev/null; ok "$(cut -d'|' -f3 <<<"$line") — $([ "$v" = 1 ] && echo выключено || echo включено)"; sleep 1
+  done
+}
+# ── 2.4: функции самого меню — выключенные пропадают из разделов (и быстрые команды тоже)
+MENU_FEATS=('monitor|Мониторинг сервера' 'speed|Скорость до Telegram и сайта' 'ports|Порты и файрвол' 'ssh|SSH: порт и вход по ключу' 'clean|Очистка места' 'check|Всё ли настроено' 'integrity|Проверка на подмену' 'stats|Статистика бота' 'rollback|Откат бота' 'bots|Несколько ботов' 'short|Быстрые команды (apex s, r, l…)' 'hints|Подсказки внизу меню' 'updbanner|Подсказка «Есть обновление»')
+mf() { [ "$(cget "OFF_$1")" != 1 ]; }   # mf ssh && …  — функция меню включена?
+do_menufeat() {
+  while true; do
+    banner; section "Функции меню"
+    local i=1 x; for x in "${MENU_FEATS[@]}"; do printf '   %s%3s%s  %-34s %s\n' "$ACC$B" "$i" "$R" "${x#*|}" "$(onoff "$(mf "${x%%|*}" && echo 1)")"; i=$((i+1)); done
+    item 0 "$(T Назад)" "$DIM"; say ""
+    local c; c=$(ask "Номер: "); [ -z "$c" ] || [ "$c" = 0 ] && return
+    [[ "$c" =~ ^[0-9]+$ ]] && [ "$c" -ge 1 ] && [ "$c" -le ${#MENU_FEATS[@]} ] || { warn "Нет такого пункта"; pause; continue; }
+    x=${MENU_FEATS[$((c-1))]}; if mf "${x%%|*}"; then cset "OFF_${x%%|*}" 1; else cset "OFF_${x%%|*}" ""; fi
+  done
+}
+
 # ── Помощь (?) ─────────────────────────────────────────────────────
 declare -A HELP
 help_show() { local k; step "Помощь: что делает каждый пункт"; for k in $(printf '%s\n' "${!HELP[@]}" | sort -n); do printf '   %s%3s%s  %s\n' "$ACC$B" "$k" "$R" "${HELP[$k]}"; done; }
@@ -688,7 +735,7 @@ sub_menu() {  # sub_menu <раздел> — показывает пункты р
     section "$(T "$s")"
     case "$s" in
       'Бот') running && on="$(T 'Остановить бота')" || on="$(T 'Запустить бота')"
-        item 1 "$(T 'Статус и проверка')"; item 2 "$(T Перезапустить)"; item 3 "$on"; item 4 "$(T 'Журнал в реальном времени')"; item 5 "$(T 'Журнал: только ошибки')"; item 6 "$(T 'Статистика бота')"; item 7 "$(T 'Список конкурсов')"
+        item 1 "$(T 'Статус и проверка')"; item 2 "$(T Перезапустить)"; item 3 "$on"; item 4 "$(T 'Журнал в реальном времени')"; item 5 "$(T 'Журнал: только ошибки')"; mf stats && item 6 "$(T 'Статистика бота')"; item 7 "$(T 'Список конкурсов')"
         HELP=([1]='Работает ли служба, принят ли токен, кто забирает сообщения, что включено' [2]='Перезапуск бота — настройки и данные сохраняются' [3]='Остановить или запустить бота' [4]='Журнал в реальном времени, выход — Ctrl+C' [5]='Только строки с ошибками за сутки' [6]='Сколько людей писали, частые темы, «Помогло?», приглашения' [7]='Конкурсы и число участников') ;;
       'Настройки')
         item 1 "$(T 'Сменить токен бота')"; item 2 "$(T 'Номер владельца') ${DIM}$(envget OWNER_ID)${R}"; item 3 "$(T 'Ссылка поддержки')"; item 4 "$(T 'Связь с Telegram и прокси') ${DIM}$([ -n "$(envget TG_PROXY)" ] && echo '· через прокси')${R}"
@@ -705,12 +752,13 @@ sub_menu() {  # sub_menu <раздел> — показывает пункты р
         item 8 "$(T 'Файрвол (открыт только SSH)')      $(onoff "$(command -v ufw >/dev/null && ufw status 2>/dev/null | grep -q 'Status: active' && echo 1)")"
         item 9 "$(T 'Защита от перебора паролей')       $(onoff "$(systemctl is-active --quiet fail2ban 2>/dev/null && echo 1)")"
         item 10 "$(T 'Обновления безопасности')          $(onoff "$(uu_state)")"
-        HELP=([1]='Сообщение вам, когда бот запустился или остановился' [2]='Каждую ночь бот обновляется сам с GitHub' [3]='Резервная копия настроек и данных в 4:00, хранятся 10' [4]='Каждая копия приходит вам в Telegram файлом' [5]='Раз в 5 минут: бот не работает или завис — перезапуск и сообщение вам' [6]='Диск или память заняты больше 90% — сообщение вам (не чаще раза в 6 часов)' [7]='Бот запускается сам после перезагрузки сервера' [8]='ufw: закрыто всё, кроме SSH (и связи с пультом)' [9]='fail2ban: 5 неверных паролей SSH — бан на час' [10]='Ubuntu сама ставит обновления безопасности') ;;
+        item 11 "🤖 $(T 'Функции бота')…"; item 12 "🧩 $(T 'Функции меню')…"
+        HELP=([1]='Сообщение вам, когда бот запустился или остановился' [2]='Каждую ночь бот обновляется сам с GitHub' [3]='Резервная копия настроек и данных в 4:00, хранятся 10' [4]='Каждая копия приходит вам в Telegram файлом' [5]='Раз в 5 минут: бот не работает или завис — перезапуск и сообщение вам' [6]='Диск или память заняты больше 90% — сообщение вам (не чаще раза в 6 часов)' [7]='Бот запускается сам после перезагрузки сервера' [8]='ufw: закрыто всё, кроме SSH (и связи с пультом)' [9]='fail2ban: 5 неверных паролей SSH — бан на час' [10]='Ubuntu сама ставит обновления безопасности' [11]='Все функции бота: вопросы мне, рассылка, /status, антиспам… — как /settings в боте' [12]='Спрятать ненужные пункты этого меню') ;;
       'Сервер и безопасность')
-        item 1 "$(T 'Мониторинг сервера')"; item 2 "$(T 'Скорость до Telegram и сайта')"; item 3 "$(T 'Порты и файрвол')"; item 4 "$(T 'SSH: порт и вход по ключу')"; item 5 "$(T 'Очистка места')"; item 6 "$(T 'Всё ли настроено')"; item 7 "$(T 'Проверка меню и кода на подмену')"
+        mf monitor && item 1 "$(T 'Мониторинг сервера')"; mf speed && item 2 "$(T 'Скорость до Telegram и сайта')"; mf ports && item 3 "$(T 'Порты и файрвол')"; mf ssh && item 4 "$(T 'SSH: порт и вход по ключу')"; mf clean && item 5 "$(T 'Очистка места')"; mf check && item 6 "$(T 'Всё ли настроено')"; mf integrity && item 7 "$(T 'Проверка меню и кода на подмену')"
         HELP=([1]='Процессор, память, диск, сколько работает сервер и бот' [2]='Время до Telegram, сайта, GitHub и Cloudflare' [3]='Что слушает порты снаружи и включён ли файрвол' [4]='Сменить порт SSH или запретить вход по паролю (с проверками)' [5]='Старые журналы, кэш пакетов, лишние копии' [6]='Советы: что ещё стоит включить' [7]='Совпадают ли меню и код бота с GitHub') ;;
       'Обновления')
-        item 1 "$(T 'Обновить всё') ${DIM}· бота и меню${R}" "$B"; item 2 "$(T 'Обновить бота')"; item 3 "$(T 'Обновить меню')"; item 4 "$(T 'Откатить бота на прошлую версию')"; item 5 "$(T 'Что нового') ${DIM}· версия $APEX_VER${R}"
+        item 1 "$(T 'Обновить всё') ${DIM}· бота и меню${R}" "$B"; item 2 "$(T 'Обновить бота')"; item 3 "$(T 'Обновить меню')"; mf rollback && item 4 "$(T 'Откатить бота на прошлую версию')"; item 5 "$(T 'Что нового') ${DIM}· версия $APEX_VER${R}"
         HELP=([1]='Сначала бот, потом меню — одной кнопкой' [2]='Свежий код бота с GitHub и перезапуск' [3]='Свежая версия этого меню' [4]='Если обновление что-то сломало — вернуть прошлую версию' [5]='Что изменилось в меню') ;;
       'Копии и перенос')
         item 1 "$(T 'Сделать резервную копию')"; item 2 "$(T 'Восстановить из копии')"; item 3 "$(T 'Перенести на другой сервер')"
@@ -720,13 +768,13 @@ sub_menu() {  # sub_menu <раздел> — показывает пункты р
         item 1 "$(T 'Удалить бота')" "$BD"; item 2 "$(T 'Удалить меню')" "$BD"
         HELP=([1]='Служба, код, настройки и данные — с предложением сделать копию' [2]='Команда apex; бот продолжит работать') ;;
     esac
-    item 0 "$(T Назад)" "$DIM"; say "   ${DIM}$(T 'Помощь: ? и номер пункта')${R}"; say ""
+    item 0 "$(T Назад)" "$DIM"; mf hints && say "   ${DIM}$(T 'Помощь: ? и номер пункта')${R}"; say ""
     c=$(ask "${B}$(T 'Выберите пункт:')${R} "); say ""
     case "$c" in 0|q|"") return ;; '?') help_show; pause; continue ;; '?'*) say "   ${HELP[${c#?}]:-$(T 'Нет такого пункта')}"; pause; continue ;; esac
     case "$s|$c" in
       'Бот|1') do_status ;; 'Бот|2') systemctl restart "$SVC"; sleep 2; running && ok "Перезапущен" || err "Не запустился — «Журнал: только ошибки»" ;;
       'Бот|3') if running; then systemctl stop "$SVC"; ok "Остановлен"; else systemctl start "$SVC"; sleep 2; running && ok "Запущен" || err "Не запустился"; fi ;;
-      'Бот|4') do_logs; continue ;; 'Бот|5') do_errors ;; 'Бот|6') do_botstats ;; 'Бот|7') do_contests ;;
+      'Бот|4') do_logs; continue ;; 'Бот|5') do_errors ;; 'Бот|6') mf stats && do_botstats ;; 'Бот|7') do_contests ;;
       'Настройки|1') set_token && systemctl restart "$SVC" && ok "Бот перезапущен с новым токеном" ;; 'Настройки|2') set_owner ;; 'Настройки|3') set_support ;; 'Настройки|4') tg_check ;; 'Настройки|5') do_link ;;
       'Настройки|6') [ "$(cget MLANG)" = en ] && cset MLANG ru || cset MLANG en; continue ;;
       'Настройки|7') case "$(cget THEME)" in purple) cset THEME mono ;; mono) cset THEME "" ;; *) cset THEME purple ;; esac; exec "$SELF" ;;
@@ -738,9 +786,10 @@ sub_menu() {  # sub_menu <раздел> — показывает пункты р
       'Включить / выключить|8') if command -v ufw >/dev/null && ufw status | grep -q 'Status: active'; then confirm "Выключить файрвол?" && ufw_off; else ufw_on; fi ;;
       'Включить / выключить|9') if systemctl is-active --quiet fail2ban; then f2b_off; else f2b_on; fi ;;
       'Включить / выключить|10') if [ "$(uu_state)" = 1 ]; then uu_off; else uu_on; fi ;;
-      'Сервер и безопасность|1') do_monitor ;; 'Сервер и безопасность|2') do_speed ;; 'Сервер и безопасность|3') do_ports ;; 'Сервер и безопасность|4') do_ssh ;;
-      'Сервер и безопасность|5') do_clean ;; 'Сервер и безопасность|6') do_check ;; 'Сервер и безопасность|7') do_integrity ;;
-      'Обновления|1') do_update; do_self_update ;; 'Обновления|2') do_update ;; 'Обновления|3') do_self_update ;; 'Обновления|4') do_rollback ;; 'Обновления|5') do_news ;;
+      'Включить / выключить|11') do_botfeat; continue ;; 'Включить / выключить|12') do_menufeat; continue ;;
+      'Сервер и безопасность|1') mf monitor && do_monitor ;; 'Сервер и безопасность|2') mf speed && do_speed ;; 'Сервер и безопасность|3') mf ports && do_ports ;; 'Сервер и безопасность|4') mf ssh && do_ssh ;;
+      'Сервер и безопасность|5') mf clean && do_clean ;; 'Сервер и безопасность|6') mf check && do_check ;; 'Сервер и безопасность|7') mf integrity && do_integrity ;;
+      'Обновления|1') do_update; do_self_update ;; 'Обновления|2') do_update ;; 'Обновления|3') do_self_update ;; 'Обновления|4') mf rollback && do_rollback ;; 'Обновления|5') do_news ;;
       'Копии и перенос|1') do_backup ;; 'Копии и перенос|2') do_restore ;; 'Копии и перенос|3') do_move ;;
       'Удаление|1') do_uninstall; installed || return ;; 'Удаление|2') do_remove_menu ;;
       *) warn "$(T 'Нет такого пункта')" ;;
@@ -759,9 +808,9 @@ main_menu() {
       case "$(ask "${B}$(T 'Выберите пункт:')${R} ")" in 1) do_install ;; 2) do_restore ;; 3) do_self_update ;; 4) do_news ;; 5) [ "$(cget MLANG)" = en ] && cset MLANG ru || cset MLANG en; continue ;; 6) do_remove_menu ;; 0|q|"") exit 0 ;; *) warn "$(T 'Нет такого пункта')" ;; esac
       pause; continue
     fi
-    local i; for i in 1 2 3 4 5 6 7 8; do item "$i" "${IC[$i]} $(T "${S[$i]}")" "$([ "$i" = 8 ] && echo "$BD")"; done
+    local i; for i in 1 2 3 4 5 6 7 8; do [ "$i" = 7 ] && ! mf bots && continue; item "$i" "${IC[$i]} $(T "${S[$i]}")" "$([ "$i" = 8 ] && echo "$BD")"; done
     item 9 "📰 $(T 'Что нового') ${DIM}· $APEX_VER${R}"; item 10 "⬆️  $(T 'Обновить всё') ${DIM}· бота и меню${R}"; item 0 "$(T Выход)" "$DIM"; say ""
-    say "   ${DIM}Быстро без меню: apex s — статус · r — перезапуск · l — журнал · e — ошибки · u — бот · all — всё · b — копия${R}"; say ""
+    mf hints && { say "   ${DIM}Быстро без меню: apex s — статус · r — перезапуск · l — журнал · e — ошибки · u — бот · all — всё · b — копия${R}"; say ""; }
     local c; c=$(ask "${B}$(T 'Выберите пункт:')${R} ")
     case "$c" in [1-8]) sub_menu "${S[$c]}" ;; 9) say ""; do_news; pause ;; 10) say ""; do_update; do_self_update ;; 0|q|"") clear 2>/dev/null; exit 0 ;; *) warn "$(T 'Нет такого пункта')"; pause ;; esac
   done
@@ -779,7 +828,8 @@ self_install() {
 }
 
 self_install
-[ "${1:-}" = -b ] && { profile "${2:-}"; shift 2; }   # apex -b en status — команда для бота «en»
+[ "${1:-}" = -b ] && { profile "${2:-}"; shift 2; }
+case "${1:-}" in s|r|l|e|u|b) mf short || { err "Быстрые команды выключены: sudo apex → «Включить / выключить» → «Функции меню»"; exit 1; } ;; esac   # apex -b en status — команда для бота «en»
 [ "${2:-}" = --yes ] && YES=1
 case "${1:-}" in
   install) do_install ;;

@@ -653,7 +653,7 @@ def post(kind, text):
 
 # ── 1b. 2.40: пометки серверов по расписанию (пульт → «Серверы» → «По расписанию»; правила в docs/tg/settings.json → msched)
 sched_changed = False
-for rule in (settings.get('msched') or [])[:20]:
+for rule in ([] if 'sched' in (settings.get('pultOff') or []) else (settings.get('msched') or [])[:20]):
     name = str(rule.get('name', '')).strip()[:40]
     if not name or rule.get('off'): continue
     srv = app.setdefault('servers', {}).setdefault('status', {})

@@ -191,7 +191,9 @@ async function dragRow(p, rowSel, from, to) { // перетащить строк
       if (r.best !== 24) bad(W, '«Когда читают чаще»: нет графика по часам')
       if (r.hist !== 1) bad(W, 'история техработ пустая')
       if (r.sched !== 1) bad(W, 'расписание пометок не рисуется')
-      if (r.feat < 18) bad(W, 'функций бота в пульте меньше 18: ' + r.feat)
+      if (r.feat < 25) bad(W, 'функций бота в пульте меньше 25: ' + r.feat)
+      const pf = await p.evaluate(() => { pfOff = new Set(['sched', 'botq']); pfApply(); showTab('servers'); const a = getComputedStyle($('schedBlock')).display, b = getComputedStyle($('btBlock')).display, n = document.querySelectorAll('#pfList [data-pf]').length; pfOff = new Set(); pfApply(); return { a, b, n, back: getComputedStyle($('schedBlock')).display } })
+      if (pf.a !== 'none' || pf.b !== 'none' || pf.back === 'none' || pf.n < 20) bad(W, 'функции пульта: выключение не прячет блоки ' + JSON.stringify(pf))
       const t = await p.evaluate(() => { tplRender(); const n = document.querySelectorAll('[data-tplf]').length; $('bcWelcome').value = ''; document.querySelector('[data-tplf="bcWelcome"][data-tpli="1"]').click(); return { n, v: $('bcWelcome').value, opts: $('bcTopicTpl').options.length } })
       if (t.n < 20 || !/Правила/.test(t.v) || t.opts < 7) bad(W, 'шаблоны: кнопок ' + t.n + ', тем ' + t.opts + ', подстановка «' + t.v.slice(0, 20) + '»')
     }

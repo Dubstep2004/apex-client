@@ -706,8 +706,8 @@
       <div class="block"><h2>Быстро: сервер на обслуживание</h2><p class="note">Впишите часть названия и выберите срок — пометка добавится, останется нажать «Сохранить».</p>
         <input id="qsName" type="text" placeholder="Например, Германия">
         <div class="quick"><button class="pill m" data-qs="1">🔧 на 1 час</button><button class="pill m" data-qs="2">🔧 на 2 часа</button><button class="pill m" data-qs="morning">🔧 до 9:00</button><button class="pill s" data-qs="slow">🐢 медленно 2 часа</button></div>
-        <p class="f" style="margin-top:10px">Шаблоны</p><div class="quick" id="qsTpl"></div>
-        <div class="rowx"><select id="qsTplDur"><option value="1">на 1 час</option><option value="2">на 2 часа</option><option value="morning">до 9:00</option><option value="slow">медленно 2 часа</option></select><button class="btn quiet small" id="qsTplAdd" type="button">⭐ Сохранить как шаблон</button></div></div>
+        <div id="qsTplBox"><p class="f" style="margin-top:10px">Шаблоны</p><div class="quick" id="qsTpl"></div>
+        <div class="rowx"><select id="qsTplDur"><option value="1">на 1 час</option><option value="2">на 2 часа</option><option value="morning">до 9:00</option><option value="slow">медленно 2 часа</option></select><button class="btn quiet small" id="qsTplAdd" type="button">⭐ Сохранить как шаблон</button></div></div></div>
       <div class="block" id="schedBlock"><h2>🔁 По расписанию</h2><p class="note">Пометка ставится и снимается сама, например «🐢 Медленно» каждый вечер с 20:00 до 23:00 (время московское). Ставит робот GitHub — в нужную минуту.</p>
         <div id="schedList"></div><button class="add" id="schedAdd" type="button">＋ Правило</button><button class="btn go small" id="schedSave" type="button" style="margin-top:10px">Сохранить расписание</button></div>
       <div class="block" id="markHistBlock"><h2>📜 История техработ</h2><p class="note">Когда серверы были на обслуживании и сколько это длилось — по журналу робота канала.</p><div id="markHist"><p class="note">Загружаем…</p></div></div>
@@ -810,7 +810,7 @@
     <section data-tab="history" hidden>
       <h1>История изменений</h1>
       <p class="lead">Каждое сохранение пульта — отдельная запись на GitHub. «Вернуть» загружает ту версию в пульт, дальше нажмите «Сохранить».</p>
-      <div class="block"><h2>↶ Отменить последнее сохранение</h2><p class="note">Вернуть настройки приложения (баннеры, серверы, объявление…) как было до последнего сохранения — одной кнопкой.</p><button class="btn quiet" id="undoSave" type="button">↶ Вернуть как было</button></div>
+      <div class="block" id="undoBlock"><h2>↶ Отменить последнее сохранение</h2><p class="note">Вернуть настройки приложения (баннеры, серверы, объявление…) как было до последнего сохранения — одной кнопкой.</p><button class="btn quiet" id="undoSave" type="button">↶ Вернуть как было</button></div>
       <div class="block" id="histList"><p class="note">Загружаем…</p></div>
       <div class="block"><h2>Сравнить два сохранения</h2><p class="note">Выберите две версии настроек — пульт покажет, чем они отличаются.</p>
         <div class="two"><div><label class="f" for="cmpA">Было</label><select id="cmpA"></select></div><div><label class="f" for="cmpB">Стало</label><select id="cmpB"></select></div></div>
@@ -874,7 +874,7 @@
         <div class="tgchk" style="margin-top:10px"><label><input type="checkbox" id="pbDl" checked> 📥 Скачать</label><label><input type="checkbox" id="pbHow" checked> ▶️ Как установить</label><label><input type="checkbox" id="pbSt" checked> 🟢 Статус серверов</label><label><input type="checkbox" id="pbSup" checked> 💬 Поддержка</label><label><input type="checkbox" id="pbCh"> 📣 Канал</label></div>
         <input id="pbOwn" type="text" placeholder="Своя кнопка: Текст | https://…" style="width:100%;margin-top:8px">
         <div class="rowx" style="margin-top:10px"><button class="btn go small" id="pbSet">Поставить кнопки</button><button class="btn quiet small" id="pbDel">Убрать кнопки</button></div></div>
-      <div class="block" id="tgViewsBlock" hidden><h2>👁 Просмотры постов</h2><p class="note" id="tgViewsNote"></p><div id="tgViews"></div><p class="f" style="margin-top:14px">⏰ Когда читают чаще</p><div id="tgBest"></div></div>
+      <div class="block" id="tgViewsBlock" hidden><h2>👁 Просмотры постов</h2><p class="note" id="tgViewsNote"></p><div id="tgViews"></div><div id="tgBestBox"><p class="f" style="margin-top:14px">⏰ Когда читают чаще</p><div id="tgBest"></div></div></div>
       <h2 class="tgsec" id="tgs-auto">🤖 Автопосты</h2><p class="note tgsecn">Что робот GitHub публикует без вас — каждое можно выключить.</p>
       <div class="block"><h2>🤖 Что робот публикует сам</h2><p class="note" id="tgRobot">Проверяем…</p>
         <div class="rowx"><button class="btn quiet small" id="tgPing">Проверить робота</button></div>
@@ -920,8 +920,8 @@
           <p class="help">Новые функции работают с кодом бота от 16 ноября: на своём сервере — <code>sudo apex</code> → «Обновления» → «Обновить бота» (или автообновление), в Cloudflare — «Применить к боту в Cloudflare».</p>
           <div id="bcFeatList"></div></div>
         <p class="f" style="margin-top:16px">Ещё тексты</p>
-        <label class="f" for="bcDesc">Описание бота <small>видно до /start, до 512 знаков</small></label><textarea id="bcDesc" rows="2" maxlength="512" placeholder="Помощник APEX CLIENT: установка, обновление, если не подключается"></textarea>
-        <label class="f" for="bcShort">Коротко <small>в профиле бота, до 120 знаков</small></label><input id="bcShort" maxlength="120" placeholder="Поддержка APEX CLIENT">
+        <div id="bcDescBox"><label class="f" for="bcDesc">Описание бота <small>видно до /start, до 512 знаков</small></label><textarea id="bcDesc" rows="2" maxlength="512" placeholder="Помощник APEX CLIENT: установка, обновление, если не подключается"></textarea>
+        <label class="f" for="bcShort">Коротко <small>в профиле бота, до 120 знаков</small></label><input id="bcShort" maxlength="120" placeholder="Поддержка APEX CLIENT"></div>
         <label class="f" for="bcChannel">Канал для /news <small>@имя</small></label><input id="bcChannel" maxlength="40" placeholder="@apex_client_news">
         <label class="f" for="bcQuick">Быстрые ответы владельца <small>кнопки под пересланным вопросом, по одному в строке, до 6</small></label><textarea id="bcQuick" rows="4" maxlength="1800"></textarea>
         <button class="btn go" id="bcSave" style="margin-top:12px;width:100%">Сохранить тексты и функции бота</button></div>
@@ -1142,11 +1142,14 @@
     <!-- Справка -->
     <section data-tab="help" hidden class="helpdoc">
       <h1>Справка для владельца</h1>
+      <div class="block" id="pfBlock"><h2>🎛 Функции пульта</h2>
+        <p class="note">Выключенное пропадает из пульта на всех устройствах. Функции бота включаются в «Telegram» → «Бот в личке» (а также командой /settings в боте и в меню сервера).</p>
+        <div id="pfList"></div></div>
       <div class="block" id="helperBlock"><h2>👥 Режим помощника</h2>
         <p class="note">Для второго человека: в этом браузере остаются только «Обзор», «Баннеры», «Объявление», «Telegram» и «Справка» — серверы, обновления и настройки скрыты.</p>
         <label class="sw"><div class="t"><b>Режим помощника в этом браузере</b><span>Выключается здесь же</span></div><span class="tog"><input type="checkbox" id="helperOn"><i></i></span></label>
         <p class="help">Это удобство, а не защита: настоящие права даёт GitHub. Помощнику — свой токен: github.com → Settings → Developer settings → Fine-grained tokens → только репозиторий apex-client → <b>Contents: Read and write</b> (без Secrets и Actions). Тогда он не увидит и не изменит секреты, а все его сохранения видны в «Истории» с его именем.</p></div>
-      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 16 ноября 2026 · приложение 3.22.0 · пульт 2.42.</p>
+      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 16 ноября 2026 · приложение 3.22.0 · пульт 2.43.</p>
       <div class="helptools">
         <input id="hq" type="search" placeholder="Найти в справке, например «техработы»" aria-label="Найти в справке" autocomplete="off">
         <button class="btn quiet small" id="hOpen" type="button">Развернуть всё</button>
@@ -1375,6 +1378,7 @@
         <div class="nwkind" id="nwKind" role="group" aria-label="Сортировка"><button type="button" class="pill on" data-k="">Все</button><button type="button" class="pill" data-k="n">🟢 Новое</button><button type="button" class="pill" data-k="u">🟣 Улучшено</button><button type="button" class="pill" data-k="f">🔵 Исправлено</button></div>
         <div id="nwOther" hidden></div>
         <div class="tbl" id="nwPult"><table id="pultLog">
+          <tr data-k="n"><td>2.43</td><td>«Справка» → «🎛 Функции пульта»: 20 новых возможностей пульта включаются и выключаются (на всех устройствах); функций бота стало 25 — то же можно переключать командой /settings в боте и в меню сервера, пульт показывает «переключено в боте»</td></tr>
           <tr data-k="u"><td>2.42</td><td>Telegram разложен по разделам: «📣 Канал» (посты, журнал, автопосты, конкурсы) · «👥 Группа» (приветствие новичков, антиспам) · «💬 Бот в личке» (вопросы, статистика, рассылка, тексты и функции) · «⚙️ Настройка» — переключатель сверху, выбор запоминается. На всех длинных вкладках — строка разделов «Всё · …»: нажали — остался только нужный блок</td></tr>
           <tr data-k="n"><td>2.41</td><td>Готовые шаблоны: приветствие в группе, /start, «нет ответа», описание бота, быстрые ответы, рассылка, опрос и варианты; «＋ Тема из шаблона» — оплата, устройства, ТВ, часы, игры, банки</td></tr>
           <tr data-k="n"><td>2.40</td><td>Telegram → «💬 Бот»: вопросы людей с ответом прямо из пульта (бот переведёт и спросит «Помогло?»), статистика бота (темы, жалобы, опросы, приглашения), рассылка и опрос в личку</td></tr>
@@ -1505,7 +1509,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.42', PANEL_DATE = '16 ноября 2026'
+const PANEL_VERSION = '2.43', PANEL_DATE = '16 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -2221,7 +2225,7 @@ async function loadAll() {
   const [app, sub, hide, site, wl] = await Promise.all([getFile(APP), getFile(SUB), getFile(HIDE), getFile(SITE), getFile(WALLS)])
   fillApp(app); saved = JSON.stringify(collectApp(true)); undoStack = [saved]; offerDraft(); changed()
   fillSub(sub); $('hideJson').value = hide ? JSON.stringify(hide, null, 2) : ''; fillSite(site); fillWalls(wl)
-  renderVersions(); loadReleases().then(loadDays); loadCI(); loadStatus(); loadPending()
+  renderVersions(); loadReleases().then(loadDays); loadCI(); loadStatus(); loadPending(); pfLoad()
 }
 let retryBtn = null
 window.addEventListener('offline', () => toast('Интернет пропал. Изменения не потеряются — сохраните, когда сеть вернётся', false))
@@ -2338,8 +2342,8 @@ function contentIndex() {
   } catch {}
   try { (collectWalls().live || []).forEach(w => out.push({ id: 'walls', text: cut(w.title), where: 'Живые обои', words: w.cat })) } catch {}
   // 2.40: тексты бота и посты канала
-  try { (bcData?.topics || []).forEach(t => out.push({ id: 'tg', text: cut(t.title), where: 'Тема бота', words: (t.words || []).join(' ') + ' ' + t.text })) } catch {}
-  try { (tgState?.last || []).slice(-10).forEach(g => out.push({ id: 'tg', text: cut(g.text), where: 'Пост · ' + g.kind, words: g.text })) } catch {}
+  if (pfOn('search')) try { (bcData?.topics || []).forEach(t => out.push({ id: 'tg', text: cut(t.title), where: 'Тема бота', words: (t.words || []).join(' ') + ' ' + t.text })) } catch {}
+  if (pfOn('search')) try { (tgState?.last || []).slice(-10).forEach(g => out.push({ id: 'tg', text: cut(g.text), where: 'Пост · ' + g.kind, words: g.text })) } catch {}
   return out
 }
 let qSel = 0
@@ -3398,13 +3402,13 @@ $('bsApply').onclick = () => guarded($('bsApply'), async () => {
 // 2.33: тексты бота на Cloudflare — docs/tg/bot.json (бот читает его сам, раз в 5 минут)
 const BOT_CFG = 'docs/tg/bot.json'
 let bcData = null
-const BOT_FEAT = { broadcast: true, news: true, status: true, ping: true, english: true, forward: false, stats: true, welcome: true, antispam: true, invite: true, remind: true, followup: true, complaints: true, translate: true, antiflood: true, version: true, contestSub: true, contestReal: false } // как FEATURES в worker.js
+const BOT_FEAT = { media: true, quick: true, commands: true, images: true, deeplinks: true, contestDM: true, polls: true, broadcast: true, news: true, status: true, ping: true, english: true, forward: false, stats: true, welcome: true, antispam: true, invite: true, remind: true, followup: true, complaints: true, translate: true, antiflood: true, version: true, contestSub: true, contestReal: false } // как FEATURES в worker.js
 // 2.40: функции бота — название и что делает; переключатели строятся отсюда
 const BOT_FEAT_INFO = [
-  ['Ответы людям', [['forward', '📨 Вопросы без ответа — вам в личку', 'Нужен ваш номер. Ответьте на пересланное сообщение или нажмите ⚡ быстрый ответ; фото и голосовые тоже приходят вам'], ['followup', '🙂 «Помогло?» через день после ответа', 'Итоги — в статистике бота'], ['translate', '🔁 Перевод ваших ответов на английский', 'Для тех, у кого Telegram не на русском (Cloudflare AI)'], ['english', '🇬🇧 Ответы на английском', 'Если Telegram у человека не на русском — меню и ответы на английском']]],
-  ['Команды', [['status', '🛰 /status — состояние серверов', 'Техработы и «медленно» из пульта'], ['news', '📰 /news — последние новости', 'Три последних поста канала'], ['invite', '🤝 /invite — пригласить друга', 'Своя ссылка и счёт приглашённых'], ['remind', '🔔 /remind — напомнить о продлении', 'За 3 дня до конца подписки (робот сверяет с Remnawave)'], ['complaints', '⚠️ Жалобы на серверы', '«не работает Германия» — 3 жалобы за час, и вам придёт сообщение'], ['version', '⬆️ Подсказка новой версии', '«у меня 3.20» — бот предложит обновиться'], ['broadcast', '📣 Рассылка и опросы', 'Из пульта — всем, кто писал боту; /stop — отписка'], ['stats', '📊 Счёт популярных тем', '/stats у вас и статистика в пульте'], ['ping', '🏓 /ping для владельца', 'Где работает бот и что включено']]],
+  ['Ответы людям', [['forward', '📨 Вопросы без ответа — вам в личку', 'Нужен ваш номер. Ответьте на пересланное сообщение — бот отправит ответ человеку'], ['media', '📎 Фото, голосовые и файлы — вам', 'Скриншоты ошибок и голосовые приходят вам в личку'], ['quick', '⚡ Быстрые ответы кнопками', 'Под пересланным вопросом — готовые ответы (список ниже)'], ['followup', '🙂 «Помогло?» через день после ответа', 'Итоги — в статистике бота'], ['translate', '🔁 Перевод ваших ответов на английский', 'Для тех, у кого Telegram не на русском (Cloudflare AI)'], ['english', '🇬🇧 Ответы на английском', 'Если Telegram у человека не на русском — меню и ответы на английском']]],
+  ['Команды', [['status', '🛰 /status — состояние серверов', 'Техработы и «медленно» из пульта'], ['news', '📰 /news — последние новости', 'Три последних поста канала'], ['invite', '🤝 /invite — пригласить друга', 'Своя ссылка и счёт приглашённых'], ['remind', '🔔 /remind — напомнить о продлении', 'За 3 дня до конца подписки (робот сверяет с Remnawave)'], ['complaints', '⚠️ Жалобы на серверы', '«не работает Германия» — 3 жалобы за час, и вам придёт сообщение'], ['version', '⬆️ Подсказка новой версии', '«у меня 3.20» — бот предложит обновиться'], ['broadcast', '📣 Рассылка', 'Из пульта — всем, кто писал боту; /stop — отписка'], ['polls', '📊 Опросы в личку', 'Опросы через рассылку; итоги — в статистике'], ['commands', '📋 Меню команд «/»', 'Подсказки команд в Telegram'], ['images', '🖼 Картинки в ответах', 'Если у темы задана картинка'], ['deeplinks', '🔗 Ссылки на темы', 't.me/бот?start=тема сразу открывает ответ'], ['stats', '📊 Счёт популярных тем', '/stats у вас и статистика в пульте'], ['ping', '🏓 /ping для владельца', 'Где работает бот и что включено']]],
   ['Защита', [['antiflood', '🧯 Защита от флуда', 'Больше 8 сообщений в минуту — пауза']]],
-  ['Конкурсы', [['contestSub', '📣 Только подписчики канала', 'Бот должен быть админом канала'], ['contestReal', '🪪 Без пустых аккаунтов', 'Нужно фото профиля или @имя — защита от накруток (Telegram не сообщает возраст аккаунта)']]],
+  ['Конкурсы', [['contestSub', '📣 Только подписчики канала', 'Бот должен быть админом канала'], ['contestReal', '🪪 Без пустых аккаунтов', 'Нужно фото профиля или @имя — защита от накруток (Telegram не сообщает возраст аккаунта)'], ['contestDM', '🎉 Поздравить победителей в личку', 'Дойдёт тем, кто хоть раз писал боту']]],
 ]
 const GROUP_FEAT = [['welcome', '👋 Приветствие новичков', 'Сообщение с кнопками «Как установить» и «Поддержка»; текст — ниже'], ['antispam', '🛡 Антиспам', 'Ссылки и пересылки от новичков в первые сутки удаляются']]
 const BOT_QUICK = ['Обновите подписку: Настройки → Подписка → «Обновить»', 'Включите автопилот — он сам выберет рабочий сервер', 'Откройте «Проверка сети» на главном и пришлите итог (кнопка «Поделиться»)', 'Обновите приложение до последней версии: https://dubstep2004.github.io/update/']
@@ -3415,7 +3419,9 @@ function bcRender() {
   $('bcGreet').value = c.greeting || ''; $('bcNot').value = c.notFound || ''; $('bcSup').value = c.support || ''
   $('bcFeatList').innerHTML = BOT_FEAT_INFO.map(([g, list]) => `<p class="help" style="margin:12px 0 0"><b>${esc(g)}</b></p>` + list.map(([k, t, d]) => `<label class="sw"><div class="t"><b>${esc(t)}</b><span>${esc(d)}</span></div><span class="tog"><input type="checkbox" data-feat="${k}"><i></i></span></label>`).join('')).join('')
   $('grpFeat').innerHTML = GROUP_FEAT.map(([k, t, d]) => `<label class="sw"><div class="t"><b>${esc(t)}</b><span>${esc(d)}</span></div><span class="tog"><input type="checkbox" data-feat="${k}"><i></i></span></label>`).join('')
-  document.querySelectorAll('[data-feat]').forEach(x => { const v = c.features?.[x.dataset.feat]; x.checked = typeof v === 'boolean' ? v : BOT_FEAT[x.dataset.feat] })
+  document.querySelectorAll('[data-feat]').forEach(x => { const v = c.features?.[x.dataset.feat]; x.checked = typeof v === 'boolean' ? v : BOT_FEAT[x.dataset.feat]
+    // переключили позже в боте (/settings) или в меню сервера — показываем то, что действует сейчас
+    const o = btData?.fover?.[x.dataset.feat]; if (o && typeof o.v === 'boolean' && (o.at || 0) > (+c.featuresAt || 0)) { x.checked = o.v; x.closest('.sw').querySelector('.t span')?.insertAdjacentHTML('beforeend', ' <em class="kchip kc-u">переключено в боте</em>') } })
   $('bcDesc').value = c.description || ''; $('bcShort').value = c.short || ''; $('bcWelcome').value = c.welcome || 'Добро пожаловать, {имя}! 👋\nЗдесь новости и помощь по APEX CLIENT.'; $('bcChannel').value = c.channel || ''; $('bcQuick').value = (c.quick || BOT_QUICK).join('\n')
   $('bcTopics').innerHTML = (c.topics || []).map((t, i) => `<div class="bct" data-i="${i}">
     <div class="rowx"><input data-f="title" maxlength="40" value="${esc(t.title || '')}" placeholder="Кнопка, например 📥 Как установить" aria-label="Название темы">
@@ -3453,6 +3459,7 @@ $('bcSave').onclick = () => guarded($('bcSave'), async () => {
   c.topics.forEach((t, i) => { if (!t.title || !t.text) throw new Error('Тема ' + (i + 1) + ': нужны название и ответ') })
   if (c.channel && !/^@?\w{4,}$/.test(c.channel)) throw new Error('Канал для /news: @имя')
   if (c.features.forward && !confirm('«Вопросы без ответа — вам в личку» работает, только если в «Настройках бота» указан ваш номер. Сохранить?')) return
+  c.featuresAt = Date.now() // пульт сохранил позже, чем переключали в боте или меню — действует пульт
   await putFile(BOT_CFG, c, 'Пульт: тексты и функции бота'); bcData = c; toast('Сохранено — бот подхватит за 5 минут')
 })
 // 2.27: код бота для Cloudflare и секретное слово
@@ -3580,6 +3587,25 @@ function secFilters() {
 secFilters()
 $('tgCat').onclick = e => { const b = e.target.closest('[data-cat]'); if (b) { tgCatApply(b.dataset.cat); window.scrollTo({ top: 0 }) } }
 $('grpSave').onclick = () => $('bcSave').click()
+
+// ── 2.43: функции пульта — вкл/выкл на всех устройствах (docs/tg/settings.json → pultOff)
+const PF = [['botq', '📥 Вопросы людей с ответом из пульта'], ['botstats', '📊 Статистика бота'], ['bc', '📣 Рассылка и опрос в личку'], ['allok', '✅ «Всё ли в порядке?»'], ['week', '📈 Неделя к неделе'], ['exp', '⏳ Окончание подписок'], ['adopt', '📲 Сколько уже обновились'], ['big', '📺 Большой экран'], ['sched', '🔁 Пометки по расписанию (и робот их не ставит)'], ['hist', '📜 История техработ'], ['mtpl', '⭐ Шаблоны техработ'], ['tpl', '🧩 Готовые шаблоны текстов'], ['draft', '💾 Черновики постов'], ['links', '🔗 Проверка ссылок'], ['best', '⏰ Когда читают чаще'], ['phone', '📱 Предпросмотр как на телефоне'], ['desc', '🪪 Описание бота'], ['undo', '↶ Отмена последнего сохранения'], ['helper', '👥 Режим помощника'], ['search', '🔎 Поиск по темам бота и постам']]
+const PF_SEL = { botq: '#btBlock', botstats: '#btStatBlock', bc: '#btBcBlock', allok: '#stAll', week: '#wkBlock', exp: '#usersExp', adopt: '.adopt', big: '#bigBtn', sched: '#schedBlock', hist: '#markHistBlock', mtpl: '#qsTplBox', tpl: '.tplmini, #bcTopicTpl', draft: '#tgDraftSave, #tgDraftLoad', links: '#tgLinks', best: '#tgBestBox', desc: '#bcDescBox', undo: '#undoBlock', helper: '#helperBlock' }
+let pfOff = new Set()
+const pfOn = k => !pfOff.has(k)
+function pfApply() {
+  let css = ''; for (const [k, sel] of Object.entries(PF_SEL)) if (pfOff.has(k)) css += sel.split(',').map(x => x.trim() + ':not(#pfList *)').join(', ') + ' { display: none !important; }\n'
+  if (pfOff.has('phone')) css += '.tgprev { max-width: none !important; border: 1px solid var(--line) !important; border-radius: var(--r-md) !important; background: var(--field) !important; box-shadow: none !important; color: inherit !important; } .tgprev::before { display: none !important; }\n'
+  let st = $('pfStyle'); if (!st) { st = document.createElement('style'); st.id = 'pfStyle'; document.head.appendChild(st) } st.textContent = css
+  if (pfOff.has('helper') && navPrefs().helper) { const pr = navPrefs(); pr.helper = false; store('apex_admin_nav', JSON.stringify(pr)); renderNav() }
+  $('pfList').innerHTML = PF.map(([k, t]) => `<label class="sw"><div class="t"><b>${esc(t)}</b></div><span class="tog"><input type="checkbox" data-pf="${k}"${pfOn(k) ? ' checked' : ''}><i></i></span></label>`).join('')
+}
+async function pfLoad() { try { pfOff = new Set((await tgLoadSettings())?.pultOff || []) } catch {} pfApply() }
+$('pfList').addEventListener('change', e => { const x = e.target.closest('[data-pf]'); if (!x) return; guarded(x, async () => {
+  x.checked ? pfOff.delete(x.dataset.pf) : pfOff.add(x.dataset.pf); pfApply()
+  await tgSaveSettings(s => { s.pultOff = [...pfOff] }); toast(PF.find(p => p[0] === x.dataset.pf)[1] + (x.checked ? ' — включено' : ' — выключено'))
+}) })
+pfApply()
 
 // ── 2.41: готовые шаблоны под полями — нажали, и текст подставился (непустое поле — с вопросом)
 const SUP = '{поддержка}', WEB = '{сайт}'
@@ -3730,7 +3756,7 @@ async function renderUsers() {
   const nd = d.nodes || []; $('usersNodes').innerHTML = nd.length ? usBars(nd.map(x => [x.name + (x.up ? '' : ' · не в сети'), x.online]), Math.max(1, ...nd.map(x => x.online))) : '<p class="note">Нет данных о серверах (старая версия панели или нет прав у токена).</p>'
   $('usersVer').innerHTML = usBars(d.versions || [], d.apexWeek);
   { const vs = d.versions || [], tot = vs.reduce((a, x) => a + x[1], 0), lastV = releases.find(r => !r.prerelease && !r.draft)?.tag_name?.replace(/^v/, ''), on = (vs.find(x => x[0] === lastV) || [, 0])[1]
-    if (lastV && tot) $('usersVer').insertAdjacentHTML('afterbegin', `<p class="help">Уже на ${esc(lastV)}: <b>${Math.round(100 * on / tot)}%</b> (${on} из ${tot})</p>`)
+    if (lastV && tot) $('usersVer').insertAdjacentHTML('afterbegin', `<p class="help adopt">Уже на ${esc(lastV)}: <b>${Math.round(100 * on / tot)}%</b> (${on} из ${tot})</p>`)
     $('usersExp').innerHTML = d.exp3 !== undefined ? `<p class="help">⏳ Подписка закончится: за 3 дня — <b>${d.exp3}</b>, за неделю — <b>${d.exp7}</b>. <button class="btn quiet small" id="usersRemind" type="button">Напомнить в канале</button></p>` : ''
     $('usersRemind')?.addEventListener('click', () => { showTab('tg'); $('tgText').value = '⏳ Не забудьте продлить подписку APEX CLIENT\n\nЕсли она заканчивается в ближайшие дни — продлите заранее, чтобы VPN не отключился. Продление: ' + tgLinks().sup + '\n\nНапоминание в личку о продлении — команда /remind в нашем боте.'; tgPreview(); toast('Текст в поле «Сообщение» — проверьте и отправьте') }) } $('usersApps').innerHTML = usBars(d.appsWeek || [], allWeek); $('usersChart').innerHTML = usChart(d.days)
   $('usersView').hidden = false
