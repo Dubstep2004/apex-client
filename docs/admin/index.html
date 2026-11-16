@@ -1092,7 +1092,7 @@
     <!-- Справка -->
     <section data-tab="help" hidden class="helpdoc">
       <h1>Справка для владельца</h1>
-      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 16 ноября 2026 · приложение 3.22.0 · пульт 2.38.</p>
+      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 16 ноября 2026 · приложение 3.22.0 · пульт 2.39.</p>
       <div class="helptools">
         <input id="hq" type="search" placeholder="Найти в справке, например «техработы»" aria-label="Найти в справке" autocomplete="off">
         <button class="btn quiet small" id="hOpen" type="button">Развернуть всё</button>
@@ -1321,6 +1321,7 @@
         <div class="nwkind" id="nwKind" role="group" aria-label="Сортировка"><button type="button" class="pill on" data-k="">Все</button><button type="button" class="pill" data-k="n">🟢 Новое</button><button type="button" class="pill" data-k="u">🟣 Улучшено</button><button type="button" class="pill" data-k="f">🔵 Исправлено</button></div>
         <div id="nwOther" hidden></div>
         <div class="tbl" id="nwPult"><table id="pultLog">
+          <tr data-k="f"><td>2.39</td><td>Переключатели «Что робот публикует сам» (например, «🎬 Видео «Что нового»») не сохранялись, если менять несколько подряд или «Где работает бот»: второе сохранение брало старую версию настроек и возвращало первое назад</td></tr>
           <tr data-k="n"><td>2.38</td><td>«Что нового» — пульт, бот и меню сервера в одном месте; сортировка «Все / Новое / Улучшено / Исправлено»</td></tr>
           <tr data-k="n"><td>2.37</td><td>«Статус» → бот: неделя по дням — сколько процентов времени работал и сколько раз падал; уведомление в браузере, если бот перестал отвечать</td></tr>
           <tr data-k="n"><td>2.37</td><td>Меню «APEX ШТАБ» 1.1: прокси для Telegram, журнал только с ошибками, копия каждый день в 4:00, перенос на другой сервер, раздел «Включить / выключить», «Что нового» с пометками «Новое / Улучшено / Исправлено»</td></tr>
@@ -1442,7 +1443,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.38', PANEL_DATE = '16 ноября 2026'
+const PANEL_VERSION = '2.39', PANEL_DATE = '16 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -1572,7 +1573,8 @@ async function api(path, opts = {}) {
 const b64dec = s => td.decode(Uint8Array.from(atob(s.replace(/\s/g, '')), c => c.charCodeAt(0)))
 const b64enc = s => { const b = te.encode(s); let x = ''; for (let i = 0; i < b.length; i += 0x8000) x += String.fromCharCode(...b.subarray(i, i + 0x8000)); return btoa(x) }
 async function getFile(path, ref = BRANCH) {
-  try { const f = await api('/contents/' + path + '?ref=' + ref); const d = JSON.parse(b64dec(f.content)); if (ref === BRANCH) files[path] = { sha: f.sha, data: d }; return d }
+  // 2.39: без кэша браузера — GitHub отдаёт файл с кэшем на минуту, и второе сохранение подряд брало старую версию и затирало первое
+  try { const f = await api('/contents/' + path + '?ref=' + ref, { cache: 'no-store' }); const d = JSON.parse(b64dec(f.content)); if (ref === BRANCH) files[path] = { sha: f.sha, data: d }; return d }
   catch (e) { if (e.status !== 404) throw e; if (ref === BRANCH) files[path] = { sha: undefined, data: null }; return null }
 }
 async function putFile(path, data, message) {
@@ -1583,7 +1585,7 @@ async function putFile(path, data, message) {
   catch (e) {
     // Файл успели изменить (другая вкладка/телефон) — берём свежую версию и сохраняем поверх, правки не теряются
     if (e.status !== 409 && !(e.status === 422 && /sha/i.test(e.message))) throw e
-    const f = await api('/contents/' + path + '?ref=' + BRANCH).catch(() => null); body.sha = f?.sha
+    const f = await api('/contents/' + path + '?ref=' + BRANCH, { cache: 'no-store' }).catch(() => null); body.sha = f?.sha
     r = await api('/contents/' + path, { method: 'PUT', body: JSON.stringify(body) })
   }
   files[path] = { sha: r.content.sha, data }

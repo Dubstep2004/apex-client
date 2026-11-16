@@ -170,6 +170,19 @@ async function dragRow(p, rowSel, from, to) { // перетащить строк
       if (process.env.SHOT4 && width < 500) { await p.evaluate(() => showTab('home')); await p.waitForTimeout(800); const e4 = await p.$('#statBlock'); await e4.scrollIntoViewIfNeeded(); await e4.screenshot({ path: process.env.SHOT4 + '-stat.png' }); await p.evaluate(() => { showTab('tg'); tgSet = { ...(tgSet || {}), botHost: 'server' }; hostApply() }); const e5 = await p.$('#hostBlock'); await e5.scrollIntoViewIfNeeded(); await e5.screenshot({ path: process.env.SHOT4 + '-host.png' }); await p.evaluate(() => { tgSet.botHost = 'cloudflare'; hostApply(); showTab('tg') }) }
       if (process.env.SHOT5 && width < 500) { const fs = require('fs'); const bot = fs.readFileSync(__dirname + '/../tools/tg-bot/worker.js', 'utf8'), menu = fs.readFileSync(__dirname + '/../tools/tg-bot/apex.sh', 'utf8'); await p.evaluate(([bot, menu]) => { showTab('help'); $('newsBox').open = true; nwCache.bot = { list: nwParse(bot.split('\n').filter(l => l.startsWith('// ')).map(l => l.slice(3))), cur: '' }; nwCache.menu = { list: nwParse((menu.match(/^CHANGES='([\s\S]*?)'$/m) || [])[1].split('\n')), cur: (menu.match(/^APEX_VER="(.+?)"/m) || [])[1] } }, [bot, menu]); for (const [pp, kk] of [['bot', ''], ['menu', ''], ['pult', 'u']]) { await p.evaluate(([a, b]) => { nwProd = a; nwKindSel = b; return nwRender() }, [pp, kk]); const e = await p.$('#newsBox'); await e.scrollIntoViewIfNeeded(); await e.screenshot({ path: process.env.SHOT5 + '-' + pp + '.png' }) } await p.evaluate(() => { nwProd = 'pult'; nwKindSel = ''; nwRender(); $('newsBox').open = false; showTab('tg') }) }
     }
+    // 2.39: переключатели автопостов подряд — каждое сохранение берёт свежий settings.json, ни одно не теряется
+    {
+      let store = { version: true, video: false }, gets = 0
+      await p.route('https://api.github.com/**/contents/docs/tg/settings.json*', rt => {
+        if (rt.request().method() === 'PUT') { store = JSON.parse(Buffer.from(JSON.parse(rt.request().postData()).content, 'base64').toString()); return rt.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ content: { sha: 'set' + Date.now() } }) }) }
+        gets++; rt.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ sha: 'set', content: Buffer.from(JSON.stringify(store)).toString('base64') }) })
+      })
+      await p.evaluate(() => showTab('tg'))
+      for (const id of ['tgAutoVideo', 'tgAutoMaint']) { await p.evaluate(id => { const x = $(id); x.checked = id === 'tgAutoVideo'; x.dispatchEvent(new Event('change')) }, id); await p.waitForTimeout(400) }
+      if (store.video !== true || store.maint !== false) bad(W, 'автопосты: второе сохранение затёрло первое — ' + JSON.stringify(store))
+      if (gets < 2) bad(W, 'автопосты: настройки перед сохранением не перечитываются')
+      await p.unroute('https://api.github.com/**/contents/docs/tg/settings.json*')
+    }
     // 2.34: настройки бота → секреты GitHub
     {
       const put = []
