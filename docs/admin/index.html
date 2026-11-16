@@ -239,6 +239,10 @@
   .tgtoc { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 6px; } .tgtoc a { padding: 7px 12px; border-radius: 999px; background: var(--field); border: 1px solid var(--line); color: inherit; text-decoration: none; font-size: 13.5px; font-weight: 600; }
   .tgsec { margin: 26px 0 2px; font-size: 19px; scroll-margin-top: 80px; } .tgsecn { margin: 0 0 8px; }
   /* 2.32: метки изменений — как на сайте и в Telegram: 🟢 Новое, 🟣 Улучшено, 🔵 Исправлено */
+  .seg3 { grid-template-columns: repeat(3, 1fr); margin: 12px 0 8px; } .nwprod button.on { background: var(--panel2); color: var(--text); box-shadow: inset 0 0 0 1px var(--line); }
+  .nwkind { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; } .nwkind .pill.on { background: var(--go1); color: var(--go-ink); border-color: transparent; }
+  .nwv { border-left: 3px solid var(--go2); padding: 2px 0 2px 12px; margin: 0 0 14px; } .nwv h3 { margin: 0 0 6px; font-size: 15px; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; } .nwv h3 span { color: var(--dim); font-weight: 500; font-size: 13px; }
+  .nwv ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; } .nwv li { font-size: 14px; line-height: 1.45; }
   .kchip { display: inline-block; font-size: 12px; font-weight: 700; border-radius: 99px; padding: 1px 9px; margin-right: 8px; vertical-align: 1px; white-space: nowrap; }
   .kc-n { color: #34d27b; background: rgba(52,210,123,.14); } .kc-u { color: #a78bfa; background: rgba(167,139,250,.16); } .kc-f { color: #60a5fa; background: rgba(96,165,250,.16); } .kc-d { color: #f87171; background: rgba(248,113,113,.14); }
   .anv { padding: 10px 0; border-top: 1px solid var(--line); } .anv:first-child { border-top: 0; } .anv h3 { font-size: 15px; margin: 0 0 6px; } .anv h3 span { color: var(--dim); font-weight: 500; font-size: 13px; margin-left: 6px; }
@@ -1088,7 +1092,7 @@
     <!-- Справка -->
     <section data-tab="help" hidden class="helpdoc">
       <h1>Справка для владельца</h1>
-      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 16 ноября 2026 · приложение 3.22.0 · пульт 2.37.</p>
+      <p class="lead">Как пользоваться пультом, выпускать версии и что делать, если что-то не работает. Обновлено 16 ноября 2026 · приложение 3.22.0 · пульт 2.38.</p>
       <div class="helptools">
         <input id="hq" type="search" placeholder="Найти в справке, например «техработы»" aria-label="Найти в справке" autocomplete="off">
         <button class="btn quiet small" id="hOpen" type="button">Развернуть всё</button>
@@ -1312,8 +1316,12 @@
         <button class="btn quiet small gobtn" type="button" data-open="home">Открыть «Обзор» → «Состояние»</button>
       </details></div>
 
-      <div class="block"><details><summary>🆕 Что нового в пульте</summary>
-        <div class="tbl"><table id="pultLog">
+      <div class="block"><details id="newsBox"><summary>🆕 Что нового — пульт, бот и меню сервера</summary>
+        <div class="seg seg3 nwprod" id="nwProd" role="tablist" aria-label="Что показать"><button type="button" class="on" data-p="pult">🎛 Пульт</button><button type="button" data-p="bot">🤖 Бот</button><button type="button" data-p="menu">🖥 Меню сервера</button></div>
+        <div class="nwkind" id="nwKind" role="group" aria-label="Сортировка"><button type="button" class="pill on" data-k="">Все</button><button type="button" class="pill" data-k="n">🟢 Новое</button><button type="button" class="pill" data-k="u">🟣 Улучшено</button><button type="button" class="pill" data-k="f">🔵 Исправлено</button></div>
+        <div id="nwOther" hidden></div>
+        <div class="tbl" id="nwPult"><table id="pultLog">
+          <tr data-k="n"><td>2.38</td><td>«Что нового» — пульт, бот и меню сервера в одном месте; сортировка «Все / Новое / Улучшено / Исправлено»</td></tr>
           <tr data-k="n"><td>2.37</td><td>«Статус» → бот: неделя по дням — сколько процентов времени работал и сколько раз падал; уведомление в браузере, если бот перестал отвечать</td></tr>
           <tr data-k="n"><td>2.37</td><td>Меню «APEX ШТАБ» 1.1: прокси для Telegram, журнал только с ошибками, копия каждый день в 4:00, перенос на другой сервер, раздел «Включить / выключить», «Что нового» с пометками «Новое / Улучшено / Исправлено»</td></tr>
           <tr data-k="n"><td>2.37</td><td>«Где работает бот» → «Свой сервер»: кнопка «Отключить Cloudflare»</td></tr>
@@ -1434,7 +1442,7 @@
 
 <script>
 'use strict'
-const PANEL_VERSION = '2.37', PANEL_DATE = '16 ноября 2026'
+const PANEL_VERSION = '2.38', PANEL_DATE = '16 ноября 2026'
 const OWNER = 'Dubstep2004', REPO = 'apex-client', BRANCH = 'main'
 const APP = 'docs/config/app.json', SUB = 'docs/config/subscription.json', HIDE = 'docs/templates/hide-vpn.json', SITE = 'docs/config/site.json', WALLS = 'docs/config/wallpapers.json'
 let walls = [], wallsSaved = ''
@@ -3174,6 +3182,38 @@ function pultKind(t) {
 }
 const KBY = { n: KIND['🟢'], u: KIND['🟣'], f: KIND['🔵'], d: KIND['🔴'] } // метка строки — data-k у <tr> (n/u/f/d); нет — по словам
 document.querySelectorAll('#pultLog tr').forEach(tr => { const td = tr.cells[1]; if (td && !td.querySelector('.kchip')) td.insertAdjacentHTML('afterbegin', kchip(KBY[tr.dataset.k] || pultKind(td.textContent))) })
+// 2.38: «Что нового» — пульт, бот и меню сервера; сортировка «Все / Новое / Улучшено / Исправлено».
+// Бот — строки «// V|…», «// n|…» в tools/tg-bot/worker.js; меню — блок CHANGES='…' в tools/tg-bot/apex.sh (тот же, что видно на сервере)
+let nwProd = 'pult', nwKindSel = '', nwCache = {}
+function nwParse(lines) {
+  const out = []; let cur = null
+  lines.forEach(l => { const m = l.match(/^([Vnuf])\|(.*)$/); if (!m) return
+    if (m[1] === 'V') { const [v, d] = m[2].split('|'); cur = { v, d: d || '', items: [] }; out.push(cur) } else if (cur) cur.items.push([m[1], m[2]]) })
+  return out
+}
+async function nwLoad(p) {
+  if (nwCache[p]) return nwCache[p]
+  const path = p === 'bot' ? 'tools/tg-bot/worker.js' : 'tools/tg-bot/apex.sh'
+  const txt = b64dec((await api('/contents/' + path + '?ref=' + BRANCH)).content)
+  const lines = p === 'bot' ? txt.split('\n').filter(l => l.startsWith('// ')).map(l => l.slice(3)) : ((txt.match(/^CHANGES='([\s\S]*?)'$/m) || [])[1] || '').split('\n')
+  return (nwCache[p] = { list: nwParse(lines), cur: p === 'menu' ? (txt.match(/^APEX_VER="(.+?)"/m) || [])[1] : '' })
+}
+async function nwRender() {
+  $('nwProd').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.p === nwProd))
+  $('nwKind').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.k === nwKindSel))
+  $('nwPult').hidden = nwProd !== 'pult'; $('nwOther').hidden = nwProd === 'pult'
+  document.querySelectorAll('#pultLog tr').forEach(tr => { tr.hidden = !!nwKindSel && (tr.dataset.k || 'n') !== nwKindSel })
+  if (nwProd === 'pult') return
+  $('nwOther').innerHTML = '<p class="note">Загружаем…</p>'
+  try {
+    const { list, cur } = await nwLoad(nwProd)
+    const html = list.map(v => { const it = v.items.filter(([k]) => !nwKindSel || k === nwKindSel); if (!it.length) return ''
+      return `<div class="nwv"><h3>Версия ${esc(v.v)}${cur === v.v ? ' <em class="kchip kc-n">последняя</em>' : ''}<span>${esc(v.d)}</span></h3><ul>${it.map(([k, t]) => `<li>${kchip(KBY[k])}${esc(t)}</li>`).join('')}</ul></div>` }).join('')
+    $('nwOther').innerHTML = (html || '<p class="note">Нет изменений с такой пометкой.</p>') + `<p class="help">${nwProd === 'bot' ? 'Новый код бота: свой сервер — <code>sudo apex</code> → «Обновить бота»; Cloudflare — «Применить к боту в Cloudflare».' : 'На сервере: <code>sudo apex</code> → «Что нового»; обновить меню — «Обновить меню».'}</p>`
+  } catch (e) { $('nwOther').innerHTML = '<p class="note">Не удалось загрузить: ' + esc(e.message) + '</p>' }
+}
+$('nwProd').onclick = e => { const b = e.target.closest('[data-p]'); if (b) { nwProd = b.dataset.p; nwRender() } }
+$('nwKind').onclick = e => { const b = e.target.closest('[data-k]'); if (b) { nwKindSel = b.dataset.k; nwRender() } }
 function renderAppNews() {
   const rels = releases.filter(r => !r.prerelease && !r.draft).slice(0, 3)
   const html = rels.map(r => {
