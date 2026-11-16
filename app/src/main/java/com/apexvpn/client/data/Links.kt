@@ -18,5 +18,8 @@ object Links {
     fun channel(): String = AppConfig.value.channel.ifBlank { TELEGRAM }
     /** 3.19.5: ссылка «Сайт» из пульта (раньше читалась, но в приложении не показывалась). */
     fun site(): String = AppConfig.value.site.ifBlank { SITE }
+    /** 3.22.1: в бота поддержки — сразу с версией приложения (t.me/бот?start=v3_22_1); у чата с человеком Telegram просто откроет переписку. */
+    fun withVersion(url: String): String =
+        if (Regex("^https://t\\.me/[A-Za-z0-9_]{4,}/?$").matches(url)) url.trimEnd('/') + "?start=v" + com.apexvpn.client.BuildConfig.VERSION_NAME.replace(Regex("[^0-9.]"), "").replace('.', '_') else url
     fun supportName(): String = support().takeIf { it.startsWith("https://t.me/") }?.let { "@" + it.removePrefix("https://t.me/").trimEnd('/') } ?: SUPPORT_NAME
 }

@@ -25,6 +25,8 @@
 //   его ответ на пересланное сообщение бот отправит человеку; счёт, какие темы спрашивают чаще.
 
 // ЧТО НОВОГО В БОТЕ (пульт показывает это в «Справка» → «Что нового» → «Бот»; V — версия, n/u/f — новое/улучшено/исправлено)
+// V|3.6|16 ноября 2026
+// n|Из приложения в бота: кнопка «Написать в поддержку» открывает бота с версией приложения — бот сразу видит её и подскажет, если вышла новее
 // V|3.5|16 ноября 2026
 // n|/sub — срок подписки, остаток дней и трафик (нужны REMNA_URL и REMNA_TOKEN в настройках бота); ссылку подписки бот не показывает
 // n|/video и кнопка «🎬 Видеоинструкция» — ролик «Как установить» прямо в чат
@@ -759,6 +761,12 @@ async function onMessage(env, m) {
   }
   if (cmd === '/start') {
     // Ссылки t.me/бот?start=тема и приглашения ref_<номер>
+    // Пришёл из приложения (кнопка «Написать в поддержку»): /start v3_22_0 — версия видна сразу, старая — подскажем обновиться
+    if (arg && /^v\d{1,3}_\d{1,3}(_\d{1,3})?$/.test(arg) && !owner) {
+      const v = arg.slice(1).replaceAll('_', '.'), last = cfg.features.version ? await latestVersion() : ''
+      const old = last && vcmp(v, last) < 0
+      return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? `👋 Hi! You came from the app, version ${v}.${old ? `\n⬆️ There is a newer one — ${last}: ${SITE}/update/` : ''}\nChoose a topic or describe the problem — I will pass it to support.` : `👋 Здравствуйте! Вы из приложения, версия ${v}.${old ? `\n⬆️ Есть новее — ${last}: ${SITE}/update/` : ''}\nВыберите тему или опишите проблему — передам в поддержку.`, reply_markup: menu(cfg, en) })
+    }
     if (arg && /^ref_\d+$/.test(arg) && cfg.features.invite && String(m.from.id) !== arg.slice(4)) {
       const k = 'ref:' + m.from.id
       if (!(await kget(env, k, null))) { await kput(env, k, arg.slice(4)); const rc = await kget(env, 'refc', {}), rid = arg.slice(4); rc[rid] = (rc[rid] || 0) + 1; await kput(env, 'refc', rc)

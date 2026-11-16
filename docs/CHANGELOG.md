@@ -2,6 +2,12 @@
 
 <img src="img/tags/new.svg" height="22"> <img src="img/tags/improved.svg" height="22"> <img src="img/tags/changed.svg" height="22"> <img src="img/tags/fixed.svg" height="22"> <img src="img/tags/removed.svg" height="22">
 
+## 3.22.1 · 16 ноября 2026
+
+<img src="img/tags/improved.svg" alt="Улучшено" height="22">
+
+- «Написать в поддержку» открывает бота сразу с версией приложения — поддержка видит её без лишних вопросов, а бот подскажет, если вышла новее
+
 ## 3.22.0 · 16 ноября 2026
 
 <img src="img/tags/new.svg" alt="Новое" height="22">

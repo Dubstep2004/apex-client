@@ -923,7 +923,7 @@ fun SettingsScreen(viewModel: MainViewModel, onOpenPage: (Page) -> Unit, onScanQ
                         colors = ButtonDefaults.buttonColors(containerColor = Apex.SurfaceHigh, contentColor = Apex.Text),
                     ) { Text("✈️ Отправить отчёт в Telegram") }
                     // Чат из подписки (support-url в панели), иначе — наша поддержка @Apexx_support
-                    val chat = sub.supportUrl.ifBlank { com.apexvpn.client.data.Links.support() }
+                    val chat = com.apexvpn.client.data.Links.withVersion(sub.supportUrl.ifBlank { com.apexvpn.client.data.Links.support() })
                     Button(
                         onClick = {
                             runCatching {
