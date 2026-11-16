@@ -5,7 +5,8 @@ name: Site bases
 # (по rules.json), а при недоступности GitHub — с зеркала jsDelivr.
 on:
   schedule:
-    - cron: "23 1 * * *"
+    # Каждый час в :23; собираем только в часы из пульта (app.json → rules.build, по МСК). Нет настройки — в 06:23 МСК
+    - cron: "23 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -21,7 +22,25 @@ jobs:
     env:
       SING_BOX: "1.13.21"
     steps:
+      - name: Time from the pult
+        id: when
+        env:
+          REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -uo pipefail
+          if [ "$EVENT" != "schedule" ]; then echo "go=1" >> "$GITHUB_OUTPUT"; exit 0; fi
+          H=$(TZ=Europe/Moscow date +%-H)
+          HOURS=$(curl -fsSL "https://raw.githubusercontent.com/$REPO/main/docs/config/app.json" 2>/dev/null | python3 -c '
+          import json, sys
+          try: b = (json.load(sys.stdin).get("rules") or {}).get("build") or [6]
+          except Exception: b = [6]
+          print(" ".join(str(int(x)) for x in b if 0 <= int(x) <= 23) or "6")' || echo 6)
+          echo "Часы сборки (МСК): $HOURS, сейчас $H"
+          if echo " $HOURS " | grep -q " $H "; then echo "go=1" >> "$GITHUB_OUTPUT"; else echo "go=0" >> "$GITHUB_OUTPUT"; fi
+
       - name: Download fresh bases
+        if: steps.when.outputs.go == '1'
         run: |
           set -euo pipefail
           mkdir -p out
@@ -34,6 +53,7 @@ jobs:
           ls -la out
 
       - name: HaGeZi Multi Normal
+        if: steps.when.outputs.go == '1'
         run: |
           set -uo pipefail
           # 3.17.5: второй список рекламы и трекеров — HaGeZi Multi Normal (формат AdGuard).
@@ -54,6 +74,7 @@ jobs:
           fi
 
       - name: HaGeZi Threat Intelligence
+        if: steps.when.outputs.go == '1'
         run: |
           set -uo pipefail
           # 3.17.9: мошенники, фишинг, вирусы (HaGeZi TIF, облегчённая версия) — по переключателю
@@ -74,6 +95,7 @@ jobs:
           fi
 
       - name: Russia — only from inside
+        if: steps.when.outputs.go == '1'
         run: |
           set -uo pipefail
           # 3.17.6: сайты, которые работают только из России (Госуслуги, банки, магазины,
@@ -92,6 +114,7 @@ jobs:
           fi
 
       - name: Count sites
+        if: steps.when.outputs.go == '1'
         run: |
           set -uo pipefail
           # Сколько доменов и сетей в каждой базе — приложение показывает это в «Маршрутизации»
@@ -105,6 +128,7 @@ jobs:
           ls json || true
 
       - name: Manifest
+        if: steps.when.outputs.go == '1'
         run: |
           set -euo pipefail
           python3 - <<'EOF'
@@ -132,6 +156,7 @@ jobs:
           EOF
 
       - name: Publish to branch «rules» if changed
+        if: steps.when.outputs.go == '1'
         env:
           REPO: ${{ github.repository }}
           TOKEN: ${{ github.token }}
