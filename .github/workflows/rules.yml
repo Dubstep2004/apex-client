@@ -151,7 +151,27 @@ jobs:
                           count += len(v) if isinstance(v, list) else (1 if v else 0)
                   entry["count"] = count
               files[name] = entry
-          json.dump({"updated": int(time.time()), "files": files}, open("out/rules.json", "w"), ensure_ascii=False, indent=1)
+          # Что изменилось с прошлой сборки (для пульта): было/стало записей у изменившихся баз
+          import urllib.request
+          changes, prev_at = {}, 0
+          try:
+              old = json.load(urllib.request.urlopen("https://raw.githubusercontent.com/" + os.environ["GITHUB_REPOSITORY"] + "/rules/rules.json", timeout=20))
+              prev_at = int(old.get("updated", 0))
+              for k, v in files.items():
+                  o = (old.get("files") or {}).get(k)
+                  if not o:
+                      changes[k] = {"was": 0, "now": v.get("count", 0), "new": True}
+                  elif o.get("sha256") != v["sha256"]:
+                      changes[k] = {"was": o.get("count", 0), "now": v.get("count", 0)}
+              for k in (old.get("files") or {}):
+                  if k not in files:
+                      changes[k] = {"was": old["files"][k].get("count", 0), "now": 0, "gone": True}
+              # без изменений — переносим прошлый список, чтобы пульт показывал последнюю настоящую перемену
+              if not changes:
+                  changes, prev_at = old.get("changes") or {}, int(old.get("prevUpdated", 0))
+          except Exception as e:
+              print("прошлые базы не прочитаны:", e)
+          json.dump({"updated": int(time.time()), "prevUpdated": prev_at, "changes": changes, "files": files}, open("out/rules.json", "w"), ensure_ascii=False, indent=1)
           print(open("out/rules.json").read())
           EOF
 

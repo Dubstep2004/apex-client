@@ -817,7 +817,7 @@
         <div id="rBuild" class="help">Загружаю…</div>
         <div class="rowx" style="gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn quiet small" id="rRebuild" type="button">🏭 Собрать базы сейчас</button><button class="btn quiet small" id="rReload" type="button">🔄 Обновить</button></div>
         <label class="f" for="rSort" style="margin-top:12px">Сортировка баз</label>
-        <select id="rSort"><option value="name">По названию</option><option value="count">По количеству записей</option><option value="size">По размеру</option></select>
+        <select id="rSort"><option value="name">По названию</option><option value="changed">Сначала изменившиеся</option><option value="count">По количеству записей</option><option value="size">По размеру</option></select>
         <div id="rFiles" style="margin-top:8px"></div>
       </div>
     </section>
@@ -1085,7 +1085,20 @@
     <section data-tab="hide" hidden>
       <h1>Шаблон «Скрыть VPN»</h1>
       <p class="lead">Приложения, которые идут мимо VPN у всех. Пакеты — в списке packages.</p>
-      <div class="block"><textarea id="hideJson" class="code" spellcheck="false"></textarea>
+      <div class="block"><h2>📱 Приложения</h2>
+        <p class="help">Банки, магазины, госуслуги и другие приложения, которые проверяют VPN. Телефоны с APEX подхватывают список сами раз в сутки — эти приложения идут мимо VPN и не видят его.</p>
+        <div class="rowx" style="gap:8px;flex-wrap:wrap"><input id="hAdd" placeholder="Пакет или ссылка Google Play, например ru.sberbankmobile" style="flex:1;min-width:200px"><button class="btn quiet small" id="hAddBtn" type="button">➕ Добавить</button></div>
+        <div class="rowx" style="gap:8px;flex-wrap:wrap;margin-top:10px"><input id="hFind" type="search" placeholder="🔎 Найти" style="flex:1;min-width:140px">
+          <select id="hCat"><option value="">Все разделы</option></select>
+          <select id="hSortSel"><option value="cat">По разделам</option><option value="name">По названию</option><option value="pkg">По пакету</option></select></div>
+        <div class="help" id="hCount" style="margin-top:8px"></div>
+        <div id="hList" style="margin-top:6px"></div></div>
+      <div class="block"><h2>🏷 Названия приложений</h2>
+        <p class="help">Если пакет неизвестен, телефон ищет приложение по названию: точное совпадение или начало названия.</p>
+        <label class="f" for="hExact">Точные названия (через запятую)</label><textarea id="hExact" rows="2"></textarea>
+        <label class="f" for="hPrefix">Начало названия (через запятую)</label><textarea id="hPrefix" rows="2"></textarea></div>
+      <div class="block"><h2>🧾 Для опытных: файл целиком</h2>
+        <details><summary>Показать JSON</summary><textarea id="hideJson" class="code" spellcheck="false"></textarea></details>
         <button class="btn go" id="saveHide" style="width:100%;margin-top:14px">Сохранить шаблон</button></div>
     </section>
 
@@ -1417,7 +1430,7 @@
         <div class="nwkind" id="nwKind" role="group" aria-label="Сортировка"><button type="button" class="pill on" data-k="">Все</button><button type="button" class="pill" data-k="n">🟢 Новое</button><button type="button" class="pill" data-k="u">🟣 Улучшено</button><button type="button" class="pill" data-k="f">🔵 Исправлено</button></div>
         <div id="nwOther" hidden></div>
         <div class="tbl" id="nwPult"><table id="pultLog">
-          <tr data-k="n"><td>2.47</td><td>«🚫 Свой список блокировки» и «✅ Белый список» — у всех (приложение 3.23.0). Время сборки баз на GitHub — до двух раз в день, по МСК. «Функции» по разделам: «Экстренное выключение», «🔄 Автообновление баз» (вкл/выкл у всех, как часто проверять, «⚡ Обновить базы у всех сейчас»), «🧱 Какие базы включены», «🏭 Сборка баз на GitHub» (когда собраны, статус робота, «Собрать сейчас», список баз с сортировкой)</td></tr>
+          <tr data-k="n"><td>2.47</td><td>«Скрыть VPN»: удобный список приложений с названиями, разделами, поиском и сортировкой, добавление по ссылке Google Play. «Сборка баз»: что изменилось в последней сборке, сортировка «сначала изменившиеся». Поиск находит свои сайты и базы. «🚫 Свой список блокировки» и «✅ Белый список» — у всех (приложение 3.23.0). Время сборки баз на GitHub — до двух раз в день, по МСК. «Функции» по разделам: «Экстренное выключение», «🔄 Автообновление баз» (вкл/выкл у всех, как часто проверять, «⚡ Обновить базы у всех сейчас»), «🧱 Какие базы включены», «🏭 Сборка баз на GitHub» (когда собраны, статус робота, «Собрать сейчас», список баз с сортировкой)</td></tr>
           <tr data-k="n"><td>2.46</td><td>Telegram → «Бот в личке» → «👥 Пользователи бота»: сколько их, поиск и фильтры (заблокированные, без рассылок, новые), кнопки — написать, забанить и разбанить, отписать, удалить данные</td></tr>
           <tr data-k="n"><td>2.45</td><td>Функции бота: «🛠 Панель админа на кнопках» — включается и выключается здесь, в /settings и в меню сервера</td></tr>
           <tr data-k="n"><td>2.44</td><td>Несколько ботов, как на сервере: в «Бот в личке» переключатель «🤖 Основной · бот 2 · бот 3 · ＋ Бот» — у каждого свои вопросы, статистика, рассылка, тексты и функции; «Настройки бота» — адрес и слово для бота 2 и 3</td></tr>
@@ -2277,7 +2290,7 @@ function showTab(id) {
 async function loadAll() {
   const [app, sub, hide, site, wl] = await Promise.all([getFile(APP), getFile(SUB), getFile(HIDE), getFile(SITE), getFile(WALLS)])
   fillApp(app); saved = JSON.stringify(collectApp(true)); undoStack = [saved]; offerDraft(); changed()
-  fillSub(sub); $('hideJson').value = hide ? JSON.stringify(hide, null, 2) : ''; fillSite(site); fillWalls(wl)
+  fillSub(sub); $('hideJson').value = hide ? JSON.stringify(hide, null, 2) : ''; fillSite(site); fillWalls(wl); hRender()
   renderVersions(); loadReleases().then(loadDays); loadCI(); loadStatus(); loadPending(); pfLoad()
 }
 let retryBtn = null
@@ -2392,6 +2405,9 @@ function contentIndex() {
     c.servers.hidden.forEach(h => out.push({ id: 'servers', text: h, where: 'Скрыто у всех' }))
     if (c.announce) out.push({ id: 'announce', text: cut(c.announce.title || c.announce.text), where: 'Объявление', words: c.announce.text })
     c.update.revoked.forEach(v => out.push({ id: 'update', text: 'Сборка ' + v, where: 'Отозвана' }))
+    ;(c.ads?.block || []).forEach(d => out.push({ id: 'features', text: d, where: 'Свой список блокировки' }))
+    ;(c.ads?.allow || []).forEach(d => out.push({ id: 'features', text: d, where: 'Белый список рекламы' }))
+    Object.entries(rulesMan?.files || {}).forEach(([n, v]) => out.push({ id: 'features', text: RULE_TITLES[n] || n, where: 'База сайтов · ' + (v.count || 0).toLocaleString('ru') + ' записей' }))
   } catch {}
   try { (collectWalls().live || []).forEach(w => out.push({ id: 'walls', text: cut(w.title), where: 'Живые обои', words: w.cat })) } catch {}
   // 2.40: тексты бота и посты канала
@@ -3627,6 +3643,49 @@ tgCatInit(); tgCatApply(load('apex_admin_tgcat') || '')
 // 2.42: на остальных длинных вкладках — строка «Всё · раздел · раздел…» из заголовков блоков; выбор запоминается
 // Большие вкладки — по смысловым группам, остальные — по блокам; «Справка» — у неё свой поиск
 const SEC_GROUPS = { home: [['🟢 Состояние', /Статус|Сборки|Всё сломано|Сейчас действует|Быстрые/], ['📊 Статистика', /Неделя|Telegram-канал|Пользовател|Скачивани|Версии/], ['📰 События', /Лента|Что нового|Календарь|Отложенное/], ['🧰 Инструменты', /Резервн|Разбор|отчёт/]] }
+// 2.47: «Скрыть VPN» — удобный список приложений с названиями и разделами; JSON остаётся источником правды
+const KNOWN_APPS = {
+  'ru.sberbankmobile': ['СберБанк', 'Банки'], 'com.idamob.tinkoff.android': ['Т-Банк', 'Банки'], 'ru.alfabank.mobile.android': ['Альфа-Банк', 'Банки'], 'ru.vtb24.mobilebanking.android': ['ВТБ Онлайн', 'Банки'],
+  'ru.gazprombank.android.mobilebank.app': ['Газпромбанк', 'Банки'], 'com.yandex.bank': ['Яндекс Банк', 'Банки'], 'ru.ozon.fintech.finance': ['Озон Банк', 'Банки'], 'ru.tinkoff.investing': ['Т-Инвестиции', 'Банки'], 'ru.nspk.mirpay': ['Mir Pay', 'Банки'],
+  'ru.raiffeisennews': ['Райффайзен', 'Банки'], 'ru.psbank.mobile': ['ПСБ', 'Банки'], 'ru.rosbank.android': ['Росбанк', 'Банки'], 'com.openbank': ['Открытие', 'Банки'], 'ru.sovcombank.halvacard': ['Халва', 'Банки'], 'ru.pochta.bank': ['Почта Банк', 'Банки'],
+  'ru.ozon.app.android': ['Ozon', 'Магазины'], 'com.wildberries.ru': ['Wildberries', 'Магазины'], 'ru.beru.android': ['Яндекс Маркет', 'Магазины'], 'ru.yandex.market': ['Яндекс Маркет (старый)', 'Магазины'], 'com.avito.android': ['Авито', 'Магазины'], 'com.alibaba.aliexpresshd': ['AliExpress', 'Магазины'],
+  'com.lamoda.lite': ['Lamoda', 'Магазины'], 'ru.dns.shop.android': ['DNS', 'Магазины'], 'ru.vkusvill': ['ВкусВилл', 'Магазины'], 'ru.yandex.lavka': ['Яндекс Лавка', 'Магазины'], 'com.yandex.lavka': ['Яндекс Лавка', 'Магазины'], 'ru.foodfox.client': ['Яндекс Еда', 'Магазины'], 'ru.cian.main': ['Циан', 'Магазины'],
+  'ru.rostel': ['Госуслуги', 'Госуслуги'], 'ru.gosuslugi.goskey': ['Госключ', 'Госуслуги'], 'ru.nalog.www': ['Мой налог', 'Госуслуги'], 'com.octopod.russianpost.client.android': ['Почта России', 'Госуслуги'], 'ru.rzd.pass': ['РЖД Пассажирам', 'Госуслуги'],
+  'com.vkontakte.android': ['ВКонтакте', 'Соцсети и видео'], 'com.vk.im': ['VK Мессенджер', 'Соцсети и видео'], 'com.vk.vkvideo': ['VK Видео', 'Соцсети и видео'], 'com.uma.musicvk': ['VK Музыка', 'Соцсети и видео'], 'ru.ok.android': ['Одноклассники', 'Соцсети и видео'], 'ru.oneme.app': ['MAX', 'Соцсети и видео'], 'com.perm.kate_new_6': ['Kate Mobile', 'Соцсети и видео'],
+  'ru.rutube.app': ['RUTUBE', 'Соцсети и видео'], 'ru.ivi.client': ['Иви', 'Соцсети и видео'], 'ru.kinopoisk': ['Кинопоиск', 'Соцсети и видео'], 'ru.rt.video.app.mobile': ['Wink', 'Соцсети и видео'], 'ru.yandex.music': ['Яндекс Музыка', 'Соцсети и видео'], 'ru.litres.android': ['Литрес', 'Соцсети и видео'], 'ru.vk.store': ['RuStore', 'Соцсети и видео'],
+  'ru.yandex.searchplugin': ['Яндекс с Алисой', 'Яндекс'], 'com.yandex.browser': ['Яндекс Браузер', 'Яндекс'], 'ru.yandex.taxi': ['Яндекс Go', 'Яндекс'], 'ru.yandex.yandexmaps': ['Яндекс Карты', 'Яндекс'], 'ru.yandex.yandexnavi': ['Яндекс Навигатор', 'Яндекс'], 'ru.yandex.disk': ['Яндекс Диск', 'Яндекс'],
+  'ru.yandex.mail': ['Яндекс Почта', 'Яндекс'], 'ru.yandex.translate': ['Яндекс Переводчик', 'Яндекс'], 'ru.yandex.weatherplugin': ['Яндекс Погода', 'Яндекс'], 'ru.mail.mailapp': ['Почта Mail.ru', 'Яндекс'],
+  'ru.mts.mymts': ['Мой МТС', 'Операторы'], 'ru.megafon.mlk': ['МегаФон', 'Операторы'], 'ru.tele2.mytele2': ['Мой Т2', 'Операторы'], 'ru.beeline.services': ['Мой Билайн', 'Операторы'], 'com.tplink.tether': ['TP-Link Tether', 'Операторы'],
+  'ru.aviasales': ['Авиасейлс', 'Другое'], 'ru.hh.android': ['hh.ru', 'Другое'], 'ru.dublgis.dgismobile': ['2ГИС', 'Другое'],
+}
+const HCATS = ['Банки', 'Госуслуги', 'Магазины', 'Яндекс', 'Соцсети и видео', 'Операторы', 'Другое']
+$('hCat').innerHTML += HCATS.map(c => `<option>${c}</option>`).join('')
+const hInfo = p => KNOWN_APPS[p] || [p, 'Другое']
+function hGet() { try { return JSON.parse($('hideJson').value || '{}') } catch { return null } }
+function hSet(j) { $('hideJson').value = JSON.stringify(j, null, 2); $('hideJson').dispatchEvent(new Event('input', { bubbles: true })); hRender() }
+function hRender() {
+  const j = hGet(); if (!j) { $('hList').innerHTML = '<p class="help">⚠️ В JSON ошибка — исправьте файл целиком ниже</p>'; return }
+  const pk = j.packages || [], q = $('hFind').value.trim().toLowerCase(), cat = $('hCat').value, by = $('hSortSel').value
+  let list = pk.map(p => ({ p, n: hInfo(p)[0], c: hInfo(p)[1] })).filter(x => (!cat || x.c === cat) && (!q || (x.n + ' ' + x.p).toLowerCase().includes(q)))
+  list.sort((a, b) => by === 'pkg' ? a.p.localeCompare(b.p) : by === 'name' ? a.n.localeCompare(b.n, 'ru') : HCATS.indexOf(a.c) - HCATS.indexOf(b.c) || a.n.localeCompare(b.n, 'ru'))
+  let last = ''
+  $('hList').innerHTML = list.map(x => { const head = by === 'cat' && x.c !== last ? `<h3 style="margin:12px 0 4px;font-size:14px;color:var(--dim)">${esc(last = x.c)}</h3>` : ''; return head + `<div class="sw"><div class="t"><b>${esc(x.n)}</b><span>${esc(x.p)}</span></div><button class="btn quiet small" data-hdel="${esc(x.p)}" type="button">🗑</button></div>` }).join('') || '<p class="help">Ничего не найдено</p>'
+  $('hCount').textContent = `Всего приложений: ${pk.length}` + (list.length !== pk.length ? ` · показано: ${list.length}` : '')
+  if (document.activeElement !== $('hExact')) $('hExact').value = (j.exactLabels || []).join(', ')
+  if (document.activeElement !== $('hPrefix')) $('hPrefix').value = (j.labelPrefixes || []).join(', ')
+}
+$('hList').onclick = e => { const b = e.target.closest('[data-hdel]'); if (!b) return; const j = hGet(); if (!j) return; j.packages = (j.packages || []).filter(p => p !== b.dataset.hdel); hSet(j); toast('Убрано: ' + hInfo(b.dataset.hdel)[0] + ' — нажмите «Сохранить шаблон»') }
+$('hAddBtn').onclick = () => {
+  let v = $('hAdd').value.trim(); const m = v.match(/[?&]id=([\w.]+)/); if (m) v = m[1]
+  if (!/^[a-zA-Z][\w]*(\.[\w]+)+$/.test(v)) return toast('Нужно имя пакета, например ru.sberbankmobile, или ссылка Google Play', false)
+  const j = hGet() || {}; j.packages = [...new Set([...(j.packages || []), v])].sort(); hSet(j); $('hAdd').value = ''; toast('Добавлено: ' + hInfo(v)[0] + ' — нажмите «Сохранить шаблон»')
+}
+;['hFind', 'hCat', 'hSortSel'].forEach(id => $(id).addEventListener('input', hRender))
+;[['hExact', 'exactLabels'], ['hPrefix', 'labelPrefixes']].forEach(([id, k]) => $(id).addEventListener('change', () => { const j = hGet(); if (!j) return; j[k] = [...new Set($(id).value.split(',').map(x => x.trim().toLowerCase()).filter(Boolean))]; hSet(j) }))
+$('hideJson').addEventListener('input', () => { if (document.activeElement === $('hideJson')) hRender() })
+try { const v = localStorage.getItem('apex_admin_hsort'); if (v) $('hSortSel').value = v } catch (e) {}
+$('hSortSel').addEventListener('change', () => { try { localStorage.setItem('apex_admin_hsort', $('hSortSel').value) } catch (e) {} })
+
 // 2.47: свой список блокировки и белый список (app.json → ads.block / ads.allow); пусто — ключа нет
 const adDom = v => { v = v.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/[\/:?#].*$/, '').replace(/^\.+|\.+$/g, '').replace(/^www\./, ''); return /^[a-z0-9.-]{3,253}$/.test(v) && v.includes('.') ? v : '' }
 function adLists(loose) {
@@ -3646,7 +3705,11 @@ function rFilesRender() {
   if (!rulesMan) return
   const by = $('rSort').value, list = Object.entries(rulesMan.files || {}).map(([n, v]) => ({ n, t: RULE_TITLES[n] || n.replace(/\.srs$/, ''), c: v.count || 0, s: v.size || 0 }))
   list.sort((a, b) => by === 'count' ? b.c - a.c : by === 'size' ? b.s - a.s : a.t.localeCompare(b.t, 'ru'))
-  $('rFiles').innerHTML = list.map(x => `<div class="sw"><div class="t"><b>${esc(x.t)}</b><span>${x.c.toLocaleString('ru')} записей · ${fmtSize(x.s)} · ${esc(x.n)}</span></div></div>`).join('')
+  const ch = rulesMan.changes || {}, delta = n => { const c = ch[n]; if (!c) return ''; const d = (c.now || 0) - (c.was || 0); return c.new ? ' · 🆕 новая база' : c.gone ? ' · 🗑 убрана' : ` · ${d > 0 ? '🟢 +' : d < 0 ? '🔴 −' : '🔄 '}${d ? Math.abs(d).toLocaleString('ru') : 'обновлена'}` }
+  if (by === 'changed') list.sort((a, b) => (ch[b.n] ? 1 : 0) - (ch[a.n] ? 1 : 0))
+  const names = Object.keys(ch).map(n => RULE_TITLES[n] || n)
+  $('rFiles').innerHTML = `<p class="help">${names.length ? '🔄 В последней сборке изменились: ' + esc(names.join(', ')) + (rulesMan.prevUpdated ? ' (до этого — сборка от ' + new Date(rulesMan.prevUpdated * 1000).toLocaleDateString('ru', { day: 'numeric', month: 'long' }) + ')' : '') : 'Сведений об изменениях пока нет — появятся после следующей сборки'}</p>` +
+    list.map(x => `<div class="sw"><div class="t"><b>${esc(x.t)}</b><span>${x.c.toLocaleString('ru')} записей · ${fmtSize(x.s)}${delta(x.n)} · ${esc(x.n)}</span></div></div>`).join('')
   try { localStorage.setItem('apex_admin_rsort', by) } catch (e) {}
 }
 $('rSort').onchange = rFilesRender
