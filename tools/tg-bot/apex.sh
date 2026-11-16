@@ -10,7 +10,7 @@
 set -uo pipefail
 export LC_ALL=C.UTF-8 2>/dev/null  # русские буквы — по одной, а не по байтам
 
-APEX_VER="2.5"
+APEX_VER="2.6"
 SRC="https://raw.githubusercontent.com/Dubstep2004/apex-client/main/tools/tg-bot"
 API="https://api.github.com/repos/Dubstep2004/apex-client/commits?path=tools/tg-bot&per_page=1"
 DIR=${APEX_DIR:-/opt/apex-bot}; SELF=${APEX_SELF:-/usr/local/bin/apex}
@@ -105,7 +105,9 @@ item()    { printf '   %s%3s%s  %s%s%s\n' "$ACC$B" "$1" "$R" "${3:-}" "$2" "$R";
 
 # ── Что нового ─────────────────────────────────────────────────────
 # Строки: «V|версия|дата» — заголовок; «n|текст» — новое, «u|…» — улучшено, «f|…» — исправлено.
-CHANGES='V|2.5|16 ноября 2026
+CHANGES='V|2.6|16 ноября 2026
+u|«Функции бота» — по разделам: Админ и сводки, Ответы людям, Помощники, Команды, Рассылки и канал, Конкурсы, Группа, Защита и прочее
+V|2.5|16 ноября 2026
 n|Второй и третий бот видны в пульте отдельно: свои тексты, функции, вопросы, статистика и рассылка; при добавлении бота меню само подключает его тексты из пульта и предлагает свободный порт для связи
 V|2.4|16 ноября 2026
 n|«Включить / выключить» → «Функции бота»: любую функцию бота — вопросы мне, рассылку, /status, антиспам, конкурсы… — одним нажатием (то же, что /settings в боте и пульт)
@@ -680,11 +682,12 @@ toggle_cfg() { if [ "$(cget "$1")" = 1 ]; then cset "$1" 0; ok "$2 — выкл�
 botfeat_list() {  # печатает: номер|ключ|название|1/0
   [ -f "$DIR/worker.js" ] || return 1
   ( cd "$DIR" && node --input-type=module -e '
-    const { FEATURES, FEAT_NAMES, CONFIG_URL } = await import(process.argv[1] + "/worker.js")
+    const { FEATURES, FEAT_NAMES, FEAT_GROUPS = [], CONFIG_URL } = await import(process.argv[1] + "/worker.js")
     let c = {}; try { const r = await fetch(CONFIG_URL, { signal: AbortSignal.timeout(8000) }); if (r.ok) c = await r.json() } catch {}
     let ov = {}; try { ov = JSON.parse(JSON.parse((await import("node:fs")).readFileSync(process.argv[2], "utf8")).fover || "{}") } catch {}
     const pAt = +c.featuresAt || 0
-    Object.keys(FEAT_NAMES).forEach((k, i) => { let v = typeof c.features?.[k] === "boolean" ? c.features[k] : FEATURES[k]; const o = ov[k]; if (o && typeof o.v === "boolean" && (o.at || 0) > pAt) v = o.v; console.log((i + 1) + "|" + k + "|" + FEAT_NAMES[k] + "|" + (v ? 1 : 0)) })
+    const grp = k => FEAT_GROUPS.find(g => g[2].includes(k)) || ["", "📦 Другое"], keys = Object.keys(FEAT_NAMES), pos = k => { const g = grp(k); const gi = FEAT_GROUPS.indexOf(g); return (gi < 0 ? 99 : gi) * 100 + (gi < 0 ? keys.indexOf(k) : g[2].indexOf(k)) }
+    keys.sort((a, b) => pos(a) - pos(b)).forEach((k, i) => { let v = typeof c.features?.[k] === "boolean" ? c.features[k] : FEATURES[k]; const o = ov[k]; if (o && typeof o.v === "boolean" && (o.at || 0) > pAt) v = o.v; console.log((i + 1) + "|" + k + "|" + FEAT_NAMES[k] + "|" + (v ? 1 : 0) + "|" + grp(k)[1]) })
   ' "$DIR" "$DATA/kv.json" 2>/dev/null )
 }
 do_botfeat() {
@@ -692,7 +695,7 @@ do_botfeat() {
     banner; section "Функции бота"
     local rows; rows=$(botfeat_list) || { err "Бот не установлен"; return; }
     [ -n "$rows" ] || { err "Не удалось прочитать функции — обновите бота («Обновления» → «Обновить бота»)"; return; }
-    while IFS='|' read -r n k t v; do printf '   %s%3s%s  %-34s %s\n' "$ACC$B" "$n" "$R" "$t" "$(onoff "$([ "$v" = 1 ] && echo 1)")"; done <<<"$rows"
+    local lastg=""; while IFS='|' read -r n k t v g; do [ "$g" != "$lastg" ] && { say ""; say "  ${B}${g}${R}"; lastg=$g; }; printf '   %s%3s%s  %-34s %s\n' "$ACC$B" "$n" "$R" "$t" "$(onoff "$([ "$v" = 1 ] && echo 1)")"; done <<<"$rows"
     item 0 "$(T Назад)" "$DIM"; say "   ${DIM}То же — командой /settings в боте и в пульте: Telegram → «Тексты и функции бота»${R}"; say ""
     local c line k v; c=$(ask "Номер функции: "); [ -z "$c" ] || [ "$c" = 0 ] && return
     line=$(grep "^$c|" <<<"$rows") || { warn "Нет такого пункта"; pause; continue; }

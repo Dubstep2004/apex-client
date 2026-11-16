@@ -25,6 +25,8 @@
 //   его ответ на пересланное сообщение бот отправит человеку; счёт, какие темы спрашивают чаще.
 
 // ЧТО НОВОГО В БОТЕ (пульт показывает это в «Справка» → «Что нового» → «Бот»; V — версия, n/u/f — новое/улучшено/исправлено)
+// V|3.3|16 ноября 2026
+// u|Функции бота — по разделам: «Админ и сводки», «Ответы людям», «Помощники», «Команды», «Рассылки и канал», «Конкурсы», «Группа», «Защита и прочее»; у раздела видно, сколько включено. В /settings, «⚙️ Функции» и меню сервера
 // V|3.2|16 ноября 2026
 // n|/report — форма из трёх вопросов (устройство, версия, что не так), в поддержку приходит одной карточкой; /quiz — викторина по приложению; /version — последняя версия
 // n|Память разговора: «не помогло» сразу после темы — бот передаёт вопрос людям и подсказывает, какую тему человек уже читал
@@ -155,7 +157,24 @@ async function mergeFeatures(env, c) {
   return f
 }
 async function setFeature(env, k, v) { const ov = await kget(env, 'fover', {}); ov[k] = { v, at: now() }; await kput(env, 'fover', ov); cfgCache = null }
-const settingsKb = cfg => ({ inline_keyboard: Object.keys(FEAT_NAMES).filter(k => k in cfg.features).reduce((rows, k, i) => { const b = { text: (cfg.features[k] ? '✅ ' : '▫️ ') + FEAT_NAMES[k], callback_data: 'ft:' + k }; if (i % 2) rows[rows.length - 1].push(b); else rows.push([b]); return rows }, []) })
+// Разделы функций: /settings, «⚙️ Функции» в «🛠 Админ» и меню сервера показывают функции по разделам
+const FEAT_GROUPS = [
+  ['adm', '🛠 Админ и сводки', ['admin', 'morning', 'stats', 'syslog', 'backup']],
+  ['ans', '💬 Ответы людям', ['forward', 'media', 'quick', 'followup', 'translate', 'english', 'qpos', 'night', 'human', 'memory', 'form', 'fuzzy']],
+  ['hlp', '🛟 Помощники', ['helpers', 'helpRR']],
+  ['cmd', '📋 Команды', ['commands', 'status', 'news', 'invite', 'remind', 'complaints', 'version', 'ping', 'quiz', 'deeplinks', 'images']],
+  ['bc', '📣 Рассылки и канал', ['broadcast', 'polls', 'chpost']],
+  ['con', '🎁 Конкурсы', ['contestBot', 'contestSub', 'contestReal', 'contestDM']],
+  ['grp', '👥 Группа', ['welcome', 'antispam', 'captcha', 'warns']],
+  ['etc', '🛡 Защита и прочее', ['antiflood', 'fakewarn', 'anniv']]]
+const featGroups = () => { const used = new Set(FEAT_GROUPS.flatMap(g => g[2])), rest = Object.keys(FEAT_NAMES).filter(k => !used.has(k)); return rest.length ? [...FEAT_GROUPS, ['oth', '📦 Другое', rest]] : FEAT_GROUPS }
+const groupOf = k => featGroups().find(g => g[2].includes(k))?.[0]
+const settingsKb = (cfg, sec) => { // без раздела — список разделов с числом включённых; с разделом — переключатели
+  const gs = featGroups().map(g => [g[0], g[1], g[2].filter(k => k in cfg.features && FEAT_NAMES[k])])
+  if (!sec) return { inline_keyboard: [...gs.filter(g => g[2].length).map(g => [{ text: `${g[1]} · ${g[2].filter(k => cfg.features[k]).length}/${g[2].length}`, callback_data: 'fs:' + g[0] }]), ...(cfg.features.admin ? [[{ text: '⬅️ В «🛠 Админ»', callback_data: 'ad:menu' }]] : [])] }
+  const g = gs.find(x => x[0] === sec) || gs[0]
+  return { inline_keyboard: [...g[2].map(k => [{ text: (cfg.features[k] ? '✅ ' : '▫️ ') + FEAT_NAMES[k], callback_data: 'ft:' + k }]), [{ text: '⬅️ Разделы', callback_data: 'fs:' }]] }
+}
 
 // Настройки из пульта: кэш на 5 минут в памяти Worker; файл не открылся — встроенные тексты
 let cfgCache = null, cfgAt = 0
@@ -516,7 +535,7 @@ async function onAdmin(env, cfg, cq, d) {
     return adminScreen(env, cfg, chat, mid, b.length ? `🚫 Заблокировано: ${b.length}. Нажмите, чтобы разблокировать:` : '🚫 Заблокированных нет', b.slice(-8).map(id => [{ text: '✅ Разблокировать ' + id, callback_data: 'ad:ub:' + id }]))
   }
   if (act === 'ub') { await kput(env, 'block', (await kget(env, 'block', [])).filter(x => x !== +arg)); return onAdmin(env, cfg, { ...cq, id: cq.id + 'x' }, 'ad:blocked') }
-  if (act === 'feat') return tg(env, 'editMessageText', { chat_id: chat, message_id: mid, text: '⚙️ Функции бота — нажмите, чтобы включить или выключить:', reply_markup: { inline_keyboard: [...settingsKb(cfg).inline_keyboard, back] } })
+  if (act === 'feat') return tg(env, 'editMessageText', { chat_id: chat, message_id: mid, text: '⚙️ Функции бота — нажмите, чтобы включить или выключить:', reply_markup: settingsKb(cfg) }) // разделы; «⬅️ Разделы» внутри раздела вернёт сюда
   if (act === 'status') return adminScreen(env, cfg, chat, mid, await statusText(), [[{ text: '🔄 Обновить', callback_data: 'ad:status' }]])
   if (act === 'stats') { const t = await topScreen(env, cfg); return adminScreen(env, cfg, chat, mid, t.text, t.rows) }
   if (act === 'mt') { // сделать тему из отвеченного вопроса: слова — из вопроса, ответ — ваш
@@ -949,7 +968,7 @@ async function seal(secret, obj) { // AES-GCM, ключ = SHA-256('apex-bot:' + 
 const okSig = async (env, req) => { const ts = +req.headers.get('x-ts'), sig = req.headers.get('x-sig') || ''; return Math.abs(now() - ts) < 300000 && sig.length === 64 && sig === await hmac(env.WEBHOOK_SECRET, String(ts)) }
 
 export const ALLOWED = ['message', 'callback_query', 'poll']
-export { FEATURES, FEAT_NAMES, CONFIG_URL } // для меню сервера (apex → «Функции бота»)
+export { FEATURES, FEAT_NAMES, FEAT_GROUPS, CONFIG_URL } // для меню сервера (apex → «Функции бота»)
 export default {
   // Cloudflare: расписание раз в минуту (ставит «Применить к боту в Cloudflare») — рассылка, «Помогло?», меню команд
   async scheduled(event, env, ctx) { if (env.BOT_TOKEN) ctx.waitUntil(tick(env, true).catch(() => {})) },
@@ -1001,11 +1020,15 @@ export default {
           }
           // Кнопки владельца (функции, быстрые ответы): у остальных молча ничего не делают и ничего не показывают
           else if (d.startsWith('ad:') && !owner && await isHelper(env, await config(env), cq.from.id)) await onAdmin(env, await config(env), cq, d) // помощник: onAdmin пускает только к вопросам
-          else if ((d.startsWith('ft:') || d.startsWith('qr:') || d.startsWith('ad:')) && !owner && !(d.startsWith('qr:') && await isHelper(env, await config(env), cq.from.id))) await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id })
+          else if ((d.startsWith('ft:') || d.startsWith('fs:') || d.startsWith('qr:') || d.startsWith('ad:')) && !owner && !(d.startsWith('qr:') && await isHelper(env, await config(env), cq.from.id))) await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id })
           else if (d.startsWith('ad:') && owner) await onAdmin(env, await config(env), cq, d)
           else if (d.startsWith('ft:') && owner) { // /settings: переключить функцию
             const k = d.slice(3), cfg0 = await config(env)
-            if (k in cfg0.features) { await setFeature(env, k, !cfg0.features[k]); const cfg = await config(env); await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: (FEAT_NAMES[k] || k) + (cfg.features[k] ? ' — включено' : ' — выключено') }); if (cq.message) await tg(env, 'editMessageReplyMarkup', { chat_id: cq.message.chat.id, message_id: cq.message.message_id, reply_markup: settingsKb(cfg) }) }
+            if (k in cfg0.features) { await setFeature(env, k, !cfg0.features[k]); const cfg = await config(env); await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: (FEAT_NAMES[k] || k) + (cfg.features[k] ? ' — включено' : ' — выключено') }); if (cq.message) await tg(env, 'editMessageReplyMarkup', { chat_id: cq.message.chat.id, message_id: cq.message.message_id, reply_markup: settingsKb(cfg, groupOf(k)) }) }
+          }
+          else if (d.startsWith('fs:') && owner) { // раздел функций (пусто — список разделов)
+            const cfg = await config(env); await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id })
+            if (cq.message) await tg(env, 'editMessageReplyMarkup', { chat_id: cq.message.chat.id, message_id: cq.message.message_id, reply_markup: settingsKb(cfg, d.slice(3)) })
           }
           else if (d.startsWith('qr:')) { // быстрый ответ владельца или помощника (чужие отсеяны выше)
             const [, i, fwid] = d.split(':'), cfg = await config(env), to = await env.APEX_KV?.get('fw:' + fwid), hb = owner ? '' : 'помощник ' + (cq.from.username ? '@' + cq.from.username : cq.from.first_name || cq.from.id)
