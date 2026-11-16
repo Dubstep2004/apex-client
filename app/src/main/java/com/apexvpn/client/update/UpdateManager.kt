@@ -188,7 +188,8 @@ object UpdateManager {
      * пропущенных версий, а не только последней. Ошибка — оставляем как было.
      */
     private suspend fun withSkipped(info: UpdateInfo): UpdateInfo = withContext(Dispatchers.IO) {
-        val mine = rank(BuildConfig.VERSION_NAME), top = rank(info.versionName)
+        val mine = rank(BuildConfig.VERSION_NAME)
+        val top = rank(info.versionName)
         if (top <= mine) return@withContext info
         runCatching {
             val skipped = releases().filter { r -> rank(r.versionName) in (mine + 1) until top && (info.beta || !r.beta) && r.changelog.isNotBlank() }
