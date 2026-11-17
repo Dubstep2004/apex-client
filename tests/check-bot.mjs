@@ -23,7 +23,8 @@ const U = [msg('/start'), msg('/status'), msg('/ping', { id: 1 }), msg('/ping'),
   ...Array.from({ length: 10 }, (_, i) => msg('флуд ' + i, { id: 40 })),
   { chat: { id: -100, type: 'supergroup' }, from: { id: 50 }, message_id: 500, new_chat_members: [{ id: 50, first_name: 'Нов' }] },
   { chat: { id: -100, type: 'supergroup' }, from: { id: 50 }, message_id: 501, text: 'купи https://spam.example', entities: [{ type: 'url', offset: 5, length: 20 }] },
-  { chat: { id: -100, type: 'supergroup' }, from: { id: 51 }, message_id: 502, text: 'https://ok.example', entities: [{ type: 'url', offset: 0, length: 18 }] }]
+  { chat: { id: -100, type: 'supergroup' }, from: { id: 51 }, message_id: 502, text: 'https://ok.example', entities: [{ type: 'url', offset: 0, length: 18 }] },
+  msg('🙋 Написать человеку', { id: 70, first_name: 'Lena', language_code: 'ru' }), msg('как установить', { id: 70, first_name: 'Lena', language_code: 'ru' }), msg('💬 Мои вопросы', { id: 70, first_name: 'Lena', language_code: 'ru' })]
 globalThis.fetch = async (url, init = {}) => {
   url = String(url); const ok = r => new Response(JSON.stringify({ ok: true, result: r }))
   if (url.includes('config/app.json')) return new Response(JSON.stringify({ servers: { status: { 'Германия': { state: 'maintenance', until: Date.now() + 3600e3 } } } }))
@@ -64,7 +65,9 @@ else {
   if (to(7).some(t => /Работаю/.test(t))) fail('бот: /ping ответил не владельцу')
   has(8, /does not connect/i, 'нет ответа на английском')
   has(7, /Как установить/, 'поиск по словам не нашёл тему')
-  const fw = sent.filter(s => s[0] === 'forwardMessage' && ![62, 64, 66].includes(s[4])).length // 62 — «Позвать человека», проверяется ниже
+  if (!sent.some(s => s[0] === 'forwardMessage' && s[4] === 70)) fail('люди: после «🙋 Написать человеку» вопрос не ушёл владельцу')
+  if (!sent.some(s => s[0] === 'sendMessage' && s[1] === 70 && /Мои вопросы/.test(s[2]) && /⏳.*как установить/.test(s[2]))) fail('люди: «💬 Мои вопросы» не показала свой вопрос со статусом')
+  const fw = sent.filter(s => s[0] === 'forwardMessage' && ![62, 64, 66, 70].includes(s[4])).length // 62 — «Позвать человека», проверяется ниже
   if (fw !== 8) fail('пересылка владельцу: ожидалось 8 (по 3 от двух людей — дальше лимит — и по 1 от двух других), было ' + fw)
   has(1, /Вопросы за 7 дней/, '/stats владельцу не ответил')
   if (to(7).some(t => /Вопросы за 7 дней/.test(t))) fail('бот: /stats ответил не владельцу')
@@ -283,8 +286,19 @@ fs.rmSync(tmp, { recursive: true, force: true })
     const w2 = (await import(path.join(BOT, 'worker.js') + '?off')).default // отдельный экземпляр: свой кэш настроек
     const upd = n => w2.fetch(new Request('https://bot.example/tg', { method: 'POST', headers: { 'x-telegram-bot-api-secret-token': env.WEBHOOK_SECRET }, body: JSON.stringify({ update_id: n, message: { message_id: n, chat: { id: 4242, type: 'private' }, from: { id: 4242, first_name: 'K' }, text: 'привет' } }) }), env2)
     await upd(1); await upd(2)
-    const rm = sent2.filter(x => x[0] === 'sendMessage' && x[1].reply_markup?.remove_keyboard)
-    if (rm.length !== 1 || !sent2.some(x => x[0] === 'deleteMessage' && x[1].message_id === 77)) fail('мини-приложение выключено: старая кнопка внизу не убрана (или убирается каждый раз) ' + rm.length)
+    const kbs = sent2.filter(x => x[0] === 'sendMessage' && x[1].reply_markup?.keyboard)
+    if (kbs.length !== 1 || !JSON.stringify(kbs[0][1].reply_markup.keyboard).includes('📋 Темы') || !JSON.stringify(kbs[0][1].reply_markup.keyboard).includes('💬 Мои вопросы')) fail('люди: панель внизу не поставлена (или ставится каждый раз) ' + kbs.length)
+    // кнопки людей: «Мои вопросы», «Темы», «Написать человеку» → следующее сообщение уходит владельцу
+    const say2 = (n, t) => w2.fetch(new Request('https://bot.example/tg', { method: 'POST', headers: { 'x-telegram-bot-api-secret-token': env.WEBHOOK_SECRET }, body: JSON.stringify({ update_id: n, message: { message_id: n, chat: { id: 4242, type: 'private' }, from: { id: 4242, first_name: 'K' }, text: t } }) }), env2)
+    sent2.length = 0; await say2(30, '💬 Мои вопросы')
+    if (!sent2.some(x => x[0] === 'sendMessage' && /Мои вопросы|Вопросов пока нет/.test(x[1].text || ''))) fail('люди: «💬 Мои вопросы» не ответила')
+    if (sent2.some(x => /Ждут ответа|Панель владельца/.test(x[1].text || ''))) fail('люди: «💬 Мои вопросы» показала чужое')
+    sent2.length = 0; await say2(31, '📋 Темы')
+    if (!sent2.some(x => x[0] === 'sendMessage' && (x[1].reply_markup?.inline_keyboard || []).length > 1 && !JSON.stringify(x[1].reply_markup).includes('ad:menu'))) fail('люди: «📋 Темы» без списка тем (или с кнопкой владельца)')
+    sent2.length = 0; await say2(32, '🙋 Написать человеку'); await say2(33, 'как установить приложение помогите')
+    // в этом боте пересылка людям выключена — кнопки «🙋 Написать человеку» нет, вместо пересылки — подсказка и обычный ответ по теме
+    if (JSON.stringify(kbs[0][1].reply_markup.keyboard).includes('Написать человеку')) fail('люди: «🙋 Написать человеку» при выключенной пересылке')
+    if (!sent2.some(x => /Просто напишите вопрос/.test(x[1].text || '')) || !sent2.some(x => x[0] === 'sendPhoto')) fail('люди: «🙋 Написать человеку» без пересылки — нет подсказки или ответа по теме')
     if (sent2.some(x => JSON.stringify(x[1].reply_markup || {}).includes('web_app'))) fail('мини-приложение выключено, а бот показывает кнопку мини-приложения')
     await w2.fetch(new Request('https://bot.example/tg', { method: 'POST', headers: { 'x-telegram-bot-api-secret-token': env.WEBHOOK_SECRET }, body: JSON.stringify({ update_id: 3, message: { message_id: 3, chat: { id: 4243, type: 'private' }, from: { id: 4243, first_name: 'S' }, text: '/start' } }) }), env2)
     if (!sent2.some(x => x[0] === 'sendPhoto' && /img\/bot\/hello\.jpg$/.test(x[1].photo) && /APEX/.test(x[1].caption) && x[1].reply_markup?.inline_keyboard)) fail('картинки: приветствие без обложки или без кнопок тем')
