@@ -26,6 +26,7 @@
 
 // ЧТО НОВОГО В БОТЕ (пульт показывает это в «Справка» → «Что нового» → «Бот»; V — версия, n/u/f — новое/улучшено/исправлено)
 // V|4.9|17 ноября 2026
+// f|Кнопка «👑 Панель владельца» под картинкой не открывалась — теперь панель приходит новым сообщением (так же разделы тем и настройки под картинкой)
 // n|PRO-картинки: приветствие, «Режим владельца» и каждая тема приходят с фирменной обложкой; выключается в «Возможности бота» (своя картинка темы из пульта — главнее)
 // u|PRO-оформление: темы по две в ряд, заголовок «🛡 APEX CLIENT · поддержка» с разделителем; у владельца /start — одна карточка «👑 Режим владельца» с цифрами и кнопка «👑 Панель владельца» под темами
 // V|4.8|17 ноября 2026
@@ -169,7 +170,10 @@ const now = () => Date.now()
 
 async function tg(env, method, body) {
   const r = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/${method}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
-  return r.json()
+  const j = await r.json()
+  // Сообщение с картинкой (приветствие, карточка владельца) текстом не правится — тогда новый экран отдельным сообщением
+  if (method === 'editMessageText' && !j?.ok && /no text in the message/i.test(j?.description || '')) return tg(env, 'sendMessage', { chat_id: body.chat_id, text: body.text, disable_web_page_preview: body.disable_web_page_preview, reply_markup: body.reply_markup })
+  return j
 }
 async function tgFile(env, chat, name, content, caption) { // отправить файл: тело multipart собираем строкой (так работает и через прокси на сервере)
   const b = 'apex' + now().toString(36) + Math.random().toString(36).slice(2), part = (k, v) => `--${b}\r\ncontent-disposition: form-data; name="${k}"\r\n\r\n${v}\r\n`
