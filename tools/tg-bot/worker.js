@@ -25,6 +25,8 @@
 //   его ответ на пересланное сообщение бот отправит человеку; счёт, какие темы спрашивают чаще.
 
 // ЧТО НОВОГО В БОТЕ (пульт показывает это в «Справка» → «Что нового» → «Бот»; V — версия, n/u/f — новое/улучшено/исправлено)
+// V|4.7|17 ноября 2026
+// u|«🛠 Админ» с числами: «📥 Вопросы (3)», «📊 Сегодня (12)», «👥 Пользователи (+5)», «🛟 Помощники (2)», ошибки за сутки — сразу видно, куда смотреть
 // V|4.6|17 ноября 2026
 // u|У владельца под списком тем — кнопка «🛠 Админ» (в приветствии, «Другие темы» и других меню); /start показывает и темы, и кнопку
 // V|4.5|17 ноября 2026
@@ -324,6 +326,7 @@ async function remember(env, u) { // кто писал боту — для ра�
   if (!users.includes(u.id) && !(await kget(env, 'stop', [])).includes(u.id)) { users.push(u.id); await kput(env, 'users', users.slice(-50000)) }
   // Карточка: пишем не чаще раза в 6 часов (бесплатный Cloudflare KV — 1000 записей в день)
   const k = 'u:' + u.id, c = await kget(env, k, null)
+  if (!c) { const nk = 'nu:' + new Date().toISOString().slice(0, 10); await kput(env, nk, (await kget(env, nk, 0)) + 1, 3 * 86400) } // новые за день — для «🛠 Админ»
   if (!c || now() - (c.last || 0) > 6 * 3600000 || c.name !== (u.first_name || '') || c.un !== (u.username || '')) {
     await kput(env, k, { id: u.id, name: [u.first_name, u.last_name].filter(Boolean).join(' ').slice(0, 40), un: u.username || '', lang: u.language_code || '', first: c?.first || now(), last: now(), visits: (c?.visits || 0) + 1 })
   }
@@ -581,9 +584,16 @@ const ADMIN_SECS = { // «🛠 Админ» по разделам
   bot: ['⚙️ Управление ботом', [[{ text: '⚙️ Функции', callback_data: 'ad:feat' }, { text: '💾 Копия данных', callback_data: 'ad:backup' }], [{ text: '🧩 Темы из бота', callback_data: 'ad:kt' }]]] }
 const adminKb = () => ({ inline_keyboard: [[{ text: '📥 Вопросы', callback_data: 'ad:q' }, { text: '📊 Сегодня', callback_data: 'ad:today' }], ...Object.entries(ADMIN_SECS).map(([k, v]) => [{ text: v[0], callback_data: 'ad:sec:' + k }])] })
 async function adminMenu(env, cfg, chat, edit) {
-  const q = (await kget(env, 'q', [])).filter(x => !x.ans).length
-  const text = `🛠 Панель админа\n\nЖдут ответа: ${q}\nНажмите кнопку 👇`
-  const kb = adminKb(); if (cfg.features.adminApp && cfg.features.miniapp) kb.inline_keyboard.unshift([{ text: '📱 Открыть админ-панель', web_app: { url: await adminAppUrl(env) } }])
+  // Числа на кнопках: вопросы без ответа, новые люди за сутки, вопросы сегодня, ошибки бота
+  const day = new Date().toISOString().slice(0, 10), q = (await kget(env, 'q', [])).filter(x => !x.ans).length
+  const fresh = await kget(env, 'nu:' + day, 0), asked = Object.values(await kget(env, 'st:' + day, {})).reduce((a, b) => a + b, 0)
+  const errs = cfg.features.syslog ? (await errList(env)).filter(e => now() - e.at < 86400000).length : 0, hs = (await kget(env, 'helpers', [])).length
+  const n = v => v ? ` (${v})` : ''
+  const text = `🛠 Панель админа\n\n📥 Ждут ответа: ${q}\n👥 Новых за сегодня: ${fresh}\n💬 Вопросов боту сегодня: ${asked}${errs ? `\n⚠️ Ошибок за сутки: ${errs}` : ''}\n\nНажмите кнопку 👇`
+  const kb = { inline_keyboard: [[{ text: '📥 Вопросы' + n(q), callback_data: 'ad:q' }, { text: '📊 Сегодня' + n(asked), callback_data: 'ad:today' }],
+    [{ text: '👥 Пользователи' + (fresh ? ` (+${fresh})` : ''), callback_data: 'ad:users' }, { text: '🛟 Помощники' + n(hs), callback_data: 'ad:helpers' }],
+    ...Object.entries(ADMIN_SECS).map(([k, v]) => [{ text: v[0] + (k === 'rep' && errs ? ` (⚠️ ${errs})` : k === 'ppl' && q ? ` (${q})` : ''), callback_data: 'ad:sec:' + k }])] }
+  if (cfg.features.adminApp && cfg.features.miniapp) kb.inline_keyboard.unshift([{ text: '📱 Открыть админ-панель', web_app: { url: await adminAppUrl(env) } }])
   if (edit) return tg(env, 'editMessageText', { chat_id: chat, message_id: edit, text, reply_markup: kb })
   return tg(env, 'sendMessage', { chat_id: chat, text, reply_markup: kb })
 }
