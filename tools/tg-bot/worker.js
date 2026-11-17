@@ -25,6 +25,8 @@
 //   его ответ на пересланное сообщение бот отправит человеку; счёт, какие темы спрашивают чаще.
 
 // ЧТО НОВОГО В БОТЕ (пульт показывает это в «Справка» → «Что нового» → «Бот»; V — версия, n/u/f — новое/улучшено/исправлено)
+// V|4.5|17 ноября 2026
+// n|/admin: у владельца — возвращает кнопку «🛠 Админ» внизу; если номер владельца не задан — подсказывает ваш номер и где его вписать
 // V|4.4|17 ноября 2026
 // u|Мини-приложение выключено по умолчанию: кнопки «APEX» и «📱 Открыть APEX» убраны, бот снова с кнопками тем и всеми командами; у людей старая кнопка внизу пропадает сама. Включается в пульте или /settings («📱 Мини-приложение»)
 // V|4.3|17 ноября 2026
@@ -868,6 +870,9 @@ async function onMessage(env, m) {
   if (owner && cmd === '/user' && /^\d+$/.test(arg || '')) { const c = await userCard(env, arg); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: c.text, reply_markup: { inline_keyboard: c.rows } }) }
   if (cmd === '/ads' && cfg.features.adstats) { const st = await adsStats(env, 7), y = st[0], w = st.reduce((a, b) => a + b.ads, 0)
     return tg(env, 'sendMessage', { chat_id: m.chat.id, text: y ? `🛡 Реклама и трекеры, заблокированные APEX CLIENT\n\nВчера: ${y.ads.toLocaleString('ru')} (на ${y.devs} телефонах)\nЗа 7 дней: ${w.toLocaleString('ru')}\n\nСчитаются только числа — без имён, номеров и адресов сайтов.` : '🛡 Счётчик рекламы пока собирает данные — загляните завтра.' }) }
+  // Владелец не задан — /admin подсказывает номер, который нужно вписать (в меню сервера или Cloudflare). Когда задан — чужим «Такой команды нет»
+  if ((cmd === '/admin' || cmd === '/myid') && !env.OWNER_ID) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: `🛠 Номер владельца у бота не задан, поэтому кнопки «🛠 Админ» нет ни у кого.\n\nВаш номер в Telegram: ${m.from.id}\n\nВпишите его: на сервере — sudo apex → «Настройки» → «Номер владельца»; на Cloudflare — переменная OWNER_ID. Потом напишите /start.` })
+  if (owner && cmd === '/admin') return tg(env, 'sendMessage', { chat_id: m.chat.id, text: '🛠 Кнопка «🛠 Админ» — внизу 👇', reply_markup: ADMIN_KB })
   if (owner && cmd === '/today') return tg(env, 'sendMessage', { chat_id: m.chat.id, text: await todayText(env), reply_markup: { inline_keyboard: [[{ text: '📥 Вопросы', callback_data: 'ad:q' }, { text: '🛠 Админ', callback_data: 'ad:menu' }]] } })
   if (owner && cmd === '/queue') { const q = (await kget(env, 'q', [])).filter(x => !x.ans).slice(-8).reverse(); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: q.length ? `📥 Без ответа: ${q.length}` : '📥 Вопросов без ответа нет 👍', reply_markup: { inline_keyboard: q.map((x, i) => [{ text: `${i + 1}. ${(x.name || 'человек').slice(0, 16)}: ${(x.text || x.kind || '').slice(0, 24)}`, callback_data: 'ad:qo:' + x.id }]) } }) }
   if (owner && cmd === '/top') { const t = await topScreen(env, cfg); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: t.text, reply_markup: { inline_keyboard: t.rows } }) }
