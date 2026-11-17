@@ -142,6 +142,7 @@ else {
   if (!to(1).some(t => /Из мини-приложения от[\s\S]*зелёный экран/.test(t)) || !to(76).some(t => /Передал в поддержку/.test(t))) fail('мини-приложение → вопрос: не дошёл до владельца')
   if (!to(1).some(t => /Форма из мини-приложения[\s\S]*Pixel 7[\s\S]*3\.22\.1[\s\S]*вылетает/.test(t))) fail('мини-приложение → форма: не дошла')
   if (!to(78).some(t => /записал жалобу на «Франция»/.test(t))) fail('мини-приложение → жалоба на сервер: не записана')
+  { const g = sent.filter(x => x[0] === 'sendMessage' && x[1] === 1 && /Выберите тему|Привет/.test(x[2] || '')); if (!g.length) fail('владелец: /start без списка тем') }
   if (!to(79).some(t => /Всё — в кнопке «📱 APEX» внизу/.test(t))) fail('«Всё в мини-приложении»: нет приветствия с кнопкой')
   { const kv = JSON.parse(fs.readFileSync(path.join(tmp, 'data/kv.json'), 'utf8')), cp = JSON.parse(kv.chposts || '[]')
     if (!cp.some(x => x.id === 501 && /3\.23\.0/.test(x.text)) || cp.some(x => x.id === 502)) fail('новости канала: пост своего канала не сохранён или сохранён чужой') }
@@ -278,7 +279,10 @@ fs.rmSync(tmp, { recursive: true, force: true })
     await upd(1); await upd(2)
     const rm = sent2.filter(x => x[0] === 'sendMessage' && x[1].reply_markup?.remove_keyboard)
     if (rm.length !== 1 || !sent2.some(x => x[0] === 'deleteMessage' && x[1].message_id === 77)) fail('мини-приложение выключено: старая кнопка внизу не убрана (или убирается каждый раз) ' + rm.length)
-    if (sent2.some(x => JSON.stringify(x[1].reply_markup || {}).includes('web_app'))) fail('мини-приложение выключено, а бот показывает кнопку мини-приложения') }
+    if (sent2.some(x => JSON.stringify(x[1].reply_markup || {}).includes('web_app'))) fail('мини-приложение выключено, а бот показывает кнопку мини-приложения')
+    sent2.length = 0; await w2.fetch(new Request('https://bot.example/tg', { method: 'POST', headers: { 'x-telegram-bot-api-secret-token': env.WEBHOOK_SECRET }, body: JSON.stringify({ update_id: 9, message: { message_id: 9, chat: { id: 1, type: 'private' }, from: { id: 1, first_name: 'O' }, text: '/start' } }) }), env2)
+    if (!sent2.some(x => (x[1].reply_markup?.inline_keyboard || []).flat().some(b => b.callback_data === 'ad:menu' && /Админ/.test(b.text)))) fail('владелец: под темами нет кнопки «🛠 Админ»')
+    if (!sent2.some(x => JSON.stringify(x[1].reply_markup?.keyboard || []).includes('🛠 Админ'))) fail('владелец: внизу нет кнопки «🛠 Админ»') }
   globalThis.fetch = realFetch
 }
 console.log(errs.length ? `✗ Бот и меню: ошибок ${errs.length}` : '✓ Бот и меню — без ошибок')

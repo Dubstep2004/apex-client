@@ -25,6 +25,8 @@
 //   его ответ на пересланное сообщение бот отправит человеку; счёт, какие темы спрашивают чаще.
 
 // ЧТО НОВОГО В БОТЕ (пульт показывает это в «Справка» → «Что нового» → «Бот»; V — версия, n/u/f — новое/улучшено/исправлено)
+// V|4.6|17 ноября 2026
+// u|У владельца под списком тем — кнопка «🛠 Админ» (в приветствии, «Другие темы» и других меню); /start показывает и темы, и кнопку
 // V|4.5|17 ноября 2026
 // n|/admin: у владельца — возвращает кнопку «🛠 Админ» внизу; если номер владельца не задан — подсказывает ваш номер и где его вписать
 // V|4.4|17 ноября 2026
@@ -244,7 +246,9 @@ const fill = (cfg, t) => t.replaceAll('{сайт}', SITE).replaceAll('{подд�
 const topicsOf = (cfg, en) => en ? FAQ_EN : cfg.topics
 const appUrl = en => SITE + '/app/?' + (meName ? 'bot=' + meName + '&' : '') + 'bv=4&' + (en ? 'lang=en' : 'lang=ru') // bv — бот умеет принимать действия из мини-приложения // мини-приложение знает, в какого бота вести кнопки
 const userKb = (en, uid) => ({ keyboard: [[{ text: en ? '📱 APEX — everything here' : '📱 APEX — всё здесь', web_app: { url: appUrl(en) + (uid ? '&u=' + uid : '') } }]], resize_keyboard: true, is_persistent: true }) // кнопка внизу: из неё мини-приложение может прислать боту данные
-const menu = (cfg, en) => cfg.features.appFirst && cfg.features.miniapp ? { inline_keyboard: [[{ text: en ? '📱 Open APEX' : '📱 Открыть APEX', web_app: { url: appUrl(en) } }]] } : ({ inline_keyboard: [...topicsOf(cfg, en).map(f => [{ text: f.title, callback_data: (en ? 'faqen:' : 'faq:') + f.id }]), ...(cfg.features.video ? [[{ text: en ? '🎬 Video guide' : '🎬 Видеоинструкция', callback_data: 'vid' }]] : []), ...(cfg.features.miniapp ? [[{ text: en ? '📱 Open APEX' : '📱 Открыть APEX', web_app: { url: appUrl(en) } }]] : [])] })
+// owner — внизу списка тем кнопка «🛠 Админ» (видна только владельцу)
+const menu = (cfg, en, owner) => withAdmin(cfg, owner, cfg.features.appFirst && cfg.features.miniapp ? { inline_keyboard: [[{ text: en ? '📱 Open APEX' : '📱 Открыть APEX', web_app: { url: appUrl(en) } }]] } : ({ inline_keyboard: [...topicsOf(cfg, en).map(f => [{ text: f.title, callback_data: (en ? 'faqen:' : 'faq:') + f.id }]), ...(cfg.features.video ? [[{ text: en ? '🎬 Video guide' : '🎬 Видеоинструкция', callback_data: 'vid' }]] : []), ...(cfg.features.miniapp ? [[{ text: en ? '📱 Open APEX' : '📱 Открыть APEX', web_app: { url: appUrl(en) } }]] : [])] }))
+const withAdmin = (cfg, owner, kb) => owner && cfg.features.admin ? { inline_keyboard: [...kb.inline_keyboard, [{ text: '🛠 Админ', callback_data: 'ad:menu' }]] } : kb
 const after = (cfg, en) => ({ inline_keyboard: [[{ text: en ? EN.other : '📋 Другие темы', callback_data: en ? 'menuen' : 'menu' }], ...(cfg.features.human && cfg.features.forward && cfg.hasOwner ? [[{ text: en ? '🙋 Ask a human' : '🙋 Позвать человека', callback_data: 'human' }]] : []), [{ text: en ? EN.support : '💬 Написать в поддержку', url: cfg.support }]] })
 const isNight = () => { const h = new Date(now() + 3 * 3600000).getUTCHours(); return h < 9 } // 0:00–8:59 МСК
 async function fakeWarn(env, cfg, en) { if (!cfg.features.fakewarn) return ''; const n = await botName(env); return n ? (en ? `\n\n🛡 The only official bot is @${n}. Support never asks for passwords, SMS codes or payment in private messages.` : `\n\n🛡 Официальный бот — только @${n}. Поддержка никогда не просит пароль, код из СМС или оплату в личке.`) : '' }
@@ -921,7 +925,7 @@ async function onMessage(env, m) {
     if (arg && /^v\d{1,3}_\d{1,3}(_\d{1,3})?$/.test(arg) && !owner) {
       const v = arg.slice(1).replaceAll('_', '.'), last = cfg.features.version ? await latestVersion() : ''
       const old = last && vcmp(v, last) < 0
-      return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? `👋 Hi! You came from the app, version ${v}.${old ? `\n⬆️ There is a newer one — ${last}: ${SITE}/update/` : ''}\nChoose a topic or describe the problem — I will pass it to support.` : `👋 Здравствуйте! Вы из приложения, версия ${v}.${old ? `\n⬆️ Есть новее — ${last}: ${SITE}/update/` : ''}\nВыберите тему или опишите проблему — передам в поддержку.`, reply_markup: menu(cfg, en) })
+      return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? `👋 Hi! You came from the app, version ${v}.${old ? `\n⬆️ There is a newer one — ${last}: ${SITE}/update/` : ''}\nChoose a topic or describe the problem — I will pass it to support.` : `👋 Здравствуйте! Вы из приложения, версия ${v}.${old ? `\n⬆️ Есть новее — ${last}: ${SITE}/update/` : ''}\nВыберите тему или опишите проблему — передам в поддержку.`, reply_markup: menu(cfg, en, owner) })
     }
     if (arg && /^ref_\d+$/.test(arg) && cfg.features.invite && String(m.from.id) !== arg.slice(4)) {
       const k = 'ref:' + m.from.id
@@ -934,17 +938,17 @@ async function onMessage(env, m) {
           else await tg(env, 'sendMessage', { chat_id: env.OWNER_ID, text: `🎁 ${nm} пригласил уже ${rc[rid]} друзей. Начислить бонус?`, reply_markup: { inline_keyboard: [[{ text: `🎁 +${rb.days} дней подписки`, callback_data: 'ad:rb:' + rid }], [{ text: '👤 Карточка', callback_data: 'ad:uc:' + rid }]] } })
         } }
     }
-    if (owner && cfg.features.admin && !arg) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: '👋 Вы владелец бота. Кнопка «🛠 Админ» внизу — панель управления. Её видите только вы.', reply_markup: ADMIN_KB })
+    if (owner && cfg.features.admin && !arg) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: '👋 Вы владелец бота — кнопка «🛠 Админ» внизу 👇 Её видите только вы.', reply_markup: ADMIN_KB }).then(() => tg(env, 'sendMessage', { chat_id: m.chat.id, text: (en ? EN.greeting : fill(cfg, cfg.greeting)), reply_markup: menu(cfg, en, owner) }))
     const f = arg && cfg.features.deeplinks && topicsOf(cfg, en).find(t => t.id === arg)
     if (f) return answer(env, cfg, m.chat.id, f, en)
     if (cfg.features.appFirst && cfg.features.miniapp) { await botName(env); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: (en ? '👋 Hi! Everything is in the «📱 APEX» button below: server status, help, your subscription, invite link, TV.\nOr just type your question here.' : '👋 Привет! Всё — в кнопке «📱 APEX» внизу: статус серверов, помощь, подписка, ссылка для друзей, телевизор.\nИли просто напишите вопрос сюда.') + await fakeWarn(env, cfg, en), reply_markup: userKb(en, m.from.id) }) }
-    return tg(env, 'sendMessage', { chat_id: m.chat.id, text: (en ? EN.greeting : fill(cfg, cfg.greeting)) + await fakeWarn(env, cfg, en), reply_markup: menu(cfg, en) })
+    return tg(env, 'sendMessage', { chat_id: m.chat.id, text: (en ? EN.greeting : fill(cfg, cfg.greeting)) + await fakeWarn(env, cfg, en), reply_markup: menu(cfg, en, owner) })
   }
   if (cmd === '/help' || (!text && !m.photo && !m.document && !m.voice && !m.video && !m.video_note)) {
-    return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? EN.greeting : fill(cfg, cfg.greeting), reply_markup: menu(cfg, en) })
+    return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? EN.greeting : fill(cfg, cfg.greeting), reply_markup: menu(cfg, en, owner) })
   }
   // Незнакомая или выключенная команда — не пересылаем владельцу, показываем темы
-  if (text.startsWith('/')) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? EN.pick : 'Такой команды нет 🙂 Выберите тему:', reply_markup: menu(cfg, en) })
+  if (text.startsWith('/')) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? EN.pick : 'Такой команды нет 🙂 Выберите тему:', reply_markup: menu(cfg, en, owner) })
   // Фото, голосовые, файлы — владельцу
   const kind = m.photo ? 'скриншот' : m.voice || m.video_note ? 'голосовое' : m.document ? 'файл' : m.video ? 'видео' : ''
   if (kind && !(cfg.features.form && env.APEX_KV && await kget(env, 'pf:' + m.from.id, null))) { if (cfg.features.media && await forwardToOwner(env, cfg, m, en, kind)) return; return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? EN.notFound : fill(cfg, cfg.notFound), reply_markup: after(cfg, en) }) }
@@ -989,7 +993,7 @@ async function onMessage(env, m) {
   if (f) return answer(env, cfg, m.chat.id, f, en)
   await count(env, cfg, '_miss')
   if (!owner && await forwardToOwner(env, cfg, m, en, 'text')) return
-  return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? EN.notFound : fill(cfg, cfg.notFound), reply_markup: { inline_keyboard: [...menu(cfg, en).inline_keyboard, [{ text: en ? EN.support : '💬 Написать в поддержку', url: cfg.support }]] } })
+  return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? EN.notFound : fill(cfg, cfg.notFound), reply_markup: { inline_keyboard: [...menu(cfg, en, owner).inline_keyboard, [{ text: en ? EN.support : '💬 Написать в поддержку', url: cfg.support }]] } })
 }
 // Подписка (Remnawave): адрес и токен — только в настройках бота (REMNA_URL, REMNA_TOKEN), никогда в ответах; ссылку подписки не показываем
 const remnaOn = env => /^https:\/\//.test(env.REMNA_URL || '') && !!env.REMNA_TOKEN
@@ -1296,7 +1300,7 @@ export default {
           }
           else if (d === 'vid') { const cfg = await config(env); await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id }); if (cfg.features.video) await sendHowto(env, cq.message.chat.id, isEn(cfg, cq.from)) }
           else if (d === 'human') { const cfg = await config(env), en = isEn(cfg, cq.from); await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id }); if (cfg.features.human) { await kput(env, 'hw:' + cq.from.id, 1, 1800); await tg(env, 'sendMessage', { chat_id: cq.message.chat.id, text: en ? '🙋 Write your question in one message — I will pass it to a person.' : '🙋 Напишите вопрос одним сообщением — передам человеку из поддержки.' }) } }
-          else if (d === 'menu' || d === 'menuen') { const cfg = await config(env), en = d === 'menuen'; await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id }); await tg(env, 'sendMessage', { chat_id: cq.message.chat.id, text: en ? EN.pick : 'Выберите тему:', reply_markup: menu(cfg, en) }) }
+          else if (d === 'menu' || d === 'menuen') { const cfg = await config(env), en = d === 'menuen'; await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id }); await tg(env, 'sendMessage', { chat_id: cq.message.chat.id, text: en ? EN.pick : 'Выберите тему:', reply_markup: menu(cfg, en, owner) }) }
           else if (d.startsWith('faq:') || d.startsWith('faqen:')) {
             const en = d.startsWith('faqen:'), cfg = await config(env), f = topicsOf(cfg, en).find(x => x.id === d.slice(en ? 6 : 4))
             await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id })
