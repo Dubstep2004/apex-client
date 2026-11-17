@@ -26,6 +26,7 @@
 
 // ЧТО НОВОГО В БОТЕ (пульт показывает это в «Справка» → «Что нового» → «Бот»; V — версия, n/u/f — новое/улучшено/исправлено)
 // V|4.9|17 ноября 2026
+// u|PRO-панель владельца: цветные кнопки, разделы по два в ряд, строка «🟢 Всё отвечено / 🔴 Ждут ответа», «🔄 Обновить»; внизу — «👑 Панель» и «📥 Вопросы»
 // f|Кнопка «👑 Панель владельца» под картинкой не открывалась — теперь панель приходит новым сообщением (так же разделы тем и настройки под картинкой)
 // n|PRO-картинки: приветствие, «Режим владельца» и каждая тема приходят с фирменной обложкой; выключается в «Возможности бота» (своя картинка темы из пульта — главнее)
 // u|PRO-оформление: темы по две в ряд, заголовок «🛡 APEX CLIENT · поддержка» с разделителем; у владельца /start — одна карточка «👑 Режим владельца» с цифрами и кнопка «👑 Панель владельца» под темами
@@ -545,14 +546,16 @@ async function topScreen(env, cfg) { // частые вопросы + отвеч
 }
 
 // ── Панель админа: всё кнопками. Видна и работает только у владельца (OWNER_ID)
-const ADMIN_KB = { keyboard: [[{ text: '🛠 Админ' }]], resize_keyboard: true, is_persistent: true }
+const KB_PANEL = { text: '👑 Панель', style: 'primary' }, KB_Q = { text: '📥 Вопросы', style: 'success' } // цвет кнопок — Bot API (style), старые Telegram покажут обычные
+const ADMIN_KB = { keyboard: [[KB_PANEL, KB_Q]], resize_keyboard: true, is_persistent: true, input_field_placeholder: 'Ответьте человеку или откройте 👑 Панель' }
+const KB_TEXTS = new Set(['👑 Панель', '🛠 Админ']) // «🛠 Админ» — старая кнопка, у кого она ещё осталась
 // Админ-панель в мини-приложении: кнопка рядом с «🛠 Админ» — только у владельца. Данные мини-приложение берёт у бота по https,
 // каждый запрос подписан Telegram (initData) и проверяется здесь: чужой номер — отказ. Без https-адреса — кнопки открывают панель в чате.
 let pubOrigin = ''
 async function apiBase(env) { if (/^https:\/\//.test(env.BOT_PUBLIC_URL || '')) return env.BOT_PUBLIC_URL.replace(/\/+$/, ''); if (!pubOrigin) pubOrigin = await kget(env, 'origin', ''); return pubOrigin }
 async function refreshAdminKb(env, cfg) {
-  if (!(cfg.features.adminApp && cfg.features.miniapp)) { ADMIN_KB.keyboard = [[{ text: '🛠 Админ' }]]; return }
-  ADMIN_KB.keyboard = [[{ text: '🛠 Админ' }, { text: '📱 Админ-панель', web_app: { url: await adminAppUrl(env) } }]]
+  if (!(cfg.features.adminApp && cfg.features.miniapp)) { ADMIN_KB.keyboard = [[KB_PANEL, KB_Q]]; return }
+  ADMIN_KB.keyboard = [[KB_PANEL, KB_Q], [{ text: '📱 Админ-панель', web_app: { url: await adminAppUrl(env) } }]]
 }
 // Кнопка внизу (клавиатура) открывает мини-приложение без подписи Telegram — оно умеет только «открыть экран в чате».
 // Полная панель — кнопкой в сообщении «🛠 Админ» (у неё подпись есть, бот её проверяет)
@@ -607,28 +610,33 @@ const ADMIN_SECS = { // «🛠 Админ» по разделам
   bc: ['📣 Рассылки и канал', [[{ text: '📣 Рассылка', callback_data: 'ad:bc' }, { text: '📊 Опрос', callback_data: 'ad:poll' }], [{ text: '📊 Итоги опросов', callback_data: 'ad:pres' }, { text: '📢 Пост в канал', callback_data: 'ad:post' }], [{ text: '🎁 Конкурсы', callback_data: 'ad:contests' }]]],
   bot: ['⚙️ Управление ботом', [[{ text: '⚙️ Функции', callback_data: 'ad:feat' }, { text: '💾 Копия данных', callback_data: 'ad:backup' }], [{ text: '🧩 Темы из бота', callback_data: 'ad:kt' }]]] }
 const adminKb = () => ({ inline_keyboard: [[{ text: '📥 Вопросы', callback_data: 'ad:q' }, { text: '📊 Сегодня', callback_data: 'ad:today' }], ...Object.entries(ADMIN_SECS).map(([k, v]) => [{ text: v[0], callback_data: 'ad:sec:' + k }])] })
+async function newKb(env, chat) { // новая нижняя панель — один раз (и тем, у кого осталась старая «🛠 Админ»)
+  if (await kget(env, 'akb2', null)) return
+  await tg(env, 'sendMessage', { chat_id: chat, text: '⌨️ Внизу теперь «👑 Панель» и «📥 Вопросы»', reply_markup: ADMIN_KB }); await kput(env, 'akb2', 1)
+}
 async function adminMenu(env, cfg, chat, edit) {
   // Числа на кнопках: вопросы без ответа, новые люди за сутки, вопросы сегодня, ошибки бота
   const day = new Date().toISOString().slice(0, 10), q = (await kget(env, 'q', [])).filter(x => !x.ans).length
   const fresh = await kget(env, 'nu:' + day, 0), asked = Object.values(await kget(env, 'st:' + day, {})).reduce((a, b) => a + b, 0)
   const errs = cfg.features.syslog ? (await errList(env)).filter(e => now() - e.at < 86400000).length : 0, hs = (await kget(env, 'helpers', [])).length
   const n = v => v ? ` (${v})` : '', pz = cfg.features.pause ? await pausedUntil(env) : 0
-  const text = `👑 ${BOLD('APEX')} · Панель владельца\n━━━━━━━━━━━━━━━\n📥 Ждут ответа: ${q}\n👥 Новых за сегодня: ${fresh}\n💬 Вопросов боту сегодня: ${asked}${errs ? `\n⚠️ Ошибок за сутки: ${errs}` : ''}${pz ? `\n⏸ Пауза до ${mskTime(pz)} МСК` : ''}\n━━━━━━━━━━━━━━━\nВыберите раздел 👇`
-  const kb = { inline_keyboard: [[{ text: '📥 Вопросы' + n(q), callback_data: 'ad:q' }, { text: '📊 Сегодня' + n(asked), callback_data: 'ad:today' }],
+  const text = `👑 ${BOLD('APEX')} · Панель владельца\n━━━━━━━━━━━━━━━\n📥 Ждут ответа: ${q}\n👥 Новых за сегодня: ${fresh}\n💬 Вопросов боту сегодня: ${asked}${errs ? `\n⚠️ Ошибок за сутки: ${errs}` : ''}\n━━━━━━━━━━━━━━━\n${pz ? `⏸ Поддержка на паузе до ${mskTime(pz).slice(6)} МСК` : q ? `🔴 Ждут ответа — начните с «📥 Вопросы»` : '🟢 Всё отвечено'}\n🕒 ${mskTime(now()).slice(6)} МСК · выберите раздел 👇`
+  const kb = { inline_keyboard: [[{ text: '📥 Вопросы' + n(q), callback_data: 'ad:q', style: q ? 'danger' : 'primary' }, { text: '📊 Сегодня' + n(asked), callback_data: 'ad:today', style: 'primary' }],
     [{ text: '👥 Пользователи' + (fresh ? ` (+${fresh})` : ''), callback_data: 'ad:users' }, { text: '🛟 Помощники' + n(hs), callback_data: 'ad:helpers' }],
-    ...(cfg.features.pause ? [[{ text: pz ? `▶️ Пауза до ${mskTime(pz).slice(6)} — снять` : '⏸ Пауза поддержки', callback_data: pz ? 'ad:pz:off' : 'ad:pause' }]] : []),
-    ...Object.entries(ADMIN_SECS).map(([k, v]) => [{ text: v[0] + (k === 'rep' && errs ? ` (⚠️ ${errs})` : k === 'ppl' && q ? ` (${q})` : ''), callback_data: 'ad:sec:' + k }])] }
+    ...(cfg.features.pause ? [[{ text: pz ? `▶️ Пауза до ${mskTime(pz).slice(6)} — снять` : '⏸ Пауза поддержки', callback_data: pz ? 'ad:pz:off' : 'ad:pause', ...(pz ? { style: 'success' } : {}) }]] : []),
+    ...pairs(Object.entries(ADMIN_SECS).map(([k, v]) => ({ text: v[0].replace(/ и (контроль|канал)$| с людьми$| ботом$/, '').replace('Управление', 'Бот').replace('Работа', 'Люди') + (k === 'rep' && errs ? ` ⚠️${errs}` : ''), callback_data: 'ad:sec:' + k, ...(k === 'rep' && errs ? { style: 'danger' } : {}) }))),
+    [{ text: '🔄 Обновить', callback_data: 'ad:menu' }]] }
   if (cfg.features.adminApp && cfg.features.miniapp) kb.inline_keyboard.unshift([{ text: '📱 Открыть админ-панель', web_app: { url: await adminAppUrl(env) } }])
   if (edit) return tg(env, 'editMessageText', { chat_id: chat, message_id: edit, text, reply_markup: kb })
   return tg(env, 'sendMessage', { chat_id: chat, text, reply_markup: kb })
 }
 async function adminScreen(env, cfg, chat, mid, text, rows) { // один экран: текст + кнопки + «Назад», правим то же сообщение
-  return tg(env, 'editMessageText', { chat_id: chat, message_id: mid, text: text.slice(0, 4000), disable_web_page_preview: true, reply_markup: { inline_keyboard: [...(rows || []), back] } })
+  return tg(env, mid ? 'editMessageText' : 'sendMessage', { chat_id: chat, ...(mid ? { message_id: mid } : {}), text: text.slice(0, 4000), disable_web_page_preview: true, reply_markup: { inline_keyboard: [...(rows || []), back] } })
 }
 async function onAdmin(env, cfg, cq, d) {
   const chat = cq.message.chat.id, mid = cq.message.message_id, [, act, arg] = d.split(':')
   const boss = String(cq.from.id) === String(env.OWNER_ID), wk = boss ? 'await' : 'await:' + cq.from.id, by = boss ? '' : 'помощник ' + (cq.from.username ? '@' + cq.from.username : cq.from.first_name || cq.from.id)
-  await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id })
+  if (cq.id) await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id })
   if (!boss) { if (!HELPER_ACTS.has(act) || !await isHelper(env, cfg, cq.from.id)) return; if (act === 'menu') return helperMenu(env, chat, mid, cq.from.id) }
   if (act === 'hme') { const my = (await kget(env, 'q', [])).filter(x => x.by === by && x.ansAt > now() - 7 * 86400000); return adminScreen(env, cfg, chat, mid, `📈 Ваши ответы за 7 дней: ${my.length}` + (my.length ? '\n\n' + my.slice(-5).reverse().map(x => `• ${x.name}: ${(x.text || '').slice(0, 40)}`).join('\n') : '')) }
   if (act === 'helpers') { // список помощников, кто сколько ответил, добавить и убрать
@@ -773,7 +781,7 @@ async function onAdmin(env, cfg, cq, d) {
   if (act === 'rst') {
     if (!env.RESTART || !cfg.features.syslog) return adminScreen(env, cfg, chat, mid, 'Перезапуск есть только на своём сервере')
     if (arg !== 'ok') return adminScreen(env, cfg, chat, mid, '♻️ Перезапустить бота? Он вернётся через несколько секунд.', [[{ text: '♻️ Да, перезапустить', callback_data: 'ad:rst:ok' }]])
-    await adminScreen(env, cfg, chat, mid, '♻️ Перезапускаю… Через несколько секунд нажмите «🛠 Админ».'); env.RESTART(); return
+    await adminScreen(env, cfg, chat, mid, '♻️ Перезапускаю… Через несколько секунд нажмите «👑 Панель».'); env.RESTART(); return
   }
   if (act === 'poll') { // опрос из бота: вопрос и варианты одним сообщением
     if (!cfg.features.polls) return adminScreen(env, cfg, chat, mid, '📊 Опросы выключены — включите в «⚙️ Функции»')
@@ -893,7 +901,8 @@ async function onMessage(env, m) {
   // ── Панель админа на кнопках (только владелец)
   if (owner && cfg.features.admin) {
     await refreshAdminKb(env, cfg)
-    if (text === '🛠 Админ' || cmd === '/admin') return adminMenu(env, cfg, m.chat.id)
+    if (KB_TEXTS.has(text) || cmd === '/admin') { await newKb(env, m.chat.id); return adminMenu(env, cfg, m.chat.id) }
+    if (text === KB_Q.text) return onAdmin(env, cfg, { id: '', from: m.from, message: { chat: m.chat, message_id: 0 } }, 'ad:q')
     const wait = await kget(env, 'await', null)
     if (wait && text && !m.reply_to_message && !text.startsWith('/') && text !== '❌ Отмена') return adminInput(env, cfg, m.chat.id, wait, text)
     if (wait && (text === '❌ Отмена' || text === '/cancel')) { await kput(env, 'await', null); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: 'Отменено', reply_markup: ADMIN_KB }) }
@@ -918,7 +927,7 @@ async function onMessage(env, m) {
   // Владелец не задан — /admin подсказывает номер, который нужно вписать (в меню сервера или Cloudflare). Когда задан — чужим «Такой команды нет»
   if ((cmd === '/admin' || cmd === '/myid') && !env.OWNER_ID) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: `🛠 Номер владельца у бота не задан, поэтому кнопки «🛠 Админ» нет ни у кого.\n\nВаш номер в Telegram: ${m.from.id}\n\nВпишите его: на сервере — sudo apex → «Настройки» → «Номер владельца»; на Cloudflare — переменная OWNER_ID. Потом напишите /start.` })
   if (owner && cmd === '/pause' && cfg.features.pause) return pauseScreen(env, m.chat.id)
-  if (owner && cmd === '/admin') return tg(env, 'sendMessage', { chat_id: m.chat.id, text: '🛠 Кнопка «🛠 Админ» — внизу 👇', reply_markup: ADMIN_KB })
+  if (owner && cmd === '/admin') return tg(env, 'sendMessage', { chat_id: m.chat.id, text: '⌨️ Внизу — «👑 Панель» и «📥 Вопросы» 👇', reply_markup: ADMIN_KB })
   if (owner && cmd === '/today') return tg(env, 'sendMessage', { chat_id: m.chat.id, text: await todayText(env), reply_markup: { inline_keyboard: [[{ text: '📥 Вопросы', callback_data: 'ad:q' }, { text: '🛠 Админ', callback_data: 'ad:menu' }]] } })
   if (owner && cmd === '/queue') { const q = (await kget(env, 'q', [])).filter(x => !x.ans).slice(-8).reverse(); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: q.length ? `📥 Без ответа: ${q.length}` : '📥 Вопросов без ответа нет 👍', reply_markup: { inline_keyboard: q.map((x, i) => [{ text: `${i + 1}. ${(x.name || 'человек').slice(0, 16)}: ${(x.text || x.kind || '').slice(0, 24)}`, callback_data: 'ad:qo:' + x.id }]) } }) }
   if (owner && cmd === '/top') { const t = await topScreen(env, cfg); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: t.text, reply_markup: { inline_keyboard: t.rows } }) }
@@ -981,9 +990,9 @@ async function onMessage(env, m) {
         } }
     }
     if (owner && cfg.features.admin && !arg) { // карточка владельца: одна, с цифрами; кнопку «🛠 Админ» внизу ставим один раз
-      if (!(await kget(env, 'akb', null))) { await tg(env, 'sendMessage', { chat_id: m.chat.id, text: '⌨️ Кнопка «🛠 Админ» теперь всегда внизу', reply_markup: ADMIN_KB }); await kput(env, 'akb', 1) }
+      await newKb(env, m.chat.id)
       const day = new Date().toISOString().slice(0, 10), q = (await kget(env, 'q', [])).filter(x => !x.ans).length, fresh = await kget(env, 'nu:' + day, 0), asked = Object.values(await kget(env, 'st:' + day, {})).reduce((a, b) => a + b, 0)
-      return sendPic(env, m.chat.id, picOf(cfg, 'owner'), `👑 ${BOLD('APEX')} · РЕЖИМ ВЛАДЕЛЬЦА\n━━━━━━━━━━━━━━━\n📥 Ждут ответа: ${q}\n👥 Новых сегодня: ${fresh}\n💬 Вопросов сегодня: ${asked}\n━━━━━━━━━━━━━━━\nНиже — темы, как их видят люди. Панель — «👑 Панель владельца» или «🛠 Админ» внизу.`, menu(cfg, en, owner))
+      return sendPic(env, m.chat.id, picOf(cfg, 'owner'), `👑 ${BOLD('APEX')} · РЕЖИМ ВЛАДЕЛЬЦА\n━━━━━━━━━━━━━━━\n📥 Ждут ответа: ${q}\n👥 Новых сегодня: ${fresh}\n💬 Вопросов сегодня: ${asked}\n━━━━━━━━━━━━━━━\nНиже — темы, как их видят люди. Панель — кнопкой «👑 Панель» внизу.`, menu(cfg, en, owner))
     }
     const f = arg && cfg.features.deeplinks && topicsOf(cfg, en).find(t => t.id === arg)
     if (f) return answer(env, cfg, m.chat.id, f, en)

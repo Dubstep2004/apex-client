@@ -83,7 +83,7 @@ else {
   if (!sent.some(s => s[0] === 'setMyCommands')) fail('меню команд «/» не выставлено')
   has(1, /Функции бота — нажмите/, '/settings владельцу не ответил')
   // Панель админа на кнопках
-  has(1, /Кнопка «🛠 Админ» теперь всегда внизу/, 'панель админа: /start владельца без кнопки «🛠 Админ»')
+  has(1, /Внизу теперь «👑 Панель» и «📥 Вопросы»/, 'панель админа: /start владельца без нижних кнопок')
   if (!sent.some(s => s[0] === 'editMessageText' && String(s[1]) === '1' && /📊 Сегодня/.test(s[2]))) fail('панель админа: «Сегодня» не открылся')
   if (!sent.some(s => s[0] === 'editMessageText' && /Без ответа — выберите/.test(s[2]))) fail('панель админа: список вопросов не открылся')
   if (!to(9).includes('Ответ из панели') && !to(7).includes('Ответ из панели')) fail('панель админа: «Ответить» не отправил ответ человеку')
@@ -292,7 +292,13 @@ fs.rmSync(tmp, { recursive: true, force: true })
     if (!sent2.some(x => x[0] === 'sendMessage' && /Панель владельца/.test(x[1].text || '') && x[1].reply_markup?.inline_keyboard)) fail('«👑 Панель владельца» под картинкой не открылась')
     sent2.length = 0; await w2.fetch(new Request('https://bot.example/tg', { method: 'POST', headers: { 'x-telegram-bot-api-secret-token': env.WEBHOOK_SECRET }, body: JSON.stringify({ update_id: 9, message: { message_id: 9, chat: { id: 1, type: 'private' }, from: { id: 1, first_name: 'O' }, text: '/start' } }) }), env2)
     if (!sent2.some(x => (x[1].reply_markup?.inline_keyboard || []).flat().some(b => b.callback_data === 'ad:menu' && /Админ|владельца/.test(b.text)))) fail('владелец: под темами нет кнопки «🛠 Админ»')
-    if (!sent2.some(x => JSON.stringify(x[1].reply_markup?.keyboard || []).includes('🛠 Админ'))) fail('владелец: внизу нет кнопки «🛠 Админ»')
+    { const k = sent2.map(x => x[1].reply_markup?.keyboard).find(Boolean) || []; if (!k.flat().some(b => b.text === '👑 Панель' && b.style === 'primary') || !k.flat().some(b => b.text === '📥 Вопросы')) fail('владелец: внизу нет «👑 Панель» и «📥 Вопросы»') }
+    // нижняя «📥 Вопросы» — список вопросов новым сообщением; старая «🛠 Админ» всё ещё открывает панель
+    for (const [i, t] of [[5, '📥 Вопросы'], [6, '🛠 Админ']]) await w2.fetch(new Request('https://bot.example/tg', { method: 'POST', headers: { 'x-telegram-bot-api-secret-token': env.WEBHOOK_SECRET }, body: JSON.stringify({ update_id: 900 + i, message: { message_id: 900 + i, chat: { id: 1, type: 'private' }, from: { id: 1, first_name: 'O' }, text: t } }) }), env2)
+    if (!sent2.some(x => x[0] === 'sendMessage' && /Вопросов без ответа нет|Без ответа — выберите/.test(x[1].text || ''))) fail('нижняя «📥 Вопросы» не показала вопросы')
+    if (!sent2.some(x => x[0] === 'sendMessage' && /Панель владельца/.test(x[1].text || ''))) fail('старая кнопка «🛠 Админ» больше не открывает панель')
+    { const pm = sent2.filter(x => /Панель владельца/.test(x[1].text || '')).pop(), b = (pm?.[1].reply_markup?.inline_keyboard || []).flat()
+      if (!b.some(x => x.callback_data === 'ad:q' && x.style) || !b.some(x => x.callback_data === 'ad:menu' && /Обновить/.test(x.text)) || !/🟢|🔴|⏸/.test(pm?.[1].text || '')) fail('PRO-панель: нет цветных кнопок, «🔄 Обновить» или строки состояния') }
     // ⏸ пауза: вопрос без звука, человек видит «на перерыве»; «Не помогло» — с пометкой темы
     const post = b => w2.fetch(new Request('https://bot.example/tg', { method: 'POST', headers: { 'x-telegram-bot-api-secret-token': env.WEBHOOK_SECRET }, body: JSON.stringify(b) }), env2)
     const cb = (n, from, data) => post({ update_id: n, callback_query: { id: 'c' + n, from: { id: from }, data, message: { message_id: 50, chat: { id: from } } } })
