@@ -25,6 +25,8 @@
 //   его ответ на пересланное сообщение бот отправит человеку; счёт, какие темы спрашивают чаще.
 
 // ЧТО НОВОГО В БОТЕ (пульт показывает это в «Справка» → «Что нового» → «Бот»; V — версия, n/u/f — новое/улучшено/исправлено)
+// V|4.4|17 ноября 2026
+// u|Мини-приложение выключено по умолчанию: кнопки «APEX» и «📱 Открыть APEX» убраны, бот снова с кнопками тем и всеми командами; у людей старая кнопка внизу пропадает сама. Включается в пульте или /settings («📱 Мини-приложение»)
 // V|4.3|17 ноября 2026
 // n|Общий счётчик рекламы: телефоны (3.24.0) раз в день присылают боту число заблокированной рекламы — без имён и адресов; /ads и строка в /today и утренней сводке. Нужен https-адрес бота
 // V|4.2|17 ноября 2026
@@ -232,7 +234,7 @@ async function config(env) {
   cfgAt = Date.now()
   return cfgCache
 }
-const FEATURES = { adstats: true, chnews: true, groupFaq: false, adminApp: true, appFirst: true, sub: true, video: true, refbonus: true, miniapp: true, memory: true, form: true, quiz: true, fuzzy: true, captcha: false, warns: true, anniv: true, qpos: true, night: true, human: true, fakewarn: true, helpers: true, helpRR: true, chpost: true, contestBot: true, backup: true, syslog: true, morning: true, admin: true, media: true, quick: true, commands: true, images: true, deeplinks: true, contestDM: true, polls: true, broadcast: true, news: true, status: true, ping: true, english: true, forward: false, stats: true, welcome: true, antispam: true, invite: true, remind: true, followup: true, complaints: true, translate: true, antiflood: true, version: true, contestSub: true, contestReal: false }
+const FEATURES = { adstats: true, chnews: true, groupFaq: false, adminApp: false, appFirst: false, sub: true, video: true, refbonus: true, miniapp: false, memory: true, form: true, quiz: true, fuzzy: true, captcha: false, warns: true, anniv: true, qpos: true, night: true, human: true, fakewarn: true, helpers: true, helpRR: true, chpost: true, contestBot: true, backup: true, syslog: true, morning: true, admin: true, media: true, quick: true, commands: true, images: true, deeplinks: true, contestDM: true, polls: true, broadcast: true, news: true, status: true, ping: true, english: true, forward: false, stats: true, welcome: true, antispam: true, invite: true, remind: true, followup: true, complaints: true, translate: true, antiflood: true, version: true, contestSub: true, contestReal: false }
 // Названия функций — для /settings в боте и меню сервера (apex → «Функции бота»)
 const FEAT_NAMES = { admin: 'Панель админа на кнопках', morning: 'Утренняя сводка в 9:00', chpost: 'Пост в канал из бота', helpers: 'Помощники', qpos: 'Место в очереди', fuzzy: 'Умный поиск с опечатками', memory: 'Память разговора', appFirst: 'Всё в мини-приложении', adminApp: 'Админ-панель в мини-приложении', chnews: 'Новости канала на сайте', adstats: 'Общий счётчик рекламы (/ads)', groupFaq: 'Ответы на частые вопросы в группе', sub: '/sub — моя подписка', video: 'Видеоинструкция', refbonus: 'Бонус за друзей', miniapp: 'Мини-приложение (кнопка APEX)', form: 'Форма /report', quiz: 'Викторина /quiz', captcha: 'Капча для новичков в группе', warns: '/warn и /ban в группе', anniv: 'Поздравление с годовщиной', night: 'Ночью — «ответим утром»', human: '«Позвать человека»', fakewarn: 'Предупреждение о поддельных ботах', helpRR: 'Помощникам — вопросы по очереди', contestBot: 'Конкурс из бота', backup: 'Копия данных файлом', syslog: 'Система и ошибки', forward: 'Вопросы без ответа — мне', media: 'Фото и голосовые — мне', quick: 'Быстрые ответы', followup: '«Помогло?»', translate: 'Перевод моих ответов', english: 'Ответы на английском', status: '/status', news: '/news', invite: '/invite', remind: '/remind', complaints: 'Жалобы на серверы', version: 'Подсказка версии', broadcast: 'Рассылка', polls: 'Опросы', stats: 'Счёт тем', ping: '/ping', commands: 'Меню команд «/»', images: 'Картинки в ответах', deeplinks: 'Ссылки на темы', antiflood: 'Защита от флуда', welcome: 'Приветствие в группе', antispam: 'Антиспам в группе', contestSub: 'Конкурс: только подписчики', contestReal: 'Конкурс: без пустых аккаунтов', contestDM: 'Конкурс: поздравить победителей' }
 const QUICK = ['Обновите подписку: Настройки → Подписка → «Обновить»', 'Включите автопилот — он сам выберет рабочий сервер', 'Откройте «Проверка сети» на главном и пришлите итог (кнопка «Поделиться»)', 'Обновите приложение до последней версии: ' + SITE + '/update/']
@@ -827,6 +829,12 @@ async function onMessage(env, m) {
   if (!owner && (await kget(env, 'block', [])).includes(m.from.id)) return // заблокирован админом — молчим
   if (!owner && cfg.features.antiflood) { const f = flooded(m.from.id); if (f === 'warn') return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? 'Too many messages — please wait a minute 🙏' : 'Слишком часто — подождите минуту 🙏' }); if (f) return }
   if (!owner && env.APEX_KV) await remember(env, m.from)
+  // Мини-приложение выключено — убираем у человека старую кнопку «📱 APEX» внизу (один раз, сообщение сразу удаляем)
+  if (!owner && !(cfg.features.appFirst && cfg.features.miniapp) && env.APEX_KV && m.from?.id && !(await kget(env, 'kbc:' + m.from.id, null))) {
+    await kput(env, 'kbc:' + m.from.id, 1, 180 * 86400)
+    const r = await tg(env, 'sendMessage', { chat_id: m.chat.id, text: '⌨️', reply_markup: { remove_keyboard: true }, disable_notification: true })
+    if (r.ok) await tg(env, 'deleteMessage', { chat_id: m.chat.id, message_id: r.result.message_id })
+  }
   // ── Помощник: только вопросы и ответы
   if (!owner && await isHelper(env, cfg, m.from?.id)) {
     const hw = 'await:' + m.from.id, h = { id: m.from.id, name: m.from.username ? '@' + m.from.username : (m.from.first_name || String(m.from.id)) }

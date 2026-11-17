@@ -27,7 +27,7 @@ const U = [msg('/start'), msg('/status'), msg('/ping', { id: 1 }), msg('/ping'),
 globalThis.fetch = async (url, init = {}) => {
   url = String(url); const ok = r => new Response(JSON.stringify({ ok: true, result: r }))
   if (url.includes('config/app.json')) return new Response(JSON.stringify({ servers: { status: { 'Германия': { state: 'maintenance', until: Date.now() + 3600e3 } } } }))
-  if (url.includes('tg/bot.json')) return new Response(JSON.stringify({ channel: '@apextestch', features: { forward: true, captcha: true, groupFaq: true }, broadcast: { id: 'bc-test-1', text: 'Привет всем' }, description: 'Описание' }))
+  if (url.includes('tg/bot.json')) return new Response(JSON.stringify({ channel: '@apextestch', features: { forward: true, captcha: true, groupFaq: true, miniapp: true, appFirst: true, adminApp: true }, broadcast: { id: 'bc-test-1', text: 'Привет всем' }, description: 'Описание' }))
   if (url.includes('releases/latest')) return new Response(JSON.stringify({ tag_name: 'v3.22.0' }))
   if (url.includes('panel.test/api/users/by-telegram-id/')) return new Response(JSON.stringify({ response: [{ uuid: 'u-1', status: 'ACTIVE', expireAt: new Date(Date.now() + 5 * 864e5).toISOString(), usedTrafficBytes: 5368709120, trafficLimitBytes: 0, subscriptionUrl: 'https://secret.example/sub/XYZ' }] }))
   if (url === 'https://panel.test/api/users' && init.method === 'PATCH') { sent.push(['remnaPatch', 0, init.body || '']); return new Response(JSON.stringify({ response: {} })) }
@@ -250,6 +250,7 @@ fs.rmSync(tmp, { recursive: true, force: true })
     const dcs = [...p.entries()].sort((a, b) => a[0] < b[0] ? -1 : 1).map(([k, v]) => k + '=' + v).join('\n'), sec = crypto.createHmac('sha256', 'WebAppData').update(token).digest()
     p.set('hash', crypto.createHmac('sha256', sec).update(dcs).digest('hex')); return p.toString() }
   const mem = {}, env = { BOT_TOKEN: TOKEN, WEBHOOK_SECRET: 'w'.repeat(32), OWNER_ID: '1', APEX_KV: { get: async k => mem[k] ?? null, put: async (k, v) => { mem[k] = String(v) }, delete: async k => { delete mem[k] }, list: async () => ({ keys: [] }) } }
+  mem.fover = JSON.stringify({ adminApp: { v: true, at: Date.now() }, miniapp: { v: true, at: Date.now() } }) // по умолчанию выключено — включаем для проверки
   mem.q = JSON.stringify([{ id: 5, uid: 7, name: 'Ivan', text: 'помогите', at: Date.now() }]); mem.users = '[7]'
   const realFetch = globalThis.fetch; globalThis.fetch = async u => String(u).includes('api.telegram.org') ? new Response(JSON.stringify({ ok: true, result: { message_id: 1, username: 'test_bot' } })) : new Response('{}', { status: 404 })
   const w = (await import(path.join(BOT, 'worker.js') + '?app')).default
@@ -269,6 +270,15 @@ fs.rmSync(tmp, { recursive: true, force: true })
   if (await ads({ day: '2020-01-01', dev: 'abcdef1234567890', ads: 5 }) !== 400 || await ads({ day, dev: 'x', ads: 5 }) !== 400) fail('счётчик рекламы: принял мусор')
   await (await import(path.join(BOT, 'worker.js') + '?app')).adsFlush(env) // бот пишет в KV раз в минуту — дописываем остаток
   { const st = JSON.parse(mem['adst:' + day]).d; if (st.abcdef1234567890 !== 150 || st['0011223344556677'] !== 50000) fail('счётчик рекламы: неверный подсчёт ' + JSON.stringify(st)) }
+  // мини-приложение выключено (по умолчанию): старая кнопка «📱 APEX» у человека убирается один раз и незаметно
+  { const sent2 = [], mem2 = {}, env2 = { ...env, APEX_KV: { get: async k => mem2[k] ?? null, put: async (k, v) => { mem2[k] = String(v) }, delete: async k => { delete mem2[k] }, list: async () => ({ keys: [] }) } }
+    globalThis.fetch = async (u, i) => { const m = String(u).split('/').pop(); if (String(u).includes('api.telegram.org')) { sent2.push([m, i?.body ? JSON.parse(i.body) : {}]); return new Response(JSON.stringify({ ok: true, result: { message_id: 77, username: 'test_bot' } })) } return new Response('{}', { status: 404 }) }
+    const w2 = (await import(path.join(BOT, 'worker.js') + '?off')).default // отдельный экземпляр: свой кэш настроек
+    const upd = n => w2.fetch(new Request('https://bot.example/tg', { method: 'POST', headers: { 'x-telegram-bot-api-secret-token': env.WEBHOOK_SECRET }, body: JSON.stringify({ update_id: n, message: { message_id: n, chat: { id: 4242, type: 'private' }, from: { id: 4242, first_name: 'K' }, text: 'привет' } }) }), env2)
+    await upd(1); await upd(2)
+    const rm = sent2.filter(x => x[0] === 'sendMessage' && x[1].reply_markup?.remove_keyboard)
+    if (rm.length !== 1 || !sent2.some(x => x[0] === 'deleteMessage' && x[1].message_id === 77)) fail('мини-приложение выключено: старая кнопка внизу не убрана (или убирается каждый раз) ' + rm.length)
+    if (sent2.some(x => JSON.stringify(x[1].reply_markup || {}).includes('web_app'))) fail('мини-приложение выключено, а бот показывает кнопку мини-приложения') }
   globalThis.fetch = realFetch
 }
 console.log(errs.length ? `✗ Бот и меню: ошибок ${errs.length}` : '✓ Бот и меню — без ошибок')

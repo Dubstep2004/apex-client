@@ -81,5 +81,11 @@
       ],
       "text": "Поддержка поможет с подключением, подпиской и продлением: {поддержка}"
     }
-  ]
+  ],
+  "features": {
+    "miniapp": false,
+    "appFirst": false,
+    "adminApp": false
+  },
+  "featuresAt": 1794922687515
 }
