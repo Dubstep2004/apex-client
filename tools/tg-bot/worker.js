@@ -25,6 +25,12 @@
 //   его ответ на пересланное сообщение бот отправит человеку; счёт, какие темы спрашивают чаще.
 
 // ЧТО НОВОГО В БОТЕ (пульт показывает это в «Справка» → «Что нового» → «Бот»; V — версия, n/u/f — новое/улучшено/исправлено)
+// V|4.9|17 ноября 2026
+// n|PRO-картинки: приветствие, «Режим владельца» и каждая тема приходят с фирменной обложкой; выключается в «Возможности бота» (своя картинка темы из пульта — главнее)
+// u|PRO-оформление: темы по две в ряд, заголовок «🛡 APEX CLIENT · поддержка» с разделителем; у владельца /start — одна карточка «👑 Режим владельца» с цифрами и кнопка «👑 Панель владельца» под темами
+// V|4.8|17 ноября 2026
+// n|«⏸ Пауза поддержки» в «🛠 Админ» и /pause: на 30 мин, 1–2 часа или до 9:00 — вопросы копятся без звука, люди видят «на перерыве до …», в конце бот пришлёт, сколько ждут ответа
+// n|Под каждой темой — «🙋 Не помогло — написать человеку»: следующее сообщение уходит в поддержку с пометкой, какую тему человек читал
 // V|4.7|17 ноября 2026
 // u|«🛠 Админ» с числами: «📥 Вопросы (3)», «📊 Сегодня (12)», «👥 Пользователи (+5)», «🛟 Помощники (2)», ошибки за сутки — сразу видно, куда смотреть
 // V|4.6|17 ноября 2026
@@ -191,10 +197,10 @@ async function mergeFeatures(env, c) {
 async function setFeature(env, k, v) { const ov = await kget(env, 'fover', {}); ov[k] = { v, at: now() }; await kput(env, 'fover', ov); cfgCache = null }
 // Разделы функций: /settings, «⚙️ Функции» в «🛠 Админ» и меню сервера показывают функции по разделам
 const FEAT_GROUPS = [
-  ['adm', '🛠 Админ и сводки', ['admin', 'adminApp', 'morning', 'stats', 'syslog', 'backup']],
+  ['adm', '🛠 Админ и сводки', ['admin', 'pause', 'adminApp', 'morning', 'stats', 'syslog', 'backup']],
   ['ans', '💬 Ответы людям', ['forward', 'media', 'quick', 'followup', 'translate', 'english', 'qpos', 'night', 'human', 'memory', 'form', 'fuzzy']],
   ['hlp', '🛟 Помощники', ['helpers', 'helpRR']],
-  ['cmd', '📋 Команды', ['appFirst', 'miniapp', 'commands', 'sub', 'video', 'status', 'news', 'invite', 'remind', 'complaints', 'version', 'ping', 'quiz', 'deeplinks', 'images']],
+  ['cmd', '📋 Команды', ['appFirst', 'miniapp', 'commands', 'sub', 'video', 'status', 'news', 'invite', 'remind', 'complaints', 'version', 'ping', 'quiz', 'deeplinks', 'images', 'pics']],
   ['bc', '📣 Рассылки и канал', ['broadcast', 'polls', 'chpost', 'chnews']],
   ['con', '🎁 Конкурсы', ['contestBot', 'contestSub', 'contestReal', 'contestDM']],
   ['grp', '👥 Группа', ['welcome', 'antispam', 'captcha', 'warns', 'groupFaq']],
@@ -240,18 +246,23 @@ async function config(env) {
   cfgAt = Date.now()
   return cfgCache
 }
-const FEATURES = { adstats: true, chnews: true, groupFaq: false, adminApp: false, appFirst: false, sub: true, video: true, refbonus: true, miniapp: false, memory: true, form: true, quiz: true, fuzzy: true, captcha: false, warns: true, anniv: true, qpos: true, night: true, human: true, fakewarn: true, helpers: true, helpRR: true, chpost: true, contestBot: true, backup: true, syslog: true, morning: true, admin: true, media: true, quick: true, commands: true, images: true, deeplinks: true, contestDM: true, polls: true, broadcast: true, news: true, status: true, ping: true, english: true, forward: false, stats: true, welcome: true, antispam: true, invite: true, remind: true, followup: true, complaints: true, translate: true, antiflood: true, version: true, contestSub: true, contestReal: false }
+const FEATURES = { pics: true, pause: true, adstats: true, chnews: true, groupFaq: false, adminApp: false, appFirst: false, sub: true, video: true, refbonus: true, miniapp: false, memory: true, form: true, quiz: true, fuzzy: true, captcha: false, warns: true, anniv: true, qpos: true, night: true, human: true, fakewarn: true, helpers: true, helpRR: true, chpost: true, contestBot: true, backup: true, syslog: true, morning: true, admin: true, media: true, quick: true, commands: true, images: true, deeplinks: true, contestDM: true, polls: true, broadcast: true, news: true, status: true, ping: true, english: true, forward: false, stats: true, welcome: true, antispam: true, invite: true, remind: true, followup: true, complaints: true, translate: true, antiflood: true, version: true, contestSub: true, contestReal: false }
 // Названия функций — для /settings в боте и меню сервера (apex → «Функции бота»)
-const FEAT_NAMES = { admin: 'Панель админа на кнопках', morning: 'Утренняя сводка в 9:00', chpost: 'Пост в канал из бота', helpers: 'Помощники', qpos: 'Место в очереди', fuzzy: 'Умный поиск с опечатками', memory: 'Память разговора', appFirst: 'Всё в мини-приложении', adminApp: 'Админ-панель в мини-приложении', chnews: 'Новости канала на сайте', adstats: 'Общий счётчик рекламы (/ads)', groupFaq: 'Ответы на частые вопросы в группе', sub: '/sub — моя подписка', video: 'Видеоинструкция', refbonus: 'Бонус за друзей', miniapp: 'Мини-приложение (кнопка APEX)', form: 'Форма /report', quiz: 'Викторина /quiz', captcha: 'Капча для новичков в группе', warns: '/warn и /ban в группе', anniv: 'Поздравление с годовщиной', night: 'Ночью — «ответим утром»', human: '«Позвать человека»', fakewarn: 'Предупреждение о поддельных ботах', helpRR: 'Помощникам — вопросы по очереди', contestBot: 'Конкурс из бота', backup: 'Копия данных файлом', syslog: 'Система и ошибки', forward: 'Вопросы без ответа — мне', media: 'Фото и голосовые — мне', quick: 'Быстрые ответы', followup: '«Помогло?»', translate: 'Перевод моих ответов', english: 'Ответы на английском', status: '/status', news: '/news', invite: '/invite', remind: '/remind', complaints: 'Жалобы на серверы', version: 'Подсказка версии', broadcast: 'Рассылка', polls: 'Опросы', stats: 'Счёт тем', ping: '/ping', commands: 'Меню команд «/»', images: 'Картинки в ответах', deeplinks: 'Ссылки на темы', antiflood: 'Защита от флуда', welcome: 'Приветствие в группе', antispam: 'Антиспам в группе', contestSub: 'Конкурс: только подписчики', contestReal: 'Конкурс: без пустых аккаунтов', contestDM: 'Конкурс: поздравить победителей' }
+const FEAT_NAMES = { pics: 'PRO-картинки: приветствие и обложки тем', admin: 'Панель админа на кнопках', morning: 'Утренняя сводка в 9:00', chpost: 'Пост в канал из бота', helpers: 'Помощники', qpos: 'Место в очереди', fuzzy: 'Умный поиск с опечатками', memory: 'Память разговора', appFirst: 'Всё в мини-приложении', adminApp: 'Админ-панель в мини-приложении', chnews: 'Новости канала на сайте', adstats: 'Общий счётчик рекламы (/ads)', pause: 'Пауза поддержки', groupFaq: 'Ответы на частые вопросы в группе', sub: '/sub — моя подписка', video: 'Видеоинструкция', refbonus: 'Бонус за друзей', miniapp: 'Мини-приложение (кнопка APEX)', form: 'Форма /report', quiz: 'Викторина /quiz', captcha: 'Капча для новичков в группе', warns: '/warn и /ban в группе', anniv: 'Поздравление с годовщиной', night: 'Ночью — «ответим утром»', human: '«Позвать человека»', fakewarn: 'Предупреждение о поддельных ботах', helpRR: 'Помощникам — вопросы по очереди', contestBot: 'Конкурс из бота', backup: 'Копия данных файлом', syslog: 'Система и ошибки', forward: 'Вопросы без ответа — мне', media: 'Фото и голосовые — мне', quick: 'Быстрые ответы', followup: '«Помогло?»', translate: 'Перевод моих ответов', english: 'Ответы на английском', status: '/status', news: '/news', invite: '/invite', remind: '/remind', complaints: 'Жалобы на серверы', version: 'Подсказка версии', broadcast: 'Рассылка', polls: 'Опросы', stats: 'Счёт тем', ping: '/ping', commands: 'Меню команд «/»', images: 'Картинки в ответах', deeplinks: 'Ссылки на темы', antiflood: 'Защита от флуда', welcome: 'Приветствие в группе', antispam: 'Антиспам в группе', contestSub: 'Конкурс: только подписчики', contestReal: 'Конкурс: без пустых аккаунтов', contestDM: 'Конкурс: поздравить победителей' }
 const QUICK = ['Обновите подписку: Настройки → Подписка → «Обновить»', 'Включите автопилот — он сам выберет рабочий сервер', 'Откройте «Проверка сети» на главном и пришлите итог (кнопка «Поделиться»)', 'Обновите приложение до последней версии: ' + SITE + '/update/']
 const fill = (cfg, t) => t.replaceAll('{сайт}', SITE).replaceAll('{поддержка}', cfg.support)
 const topicsOf = (cfg, en) => en ? FAQ_EN : cfg.topics
 const appUrl = en => SITE + '/app/?' + (meName ? 'bot=' + meName + '&' : '') + 'bv=4&' + (en ? 'lang=en' : 'lang=ru') // bv — бот умеет принимать действия из мини-приложения // мини-приложение знает, в какого бота вести кнопки
 const userKb = (en, uid) => ({ keyboard: [[{ text: en ? '📱 APEX — everything here' : '📱 APEX — всё здесь', web_app: { url: appUrl(en) + (uid ? '&u=' + uid : '') } }]], resize_keyboard: true, is_persistent: true }) // кнопка внизу: из неё мини-приложение может прислать боту данные
 // owner — внизу списка тем кнопка «🛠 Админ» (видна только владельцу)
-const menu = (cfg, en, owner) => withAdmin(cfg, owner, cfg.features.appFirst && cfg.features.miniapp ? { inline_keyboard: [[{ text: en ? '📱 Open APEX' : '📱 Открыть APEX', web_app: { url: appUrl(en) } }]] } : ({ inline_keyboard: [...topicsOf(cfg, en).map(f => [{ text: f.title, callback_data: (en ? 'faqen:' : 'faq:') + f.id }]), ...(cfg.features.video ? [[{ text: en ? '🎬 Video guide' : '🎬 Видеоинструкция', callback_data: 'vid' }]] : []), ...(cfg.features.miniapp ? [[{ text: en ? '📱 Open APEX' : '📱 Открыть APEX', web_app: { url: appUrl(en) } }]] : [])] }))
-const withAdmin = (cfg, owner, kb) => owner && cfg.features.admin ? { inline_keyboard: [...kb.inline_keyboard, [{ text: '🛠 Админ', callback_data: 'ad:menu' }]] } : kb
-const after = (cfg, en) => ({ inline_keyboard: [[{ text: en ? EN.other : '📋 Другие темы', callback_data: en ? 'menuen' : 'menu' }], ...(cfg.features.human && cfg.features.forward && cfg.hasOwner ? [[{ text: en ? '🙋 Ask a human' : '🙋 Позвать человека', callback_data: 'human' }]] : []), [{ text: en ? EN.support : '💬 Написать в поддержку', url: cfg.support }]] })
+// PRO-вид: короткие темы — по две в ряд, длинные — на всю ширину
+// Жирный без разметки (parse_mode не используем — имена людей не ломают текст): латиница и кириллица → «полужирные» буквы Unicode там, где они есть
+const BOLD = t => [...String(t)].map(c => { const k = c.codePointAt(0); return k >= 65 && k <= 90 ? String.fromCodePoint(0x1D5D4 + k - 65) : k >= 97 && k <= 122 ? String.fromCodePoint(0x1D5EE + k - 97) : k >= 48 && k <= 57 ? String.fromCodePoint(0x1D7EC + k - 48) : c }).join('')
+function pairs(btns) { const rows = []; let half = null; for (const b of btns) { if ([...b.text].length <= 17) { if (half) { rows.push([half, b]); half = null } else half = b } else { if (half) { rows.push([half]); half = null } rows.push([b]) } } if (half) rows.push([half]); return rows }
+const menu = (cfg, en, owner) => withAdmin(cfg, owner, cfg.features.appFirst && cfg.features.miniapp ? { inline_keyboard: [[{ text: en ? '📱 Open APEX' : '📱 Открыть APEX', web_app: { url: appUrl(en) } }]] } : ({ inline_keyboard: [...pairs(topicsOf(cfg, en).map(f => ({ text: f.title, callback_data: (en ? 'faqen:' : 'faq:') + f.id }))), ...(cfg.features.video ? [[{ text: en ? '🎬 Video guide' : '🎬 Видеоинструкция', callback_data: 'vid' }]] : []), ...(cfg.features.miniapp ? [[{ text: en ? '📱 Open APEX' : '📱 Открыть APEX', web_app: { url: appUrl(en) } }]] : [])] }))
+const withAdmin = (cfg, owner, kb) => owner && cfg.features.admin ? { inline_keyboard: [...kb.inline_keyboard, [{ text: '👑 Панель владельца', callback_data: 'ad:menu' }]] } : kb
+// tid — тема, после которой показана кнопка: «Не помогло — написать человеку» (поддержка увидит, что человек уже читал)
+const after = (cfg, en, tid) => ({ inline_keyboard: [...(cfg.features.human && cfg.features.forward && cfg.hasOwner && tid ? [[{ text: en ? '🙋 Didn\'t help — ask a person' : '🙋 Не помогло — написать человеку', callback_data: ('human:' + tid).slice(0, 64) }]] : []), [{ text: en ? EN.other : '📋 Другие темы', callback_data: en ? 'menuen' : 'menu' }], ...(cfg.features.human && cfg.features.forward && cfg.hasOwner && !tid ? [[{ text: en ? '🙋 Ask a human' : '🙋 Позвать человека', callback_data: 'human' }]] : []), [{ text: en ? EN.support : '💬 Написать в поддержку', url: cfg.support }]] })
 const isNight = () => { const h = new Date(now() + 3 * 3600000).getUTCHours(); return h < 9 } // 0:00–8:59 МСК
 async function fakeWarn(env, cfg, en) { if (!cfg.features.fakewarn) return ''; const n = await botName(env); return n ? (en ? `\n\n🛡 The only official bot is @${n}. Support never asks for passwords, SMS codes or payment in private messages.` : `\n\n🛡 Официальный бот — только @${n}. Поддержка никогда не просит пароль, код из СМС или оплату в личке.`) : '' }
 
@@ -406,17 +417,26 @@ async function notifyHelper(env, cfg, q) { // очередь: новый воп�
   await tg(env, 'sendMessage', { chat_id: hs[i].id, text: `📥 Ваша очередь: вопрос от ${q.name}\n\n${(q.text || '(' + q.kind + ')').slice(0, 300)}`, reply_markup: { inline_keyboard: [[{ text: '✍️ Открыть', callback_data: 'ad:qo:' + q.id }]] } })
 }
 
+// ⏸ Пауза поддержки: вопросы копятся в очереди без звука, человек видит «на перерыве до …»; в конце — сводка владельцу
+async function pausedUntil(env) { const p = await kget(env, 'pause', null); return p && p.until > now() ? p.until : 0 }
+const pauseNote = (until, en) => until ? (en ? `\n⏸ Support is on a break until ${mskTime(until).slice(6)} (Moscow) — your question is in the queue.` : `\n⏸ Поддержка на перерыве до ${mskTime(until).slice(6)} МСК — вопрос в очереди, ответим после.`) : ''
+async function pauseScreen(env, chat, mid) {
+  const u = await pausedUntil(env), text = u ? `⏸ Пауза до ${mskTime(u)} МСК\n\nВопросы копятся без звука, люди видят «на перерыве».` : '⏸ Пауза поддержки\n\nВопросы будут копиться без звука, люди увидят «Поддержка на перерыве до …». Когда пауза кончится — пришлю, сколько ждут ответа.'
+  const rows = [[{ text: '30 мин', callback_data: 'ad:pz:30' }, { text: '1 час', callback_data: 'ad:pz:60' }, { text: '2 часа', callback_data: 'ad:pz:120' }], [{ text: '🌙 До 9:00 утра', callback_data: 'ad:pz:am' }], ...(u ? [[{ text: '▶️ Снять паузу', callback_data: 'ad:pz:off' }]] : [])]
+  return mid ? tg(env, 'editMessageText', { chat_id: chat, message_id: mid, text, reply_markup: { inline_keyboard: [...rows, back] } }) : tg(env, 'sendMessage', { chat_id: chat, text, reply_markup: { inline_keyboard: rows } })
+}
 async function forwardToOwner(env, cfg, m, en, kind) {
   if (!(cfg.features.forward && env.OWNER_ID && env.APEX_KV && await fwAllowed(env, m.from?.id))) return false
-  const fw = await tg(env, 'forwardMessage', { chat_id: env.OWNER_ID, from_chat_id: m.chat.id, message_id: m.message_id })
+  const pz = cfg.features.pause ? await pausedUntil(env) : 0
+  const fw = await tg(env, 'forwardMessage', { chat_id: env.OWNER_ID, from_chat_id: m.chat.id, message_id: m.message_id, disable_notification: !!pz })
   if (!fw.ok) return false
   const id = fw.result.message_id
   await env.APEX_KV.put('fw:' + id, String(m.chat.id), { expirationTtl: 14 * 86400 })
   const qrec = { id, uid: m.chat.id, name: who({ username: m.from?.username, name: m.from?.first_name }), text: (m.text || m.caption || '').slice(0, 500), kind, at: now(), en: !!en }
   await logQuestion(env, qrec); await notifyHelper(env, cfg, qrec)
   const kb = cfg.features.quick ? cfg.quick.map((q, i) => [{ text: '⚡ ' + q.slice(0, 40), callback_data: `qr:${i}:${id}` }]) : []
-  await tg(env, 'sendMessage', { chat_id: env.OWNER_ID, reply_to_message_id: id, text: (kind === 'text' ? '❓ Вопрос без готового ответа' : '📎 Прислали ' + kind) + ' от ' + who({ username: m.from?.username, name: m.from?.first_name }) + (en ? ' (пишет по-английски — ответ переведу)' : '') + '. Ответьте на пересланное сообщение или нажмите быстрый ответ.', reply_markup: { inline_keyboard: kb } })
-  const wq = (await kget(env, 'q', [])).filter(x => !x.ans).length, extra = (cfg.features.qpos && wq > 1 ? (en ? `\nYou are #${wq} in the queue.` : `\nВы в очереди: ${wq}-й.`) : '') + (cfg.features.night && isNight() ? (en ? '\n🌙 It is night in Moscow now — support will answer in the morning (from 9:00).' : '\n🌙 Сейчас ночь — поддержка ответит утром (с 9:00 МСК).') : '')
+  await tg(env, 'sendMessage', { chat_id: env.OWNER_ID, reply_to_message_id: id, disable_notification: !!pz, text: (kind === 'text' ? '❓ Вопрос без готового ответа' : '📎 Прислали ' + kind) + ' от ' + who({ username: m.from?.username, name: m.from?.first_name }) + (en ? ' (пишет по-английски — ответ переведу)' : '') + '. Ответьте на пересланное сообщение или нажмите быстрый ответ.', reply_markup: { inline_keyboard: kb } })
+  const wq = (await kget(env, 'q', [])).filter(x => !x.ans).length, extra = (cfg.features.qpos && wq > 1 ? (en ? `\nYou are #${wq} in the queue.` : `\nВы в очереди: ${wq}-й.`) : '') + (cfg.features.night && isNight() ? (en ? '\n🌙 It is night in Moscow now — support will answer in the morning (from 9:00).' : '\n🌙 Сейчас ночь — поддержка ответит утром (с 9:00 МСК).') : '') + pauseNote(pz, en)
   await tg(env, 'sendMessage', { chat_id: m.chat.id, text: (en ? EN.sent : 'Передал ' + (kind === 'text' ? 'ваш вопрос' : kind) + ' в поддержку — ответ придёт сюда 🙌') + extra, reply_markup: menu(cfg, en) })
   return true
 }
@@ -588,10 +608,11 @@ async function adminMenu(env, cfg, chat, edit) {
   const day = new Date().toISOString().slice(0, 10), q = (await kget(env, 'q', [])).filter(x => !x.ans).length
   const fresh = await kget(env, 'nu:' + day, 0), asked = Object.values(await kget(env, 'st:' + day, {})).reduce((a, b) => a + b, 0)
   const errs = cfg.features.syslog ? (await errList(env)).filter(e => now() - e.at < 86400000).length : 0, hs = (await kget(env, 'helpers', [])).length
-  const n = v => v ? ` (${v})` : ''
-  const text = `🛠 Панель админа\n\n📥 Ждут ответа: ${q}\n👥 Новых за сегодня: ${fresh}\n💬 Вопросов боту сегодня: ${asked}${errs ? `\n⚠️ Ошибок за сутки: ${errs}` : ''}\n\nНажмите кнопку 👇`
+  const n = v => v ? ` (${v})` : '', pz = cfg.features.pause ? await pausedUntil(env) : 0
+  const text = `👑 ${BOLD('APEX')} · Панель владельца\n━━━━━━━━━━━━━━━\n📥 Ждут ответа: ${q}\n👥 Новых за сегодня: ${fresh}\n💬 Вопросов боту сегодня: ${asked}${errs ? `\n⚠️ Ошибок за сутки: ${errs}` : ''}${pz ? `\n⏸ Пауза до ${mskTime(pz)} МСК` : ''}\n━━━━━━━━━━━━━━━\nВыберите раздел 👇`
   const kb = { inline_keyboard: [[{ text: '📥 Вопросы' + n(q), callback_data: 'ad:q' }, { text: '📊 Сегодня' + n(asked), callback_data: 'ad:today' }],
     [{ text: '👥 Пользователи' + (fresh ? ` (+${fresh})` : ''), callback_data: 'ad:users' }, { text: '🛟 Помощники' + n(hs), callback_data: 'ad:helpers' }],
+    ...(cfg.features.pause ? [[{ text: pz ? `▶️ Пауза до ${mskTime(pz).slice(6)} — снять` : '⏸ Пауза поддержки', callback_data: pz ? 'ad:pz:off' : 'ad:pause' }]] : []),
     ...Object.entries(ADMIN_SECS).map(([k, v]) => [{ text: v[0] + (k === 'rep' && errs ? ` (⚠️ ${errs})` : k === 'ppl' && q ? ` (${q})` : ''), callback_data: 'ad:sec:' + k }])] }
   if (cfg.features.adminApp && cfg.features.miniapp) kb.inline_keyboard.unshift([{ text: '📱 Открыть админ-панель', web_app: { url: await adminAppUrl(env) } }])
   if (edit) return tg(env, 'editMessageText', { chat_id: chat, message_id: edit, text, reply_markup: kb })
@@ -622,6 +643,12 @@ async function onAdmin(env, cfg, cq, d) {
     if (!remnaOn(env)) return adminScreen(env, cfg, chat, mid, `🎁 Панель подписок не подключена (REMNA_URL и REMNA_TOKEN в настройках бота). Начислите ${cfg.refBonus.days} дн. вручную в панели.`)
     const r = await giveBonus(env, arg, cfg.refBonus.days)
     return adminScreen(env, cfg, chat, mid, r.ok ? `✅ Начислено +${cfg.refBonus.days} дн., подписка до ${r.until}. Человеку отправлено спасибо.` : '⚠️ Не получилось: ' + r.error + '. Начислите вручную в панели.')
+  }
+  if (act === 'pause') return pauseScreen(env, chat, mid)
+  if (act === 'pz') {
+    if (arg === 'off') await kput(env, 'pause', null)
+    else { let until = now() + (+arg || 60) * 60000; if (arg === 'am') { const d = new Date(now() + 3 * 3600000); d.setUTCHours(9, 0, 0, 0); if (d.getTime() - 3 * 3600000 <= now()) d.setUTCDate(d.getUTCDate() + 1); until = d.getTime() - 3 * 3600000 }; await kput(env, 'pause', { until }, 2 * 86400) }
+    return pauseScreen(env, chat, mid)
   }
   if (act === 'menu') return adminMenu(env, cfg, chat, mid)
   if (act === 'sec' && ADMIN_SECS[arg]) return adminScreen(env, cfg, chat, mid, ADMIN_SECS[arg][0] + '\n\nВыберите 👇', ADMIN_SECS[arg][1])
@@ -886,6 +913,7 @@ async function onMessage(env, m) {
     return tg(env, 'sendMessage', { chat_id: m.chat.id, text: y ? `🛡 Реклама и трекеры, заблокированные APEX CLIENT\n\nВчера: ${y.ads.toLocaleString('ru')} (на ${y.devs} телефонах)\nЗа 7 дней: ${w.toLocaleString('ru')}\n\nСчитаются только числа — без имён, номеров и адресов сайтов.` : '🛡 Счётчик рекламы пока собирает данные — загляните завтра.' }) }
   // Владелец не задан — /admin подсказывает номер, который нужно вписать (в меню сервера или Cloudflare). Когда задан — чужим «Такой команды нет»
   if ((cmd === '/admin' || cmd === '/myid') && !env.OWNER_ID) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: `🛠 Номер владельца у бота не задан, поэтому кнопки «🛠 Админ» нет ни у кого.\n\nВаш номер в Telegram: ${m.from.id}\n\nВпишите его: на сервере — sudo apex → «Настройки» → «Номер владельца»; на Cloudflare — переменная OWNER_ID. Потом напишите /start.` })
+  if (owner && cmd === '/pause' && cfg.features.pause) return pauseScreen(env, m.chat.id)
   if (owner && cmd === '/admin') return tg(env, 'sendMessage', { chat_id: m.chat.id, text: '🛠 Кнопка «🛠 Админ» — внизу 👇', reply_markup: ADMIN_KB })
   if (owner && cmd === '/today') return tg(env, 'sendMessage', { chat_id: m.chat.id, text: await todayText(env), reply_markup: { inline_keyboard: [[{ text: '📥 Вопросы', callback_data: 'ad:q' }, { text: '🛠 Админ', callback_data: 'ad:menu' }]] } })
   if (owner && cmd === '/queue') { const q = (await kget(env, 'q', [])).filter(x => !x.ans).slice(-8).reverse(); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: q.length ? `📥 Без ответа: ${q.length}` : '📥 Вопросов без ответа нет 👍', reply_markup: { inline_keyboard: q.map((x, i) => [{ text: `${i + 1}. ${(x.name || 'человек').slice(0, 16)}: ${(x.text || x.kind || '').slice(0, 24)}`, callback_data: 'ad:qo:' + x.id }]) } }) }
@@ -948,11 +976,16 @@ async function onMessage(env, m) {
           else await tg(env, 'sendMessage', { chat_id: env.OWNER_ID, text: `🎁 ${nm} пригласил уже ${rc[rid]} друзей. Начислить бонус?`, reply_markup: { inline_keyboard: [[{ text: `🎁 +${rb.days} дней подписки`, callback_data: 'ad:rb:' + rid }], [{ text: '👤 Карточка', callback_data: 'ad:uc:' + rid }]] } })
         } }
     }
-    if (owner && cfg.features.admin && !arg) return tg(env, 'sendMessage', { chat_id: m.chat.id, text: '👋 Вы владелец бота — кнопка «🛠 Админ» внизу 👇 Её видите только вы.', reply_markup: ADMIN_KB }).then(() => tg(env, 'sendMessage', { chat_id: m.chat.id, text: (en ? EN.greeting : fill(cfg, cfg.greeting)), reply_markup: menu(cfg, en, owner) }))
+    if (owner && cfg.features.admin && !arg) { // карточка владельца: одна, с цифрами; кнопку «🛠 Админ» внизу ставим один раз
+      if (!(await kget(env, 'akb', null))) { await tg(env, 'sendMessage', { chat_id: m.chat.id, text: '⌨️ Кнопка «🛠 Админ» теперь всегда внизу', reply_markup: ADMIN_KB }); await kput(env, 'akb', 1) }
+      const day = new Date().toISOString().slice(0, 10), q = (await kget(env, 'q', [])).filter(x => !x.ans).length, fresh = await kget(env, 'nu:' + day, 0), asked = Object.values(await kget(env, 'st:' + day, {})).reduce((a, b) => a + b, 0)
+      return sendPic(env, m.chat.id, picOf(cfg, 'owner'), `👑 ${BOLD('APEX')} · РЕЖИМ ВЛАДЕЛЬЦА\n━━━━━━━━━━━━━━━\n📥 Ждут ответа: ${q}\n👥 Новых сегодня: ${fresh}\n💬 Вопросов сегодня: ${asked}\n━━━━━━━━━━━━━━━\nНиже — темы, как их видят люди. Панель — «👑 Панель владельца» или «🛠 Админ» внизу.`, menu(cfg, en, owner))
+    }
     const f = arg && cfg.features.deeplinks && topicsOf(cfg, en).find(t => t.id === arg)
     if (f) return answer(env, cfg, m.chat.id, f, en)
     if (cfg.features.appFirst && cfg.features.miniapp) { await botName(env); return tg(env, 'sendMessage', { chat_id: m.chat.id, text: (en ? '👋 Hi! Everything is in the «📱 APEX» button below: server status, help, your subscription, invite link, TV.\nOr just type your question here.' : '👋 Привет! Всё — в кнопке «📱 APEX» внизу: статус серверов, помощь, подписка, ссылка для друзей, телевизор.\nИли просто напишите вопрос сюда.') + await fakeWarn(env, cfg, en), reply_markup: userKb(en, m.from.id) }) }
-    return tg(env, 'sendMessage', { chat_id: m.chat.id, text: (en ? EN.greeting : fill(cfg, cfg.greeting)) + await fakeWarn(env, cfg, en), reply_markup: menu(cfg, en, owner) })
+    // PRO-вид: заголовок жирным, текст из пульта — как есть (экранируем), разделитель
+    return sendPic(env, m.chat.id, picOf(cfg, 'hello', en), `🛡 ${BOLD('APEX CLIENT')} · ${en ? 'support' : 'поддержка'}\n━━━━━━━━━━━━━━━\n` + (en ? EN.greeting : fill(cfg, cfg.greeting)) + await fakeWarn(env, cfg, en), menu(cfg, en, owner))
   }
   if (cmd === '/help' || (!text && !m.photo && !m.document && !m.voice && !m.video && !m.video_note)) {
     return tg(env, 'sendMessage', { chat_id: m.chat.id, text: en ? EN.greeting : fill(cfg, cfg.greeting), reply_markup: menu(cfg, en, owner) })
@@ -981,7 +1014,8 @@ async function onMessage(env, m) {
     if (lt && now() - lt.at < 3600000 && await forwardToOwner(env, cfg, m, en, 'text')) { lastTopic.delete(String(m.chat.id)); if (env.OWNER_ID) await tg(env, 'sendMessage', { chat_id: env.OWNER_ID, text: `🧠 Перед этим человек читал тему «${lt.t}» — она не помогла` }); return }
   }
   // «🙋 Позвать человека»: следующее сообщение — сразу людям, без поиска по темам
-  if (!owner && text && cfg.features.human && await kget(env, 'hw:' + m.from.id, null)) { await kput(env, 'hw:' + m.from.id, null); if (await forwardToOwner(env, cfg, m, en, 'text')) return }
+  const hw = !owner && text && cfg.features.human ? await kget(env, 'hw:' + m.from.id, null) : null
+  if (hw) { await kput(env, 'hw:' + m.from.id, null); if (await forwardToOwner(env, cfg, m, en, 'text')) { const t = typeof hw === 'string' && topicsOf(cfg, false).find(x => x.id === hw); if (t && env.OWNER_ID) await tg(env, 'sendMessage', { chat_id: env.OWNER_ID, text: `🧠 Перед этим человек читал тему «${t.title}» — не помогла`, disable_notification: !!(await pausedUntil(env)) }); return } }
   // «у меня 3.20» — подскажем новую версию
   const vm = cfg.features.version && text.match(/(?:^|\s)v?(\d+\.\d+(?:\.\d+)?)(?:\s|$|[,.!?])/)
   if (vm) {
@@ -1036,15 +1070,20 @@ const QUIZ = [ // викторина: как пользоваться прило
   ['Как узнать, что вышла новая версия?', ['Приложение покажет плашку «Вышла версия»', 'Никак', 'Только по СМС'], 0, 'Приложение само проверяет обновления; бот тоже подскажет, если написать «у меня 3.20».'],
   ['Можно ли пересылать свою ссылку подписки?', ['Нет, это ваш личный ключ', 'Да, всем друзьям', 'Только в общий чат'], 0, 'Ссылка подписки — личная. Друзей лучше пригласить через /invite.']]
 function quizMsg(i, score) { const q = QUIZ[i]; return { text: `🧠 Викторина — вопрос ${i + 1} из ${QUIZ.length}\n\n${q[0]}`, reply_markup: { inline_keyboard: q[1].map((o, j) => [{ text: o, callback_data: `qz:${i}:${j}:${score}` }]) } } }
+// 🖼 PRO-картинки: обложки рисует tools/tg-bot/pics.py → docs/img/bot/*.jpg (сайт пульта). Не открылась картинка — шлём текстом
+const PICS = 'https://dubstep2004.github.io/apex-client/img/bot/', PIC_IDS = ['install', 'connect', 'update', 'slow', 'whitelist', 'support']
+const picOf = (cfg, id, en) => (!en && cfg.features.images && cfg.images[id]) || (cfg.features.pics && (id === 'hello' ? PICS + (en ? 'hello-en' : 'hello') + '.jpg' : id === 'owner' || PIC_IDS.includes(id) ? PICS + id + '.jpg' : '')) || ''
+async function sendPic(env, chat, photo, text, kb) { // фото с подписью (до 1024 знаков) и кнопками; иначе — фото, потом текст
+  if (photo) {
+    const r = await tg(env, 'sendPhoto', { chat_id: chat, photo, ...(text.length <= 1024 ? { caption: text, reply_markup: kb } : {}) })
+    if (r?.ok && text.length <= 1024) return r
+  }
+  return tg(env, 'sendMessage', { chat_id: chat, text, disable_web_page_preview: true, reply_markup: kb })
+}
 async function answer(env, cfg, chat, f, en) { // ответ по теме — с картинкой, если она задана в пульте
   if (cfg.features.memory) { lastTopic.set(String(chat), { t: f.title, at: now() }); if (lastTopic.size > 5000) lastTopic.delete(lastTopic.keys().next().value) }
   await count(env, cfg, f.id)
-  const img = !en && cfg.features.images && cfg.images[f.id], t = fill(cfg, f.text)
-  if (img) {
-    if (t.length <= 1000) return tg(env, 'sendPhoto', { chat_id: chat, photo: img, caption: t, reply_markup: after(cfg, en) })
-    await tg(env, 'sendPhoto', { chat_id: chat, photo: img })
-  }
-  return tg(env, 'sendMessage', { chat_id: chat, text: t, disable_web_page_preview: true, reply_markup: after(cfg, en) })
+  return sendPic(env, chat, picOf(cfg, f.id, en), fill(cfg, f.text), after(cfg, en, f.id))
 }
 
 // Защита лички владельца от спама: не больше 3 пересланных вопросов от одного человека за час
@@ -1152,6 +1191,8 @@ export async function tick(env, force) {
     }
   }
   if (Object.keys(adsBuf).length) await adsFlush(env) // счётчик рекламы — остаток из памяти
+  { const p = await kget(env, 'pause', null) // пауза кончилась — сводка владельцу
+    if (p && p.until <= now()) { await kput(env, 'pause', null); if (env.OWNER_ID) { const q = (await kget(env, 'q', [])).filter(x => !x.ans).length; await tg(env, 'sendMessage', { chat_id: env.OWNER_ID, text: `▶️ Пауза поддержки закончилась. Ждут ответа: ${q}`, reply_markup: { inline_keyboard: [[{ text: '📥 Вопросы', callback_data: 'ad:q' }]] } }) } } }
   // Утренняя сводка владельцу в 9:00 МСК (раз в день)
   if (cfg.features.morning && env.OWNER_ID) {
     const msk = new Date(now() + 3 * 3600000), day = msk.toISOString().slice(0, 10)
@@ -1309,7 +1350,7 @@ export default {
               else await tg(env, 'editMessageText', { chat_id: cq.message.chat.id, message_id: cq.message.message_id, text: `${head}\n\n🏁 Готово! Правильных ответов: ${score} из ${QUIZ.length}${score === QUIZ.length ? ' — вы знаете APEX CLIENT на отлично 🏆' : ''}\nЕщё раз — /quiz` }) }
           }
           else if (d === 'vid') { const cfg = await config(env); await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id }); if (cfg.features.video) await sendHowto(env, cq.message.chat.id, isEn(cfg, cq.from)) }
-          else if (d === 'human') { const cfg = await config(env), en = isEn(cfg, cq.from); await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id }); if (cfg.features.human) { await kput(env, 'hw:' + cq.from.id, 1, 1800); await tg(env, 'sendMessage', { chat_id: cq.message.chat.id, text: en ? '🙋 Write your question in one message — I will pass it to a person.' : '🙋 Напишите вопрос одним сообщением — передам человеку из поддержки.' }) } }
+          else if (d === 'human' || d.startsWith('human:')) { const cfg = await config(env), en = isEn(cfg, cq.from); await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id }); if (cfg.features.human) { await kput(env, 'hw:' + cq.from.id, d.slice(6) || 1, 1800); await tg(env, 'sendMessage', { chat_id: cq.message.chat.id, text: en ? '🙋 Write your question in one message — I will pass it to a person.' : '🙋 Напишите вопрос одним сообщением — передам человеку из поддержки.' }) } }
           else if (d === 'menu' || d === 'menuen') { const cfg = await config(env), en = d === 'menuen'; await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id }); await tg(env, 'sendMessage', { chat_id: cq.message.chat.id, text: en ? EN.pick : 'Выберите тему:', reply_markup: menu(cfg, en, owner) }) }
           else if (d.startsWith('faq:') || d.startsWith('faqen:')) {
             const en = d.startsWith('faqen:'), cfg = await config(env), f = topicsOf(cfg, en).find(x => x.id === d.slice(en ? 6 : 4))
