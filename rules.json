@@ -1,0 +1,76 @@
+{
+ "updated": 1795838350,
+ "prevUpdated": 1795405594,
+ "changes": {
+  "ads-hagezi.srs": {
+   "was": 177323,
+   "now": 181992
+  },
+  "geosite-category-ads-all.srs": {
+   "was": 910,
+   "now": 910
+  },
+  "geosite-category-betting-ru.srs": {
+   "was": 13,
+   "now": 13
+  },
+  "geosite-category-porn.srs": {
+   "was": 6661,
+   "now": 6661
+  },
+  "geosite-category-ru.srs": {
+   "was": 1149,
+   "now": 1167
+  },
+  "ru-inside.srs": {
+   "was": 170,
+   "now": 434
+  },
+  "threats-hagezi.srs": {
+   "was": 192655,
+   "now": 172823
+  }
+ },
+ "files": {
+  "ads-hagezi.srs": {
+   "sha256": "1645a9bf835f46266b965903bf17da63fad8861763af4f451ae9d57f102ab508",
+   "size": 1422949,
+   "count": 181992
+  },
+  "geoip-ru.srs": {
+   "sha256": "55869c680cf6489991cbfdf62c2f5da77ea85bf571babddb6cd9c4941d84cbfa",
+   "size": 50098,
+   "count": 10909
+  },
+  "geosite-category-ads-all.srs": {
+   "sha256": "5744f0691898c4b91d236f7f2dcb4dc0095149b80a6345a613c6fa28edcba7d1",
+   "size": 8175,
+   "count": 910
+  },
+  "geosite-category-betting-ru.srs": {
+   "sha256": "b76c504667ef9cdf7476b779cb97071b4a47ceaba19d651c9b6af85f991d2ac3",
+   "size": 219,
+   "count": 13
+  },
+  "geosite-category-porn.srs": {
+   "sha256": "e0aab44ff5f34e2ea0141fdd009205ca1bd94efb515f5cb90b43c4fb4a1cab15",
+   "size": 51205,
+   "count": 6661
+  },
+  "geosite-category-ru.srs": {
+   "sha256": "4a217ace59b07527bc25bb05bb68cf7b7cbce760d5b479bab0c3cc2273b0ae6f",
+   "size": 9159,
+   "count": 1167
+  },
+  "ru-inside.srs": {
+   "sha256": "367afcc91be1290d80c0fd346a166fe6ea31e8050f3567362bf7aad361fbbef1",
+   "size": 3249,
+   "count": 434
+  },
+  "threats-hagezi.srs": {
+   "sha256": "7eb7dfca05a093e18de712cf8d0a26f58d04139bc7b276de03e6ab47ee76b1d6",
+   "size": 1259614,
+   "count": 172823
+  }
+ }
+}
